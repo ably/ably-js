@@ -78,21 +78,8 @@ export class RealtimeObject {
    * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
    * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
-   * @spec RTO1
    */
-  async get<T extends API.LiveMapType = API.AblyDefaultObject>(): Promise<LiveMap<T>> {
-    this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
-
-    // if we're not synced yet, wait for sync sequence to finish before returning root
-    if (this._state !== ObjectsState.synced) {
-      await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
-    }
-
-    return this._objectsPool.getRoot(); // RTO1d
-  }
-
-  // TODO: replace .get call with this one when we have full path object API support.
-  async getPathObject<T extends Record<string, API.Value>>(): Promise<API.PathObject<API.LiveMap<T>>> {
+  async get<T extends Record<string, API.Value> = API.AblyDefaultObject>(): Promise<API.PathObject<API.LiveMap<T>>> {
     this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root

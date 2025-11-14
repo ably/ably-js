@@ -1658,11 +1658,6 @@ export type EventCallback<T> = (event: T) => void;
 export type ObjectsEventCallback = () => void;
 
 /**
- * The callback used for the lifecycle events emitted by {@link LiveObjectDeprecated}.
- */
-export type LiveObjectLifecycleEventCallback = () => void;
-
-/**
  * A function passed to the {@link BatchOperations.batch | batch} method to group multiple Objects operations into a single channel message.
  *
  * The function must be synchronous.
@@ -1670,6 +1665,50 @@ export type LiveObjectLifecycleEventCallback = () => void;
  * @param ctx - The {@link BatchContext} used to group operations together.
  */
 export type BatchFunction<T extends LiveObject> = (ctx: BatchContext<T>) => void;
+
+/**
+ * Represents a subscription that can be unsubscribed from.
+ * This interface provides a way to clean up and remove subscriptions when they are no longer needed.
+ *
+ * @example
+ * ```typescript
+ * const s = someService.subscribe();
+ * // Later when done with the subscription
+ * s.unsubscribe();
+ * ```
+ */
+export interface Subscription {
+  /**
+   * Deregisters the listener previously passed to the `subscribe` method.
+   *
+   * This method should be called when the subscription is no longer needed,
+   * it will make sure no further events will be sent to the subscriber and
+   * that references to the subscriber are cleaned up.
+   */
+  readonly unsubscribe: () => void;
+}
+
+/**
+ * Represents a subscription to status change events that can be unsubscribed from.
+ * This interface provides a way to clean up and remove subscriptions when they are no longer needed.
+ *
+ * @example
+ * ```typescript
+ * const s = someService.on();
+ * // Later when done with the subscription
+ * s.off();
+ * ```
+ */
+export interface StatusSubscription {
+  /**
+   * Deregisters the listener previously passed to the `on` method.
+   *
+   * Unsubscribes from the status change events. It will ensure that no
+   * further status change events will be sent to the subscriber and
+   * that references to the subscriber are cleaned up.
+   */
+  readonly off: () => void;
+}
 
 // Internal Interfaces
 
@@ -2269,38 +2308,23 @@ declare namespace ObjectsEvents {
 export type ObjectsEvent = ObjectsEvents.SYNCED | ObjectsEvents.SYNCING;
 
 /**
- * The `LiveObjectLifecycleEvents` namespace describes the possible values of the {@link LiveObjectLifecycleEvent} type.
- */
-declare namespace LiveObjectLifecycleEvents {
-  /**
-   * Indicates that the object has been deleted from the Objects pool and should no longer be interacted with.
-   */
-  type DELETED = 'deleted';
-}
-
-/**
- * Describes the events emitted by a {@link LiveObjectDeprecated} object.
- */
-export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
-
-/**
  * Enables the Objects to be read, modified and subscribed to for a channel.
  */
 export declare interface RealtimeObject {
   /**
-   * Retrieves the {@link LiveMapDeprecated} object - the entrypoint for Objects on a channel.
+   * Retrieves a {@link PathObject} for the object on a channel.
    *
    * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
    *
-   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with a `object` property that conforms to {@link LiveMapType}.
+   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with an `object` property that conforms to Record<string, {@link Value}> type.
    *
    * Example:
    *
    * ```typescript
-   * import { LiveCounter } from 'ably';
+   * import { LiveCounter } from 'ably/objects';
    *
    * type MyObject = {
-   *   myTypedKey: LiveCounter;
+   *   myTypedCounter: LiveCounter;
    * };
    *
    * declare global {
@@ -2310,26 +2334,20 @@ export declare interface RealtimeObject {
    * }
    * ```
    *
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMapDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PathObject}. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  get<T extends LiveMapType = AblyDefaultObject>(): Promise<LiveMapDeprecated<T>>;
-
-  /**
-   * TODO: replace .get call with this one when we have full path object API support.
-   * temporary keep this and regular .get so we can have tests running against both.
-   */
-  getPathObject<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
+  get<T extends Record<string, Value> = AblyDefaultObject>(): Promise<PathObject<LiveMap<T>>>;
 
   /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
    *
    * @param event - The named event to listen for.
    * @param callback - The event listener.
-   * @returns A {@link OnObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @returns A {@link StatusSubscription} object that allows the provided listener to be deregistered from future updates.
    * @experimental
    */
-  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse;
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): StatusSubscription;
 
   /**
    * Removes all registrations that match both the specified listener and the specified event.
@@ -2361,6 +2379,26 @@ export type Primitive =
   // JSON-serializable primitive values
   | JsonArray
   | JsonObject;
+
+/**
+ * Represents a JSON-encodable value.
+ */
+export type Json = JsonScalar | JsonArray | JsonObject;
+
+/**
+ * Represents a JSON-encodable scalar value.
+ */
+export type JsonScalar = null | boolean | number | string;
+
+/**
+ * Represents a JSON-encodable array.
+ */
+export type JsonArray = Json[];
+
+/**
+ * Represents a JSON-encodable object.
+ */
+export type JsonObject = { [prop: string]: Json | undefined };
 
 /**
  * Unique symbol for nominal typing within TypeScript's structural type system.
@@ -2430,6 +2468,31 @@ export type CompactedValue<T extends Value> =
                       ? T
                       : any;
 
+declare global {
+  /**
+   * A globally defined interface that allows users to define custom types for Objects.
+   */
+  export interface AblyObjectsTypes {
+    [key: string]: unknown;
+  }
+}
+
+/**
+ * The default type for the channel object return from the {@link RealtimeObject.get}, based on the globally defined {@link AblyObjectsTypes} interface.
+ *
+ * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped map representation using the Record<string, {@link Value}> type.
+ * - If an `object` key exists in `AblyObjectsTypes` and its type conforms to the Record<string, {@link Value}>, it is used as the type for the object returned from the {@link RealtimeObject.get}.
+ * - If the provided type in `object` key does not match Record<string, {@link Value}>, a type error message is returned.
+ */
+export type AblyDefaultObject =
+  // we need a way to know when no types were provided by the user.
+  // we expect an "object" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends AblyObjectsTypes['object']
+    ? Record<string, Value> // no custom types provided; use the default untyped map representation for the entrypoint map
+    : AblyObjectsTypes['object'] extends Record<string, Value>
+      ? AblyObjectsTypes['object'] // "object" property exists, and it is of an expected type, we can use this interface for the entrypoint map
+      : `Provided type definition for the channel \`object\` in AblyObjectsTypes is not of an expected Record<string, Value> type`;
+
 /**
  * PathObjectBase defines the set of common methods on a PathObject
  * that are present regardless of the underlying type.
@@ -2461,13 +2524,13 @@ interface PathObjectBase {
    *
    * @param listener - An event listener function.
    * @param options - Optional subscription configuration.
-   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @returns A {@link Subscription} object that allows the provided listener to be deregistered from future updates.
    * @experimental
    */
   subscribe(
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options?: PathObjectSubscriptionOptions,
-  ): SubscribeResponse;
+  ): Subscription;
 
   /**
    * Registers a subscription listener and returns an async iterator that yields
@@ -3312,23 +3375,6 @@ export interface AnyOperations {
   decrement(amount?: number): Promise<void>;
 }
 
-declare global {
-  /**
-   * A globally defined interface that allows users to define custom types for Objects.
-   */
-  export interface AblyObjectsTypes {
-    [key: string]: unknown;
-  }
-}
-
-/**
- * Represents the type of data stored in a {@link LiveMapDeprecated}.
- * It maps string keys to primitive values ({@link PrimitiveObjectValue}), or other {@link LiveObjectDeprecated | LiveObjects}.
- */
-export type LiveMapType = {
-  [key: string]: PrimitiveObjectValue | LiveMapDeprecated<LiveMapType> | LiveCounterDeprecated | undefined;
-};
-
 /**
  * InstanceBase defines the set of common methods on an Instance
  * that are present regardless of the underlying type specified in the type parameter T.
@@ -3360,10 +3406,10 @@ interface InstanceBase<T extends Value> {
    * automatically deregistering.
    *
    * @param listener - An event listener function.
-   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @returns A {@link Subscription} object that allows the provided listener to be deregistered from future updates.
    * @experimental
    */
-  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): SubscribeResponse;
+  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): Subscription;
 
   /**
    * Registers a subscription listener and returns an async iterator that yields
@@ -3836,222 +3882,6 @@ export interface ObjectData {
   objectId?: string;
   /** A decoded primitive value. */
   value?: Primitive;
-}
-
-/**
- * The default type for the entrypoint {@link LiveMapDeprecated} object on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
- *
- * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped map representation using the {@link LiveMapType} interface.
- * - If an `object` key exists in `AblyObjectsTypes` and its type conforms to the {@link LiveMapType} interface, it is used as the type for the entrypoint {@link LiveMapDeprecated} object.
- * - If the provided type in `object` key does not match {@link LiveMapType}, a type error message is returned.
- */
-export type AblyDefaultObject =
-  // we need a way to know when no types were provided by the user.
-  // we expect an "object" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
-  unknown extends AblyObjectsTypes['object']
-    ? LiveMapType // no custom types provided; use the default untyped map representation for the entrypoint map
-    : AblyObjectsTypes['object'] extends LiveMapType
-      ? AblyObjectsTypes['object'] // "object" property exists, and it is of an expected type, we can use this interface for the entrypoint map
-      : `Provided type definition for the channel \`object\` in AblyObjectsTypes is not of an expected LiveMapType`;
-
-/**
- * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
- */
-export declare interface OnObjectsEventResponse {
-  /**
-   * Deregisters the listener passed to the `on` call.
-   *
-   * @experimental
-   */
-  off(): void;
-}
-
-/**
- * The `LiveMap` class represents a key-value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
- * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
- * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
- *
- * Keys must be strings. Values can be another {@link LiveObjectDeprecated}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
- */
-export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated {
-  /**
-   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObjectDeprecated} has been deleted.
-   *
-   * Always returns undefined if this map object is deleted.
-   *
-   * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObjectDeprecated}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObjectDeprecated} has been deleted. Always `undefined` if this map object is deleted.
-   * @experimental
-   */
-  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
-
-  /**
-   * Returns the number of key-value pairs in the map.
-   *
-   * @experimental
-   */
-  size(): number;
-
-  /**
-   * Returns an iterable of key-value pairs for every entry in the map.
-   *
-   * @experimental
-   */
-  entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]>;
-
-  /**
-   * Returns an iterable of keys in the map.
-   *
-   * @experimental
-   */
-  keys<TKey extends keyof T & string>(): IterableIterator<TKey>;
-
-  /**
-   * Returns an iterable of values in the map.
-   *
-   * @experimental
-   */
-  values<TKey extends keyof T & string>(): IterableIterator<T[TKey]>;
-
-  /**
-   * Sends an operation to the Ably system to set a key on this `LiveMap` object to a specified value.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param key - The key to set the value for.
-   * @param value - The value to assign to the key.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
-   */
-  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void>;
-
-  /**
-   * Sends an operation to the Ably system to remove a key from this `LiveMap` object.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param key - The key to remove.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
-   */
-  remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
-}
-
-/**
- * Represents a primitive value that can be stored in a {@link LiveMapDeprecated}.
- *
- * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
- */
-export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer | JsonArray | JsonObject;
-
-/**
- * Represents a JSON-encodable value.
- */
-export type Json = JsonScalar | JsonArray | JsonObject;
-
-/**
- * Represents a JSON-encodable scalar value.
- */
-export type JsonScalar = null | boolean | number | string;
-
-/**
- * Represents a JSON-encodable array.
- */
-export type JsonArray = Json[];
-
-/**
- * Represents a JSON-encodable object.
- */
-export type JsonObject = { [prop: string]: Json | undefined };
-
-/**
- * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
- */
-export declare interface LiveCounterDeprecated extends LiveObjectDeprecated {
-  /**
-   * Returns the current value of the counter.
-   *
-   * @experimental
-   */
-  value(): number;
-
-  /**
-   * Sends an operation to the Ably system to increment the value of this `LiveCounter` object.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param amount - The amount by which to increase the counter value.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
-   */
-  increment(amount: number): Promise<void>;
-
-  /**
-   * An alias for calling {@link LiveCounterDeprecated.increment | LiveCounter.increment(-amount)}
-   *
-   * @param amount - The amount by which to decrease the counter value.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
-   */
-  decrement(amount: number): Promise<void>;
-}
-
-/**
- * Describes the common interface for all conflict-free data structures supported by the Objects.
- */
-export declare interface LiveObjectDeprecated {
-  /**
-   * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
-   *
-   * @param event - The named event to listen for.
-   * @param callback - The event listener.
-   * @returns A {@link OnLiveObjectLifecycleEventResponse} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
-   */
-  on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse;
-
-  /**
-   * Removes all registrations that match both the specified listener and the specified event.
-   *
-   * @param event - The named event.
-   * @param callback - The event listener.
-   * @experimental
-   */
-  off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void;
-
-  /**
-   * Deregisters all registrations, for all events and listeners.
-   *
-   * @experimental
-   */
-  offAll(): void;
-}
-
-/**
- * Object returned from a `subscribe` call, allowing the listener provided in that call to be deregistered.
- */
-export declare interface SubscribeResponse {
-  /**
-   * Deregisters the listener passed to the `subscribe` call.
-   *
-   * @experimental
-   */
-  unsubscribe(): void;
-}
-
-/**
- * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
- */
-export declare interface OnLiveObjectLifecycleEventResponse {
-  /**
-   * Deregisters the listener passed to the `on` call.
-   *
-   * @experimental
-   */
-  off(): void;
 }
 
 /**

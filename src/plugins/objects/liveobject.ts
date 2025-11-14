@@ -1,9 +1,8 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import type { EventCallback, LiveMapType, SubscribeResponse } from '../../../ably';
+import type { EventCallback, Subscription } from '../../../ably';
 import { ROOT_OBJECT_ID } from './constants';
 import { InstanceEvent } from './instance';
-import { LiveMapUpdate } from './livemap';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
 import { PathEvent } from './pathobjectsubscriptionregister';
 import { RealtimeObject } from './realtimeobject';
@@ -32,23 +31,12 @@ export interface LiveObjectUpdateNoop {
   noop: true;
 }
 
-export enum LiveObjectLifecycleEvent {
-  deleted = 'deleted',
-}
-
-export type LiveObjectLifecycleEventCallback = () => void;
-
-export interface OnLiveObjectLifecycleEventResponse {
-  off(): void;
-}
-
 export abstract class LiveObject<
   TData extends LiveObjectData = LiveObjectData,
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
 > {
   protected _client: BaseClient;
   protected _subscriptions: EventEmitter;
-  protected _lifecycleEvents: EventEmitter;
   protected _objectId: string;
   /**
    * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
@@ -71,7 +59,6 @@ export abstract class LiveObject<
   ) {
     this._client = this._realtimeObject.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
-    this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
     this._dataRef = this._getZeroValueData();
     // use empty map of serials by default, so any future operation can be applied to this object
@@ -81,7 +68,7 @@ export abstract class LiveObject<
     this._parentReferences = new Map<LiveObject, Set<string>>();
   }
 
-  instanceSubscribe(listener: EventCallback<InstanceEvent>): SubscribeResponse {
+  subscribe(listener: EventCallback<InstanceEvent>): Subscription {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
@@ -91,33 +78,6 @@ export abstract class LiveObject<
     };
 
     return { unsubscribe };
-  }
-
-  on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._lifecycleEvents.on(event, callback);
-
-    const off = () => {
-      this._lifecycleEvents.off(event, callback);
-    };
-
-    return { off };
-  }
-
-  off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-
-    // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
-    if (this._client.Utils.isNil(event) && this._client.Utils.isNil(callback)) {
-      return;
-    }
-
-    this._lifecycleEvents.off(event, callback);
-  }
-
-  offAll(): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._lifecycleEvents.off();
   }
 
   /**
@@ -169,8 +129,6 @@ export abstract class LiveObject<
     const update = this.clearData();
     update.objectMessage = objectMessage;
     update.tombstone = true;
-
-    this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;
   }
@@ -347,7 +305,7 @@ export abstract class LiveObject<
 
     // For LiveMapUpdate, also create non-bubbling events for each updated key
     if (update._type === 'LiveMapUpdate') {
-      const updatedKeys = Object.keys((update as LiveMapUpdate<LiveMapType>).update);
+      const updatedKeys = Object.keys(update.update);
 
       for (const key of updatedKeys) {
         for (const basePath of paths) {
