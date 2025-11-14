@@ -137,8 +137,8 @@ class RealtimeChannel extends EventEmitter {
       this._push = new client.options.plugins.Push.PushChannel(this);
     }
 
-    if (client.options.plugins?.LiveObjects) {
-      this._object = new client.options.plugins.LiveObjects.RealtimeObject(this);
+    if (client._liveObjectsPlugin) {
+      this._object = new client._liveObjectsPlugin.RealtimeObject(this);
     }
   }
 

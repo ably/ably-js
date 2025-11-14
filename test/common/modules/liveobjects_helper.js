@@ -40,6 +40,93 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     }
 
     /**
+     * It could take some time for all keys to be set on a fixture channel.
+     * This function waits for a channel to have all keys set.
+     */
+    static async waitFixtureChannelIsReady(client, channelName) {
+      const channel = client.channels.get(channelName, { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+      const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
+
+      await channel.attach();
+      const entryPathObject = await channel.object.get();
+      const entryInstance = entryPathObject.instance();
+
+      await Promise.all(
+        expectedKeys.map((key) =>
+          entryInstance.get(key) ? undefined : LiveObjectsHelper.waitForMapKeyUpdate(entryInstance, key),
+        ),
+      );
+    }
+
+    static async waitForMapKeyUpdate(mapInstance, key) {
+      return new Promise((resolve) => {
+        const { unsubscribe } = mapInstance.subscribe(({ message }) => {
+          if (message?.operation?.mapOp?.key === key) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    }
+
+    static async waitForCounterUpdate(counterInstance) {
+      return new Promise((resolve) => {
+        const { unsubscribe } = counterInstance.subscribe(() => {
+          unsubscribe();
+          resolve();
+        });
+      });
+    }
+
+    static async waitForObjectOperation(helper, client, waitForAction) {
+      return new Promise((resolve, reject) => {
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = client.connection.connectionManager.activeProtocol.getTransport();
+        const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = function (message) {
+          try {
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(transport, message);
+
+            if (message.action === 19 && message.state[0]?.operation?.action === waitForAction) {
+              helper.recordPrivateApi('replace.transport.onProtocolMessage');
+              transport.onProtocolMessage = onProtocolMessageOriginal;
+              resolve();
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+      });
+    }
+
+    static async waitForObjectSync(helper, client) {
+      return new Promise((resolve, reject) => {
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = client.connection.connectionManager.activeProtocol.getTransport();
+        const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = function (message) {
+          try {
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(transport, message);
+
+            if (message.action === 20) {
+              helper.recordPrivateApi('replace.transport.onProtocolMessage');
+              transport.onProtocolMessage = onProtocolMessageOriginal;
+              resolve();
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+      });
+    }
+
+    /**
      * Sends Objects REST API requests to create objects tree on a provided channel:
      *
      * root "emptyMap" -> Map#1 {} -- empty map
