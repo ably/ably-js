@@ -19,6 +19,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   const LiveCounter = LiveObjectsPlugin.LiveCounter;
   const expectInstanceOf = Helper.expectInstanceOf;
   const expectToThrowAsync = Helper.expectToThrowAsync;
+  const waitFixtureChannelIsReady = LiveObjectsHelper.waitFixtureChannelIsReady;
+  const waitForMapKeyUpdate = LiveObjectsHelper.waitForMapKeyUpdate;
+  const waitForMapClear = LiveObjectsHelper.waitForMapClear;
+  const waitForCounterUpdate = LiveObjectsHelper.waitForCounterUpdate;
+  const waitForObjectOperation = LiveObjectsHelper.waitForObjectOperation;
+  const waitForObjectSync = LiveObjectsHelper.waitForObjectSync;
 
   function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
@@ -98,85 +104,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
   function objectMessageFromValues(values) {
     return LiveObjectsPlugin.ObjectMessage.fromValues(values, Utils, MessageEncoding);
-  }
-
-  async function waitForMapKeyUpdate(mapInstance, key) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if ((message?.operation?.mapSet?.key ?? message?.operation?.mapRemove?.key) === key) {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  async function waitForMapClear(mapInstance) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if (message?.operation?.action === 'map.clear') {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  async function waitForCounterUpdate(counterInstance) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = counterInstance.subscribe(() => {
-        unsubscribe();
-        resolve();
-      });
-    });
-  }
-
-  async function waitForObjectOperation(helper, client, waitForAction) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 19 && message.state[0]?.operation?.action === waitForAction) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
-  }
-
-  async function waitForObjectSync(helper, client) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 20) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
   }
 
   /**
@@ -326,23 +253,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         transport.onProtocolMessage = originalOnProtocolMessage;
       },
     };
-  }
-
-  /**
-   * The channel with fixture data may not yet be populated by REST API requests made by LiveObjectsHelper.
-   * This function waits for a channel to have all keys set.
-   */
-  async function waitFixtureChannelIsReady(client) {
-    const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
-    const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
-
-    await channel.attach();
-    const entryPathObject = await channel.object.get();
-    const entryInstance = entryPathObject.instance();
-
-    await Promise.all(
-      expectedKeys.map((key) => (entryInstance.get(key) ? undefined : waitForMapKeyUpdate(entryInstance, key))),
-    );
   }
 
   describe('realtime/liveobjects', function () {
@@ -709,7 +619,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { client, helper } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
@@ -1069,7 +979,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
@@ -1095,7 +1005,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { helper, client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
