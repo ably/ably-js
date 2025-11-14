@@ -1663,13 +1663,13 @@ export type ObjectsEventCallback = () => void;
 export type LiveObjectLifecycleEventCallback = () => void;
 
 /**
- * A function passed to {@link RealtimeObject.batch} to group multiple Objects operations into a single channel message.
+ * A function passed to the {@link BatchOperations.batch | batch} method to group multiple Objects operations into a single channel message.
  *
- * Must not be `async`.
+ * The function must be synchronous.
  *
- * @param batchContext - A {@link BatchContext} object that allows grouping Objects operations for this batch.
+ * @param ctx - The {@link BatchContext} used to group operations together.
  */
-export type BatchCallback = (batchContext: BatchContext) => void;
+export type BatchFunction<T extends LiveObject> = (ctx: BatchContext<T>) => void;
 
 // Internal Interfaces
 
@@ -2322,22 +2322,6 @@ export declare interface RealtimeObject {
   getPathObject<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
 
   /**
-   * Allows you to group multiple operations together and send them to the Ably service in a single channel message.
-   * As a result, other clients will receive the changes as a single channel message after the batch function has completed.
-   *
-   * This method accepts a synchronous callback, which is provided with a {@link BatchContext} object.
-   * Use the context object to access Objects on a channel and batch operations for them.
-   *
-   * The objects' data is not modified inside the callback function. Instead, the objects will be updated
-   * when the batched operations are applied by the Ably service and echoed back to the client.
-   *
-   * @param callback - A batch callback function used to group operations together. Cannot be an `async` function.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
-   */
-  batch(callback: BatchCallback): Promise<void>;
-
-  /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
    *
    * @param event - The named event to listen for.
@@ -2698,7 +2682,7 @@ interface AnyPathObjectCollectionMethods {
 }
 
 /**
- * Represents a PathObject when its underlying type is not known.
+ * Represents a {@link PathObject} when its underlying type is not known.
  * Provides a unified interface that includes all possible methods.
  *
  * Each method supports type parameters to specify the expected
@@ -2763,9 +2747,409 @@ export type PathObject<T extends Value = Value> = [T] extends [LiveMap<infer U>]
       : AnyPathObject;
 
 /**
- * Defines operations available on a {@link LiveMapPathObject}.
+ * BatchContextBase defines the set of common methods on a BatchContext
+ * that are present regardless of the underlying type.
  */
-export interface LiveMapOperations<T extends Record<string, Value> = Record<string, Value>> {
+interface BatchContextBase {
+  /**
+   * Get the object ID of the underlying instance.
+   *
+   * If the underlying instance at runtime is not a {@link LiveObject}, returns `undefined`.
+   *
+   * @experimental
+   */
+  id(): string | undefined;
+}
+
+/**
+ * Defines collection methods available on a {@link LiveMapBatchContext}.
+ */
+interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> = Record<string, Value>> {
+  /**
+   * Returns an iterable of key-value pairs for each entry in the map.
+   * Each value is represented as a {@link BatchContext} corresponding to its key.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  entries(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  keys(): IterableIterator<keyof T>;
+
+  /**
+   * Returns an iterable of values in the map.
+   * Each value is represented as a {@link BatchContext}.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  values(): IterableIterator<BatchContext<T[keyof T]>>;
+
+  /**
+   * Returns the number of entries in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
+   * @experimental
+   */
+  size(): number | undefined;
+}
+
+/**
+ * LiveMapBatchContext is a batch context wrapper for a LiveMap object.
+ * The type parameter T describes the expected structure of the map's entries.
+ */
+export interface LiveMapBatchContext<T extends Record<string, Value> = Record<string, Value>>
+  extends BatchContextBase,
+    BatchContextLiveMapOperations<T>,
+    LiveMapBatchContextCollectionMethods<T> {
+  /**
+   * Returns the value associated with a given key as a {@link BatchContext}.
+   *
+   * Returns `undefined` if the key doesn't exist in the map, if the referenced {@link LiveObject} has been deleted,
+   * or if this map object itself has been deleted.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link BatchContext} representing a {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the referenced {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
+   */
+  get<K extends keyof T & string>(key: K): BatchContext<T[K]> | undefined;
+
+  /**
+   * Get a JavaScript object representation of the map instance.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compact(): CompactedValue<LiveMap<T>> | undefined;
+}
+
+/**
+ * LiveCounterBatchContext is a batch context wrapper for a LiveCounter object.
+ */
+export interface LiveCounterBatchContext extends BatchContextBase, BatchContextLiveCounterOperations {
+  /**
+   * Get the current value of the counter instance.
+   * If the underlying instance at runtime is not a counter, returns `undefined`.
+   *
+   * @experimental
+   */
+  value(): number | undefined;
+
+  /**
+   * Get a number representation of the counter instance.
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compact(): CompactedValue<LiveCounter> | undefined;
+}
+
+/**
+ * PrimitiveBatchContext is a batch context wrapper for a primitive value (string, number, boolean, JSON-serializable object or array, or binary data).
+ */
+export interface PrimitiveBatchContext<T extends Primitive = Primitive> {
+  /**
+   * Get the underlying primitive value.
+   * If the underlying instance at runtime is not a primitive value, returns `undefined`.
+   *
+   * @experimental
+   */
+  value(): T | undefined;
+
+  /**
+   * Get a JavaScript object representation of the primitive value.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compact(): CompactedValue<T> | undefined;
+}
+
+/**
+ * AnyBatchContextCollectionMethods defines all possible methods available on an BatchContext object
+ * for the underlying collection types.
+ */
+interface AnyBatchContextCollectionMethods {
+  // LiveMap collection methods
+
+  /**
+   * Returns an iterable of key-value pairs for each entry in the map.
+   * Each value is represented as an {@link BatchContext} corresponding to its key.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
+
+  /**
+   * Returns an iterable of values in the map.
+   * Each value is represented as a {@link BatchContext}.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  values<T extends Record<string, Value>>(): IterableIterator<BatchContext<T[keyof T]>>;
+
+  /**
+   * Returns the number of entries in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
+   * @experimental
+   */
+  size(): number | undefined;
+}
+
+/**
+ * Represents a {@link BatchContext} when its underlying type is not known.
+ * Provides a unified interface that includes all possible methods.
+ *
+ * Each method supports type parameters to specify the expected
+ * underlying type when needed.
+ */
+export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollectionMethods, BatchContextAnyOperations {
+  /**
+   * Navigate to a child entry within the collection by obtaining the {@link BatchContext} at that entry.
+   * The entry in a collection is identified with a string key.
+   *
+   * Returns `undefined` if:
+   * - The underlying instance at runtime is not a collection object.
+   * - The specified key does not exist in the collection.
+   * - The referenced {@link LiveObject} has been deleted.
+   * - This collection object itself has been deleted.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link BatchContext} representing either a {@link LiveObject} or a primitive value (string, number, boolean, JSON-serializable object or array, or binary data), or `undefined` if the underlying instance at runtime is not a collection object, the key does not exist, the referenced {@link LiveObject} has been deleted, or this collection object itself has been deleted.
+   * @experimental
+   */
+  get<T extends Value = Value>(key: string): BatchContext<T> | undefined;
+
+  /**
+   * Get the current value of the underlying counter or primitive.
+   *
+   * If the underlying instance at runtime is neither a counter nor a primitive value, returns `undefined`.
+   *
+   * @returns The current value of the underlying primitive or counter, or `undefined` if the value cannot be retrieved.
+   * @experimental
+   */
+  value<T extends number | Primitive = number | Primitive>(): T | undefined;
+
+  /**
+   * Get a JavaScript object representation of the object instance.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compact<T extends Value = Value>(): CompactedValue<T> | undefined;
+}
+
+/**
+ * BatchContext wraps a specific object instance or entry in a specific collection
+ * object instance and provides synchronous operation methods that can be aggregated
+ * and applied as a single batch operation.
+ *
+ * The type parameter specifies the underlying type of the instance,
+ * and is used to infer the correct set of methods available for that type.
+ *
+ * @experimental
+ */
+export type BatchContext<T extends Value> = [T] extends [LiveMap<infer U>]
+  ? LiveMapBatchContext<U>
+  : [T] extends [LiveCounter]
+    ? LiveCounterBatchContext
+    : [T] extends [Primitive]
+      ? PrimitiveBatchContext<T>
+      : AnyBatchContext;
+
+/**
+ * Defines operations available on {@link LiveMapBatchContext}.
+ */
+export interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record<string, Value>> {
+  /**
+   * Adds an operation to the current batch to set a key to a specified value on the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @experimental
+   */
+  set<K extends keyof T & string>(key: K, value: T[K]): void;
+
+  /**
+   * Adds an operation to the current batch to remove a key from the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to remove.
+   * @experimental
+   */
+  remove(key: keyof T & string): void;
+}
+
+/**
+ * Defines operations available on {@link LiveCounterBatchContext}.
+ */
+export interface BatchContextLiveCounterOperations {
+  /**
+   * Adds an operation to the current batch to increment the value of the underlying
+   * {@link LiveCounterInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a counter, this method throws an error.
+   *
+   * This does not modify the underlying data of the counter. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  increment(amount?: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextLiveCounterOperations.increment | increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  decrement(amount?: number): void;
+}
+
+/**
+ * Defines all possible operations available on {@link BatchContext} objects.
+ */
+export interface BatchContextAnyOperations {
+  // LiveMap operations
+
+  /**
+   * Adds an operation to the current batch to set a key to a specified value on the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @experimental
+   */
+  set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): void;
+
+  /**
+   * Adds an operation to the current batch to remove a key from the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to remove.
+   * @experimental
+   */
+  remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): void;
+
+  // LiveCounter operations
+
+  /**
+   * Adds an operation to the current batch to increment the value of the underlying
+   * {@link LiveCounterInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a counter, this method throws an error.
+   *
+   * This does not modify the underlying data of the counter. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  increment(amount?: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextAnyOperations.increment | increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  decrement(amount?: number): void;
+}
+
+/**
+ * Defines batch operations available on {@link LiveObject | LiveObjects}.
+ */
+export interface BatchOperations<T extends LiveObject> {
+  /**
+   * Batch multiple operations together using a batch context, which
+   * wraps the underlying {@link PathObject} or {@link Instance} from which the batch was called.
+   * The batch context always contains a resolved instance, even when called from a {@link PathObject}.
+   * If an instance cannot be resolved from the referenced path, or if the instance is not a {@link LiveObject},
+   * this method throws an error.
+   *
+   * Batching enables you to group multiple operations together and send them to the Ably service in a single channel message.
+   * As a result, other clients will receive the changes in a single channel message once the batch function has completed.
+   *
+   * The objects' data is not modified inside the batch function. Instead, the objects will be updated
+   * when the batched operations are applied by the Ably service and echoed back to the client.
+   *
+   * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
+   * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  batch(fn: BatchFunction<T>): Promise<void>;
+}
+
+/**
+ * Defines operations available on {@link LiveMap} objects.
+ */
+export interface LiveMapOperations<T extends Record<string, Value> = Record<string, Value>>
+  extends BatchOperations<LiveMap<T>> {
   /**
    * Sends an operation to the Ably system to set a key to a specified value on a given {@link LiveMapInstance},
    * or on the map instance resolved from the path when using {@link LiveMapPathObject}.
@@ -2805,9 +3189,9 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
 }
 
 /**
- * Defines operations available on a {@link LiveCounterPathObject}.
+ * Defines operations available on {@link LiveCounter} objects.
  */
-export interface LiveCounterOperations {
+export interface LiveCounterOperations extends BatchOperations<LiveCounter> {
   /**
    * Sends an operation to the Ably system to increment the value of a given {@link LiveCounterInstance},
    * or of the counter instance resolved from the path when using {@link LiveCounterPathObject}.
@@ -2837,9 +3221,28 @@ export interface LiveCounterOperations {
 }
 
 /**
- * Defines all possible operations available on an {@link AnyPathObject}.
+ * Defines all possible operations available on {@link LiveObject | LiveObjects}.
  */
 export interface AnyOperations {
+  /**
+   * Batch multiple operations together using a batch context, which
+   * wraps the underlying {@link PathObject} or {@link Instance} from which the batch was called.
+   * The batch context always contains a resolved instance, even when called from a {@link PathObject}.
+   * If an instance cannot be resolved from the referenced path, or if the instance is not a {@link LiveObject},
+   * this method throws an error.
+   *
+   * Batching enables you to group multiple operations together and send them to the Ably service in a single channel message.
+   * As a result, other clients will receive the changes in a single channel message once the batch function has completed.
+   *
+   * The objects' data is not modified inside the batch function. Instead, the objects will be updated
+   * when the batched operations are applied by the Ably service and echoed back to the client.
+   *
+   * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
+   * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  batch<T extends LiveObject = LiveObject>(fn: BatchFunction<T>): Promise<void>;
+
   // LiveMap operations
 
   /**
@@ -3147,7 +3550,7 @@ interface AnyInstanceCollectionMethods {
 }
 
 /**
- * Represents a AnyInstance when its underlying type is not known.
+ * Represents an {@link Instance} when its underlying type is not known.
  * Provides a unified interface that includes all possible methods.
  *
  * Each method supports type parameters to specify the expected
@@ -3461,94 +3864,6 @@ export declare interface OnObjectsEventResponse {
    * @experimental
    */
   off(): void;
-}
-
-/**
- * Enables grouping multiple Objects operations together by providing `BatchContext*` wrapper objects.
- */
-export declare interface BatchContext {
-  /**
-   * Mirrors the {@link RealtimeObject.get} method and returns a {@link BatchContextLiveMap} wrapper for the entrypoint {@link LiveMapDeprecated} object on a channel.
-   *
-   * @returns A {@link BatchContextLiveMap} object.
-   * @experimental
-   */
-  get<T extends LiveMapType = AblyDefaultObject>(): BatchContextLiveMap<T>;
-}
-
-/**
- * A wrapper around the {@link LiveMapDeprecated} object that enables batching operations inside a {@link BatchCallback}.
- */
-export declare interface BatchContextLiveMap<T extends LiveMapType> {
-  /**
-   * Mirrors the {@link LiveMapDeprecated.get} method and returns the value associated with a key in the map.
-   *
-   * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObjectDeprecated}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObjectDeprecated} has been deleted. Always `undefined` if this map object is deleted.
-   * @experimental
-   */
-  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
-
-  /**
-   * Returns the number of key-value pairs in the map.
-   *
-   * @experimental
-   */
-  size(): number;
-
-  /**
-   * Similar to the {@link LiveMapDeprecated.set} method, but instead, it adds an operation to set a key in the map with the provided value to the current batch, to be sent in a single message to the Ably service.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param key - The key to set the value for.
-   * @param value - The value to assign to the key.
-   * @experimental
-   */
-  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void;
-
-  /**
-   * Similar to the {@link LiveMapDeprecated.remove} method, but instead, it adds an operation to remove a key from the map to the current batch, to be sent in a single message to the Ably service.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param key - The key to set the value for.
-   * @experimental
-   */
-  remove<TKey extends keyof T & string>(key: TKey): void;
-}
-
-/**
- * A wrapper around the {@link LiveCounterDeprecated} object that enables batching operations inside a {@link BatchCallback}.
- */
-export declare interface BatchContextLiveCounter {
-  /**
-   * Returns the current value of the counter.
-   *
-   * @experimental
-   */
-  value(): number;
-
-  /**
-   * Similar to the {@link LiveCounterDeprecated.increment} method, but instead, it adds an operation to increment the counter value to the current batch, to be sent in a single message to the Ably service.
-   *
-   * This does not modify the underlying data of this object. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   *
-   * @param amount - The amount by which to increase the counter value.
-   * @experimental
-   */
-  increment(amount: number): void;
-
-  /**
-   * An alias for calling {@link BatchContextLiveCounter.increment | BatchContextLiveCounter.increment(-amount)}
-   *
-   * @param amount - The amount by which to decrease the counter value.
-   * @experimental
-   */
-  decrement(amount: number): void;
 }
 
 /**

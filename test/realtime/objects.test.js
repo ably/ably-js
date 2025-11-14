@@ -3423,139 +3423,140 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'batch API get method is synchronous',
+          description: 'DefaultBatchContext.get() returns child DefaultBatchContext instances',
           action: async (ctx) => {
-            const { realtimeObject } = ctx;
-
-            await realtimeObject.batch((ctx) => {
-              const root = ctx.get();
-              expect(root, 'Check BatchContext.get() returns object synchronously').to.exist;
-              expectInstanceOf(root, 'LiveMap', 'root object obtained from a BatchContext is a LiveMap');
-            });
-          },
-        },
-
-        {
-          description: 'batch API .get method on a map returns BatchContext* wrappers for objects',
-          action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
+            const { entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'primitive'),
             ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ innerCounter: LiveCounter.create(1) }));
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ nestedCounter: LiveCounter.create(1) }));
+            await entryInstance.set('primitive', 'foo');
             await objectsCreatedPromise;
 
-            await realtimeObject.batch((ctx) => {
-              const ctxRoot = ctx.get();
-              const ctxCounter = ctxRoot.get('counter');
-              const ctxMap = ctxRoot.get('map');
-              const ctxInnerCounter = ctxMap.get('innerCounter');
+            await entryInstance.batch((ctx) => {
+              const ctxCounter = ctx.get('counter');
+              const ctxMap = ctx.get('map');
+              const ctxPrimitive = ctx.get('primitive');
+              const ctxNestedCounter = ctxMap.get('nestedCounter');
 
-              expect(ctxCounter, 'Check counter object can be accessed from a map in a batch API').to.exist;
+              expect(ctxCounter, 'Check counter object can be accessed from a map in a batch context').to.exist;
               expectInstanceOf(
                 ctxCounter,
-                'BatchContextLiveCounter',
-                'Check counter object obtained in a batch API has a BatchContext specific wrapper type',
+                'DefaultBatchContext',
+                'Check counter object obtained in a batch context is of a DefaultBatchContext type',
               );
-              expect(ctxMap, 'Check map object can be accessed from a map in a batch API').to.exist;
+              expect(ctxMap, 'Check map object can be accessed from a map in a batch context').to.exist;
               expectInstanceOf(
                 ctxMap,
-                'BatchContextLiveMap',
-                'Check map object obtained in a batch API has a BatchContext specific wrapper type',
+                'DefaultBatchContext',
+                'Check map object obtained in a batch context is of a DefaultBatchContext type',
               );
-              expect(ctxInnerCounter, 'Check inner counter object can be accessed from a map in a batch API').to.exist;
+              expect(ctxPrimitive, 'Check primitive value can be accessed from a map in a batch context').to.exist;
               expectInstanceOf(
-                ctxInnerCounter,
-                'BatchContextLiveCounter',
-                'Check inner counter object obtained in a batch API has a BatchContext specific wrapper type',
+                ctxPrimitive,
+                'DefaultBatchContext',
+                'Check primitive value obtained in a batch context is of a DefaultBatchContext type',
+              );
+              expect(ctxNestedCounter, 'Check nested counter object can be accessed from a map in a batch context').to
+                .exist;
+              expectInstanceOf(
+                ctxNestedCounter,
+                'DefaultBatchContext',
+                'Check nested counter object value obtained in a batch context is of a DefaultBatchContext type',
               );
             });
           },
         },
 
         {
-          description: 'batch API access API methods on objects work and are synchronous',
+          description: 'DefaultBatchContext access API methods on objects work and are synchronous',
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
+            const { entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
-            await realtimeObject.batch((ctx) => {
-              const ctxRoot = ctx.get();
-              const ctxCounter = ctxRoot.get('counter');
-              const ctxMap = ctxRoot.get('map');
+            await entryInstance.batch((ctx) => {
+              const ctxCounter = ctx.get('counter');
+              const ctxMap = ctx.get('map');
 
               expect(ctxCounter.value()).to.equal(
                 1,
-                'Check batch API counter .value() method works and is synchronous',
+                'Check DefaultBatchContext.value() method works for counters and is synchronous',
               );
-              expect(ctxMap.get('foo')).to.equal('bar', 'Check batch API map .get() method works and is synchronous');
-              expect(ctxMap.size()).to.equal(1, 'Check batch API map .size() method works and is synchronous');
-              expect([...ctxMap.entries()]).to.deep.equal(
+              expect(ctxMap.get('foo').value()).to.equal(
+                'bar',
+                'Check DefaultBatchContext.get() method works for maps and is synchronous',
+              );
+              expect(ctxMap.size()).to.equal(
+                1,
+                'Check DefaultBatchContext.size() method works for maps and is synchronous',
+              );
+              expect([...ctxMap.entries()].map(([key, val]) => [key, val.value()])).to.deep.equal(
                 [['foo', 'bar']],
-                'Check batch API map .entries() method works and is synchronous',
+                'Check DefaultBatchContext.entries() method works for maps and is synchronous',
               );
               expect([...ctxMap.keys()]).to.deep.equal(
                 ['foo'],
-                'Check batch API map .keys() method works and is synchronous',
+                'Check DefaultBatchContext.keys() method works for maps and is synchronous',
               );
-              expect([...ctxMap.values()]).to.deep.equal(
+              expect([...ctxMap.values()].map((x) => x.value())).to.deep.equal(
                 ['bar'],
-                'Check batch API map .values() method works and is synchronous',
+                'Check DefaultBatchContext.values() method works for maps and is synchronous',
               );
             });
           },
         },
 
         {
-          description: 'batch API write API methods on objects do not mutate objects inside the batch callback',
+          description:
+            'DefaultBatchContext write API methods on objects do not mutate objects inside the batch function',
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
+            const { entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
-            await realtimeObject.batch((ctx) => {
-              const ctxRoot = ctx.get();
-              const ctxCounter = ctxRoot.get('counter');
-              const ctxMap = ctxRoot.get('map');
+            await entryInstance.batch((ctx) => {
+              const ctxCounter = ctx.get('counter');
+              const ctxMap = ctx.get('map');
 
               ctxCounter.increment(10);
               expect(ctxCounter.value()).to.equal(
                 1,
-                'Check batch API counter .increment method does not mutate the object inside the batch callback',
+                'Check DefaultBatchContext.increment() method does not mutate the counter object inside the batch function',
               );
 
               ctxCounter.decrement(100);
               expect(ctxCounter.value()).to.equal(
                 1,
-                'Check batch API counter .decrement method does not mutate the object inside the batch callback',
+                'Check DefaultBatchContext.decrement() method does not mutate the counter object inside the batch function',
               );
 
               ctxMap.set('baz', 'qux');
               expect(
                 ctxMap.get('baz'),
-                'Check batch API map .set method does not mutate the object inside the batch callback',
+                'Check DefaultBatchContext.set() method does not mutate the map object inside the batch function',
               ).to.not.exist;
 
               ctxMap.remove('foo');
-              expect(ctxMap.get('foo')).to.equal(
+              expect(ctxMap.get('foo').value()).to.equal(
                 'bar',
-                'Check batch API map .remove method does not mutate the object inside the batch callback',
+                'Check DefaultBatchContext.remove() method does not mutate the map object inside the batch function',
               );
             });
           },
@@ -3563,25 +3564,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'batch API scheduled operations are applied when batch callback is finished',
+          description: 'DefaultBatchContext scheduled mutation operations are applied when batch function finishes',
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
+            const { entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
-            const counter = root.get('counter');
-            const map = root.get('map');
-
-            await realtimeObject.batch((ctx) => {
-              const ctxRoot = ctx.get();
-              const ctxCounter = ctxRoot.get('counter');
-              const ctxMap = ctxRoot.get('map');
+            await entryInstance.batch((ctx) => {
+              const ctxCounter = ctx.get('counter');
+              const ctxMap = ctx.get('map');
 
               ctxCounter.increment(10);
               ctxCounter.decrement(100);
@@ -3590,53 +3587,58 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               ctxMap.remove('foo');
             });
 
+            const counter = entryInstance.get('counter');
+            const map = entryInstance.get('map');
+
             expect(counter.value()).to.equal(1 + 10 - 100, 'Check counter has an expected value after batch call');
-            expect(map.get('baz')).to.equal('qux', 'Check key "baz" has an expected value in a map after batch call');
+            expect(map.get('baz').value()).to.equal(
+              'qux',
+              'Check key "baz" has an expected value in a map after batch call',
+            );
             expect(map.get('foo'), 'Check key "foo" is removed from map after batch call').to.not.exist;
           },
         },
 
         {
-          description: 'batch API can be called without scheduling any operations',
+          description:
+            'PathObject.batch()/DefaultInstance.batch() can be called without scheduling any mutation operations',
           action: async (ctx) => {
-            const { realtimeObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let caughtError;
             try {
-              await realtimeObject.batch((ctx) => {});
+              await entryPathObject.batch((ctx) => {});
+              await entryInstance.batch((ctx) => {});
             } catch (error) {
               caughtError = error;
             }
             expect(
               caughtError,
-              `Check batch API can be called without scheduling any operations, but got error: ${caughtError?.toString()}`,
+              `Check batch operation can be called without scheduling any mutation operations, but got error: ${caughtError?.toString()}`,
             ).to.not.exist;
           },
         },
 
         {
-          description: 'batch API scheduled operations can be canceled by throwing an error in the batch callback',
+          description:
+            'DefaultBatchContext scheduled mutation operations can be canceled by throwing an error in the batch function',
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
+            const { entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
-
-            const counter = root.get('counter');
-            const map = root.get('map');
 
             const cancelError = new Error('cancel batch');
             let caughtError;
             try {
-              await realtimeObject.batch((ctx) => {
-                const ctxRoot = ctx.get();
-                const ctxCounter = ctxRoot.get('counter');
-                const ctxMap = ctxRoot.get('map');
+              await entryInstance.batch((ctx) => {
+                const ctxCounter = ctx.get('counter');
+                const ctxMap = ctx.get('map');
 
                 ctxCounter.increment(10);
                 ctxCounter.decrement(100);
@@ -3650,80 +3652,54 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               caughtError = error;
             }
 
+            const counter = entryInstance.get('counter');
+            const map = entryInstance.get('map');
+
             expect(counter.value()).to.equal(1, 'Check counter value is not changed after canceled batch call');
             expect(map.get('baz'), 'Check key "baz" does not exist on a map after canceled batch call').to.not.exist;
-            expect(map.get('foo')).to.equal('bar', 'Check key "foo" is not changed on a map after canceled batch call');
+            expect(map.get('foo').value()).to.equal(
+              'bar',
+              'Check key "foo" is not changed on a map after canceled batch call',
+            );
             expect(caughtError).to.equal(
               cancelError,
-              'Check error from a batch callback was rethrown by a batch method',
+              'Check error from a batch function was rethrown by a batch method',
             );
           },
         },
 
         {
-          description: `batch API batch context and derived objects can't be interacted with after the batch call`,
+          description: `DefaultBatchContext can't be interacted with after batch function finishes`,
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
-
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
+            const { entryInstance } = ctx;
 
             let savedCtx;
-            let savedCtxCounter;
-            let savedCtxMap;
 
-            await realtimeObject.batch((ctx) => {
-              const ctxRoot = ctx.get();
+            await entryInstance.batch((ctx) => {
               savedCtx = ctx;
-              savedCtxCounter = ctxRoot.get('counter');
-              savedCtxMap = ctxRoot.get('map');
             });
 
-            expectAccessBatchApiToThrow({
+            expectBatchContextAccessApiToThrow({
               ctx: savedCtx,
-              map: savedCtxMap,
-              counter: savedCtxCounter,
               errorMsg: 'Batch is closed',
             });
-            expectWriteBatchApiToThrow({
+            expectBatchContextWriteApiToThrow({
               ctx: savedCtx,
-              map: savedCtxMap,
-              counter: savedCtxCounter,
               errorMsg: 'Batch is closed',
             });
           },
         },
 
         {
-          description: `batch API batch context and derived objects can't be interacted with after error was thrown from batch callback`,
+          description: `DefaultBatchContext can't be interacted with after error was thrown from batch function`,
           action: async (ctx) => {
-            const { root, realtimeObject, entryInstance } = ctx;
-
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
-            await root.set('counter', LiveCounter.create(1));
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
+            const { entryInstance } = ctx;
 
             let savedCtx;
-            let savedCtxCounter;
-            let savedCtxMap;
-
             let caughtError;
             try {
-              await realtimeObject.batch((ctx) => {
-                const ctxRoot = ctx.get();
+              await entryInstance.batch((ctx) => {
                 savedCtx = ctx;
-                savedCtxCounter = ctxRoot.get('counter');
-                savedCtxMap = ctxRoot.get('map');
-
                 throw new Error('cancel batch');
               });
             } catch (error) {
@@ -3731,16 +3707,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             }
 
             expect(caughtError, 'Check batch call failed with an error').to.exist;
-            expectAccessBatchApiToThrow({
+            expectBatchContextAccessApiToThrow({
               ctx: savedCtx,
-              map: savedCtxMap,
-              counter: savedCtxCounter,
               errorMsg: 'Batch is closed',
             });
-            expectWriteBatchApiToThrow({
+            expectBatchContextWriteApiToThrow({
               ctx: savedCtx,
-              map: savedCtxMap,
-              counter: savedCtxCounter,
               errorMsg: 'Batch is closed',
             });
           },
@@ -3804,71 +3776,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               [counter1, 'bar'],
               'Check LiveMap.values() returns expected values',
             );
-          },
-        },
-        {
-          description: `BatchContextLiveMap enumeration`,
-          action: async (ctx) => {
-            const { root, objectsHelper, channel, realtimeObject } = ctx;
-
-            const counterId1 = objectsHelper.fakeCounterObjectId();
-            const counterId2 = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processObjectStateMessageOnChannel({
-              channel,
-              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
-              state: [
-                objectsHelper.counterObject({
-                  objectId: counterId1,
-                  siteTimeserials: {
-                    aaa: lexicoTimeserial('aaa', 0, 0),
-                  },
-                  tombstone: false,
-                  initialCount: 0,
-                }),
-                objectsHelper.counterObject({
-                  objectId: counterId2,
-                  siteTimeserials: {
-                    aaa: lexicoTimeserial('aaa', 0, 0),
-                  },
-                  tombstone: true,
-                  initialCount: 0,
-                }),
-                objectsHelper.mapObject({
-                  objectId: 'root',
-                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
-                  materialisedEntries: {
-                    counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
-                    counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'qux' }, tombstone: true },
-                  },
-                }),
-              ],
-            });
-
-            const counter1 = await root.get('counter1');
-
-            await realtimeObject.batch(async (ctx) => {
-              const ctxRoot = ctx.get();
-
-              // enumeration methods should not count tombstoned entries
-              expect(ctxRoot.size()).to.equal(2, 'Check BatchContextLiveMap.size() returns expected number of keys');
-              expect([...ctxRoot.entries()]).to.deep.equal(
-                [
-                  ['counter1', counter1],
-                  ['foo', 'bar'],
-                ],
-                'Check BatchContextLiveMap.entries() returns expected entries',
-              );
-              expect([...ctxRoot.keys()]).to.deep.equal(
-                ['counter1', 'foo'],
-                'Check BatchContextLiveMap.keys() returns expected keys',
-              );
-              expect([...ctxRoot.values()]).to.deep.equal(
-                [counter1, 'bar'],
-                'Check BatchContextLiveMap.values() returns expected values',
-              );
-            });
           },
         },
       ];
@@ -4325,6 +4232,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await expectToThrowAsync(async () => nonExistentPathObj.decrement(), errorMsg, {
               withCode: 92005,
             });
+            await expectToThrowAsync(async () => nonExistentPathObj.batch(), errorMsg, {
+              withCode: 92005,
+            });
           },
         },
 
@@ -4371,6 +4281,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               withCode: 92005,
             });
             await expectToThrowAsync(async () => wrongTypePathObj.decrement(), errorMsg, {
+              withCode: 92005,
+            });
+            await expectToThrowAsync(async () => wrongTypePathObj.batch(), errorMsg, {
               withCode: 92005,
             });
           },
@@ -4464,9 +4377,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await expectToThrowAsync(
               async () => mapPathObj.decrement(),
               'Cannot decrement a non-LiveCounter object at path',
-              {
-                withCode: 92007,
-              },
+              { withCode: 92007 },
+            );
+
+            // next mutation methods throw errors for non-LiveObjects
+            await expectToThrowAsync(
+              async () => primitivePathObj.batch(),
+              'Cannot batch operations on a non-LiveObject at path',
+              { withCode: 92007 },
             );
           },
         },
@@ -5294,6 +5212,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(compactValue).to.deep.equal(expected, 'Check complex nested structure is compacted correctly');
           },
         },
+
+        {
+          description: 'PathObject.batch() passes RootBatchContext to its batch function',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            await entryPathObject.batch((ctx) => {
+              expect(ctx, 'Check batch context exists').to.exist;
+              expectInstanceOf(ctx, 'RootBatchContext', 'Check batch context is of RootBatchContext type');
+            });
+          },
+        },
       ];
 
       const instanceScenarios = [
@@ -5691,12 +5621,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await expectToThrowAsync(
               async () => mapInstance.decrement(),
               'Cannot decrement a non-LiveCounter instance',
-              {
-                withCode: 92007,
-              },
+              { withCode: 92007 },
             );
 
-            // subscription mutation methods throw errors for non-LiveObjects
+            // next methods throw errors for non-LiveObjects
             expect(() => {
               primitiveInstance.subscribe(() => {});
             })
@@ -5707,6 +5635,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             })
               .to.throw('Cannot subscribe to a non-LiveObject instance')
               .with.property('code', 92007);
+            await expectToThrowAsync(
+              async () => primitiveInstance.batch(),
+              'Cannot batch operations on a non-LiveObject instance',
+              { withCode: 92007 },
+            );
           },
         },
 
@@ -6276,6 +6209,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               instanceCompact,
               'Check PathObject.compact() and DefaultInstance.compact() return equivalent results',
             );
+          },
+        },
+
+        {
+          description: 'DefaultInstance.batch() passes RootBatchContext to its batch function',
+          action: async (ctx) => {
+            const { entryInstance } = ctx;
+
+            await entryInstance.batch((ctx) => {
+              expect(ctx, 'Check batch context exists').to.exist;
+              expectInstanceOf(ctx, 'RootBatchContext', 'Check batch context is of RootBatchContext type');
+            });
           },
         },
       ];
@@ -7153,8 +7098,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }
       };
 
-      const expectWriteApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => realtimeObject.batch(), errorMsg);
+      const expectWriteApiToThrow = async ({ entryInstance, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => entryInstance.batch(), errorMsg);
 
         await expectToThrowAsync(async () => counter.increment(), errorMsg);
         await expectToThrowAsync(async () => counter.decrement(), errorMsg);
@@ -7169,46 +7114,42 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
-      const expectAccessBatchApiToThrow = ({ ctx, map, counter, errorMsg }) => {
+      const expectBatchContextAccessApiToThrow = ({ ctx, errorMsg }) => {
         expect(() => ctx.get()).to.throw(errorMsg);
-
-        expect(() => counter.value()).to.throw(errorMsg);
-
-        expect(() => map.get()).to.throw(errorMsg);
-        expect(() => map.size()).to.throw(errorMsg);
-        expect(() => [...map.entries()]).to.throw(errorMsg);
-        expect(() => [...map.keys()]).to.throw(errorMsg);
-        expect(() => [...map.values()]).to.throw(errorMsg);
+        expect(() => ctx.value()).to.throw(errorMsg);
+        expect(() => ctx.compact()).to.throw(errorMsg);
+        expect(() => ctx.id()).to.throw(errorMsg);
+        expect(() => [...ctx.entries()]).to.throw(errorMsg);
+        expect(() => [...ctx.keys()]).to.throw(errorMsg);
+        expect(() => [...ctx.values()]).to.throw(errorMsg);
+        expect(() => ctx.size()).to.throw(errorMsg);
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
-      const expectWriteBatchApiToThrow = ({ ctx, map, counter, errorMsg }) => {
-        expect(() => counter.increment()).to.throw(errorMsg);
-        expect(() => counter.decrement()).to.throw(errorMsg);
-
-        expect(() => map.set()).to.throw(errorMsg);
-        expect(() => map.remove()).to.throw(errorMsg);
+      const expectBatchContextWriteApiToThrow = ({ ctx, errorMsg }) => {
+        expect(() => ctx.set()).to.throw(errorMsg);
+        expect(() => ctx.remove()).to.throw(errorMsg);
+        expect(() => ctx.increment()).to.throw(errorMsg);
+        expect(() => ctx.decrement()).to.throw(errorMsg);
       };
 
       const clientConfigurationScenarios = [
         {
           description: 'public API throws missing object modes error when attached without correct modes',
           action: async (ctx) => {
-            const { realtimeObject, channel, map, counter } = ctx;
+            const { realtimeObject, entryInstance, channel, map, counter } = ctx;
 
             // obtain batch context with valid modes first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate missing modes
               channel.modes = [];
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_subscribe" channel mode' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
+              expectBatchContextAccessApiToThrow({ ctx, errorMsg: '"object_subscribe" channel mode' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
             await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_publish" channel mode' });
+            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
@@ -7216,41 +7157,37 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'public API throws missing object modes error when not yet attached but client options are missing correct modes',
           action: async (ctx) => {
-            const { realtimeObject, channel, map, counter, helper } = ctx;
+            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid modes first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate a situation where we're not yet attached/modes are not received on ATTACHED event
               channel.modes = undefined;
               helper.recordPrivateApi('write.channel.channelOptions.modes');
               channel.channelOptions.modes = [];
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_subscribe" channel mode' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
+              expectBatchContextAccessApiToThrow({ ctx, errorMsg: '"object_subscribe" channel mode' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
             await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_publish" channel mode' });
+            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel DETACHED',
           action: async (ctx) => {
-            const { realtimeObject, channel, map, counter, helper } = ctx;
+            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('detached');
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is detached' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is detached' });
+              expectBatchContextAccessApiToThrow({ ctx, errorMsg: 'failed as channel state is detached' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is detached' });
             });
 
             await expectAccessApiToThrow({
@@ -7260,7 +7197,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               errorMsg: 'failed as channel state is detached',
             });
             await expectWriteApiToThrow({
-              realtimeObject,
+              entryInstance,
               map,
               counter,
               errorMsg: 'failed as channel state is detached',
@@ -7271,18 +7208,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'public API throws invalid channel state error when channel FAILED',
           action: async (ctx) => {
-            const { realtimeObject, channel, map, counter, helper } = ctx;
+            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('failed');
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is failed' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is failed' });
+              expectBatchContextAccessApiToThrow({ ctx, errorMsg: 'failed as channel state is failed' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is failed' });
             });
 
             await expectAccessApiToThrow({
@@ -7292,7 +7227,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               errorMsg: 'failed as channel state is failed',
             });
             await expectWriteApiToThrow({
-              realtimeObject,
+              entryInstance,
               map,
               counter,
               errorMsg: 'failed as channel state is failed',
@@ -7303,21 +7238,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'public write API throws invalid channel state error when channel SUSPENDED',
           action: async (ctx) => {
-            const { realtimeObject, channel, map, counter, helper } = ctx;
+            const { entryInstance, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('suspended');
 
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is suspended' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is suspended' });
             });
 
             await expectWriteApiToThrow({
-              realtimeObject,
+              entryInstance,
               map,
               counter,
               errorMsg: 'failed as channel state is suspended',
@@ -7328,20 +7261,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'public write API throws invalid channel option when "echoMessages" is disabled',
           action: async (ctx) => {
-            const { realtimeObject, client, map, counter, helper } = ctx;
+            const { entryInstance, client, map, counter, helper } = ctx;
 
             // obtain batch context with valid client options first
-            await realtimeObject.batch((ctx) => {
-              const map = ctx.get().get('map');
-              const counter = ctx.get().get('counter');
+            await entryInstance.batch((ctx) => {
               // now simulate echoMessages was disabled
               helper.recordPrivateApi('write.realtime.options.echoMessages');
               client.options.echoMessages = false;
 
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"echoMessages" client option' });
+              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"echoMessages" client option' });
             });
 
-            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"echoMessages" client option' });
+            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"echoMessages" client option' });
           },
         },
       ];
@@ -7379,6 +7310,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             channelName,
             channel,
             root,
+            entryPathObject,
+            entryInstance,
             map,
             counter,
             helper,

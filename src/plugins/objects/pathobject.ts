@@ -2,9 +2,12 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
 import type {
   AnyPathObject,
+  BatchContext,
+  BatchFunction,
   CompactedValue,
   EventCallback,
   Instance,
+  LiveObject as LiveObjectType,
   PathObject,
   PathObjectSubscriptionEvent,
   PathObjectSubscriptionOptions,
@@ -17,6 +20,7 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { RealtimeObject } from './realtimeobject';
+import { RootBatchContext } from './rootbatchcontext';
 
 /**
  * Implementation of AnyPathObject interface.
@@ -181,15 +185,7 @@ export class DefaultPathObject implements AnyPathObject {
 
   instance<T extends Value = Value>(): Instance<T> | undefined {
     try {
-      const value = this._resolvePath(this._path);
-
-      if (value instanceof LiveObject) {
-        // only return an Instance for LiveObject values
-        return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
-      }
-
-      // return undefined for non live objects
-      return undefined;
+      return this._resolveInstance();
     } catch (error) {
       if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
         // ignore path resolution errors and return undefined
@@ -231,8 +227,21 @@ export class DefaultPathObject implements AnyPathObject {
    * Returns an iterator of keys for LiveMap entries
    */
   *keys<U extends Record<string, Value>>(): IterableIterator<keyof U> {
-    for (const [key] of this.entries<U>()) {
-      yield key;
+    try {
+      const resolved = this._resolvePath(this._path);
+      if (!(resolved instanceof LiveMap)) {
+        // return empty iterator for non-LiveMap objects
+        return;
+      }
+
+      yield* resolved.keys();
+    } catch (error) {
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
+        // ignore path resolution errors and return empty iterator
+        return;
+      }
+      // rethrow everything else
+      throw error;
     }
   }
 
@@ -354,6 +363,25 @@ export class DefaultPathObject implements AnyPathObject {
     });
   }
 
+  async batch<T extends LiveObjectType = LiveObjectType>(fn: BatchFunction<T>): Promise<void> {
+    const instance = this._resolveInstance();
+    if (!instance) {
+      throw new this._client.ErrorInfo(
+        `Cannot batch operations on a non-LiveObject at path: ${this._escapePath(this._path).join('.')}`,
+        92007,
+        400,
+      );
+    }
+
+    const ctx = new RootBatchContext(this._realtimeObject, instance);
+    try {
+      fn(ctx as unknown as BatchContext<T>);
+      await ctx.flush();
+    } finally {
+      ctx.close();
+    }
+  }
+
   private _resolvePath(path: string[]): Value {
     // TODO: remove type assertion when internal LiveMap is updated to support new path based type system
     let current: Value = this._root as unknown as API.LiveMap;
@@ -383,6 +411,18 @@ export class DefaultPathObject implements AnyPathObject {
     }
 
     return current;
+  }
+
+  private _resolveInstance<T extends Value = Value>(): Instance<T> | undefined {
+    const value = this._resolvePath(this._path);
+
+    if (value instanceof LiveObject) {
+      // only return an Instance for LiveObject values
+      return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
+    }
+
+    // return undefined for non live objects
+    return undefined;
   }
 
   private _escapePath(path: string[]): string[] {
