@@ -341,6 +341,7 @@ async function checkObjectsPluginFiles() {
     'src/plugins/objects/pathobject.ts',
     'src/plugins/objects/pathobjectsubscriptionregister.ts',
     'src/plugins/objects/realtimeobject.ts',
+    'src/plugins/objects/restobject.ts',
     'src/plugins/objects/rootbatchcontext.ts',
     'src/plugins/objects/syncobjectsdatapool.ts',
   ]);
