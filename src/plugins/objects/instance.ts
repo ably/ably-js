@@ -1,10 +1,13 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type {
   AnyInstance,
+  BatchContext,
+  BatchFunction,
   CompactedValue,
   EventCallback,
   Instance,
   InstanceSubscriptionEvent,
+  LiveObject as LiveObjectType,
   Primitive,
   SubscribeResponse,
   Value,
@@ -14,6 +17,7 @@ import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { ObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
+import { RootBatchContext } from './rootbatchcontext';
 
 export interface InstanceEvent {
   /** Object message that caused this event */
@@ -112,9 +116,12 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   *keys<U extends Record<string, Value>>(): IterableIterator<keyof U> {
-    for (const [key] of this.entries<U>()) {
-      yield key;
+    if (!(this._value instanceof LiveMap)) {
+      // return empty iterator for non-LiveMap objects
+      return;
     }
+
+    yield* this._value.keys();
   }
 
   *values<U extends Record<string, Value>>(): IterableIterator<Instance<U[keyof U]>> {
@@ -182,5 +189,31 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
       const { unsubscribe } = this.subscribe(listener);
       return unsubscribe;
     });
+  }
+
+  async batch<T extends LiveObjectType = LiveObjectType>(fn: BatchFunction<T>): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
+    if (!(this._value instanceof LiveObject)) {
+      throw new this._client.ErrorInfo('Cannot batch operations on a non-LiveObject instance', 92007, 400);
+    }
+
+    const ctx = new RootBatchContext(this._realtimeObject, this);
+    try {
+      fn(ctx as unknown as BatchContext<T>);
+      await ctx.flush();
+    } finally {
+      ctx.close();
+    }
+  }
+
+  /** @internal */
+  public isLiveMap(): boolean {
+    return this._value instanceof LiveMap;
+  }
+
+  /** @internal */
+  public isLiveCounter(): boolean {
+    return this._value instanceof LiveCounter;
   }
 }

@@ -2,7 +2,6 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
-import { BatchContext } from './batchcontext';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
@@ -35,8 +34,6 @@ export type ObjectsEventCallback = () => void;
 export interface OnObjectsEventResponse {
   off(): void;
 }
-
-export type BatchCallback = (batchContext: BatchContext) => void;
 
 export class RealtimeObject {
   gcGracePeriod: number;
@@ -105,23 +102,6 @@ export class RealtimeObject {
 
     const pathObject = new DefaultPathObject(this, this._objectsPool.getRoot(), []);
     return pathObject;
-  }
-
-  /**
-   * Provides access to the synchronous write API for Objects that can be used to batch multiple operations together in a single channel message.
-   */
-  async batch(callback: BatchCallback): Promise<void> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const root = await this.get();
-    const context = new BatchContext(this, root);
-
-    try {
-      callback(context);
-      await context.flush();
-    } finally {
-      context.close();
-    }
   }
 
   on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
