@@ -2314,30 +2314,24 @@ export declare interface RealtimeObject {
   /**
    * Retrieves a {@link PathObject} for the object on a channel.
    *
-   * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
-   *
-   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with an `object` property that conforms to Record<string, {@link Value}> type.
+   * A type parameter can be provided to describe the structure of the Objects on the channel.
    *
    * Example:
    *
    * ```typescript
-   * import { LiveCounter } from 'ably/objects';
+   * import { LiveCounter } from 'ably';
    *
    * type MyObject = {
    *   myTypedCounter: LiveCounter;
    * };
    *
-   * declare global {
-   *   export interface AblyObjectsTypes {
-   *     object: MyObject;
-   *   }
-   * }
+   * const myTypedObject = await channel.object.get<MyObject>();
    * ```
    *
    * @returns A promise which, upon success, will be fulfilled with a {@link PathObject}. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  get<T extends Record<string, Value> = AblyDefaultObject>(): Promise<PathObject<LiveMap<T>>>;
+  get<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
 
   /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
@@ -2467,31 +2461,6 @@ export type CompactedValue<T extends Value> =
                     : [T] extends [Primitive | undefined]
                       ? T
                       : any;
-
-declare global {
-  /**
-   * A globally defined interface that allows users to define custom types for Objects.
-   */
-  export interface AblyObjectsTypes {
-    [key: string]: unknown;
-  }
-}
-
-/**
- * The default type for the channel object return from the {@link RealtimeObject.get}, based on the globally defined {@link AblyObjectsTypes} interface.
- *
- * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped map representation using the Record<string, {@link Value}> type.
- * - If an `object` key exists in `AblyObjectsTypes` and its type conforms to the Record<string, {@link Value}>, it is used as the type for the object returned from the {@link RealtimeObject.get}.
- * - If the provided type in `object` key does not match Record<string, {@link Value}>, a type error message is returned.
- */
-export type AblyDefaultObject =
-  // we need a way to know when no types were provided by the user.
-  // we expect an "object" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
-  unknown extends AblyObjectsTypes['object']
-    ? Record<string, Value> // no custom types provided; use the default untyped map representation for the entrypoint map
-    : AblyObjectsTypes['object'] extends Record<string, Value>
-      ? AblyObjectsTypes['object'] // "object" property exists, and it is of an expected type, we can use this interface for the entrypoint map
-      : `Provided type definition for the channel \`object\` in AblyObjectsTypes is not of an expected Record<string, Value> type`;
 
 /**
  * PathObjectBase defines the set of common methods on a PathObject

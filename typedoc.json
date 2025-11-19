@@ -20,6 +20,5 @@
     "TypeAlias",
     "Variable",
     "Namespace"
-  ],
-  "intentionallyNotExported": ["__global.AblyObjectsTypes"]
+  ]
 }
