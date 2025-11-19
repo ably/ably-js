@@ -79,7 +79,7 @@ export class RealtimeObject {
    * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
    */
-  async get<T extends Record<string, API.Value> = API.AblyDefaultObject>(): Promise<API.PathObject<API.LiveMap<T>>> {
+  async get<T extends Record<string, API.Value>>(): Promise<API.PathObject<API.LiveMap<T>>> {
     this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
