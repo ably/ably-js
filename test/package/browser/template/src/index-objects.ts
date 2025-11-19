@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { LiveCounterDeprecated, LiveMapDeprecated } from 'ably';
+import { LiveCounter, LiveMap } from 'ably';
 import Objects from 'ably/objects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
@@ -14,13 +14,13 @@ type MyCustomObject = {
   stringKey: string;
   booleanKey: boolean;
   couldBeUndefined?: string;
-  mapKey: LiveMapDeprecated<{
+  mapKey: LiveMap<{
     foo: 'bar';
-    nestedMap?: LiveMapDeprecated<{
+    nestedMap?: LiveMap<{
       baz: 'qux';
     }>;
   }>;
-  counterKey: LiveCounterDeprecated;
+  counterKey: LiveCounter;
 };
 
 declare global {
@@ -39,57 +39,40 @@ globalThis.testAblyPackage = async function () {
   const realtime = new Ably.Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { Objects } });
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-  // check Objects can be accessed
   await channel.attach();
-  // expect entrypoint to be a LiveMap instance with Objects types defined via the global AblyObjectsTypes interface
-  // also checks that we can refer to the Objects types exported from 'ably' by referencing a LiveMap interface
-  const myObject: LiveMapDeprecated<MyCustomObject> = await channel.object.get();
+  // check Objects can be accessed.
+  // expect entrypoint to be a PathObject for a LiveMap instance with Object type defined via the global AblyObjectsTypes interface.
+  // also checks that we can refer to the Objects types exported from 'ably'.
+  const myObject: Ably.PathObject<LiveMap<MyCustomObject>> = await channel.object.get();
 
   // check entrypoint has expected LiveMap TypeScript type methods
-  const size: number = myObject.size();
+  const size: number | undefined = myObject.size();
 
   // check custom user provided typings via AblyObjectsTypes are working:
-  // any LiveMap.get() call can return undefined, as the LiveMap itself can be tombstoned (has empty state),
-  // or referenced object is tombstoned.
-  // keys on the entrypoint:
-  const aNumber: number | undefined = myObject.get('numberKey');
-  const aString: string | undefined = myObject.get('stringKey');
-  const aBoolean: boolean | undefined = myObject.get('booleanKey');
-  const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined');
+  const aNumber: number | undefined = myObject.get('numberKey').value();
+  const aString: string | undefined = myObject.get('stringKey').value();
+  const aBoolean: boolean | undefined = myObject.get('booleanKey').value();
+  const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined').value();
   // objects on the entrypoint:
-  const counter: LiveCounterDeprecated | undefined = myObject.get('counterKey');
-  const map: AblyObjectsTypes['object']['mapKey'] | undefined = myObject.get('mapKey');
+  const counter: Ably.LiveCounterPathObject = myObject.get('counterKey');
+  const map: Ably.LiveMapPathObject<MyCustomObject['mapKey']> = myObject.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the entrypoint object,
   // so the next calls would fail. we only need to check that TypeScript types work
-  const foo: 'bar' = map?.get('foo')!;
-  const baz: 'qux' = map?.get('nestedMap')?.get('baz')!;
+  const foo: 'bar' = map?.get('foo')?.value()!;
+  const baz: 'qux' = map?.get('nestedMap')?.get('baz')?.value()!;
+  // check LiveCounter type also behaves as expected
+  const value: number = counter?.value()!;
 
-  // check LiveMap subscription callback has correct TypeScript types
-  const { unsubscribe } = myObject.subscribe(({ update }) => {
-    // check update object infers keys from map type
-    const typedKeyOnMap = update.stringKey;
-    switch (typedKeyOnMap) {
-      case 'removed':
-      case 'updated':
-      case undefined:
-        break;
-      default:
-        // check all possible types are exhausted
-        const shouldExhaustAllTypes: never = typedKeyOnMap;
-    }
+  // check subscription callback has correct TypeScript types
+  const { unsubscribe } = myObject.subscribe(({ object, message }) => {
+    const typedObject: Ably.AnyPathObject = object;
+    const typedMessage: Ably.ObjectMessage | undefined = message;
   });
   unsubscribe();
 
-  // check LiveCounter type also behaves as expected
-  // same deal with nullish coalescing
-  const value: number = counter?.value()!;
-  const counterSubscribeResponse = counter?.subscribe(({ update }) => {
-    const shouldBeANumber: number = update.amount;
-  });
-  counterSubscribeResponse?.unsubscribe();
-
   // check can provide custom types for the object.get() method, ignoring global AblyObjectsTypes interface
-  const explicitObjectType: LiveMapDeprecated<ExplicitObjectType> = await channel.object.get<ExplicitObjectType>();
-  const someOtherKey: string | undefined = explicitObjectType.get('someOtherKey');
+  const explicitObjectType: Ably.PathObject<LiveMap<ExplicitObjectType>> =
+    await channel.object.get<ExplicitObjectType>();
+  const someOtherKey: string | undefined = explicitObjectType.get('someOtherKey').value();
 };

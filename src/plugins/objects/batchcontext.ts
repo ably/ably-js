@@ -81,7 +81,7 @@ export class DefaultBatchContext implements AnyBatchContext {
       throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 92007, 400);
     }
     this._rootContext.queueMessages(async () =>
-      LiveMap.createMapSetMessage(this._realtimeObject, this._instance.id()!, key, value as Primitive),
+      LiveMap.createMapSetMessage(this._realtimeObject, this._instance.id()!, key, value),
     );
   }
 
