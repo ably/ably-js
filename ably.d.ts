@@ -2838,18 +2838,18 @@ export declare interface Channel {
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the updated message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which on success will be fulfilled, and on failure, rejected with an {@link ErrorInfo} object which explains the error.
    */
-  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<void>;
   /**
    * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the deleted message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which on success will be fulfilled, and on failure, rejected with an {@link ErrorInfo} object which explains the error.
    */
-  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<void>;
   /**
    * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
    *
@@ -3086,18 +3086,18 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the updated message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which on success will be fulfilled, and on failure, rejected with an {@link ErrorInfo} object which explains the error.
    */
-  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<void>;
   /**
    * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the deleted message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which on success will be fulfilled, and on failure, rejected with an {@link ErrorInfo} object which explains the error.
    */
-  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<void>;
   /**
    * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
    *

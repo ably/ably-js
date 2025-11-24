@@ -105,7 +105,7 @@ export class RestChannelMixin {
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<Message> {
+  ): Promise<void> {
     if (!message.serial) {
       throw new ErrorInfo(
         'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
@@ -137,7 +137,7 @@ export class RestChannelMixin {
 
     const method = opts.isDelete ? Resource.post : Resource.patch;
     const pathSuffix = opts.isDelete ? '/delete' : '';
-    const { body, unpacked } = await method<WireMessage>(
+    await method<WireMessage>(
       client,
       this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial) + pathSuffix,
       requestBody,
@@ -146,9 +146,6 @@ export class RestChannelMixin {
       null,
       true,
     );
-
-    const decoded = unpacked ? body! : Utils.decodeBody<WireMessage>(body, client._MsgPack, format);
-    return _fromEncoded(decoded, channel);
   }
 
   static getMessageVersions(
