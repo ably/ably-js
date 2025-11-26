@@ -1,5 +1,4 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type * as API from '../../../ably';
 import { ROOT_OBJECT_ID } from './constants';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
@@ -31,8 +30,8 @@ export class ObjectsPool {
     return this._pool.get(objectId);
   }
 
-  getRoot<T extends API.LiveMapType = API.AblyDefaultObject>(): LiveMap<T> {
-    return this._pool.get(ROOT_OBJECT_ID) as LiveMap<T>;
+  getRoot(): LiveMap {
+    return this._pool.get(ROOT_OBJECT_ID) as LiveMap;
   }
 
   /**

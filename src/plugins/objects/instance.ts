@@ -9,7 +9,7 @@ import type {
   InstanceSubscriptionEvent,
   LiveObject as LiveObjectType,
   Primitive,
-  SubscribeResponse,
+  Subscription,
   Value,
 } from '../../../ably';
 import { LiveCounter } from './livecounter';
@@ -169,11 +169,11 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     return this._value.decrement(amount ?? 1);
   }
 
-  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): SubscribeResponse {
+  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): Subscription {
     if (!(this._value instanceof LiveObject)) {
       throw new this._client.ErrorInfo('Cannot subscribe to a non-LiveObject instance', 92007, 400);
     }
-    return this._value.instanceSubscribe((event: InstanceEvent) => {
+    return this._value.subscribe((event: InstanceEvent) => {
       listener({
         object: this as unknown as Instance<T>,
         message: event.message?.toUserFacingMessage(this._realtimeObject.getChannel()),
