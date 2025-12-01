@@ -23,16 +23,6 @@ type MyCustomObject = {
   counterKey: LiveCounter;
 };
 
-declare global {
-  export interface AblyObjectsTypes {
-    object: MyCustomObject;
-  }
-}
-
-type ExplicitObjectType = {
-  someOtherKey: string;
-};
-
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
@@ -40,20 +30,20 @@ globalThis.testAblyPackage = async function () {
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   await channel.attach();
-  // check Objects can be accessed.
-  // expect entrypoint to be a PathObject for a LiveMap instance with Object type defined via the global AblyObjectsTypes interface.
-  // also checks that we can refer to the Objects types exported from 'ably'.
-  const myObject: Ably.PathObject<LiveMap<MyCustomObject>> = await channel.object.get();
+  // check Objects can be accessed on a channel with a custom type parameter.
+  // check that we can refer to the Objects types exported from 'ably' by referencing a LiveMap interface.
+  const myObject: Ably.PathObject<LiveMap<MyCustomObject>> = await channel.object.get<MyCustomObject>();
 
   // check entrypoint has expected LiveMap TypeScript type methods
   const size: number | undefined = myObject.size();
 
-  // check custom user provided typings via AblyObjectsTypes are working:
+  // check custom user provided typings work:
+  // primitives:
   const aNumber: number | undefined = myObject.get('numberKey').value();
   const aString: string | undefined = myObject.get('stringKey').value();
   const aBoolean: boolean | undefined = myObject.get('booleanKey').value();
   const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined').value();
-  // objects on the entrypoint:
+  // objects:
   const counter: Ably.LiveCounterPathObject = myObject.get('counterKey');
   const map: Ably.LiveMapPathObject<MyCustomObject['mapKey']> = myObject.get('mapKey');
   // check string literal types works
@@ -70,9 +60,4 @@ globalThis.testAblyPackage = async function () {
     const typedMessage: Ably.ObjectMessage | undefined = message;
   });
   unsubscribe();
-
-  // check can provide custom types for the object.get() method, ignoring global AblyObjectsTypes interface
-  const explicitObjectType: Ably.PathObject<LiveMap<ExplicitObjectType>> =
-    await channel.object.get<ExplicitObjectType>();
-  const someOtherKey: string | undefined = explicitObjectType.get('someOtherKey').value();
 };
