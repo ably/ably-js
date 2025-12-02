@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.15.0](https://github.com/ably/ably-js/tree/2.15.0)
+
+- Implement `client.clientId` attribute as a shortcut for `client.auth.clientId` [#2100](https://github.com/ably/ably-js/pull/2100)
+- Add support for updating and deleting messages (REST-only for now) [#2088](https://github.com/ably/ably-js/pull/2088)
+
 ## [2.14.0](https://github.com/ably/ably-js/tree/2.14.0) (2025-09-29)
 
 - Add `clipped` field to annotation summary types [#2078](https://github.com/ably/ably-js/pull/2078)
