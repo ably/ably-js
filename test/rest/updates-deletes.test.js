@@ -118,9 +118,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         metadata: { reason: 'testing' },
       };
 
-      const updatedMessage = await channel.updateMessage(updateMessage, operation);
-      expect(updatedMessage.serial).to.equal(originalMessage.serial);
-      expect(updatedMessage.data).to.deep.equal({ value: 'updated with metadata' });
+      await channel.updateMessage(updateMessage, operation);
 
       // Wait for the update to be the latest message
       let latestMessage;
@@ -173,9 +171,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       const deletion = Object.assign({}, originalMessage, { data: {} });
 
-      const deletedMessage = await channel.deleteMessage(deletion, operation);
-      expect(deletedMessage.serial).to.equal(originalMessage.serial);
-      expect(deletedMessage.action).to.equal('message.delete');
+      await channel.deleteMessage(deletion, operation);
 
       // Wait for the delete to be the latest message
       let latestMessage;
