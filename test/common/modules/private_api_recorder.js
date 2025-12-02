@@ -103,6 +103,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.connectionManager.connectionId',
     'read.connectionManager.connectionStateTtl',
     'read.connectionManager.domains',
+    'read.connectionManager.queuedMessages',
     'read.connectionManager.msgSerial',
     'read.connectionManager.options',
     'read.connectionManager.options.timeouts.httpMaxRetryDuration',
