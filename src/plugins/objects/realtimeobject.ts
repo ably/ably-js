@@ -80,7 +80,10 @@ export class RealtimeObject {
    * This is useful when working with multiple channels with different underlying data structure.
    */
   async get<T extends Record<string, API.Value>>(): Promise<API.PathObject<API.LiveMap<T>>> {
-    this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
+    this._throwIfMissingChannelMode('object_subscribe');
+
+    // implicit attach before proceeding
+    await this._channel.ensureAttached();
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
