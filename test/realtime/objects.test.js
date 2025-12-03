@@ -5518,5 +5518,203 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         expect(channel.modes).to.deep.equal(objectsModes, 'Check expected modes');
       }, client);
     });
+
+    /** @nospec */
+    describe('Sync events', () => {
+      /**
+       * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
+       */
+      async function injectAttachedMessage(helper, channel, hasObjects) {
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
+        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+        const transport = channel.client.connection.connectionManager.activeProtocol.getTransport();
+        const pm = createPM({
+          action: 11, // ATTACHED
+          channel: channel.name,
+          flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
+        });
+        await transport.onProtocolMessage(pm);
+      }
+
+      const syncEventsScenarios = [
+        // 1. ATTACHED with HAS_OBJECTS false
+
+        {
+          description:
+            'The first ATTACHED should always provoke a SYNCING even when HAS_OBJECTS is false, so that the SYNCED is preceded by SYNCING',
+          channelEvents: [{ type: 'attached', hasObjects: false }],
+          expectedSyncEvents: ['syncing', 'synced'],
+        },
+
+        {
+          description: 'ATTACHED with HAS_OBJECTS false once SYNCED should not provoke further events',
+          channelEvents: [
+            { type: 'attached', hasObjects: false },
+            { type: 'attached', hasObjects: false },
+          ],
+          expectedSyncEvents: ['syncing', 'synced'],
+        },
+
+        {
+          description:
+            "If we're in SYNCING awaiting an OBJECT_SYNC but then instead get an ATTACHED with HAS_OBJECTS false, we should emit a SYNCED",
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'attached', hasObjects: false },
+          ],
+          expectedSyncEvents: ['syncing', 'synced'],
+        },
+
+        // 2. ATTACHED with HAS_OBJECTS true
+
+        {
+          description: 'An initial ATTACHED with HAS_OBJECTS true provokes a SYNCING',
+          channelEvents: [{ type: 'attached', hasObjects: true }],
+          expectedSyncEvents: ['syncing'],
+        },
+
+        {
+          description:
+            "ATTACHED with HAS_OBJECTS true when SYNCED should provoke another SYNCING, because we're waiting to receive the updated objects in an OBJECT_SYNC",
+          channelEvents: [
+            { type: 'attached', hasObjects: false },
+            { type: 'attached', hasObjects: true },
+          ],
+          expectedSyncEvents: ['syncing', 'synced', 'syncing'],
+        },
+
+        {
+          description:
+            "If we're in SYNCING awaiting an OBJECT_SYNC but then instead get another ATTACHED with HAS_OBJECTS true, we should remain SYNCING (i.e. not emit another event)",
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'attached', hasObjects: true },
+          ],
+          expectedSyncEvents: ['syncing'],
+        },
+
+        // 3. OBJECT_SYNC straight after ATTACHED
+
+        {
+          description: 'A complete multi-message OBJECT_SYNC sequence after ATTACHED emits SYNCING and then SYNCED',
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'objectSync', channelSerial: 'foo:1' },
+            { type: 'objectSync', channelSerial: 'foo:2' },
+            { type: 'objectSync', channelSerial: 'foo:' },
+          ],
+          expectedSyncEvents: ['syncing', 'synced'],
+        },
+
+        {
+          description: 'A complete single-message OBJECT_SYNC after ATTACHED emits SYNCING and then SYNCED',
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'objectSync', channelSerial: 'foo:' },
+          ],
+          expectedSyncEvents: ['syncing', 'synced'],
+        },
+
+        {
+          description: 'SYNCED is not emitted midway through a multi-message OBJECT_SYNC sequence',
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'objectSync', channelSerial: 'foo:1' },
+            { type: 'objectSync', channelSerial: 'foo:2' },
+          ],
+          expectedSyncEvents: ['syncing'],
+        },
+
+        // 4. OBJECT_SYNC when already SYNCED
+
+        {
+          description:
+            'A complete multi-message OBJECT_SYNC sequence when already SYNCED emits SYNCING and then SYNCED',
+          channelEvents: [
+            { type: 'attached', hasObjects: false }, // to get us to SYNCED
+            { type: 'objectSync', channelSerial: 'foo:1' },
+            { type: 'objectSync', channelSerial: 'foo:2' },
+            { type: 'objectSync', channelSerial: 'foo:' },
+          ],
+          expectedSyncEvents: [
+            'syncing',
+            'synced', // The initial SYNCED
+            'syncing',
+            'synced', // From the complete OBJECT_SYNC
+          ],
+        },
+
+        {
+          description: 'A complete single-message OBJECT_SYNC when already SYNCED emits SYNCING and then SYNCED',
+          channelEvents: [
+            { type: 'attached', hasObjects: false }, // to get us to SYNCED
+            { type: 'objectSync', channelSerial: 'foo:' },
+          ],
+          expectedSyncEvents: [
+            'syncing',
+            'synced', // The initial SYNCED
+            'syncing',
+            'synced', // From the complete OBJECT_SYNC
+          ],
+        },
+
+        // 5. New sync sequence in the middle of a sync sequence
+
+        {
+          description: 'A new OBJECT_SYNC sequence in the middle of a sync sequence does not provoke another SYNCING',
+          channelEvents: [
+            { type: 'attached', hasObjects: true },
+            { type: 'objectSync', channelSerial: 'foo:1' },
+            { type: 'objectSync', channelSerial: 'foo:2' },
+            { type: 'objectSync', channelSerial: 'bar:1' },
+          ],
+          expectedSyncEvents: ['syncing'],
+        },
+      ];
+
+      forScenarios(this, syncEventsScenarios, async function (helper, scenario, clientOptions, channelName) {
+        const client = RealtimeWithObjects(helper, clientOptions);
+        const objectsHelper = new ObjectsHelper(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          await client.connection.whenState('connected');
+
+          // Note that we don't attach the channel, so that the only ProtocolMessages the channel receives are those specified by the test scenario.
+
+          const channel = client.channels.get(channelName, channelOptionsWithObjects());
+          const objects = channel.objects;
+
+          // Track received sync events
+          const receivedSyncEvents = [];
+
+          // Subscribe to syncing and synced events
+          objects.on('syncing', () => {
+            receivedSyncEvents.push('syncing');
+          });
+          objects.on('synced', () => {
+            receivedSyncEvents.push('synced');
+          });
+
+          // Apply the sequence of channel events described by the scenario
+          for (const channelEvent of scenario.channelEvents) {
+            if (channelEvent.type === 'attached') {
+              await injectAttachedMessage(helper, channel, channelEvent.hasObjects);
+            } else if (channelEvent.type === 'objectSync') {
+              await objectsHelper.processObjectStateMessageOnChannel({
+                channel,
+                syncSerial: channelEvent.channelSerial,
+              });
+            }
+          }
+
+          // Verify the expected sequence of sync events
+          expect(receivedSyncEvents).to.deep.equal(
+            scenario.expectedSyncEvents,
+            'Check sync events match expected sequence',
+          );
+        }, client);
+      });
+    });
   });
 });
