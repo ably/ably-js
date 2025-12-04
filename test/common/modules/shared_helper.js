@@ -382,16 +382,15 @@ define([
     static testOnJsonMsgpack(testName, testFn, skip, only) {
       const itFn = skip ? it.skip : only ? it.only : it;
 
-      itFn(testName + ' with binary protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(testName);
-        const channelName = testName + ' binary';
-        await testFn({ useBinaryProtocol: true }, channelName, helper);
-      });
-      itFn(testName + ' with text protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(testName);
-        const channelName = testName + ' text';
-        await testFn({ useBinaryProtocol: false }, channelName, helper);
-      });
+      function createTest(options, channelName) {
+        return async function () {
+          this.test.helper = this.test.helper.withParameterisedTestTitle(testName);
+          return testFn.apply(this, [options, channelName, this.test.helper]);
+        };
+      }
+
+      itFn(testName + ' with binary protocol', createTest({ useBinaryProtocol: true }, `${testName} binary`));
+      itFn(testName + ' with text protocol', createTest({ useBinaryProtocol: false }, `${testName} text`));
     }
 
     clearTransportPreference() {
