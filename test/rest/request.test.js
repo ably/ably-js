@@ -28,17 +28,24 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RSC7e - tests providing a version value in .request parameters
      * @specpartial CSV2c - tests version is provided in http requests
      */
-    Helper.testOnJsonMsgpack('request_version', function (options, _, helper) {
+    Helper.testOnJsonMsgpack('request_version', async function (options, _, helper) {
       const rest = helper.AblyRest(options);
       const version = 150; // arbitrarily chosen
+
+      let savedResolve;
+      let savedReject;
+      let promise = new Promise((res, rej) => {
+        savedResolve = res;
+        savedReject = rej;
+      });
 
       async function testRequestHandler(_, __, headers) {
         try {
           expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
           expect(headers['X-Ably-Version']).to.equal(version.toString(), 'Verify version number sent in request');
-          done();
-        } catch (err) {
-          done(err);
+          savedResolve();
+        } catch (error) {
+          savedReject(error);
         }
         return new Promise(() => {});
       }
@@ -47,6 +54,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       rest.http.do = testRequestHandler;
 
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
+      await promise;
     });
 
     /**
