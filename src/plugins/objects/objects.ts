@@ -235,9 +235,7 @@ export class Objects {
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
-      // defer the state change event until the next tick if this was a new sync sequence
-      // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      this._endSync(newSyncSequence);
+      this._endSync();
     }
   }
 
@@ -270,8 +268,7 @@ export class Objects {
     );
 
     // RTO4a
-    const fromInitializedState = this._state === ObjectsState.initialized;
-    if (hasObjects || fromInitializedState) {
+    if (hasObjects || this._state == ObjectsState.initialized) {
       // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
       // this guarantees we emit both "syncing" -> "synced" events in that order.
       this._startNewSync();
@@ -283,9 +280,7 @@ export class Objects {
       // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
       this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
       this._syncObjectsDataPool.clear(); // RTO4b3
-      // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
-      // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      this._endSync(fromInitializedState); // RTO4b4
+      this._endSync(); // RTO4b4
     }
   }
 
@@ -350,11 +345,11 @@ export class Objects {
     this._syncObjectsDataPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
-    this._stateChange(ObjectsState.syncing, false);
+    this._stateChange(ObjectsState.syncing);
   }
 
   /** @spec RTO5c */
-  private _endSync(deferStateEvent: boolean): void {
+  private _endSync(): void {
     this._applySync();
     // should apply buffered object operations after we applied the sync.
     // can use regular object messages application logic
@@ -364,7 +359,7 @@ export class Objects {
     this._syncObjectsDataPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
-    this._stateChange(ObjectsState.synced, deferStateEvent);
+    this._stateChange(ObjectsState.synced);
   }
 
   private _parseSyncChannelSerial(syncChannelSerial: string | null | undefined): {
@@ -489,7 +484,7 @@ export class Objects {
     }
   }
 
-  private _stateChange(state: ObjectsState, deferEvent: boolean): void {
+  private _stateChange(state: ObjectsState): void {
     if (this._state === state) {
       return;
     }
@@ -500,15 +495,8 @@ export class Objects {
       return;
     }
 
-    if (deferEvent) {
-      this._client.Platform.Config.nextTick(() => {
-        this._eventEmitterInternal.emit(event);
-        this._eventEmitterPublic.emit(event);
-      });
-    } else {
-      this._eventEmitterInternal.emit(event);
-      this._eventEmitterPublic.emit(event);
-    }
+    this._eventEmitterInternal.emit(event);
+    this._eventEmitterPublic.emit(event);
   }
 
   private _throwIfInChannelState(channelState: API.ChannelState[]): void {
