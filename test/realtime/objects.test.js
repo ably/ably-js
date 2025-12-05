@@ -5102,6 +5102,75 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          description: 'PathObject.compact() handles cyclic references',
+          action: async (ctx) => {
+            const { objectsHelper, channelName, entryInstance, entryPathObject } = ctx;
+
+            // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
+            // root -> map1 -> map2 -> map1 (back reference)
+
+            const { objectId: map1Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { foo: { string: 'bar' } } }),
+            );
+            const { objectId: map2Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { baz: { number: 42 } } }),
+            );
+
+            // Set up the cyclic references
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map1');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: 'root',
+                key: 'map1',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1'), 'map2');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map1Id,
+                key: 'map2',
+                value: { objectId: map2Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1').get('map2'), 'map1BackRef');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map2Id,
+                key: 'map1BackRef',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            // Test that compact() handles cyclic references correctly
+            const compactEntry = entryPathObject.compact();
+
+            expect(compactEntry).to.exist;
+            expect(compactEntry.map1).to.exist;
+            expect(compactEntry.map1.foo).to.equal('bar', 'Check primitive value is preserved');
+            expect(compactEntry.map1.map2).to.exist;
+            expect(compactEntry.map1.map2.baz).to.equal(42, 'Check nested primitive value is preserved');
+            expect(compactEntry.map1.map2.map1BackRef).to.exist;
+
+            // The back reference should point to the same object reference
+            expect(compactEntry.map1.map2.map1BackRef).to.equal(
+              compactEntry.map1,
+              'Check cyclic reference returns the same memoized result object',
+            );
+          },
+        },
+
+        {
           description: 'PathObject.batch() passes RootBatchContext to its batch function',
           action: async (ctx) => {
             const { entryPathObject } = ctx;
@@ -6084,6 +6153,75 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(pathCompact).to.deep.equal(
               instanceCompact,
               'Check PathObject.compact() and DefaultInstance.compact() return equivalent results',
+            );
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() handles cyclic references',
+          action: async (ctx) => {
+            const { objectsHelper, channelName, entryInstance } = ctx;
+
+            // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
+            // root -> map1 -> map2 -> map1 (back reference)
+
+            const { objectId: map1Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { foo: { string: 'bar' } } }),
+            );
+            const { objectId: map2Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { baz: { number: 42 } } }),
+            );
+
+            // Set up the cyclic references
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map1');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: 'root',
+                key: 'map1',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1'), 'map2');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map1Id,
+                key: 'map2',
+                value: { objectId: map2Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1').get('map2'), 'map1BackRef');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map2Id,
+                key: 'map1BackRef',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            // Test that compact() handles cyclic references correctly
+            const compactEntry = entryInstance.compact();
+
+            expect(compactEntry).to.exist;
+            expect(compactEntry.map1).to.exist;
+            expect(compactEntry.map1.foo).to.equal('bar', 'Check primitive value is preserved');
+            expect(compactEntry.map1.map2).to.exist;
+            expect(compactEntry.map1.map2.baz).to.equal(42, 'Check nested primitive value is preserved');
+            expect(compactEntry.map1.map2.map1BackRef).to.exist;
+
+            // The back reference should point to the same object reference
+            expect(compactEntry.map1.map2.map1BackRef).to.equal(
+              compactEntry.map1,
+              'Check cyclic reference returns the same memoized result object',
             );
           },
         },

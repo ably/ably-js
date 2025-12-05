@@ -492,17 +492,28 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
   /**
    * Returns a plain JavaScript object representation of this LiveMap.
    * LiveMap values are recursively compacted using their own compact methods.
+   * Compacted LiveMaps are memoized to handle cyclic references.
    * Buffers are converted to base64 strings.
    *
    * @internal
    */
-  compact(): API.CompactedValue<API.LiveMap<T>> {
+  compact(memoizedObjects?: Map<string, Record<string, any>>): API.CompactedValue<API.LiveMap<T>> {
+    const memo = memoizedObjects ?? new Map<string, Record<string, any>>();
     const result: Record<keyof T, any> = {} as Record<keyof T, any>;
+
+    // Memoize the compacted result to handle circular references
+    memo.set(this.getObjectId(), result);
 
     // Use public entries() method to ensure we only include publicly exposed properties
     for (const [key, value] of this.entries()) {
       if (value instanceof LiveMap) {
-        result[key] = value.compact();
+        if (memo.has(value.getObjectId())) {
+          // If the LiveMap has already been compacted, just reference it to avoid infinite loops
+          result[key] = memo.get(value.getObjectId());
+        } else {
+          // Otherwise, compact it
+          result[key] = value.compact(memo);
+        }
         continue;
       }
 
