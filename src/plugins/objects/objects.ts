@@ -268,11 +268,7 @@ export class Objects {
     );
 
     // RTO4a
-    if (hasObjects || this._state == ObjectsState.initialized) {
-      // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
-      // this guarantees we emit both "syncing" -> "synced" events in that order.
-      this._startNewSync();
-    }
+    this._startNewSync();
 
     // RTO4b
     if (!hasObjects) {

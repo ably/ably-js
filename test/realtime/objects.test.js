@@ -5548,12 +5548,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'ATTACHED with HAS_OBJECTS false once SYNCED should not provoke further events',
+          description: 'ATTACHED with HAS_OBJECTS false once SYNCED emits SYNCING and then SYNCED',
           channelEvents: [
             { type: 'attached', hasObjects: false },
             { type: 'attached', hasObjects: false },
           ],
-          expectedSyncEvents: ['syncing', 'synced'],
+          expectedSyncEvents: [
+            'syncing',
+            'synced', // The initial SYNCED
+            'syncing',
+            'synced', // From the subsequent ATTACHED
+          ],
         },
 
         {
