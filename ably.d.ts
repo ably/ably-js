@@ -2447,13 +2447,13 @@ export type CompactedValue<T extends Value> =
         : [T] extends [LiveCounter | undefined]
           ? number | undefined
           : // Binary types (converted to base64 strings)
-            [T] extends [Buffer]
+            [T] extends [ArrayBuffer]
             ? string
-            : [T] extends [Buffer | undefined]
+            : [T] extends [ArrayBuffer | undefined]
               ? string | undefined
-              : [T] extends [ArrayBuffer]
+              : [T] extends [ArrayBufferView]
                 ? string
-                : [T] extends [ArrayBuffer | undefined]
+                : [T] extends [ArrayBufferView | undefined]
                   ? string | undefined
                   : // Other primitive types
                     [T] extends [Primitive]
