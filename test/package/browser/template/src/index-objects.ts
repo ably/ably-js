@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { LiveCounter, LiveMap } from 'ably';
+import { CompactedValue, LiveCounter, LiveMap } from 'ably';
 import Objects from 'ably/objects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
@@ -21,6 +21,8 @@ type MyCustomObject = {
     }>;
   }>;
   counterKey: LiveCounter;
+  arrayBufferKey: ArrayBuffer;
+  bufferKey: Buffer;
 };
 
 globalThis.testAblyPackage = async function () {
@@ -45,7 +47,8 @@ globalThis.testAblyPackage = async function () {
   const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined').value();
   // objects:
   const counter: Ably.LiveCounterPathObject = myObject.get('counterKey');
-  const map: Ably.LiveMapPathObject<MyCustomObject['mapKey']> = myObject.get('mapKey');
+  const map: Ably.LiveMapPathObject<MyCustomObject['mapKey'] extends LiveMap<infer T> ? T : never> =
+    myObject.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the entrypoint object,
   // so the next calls would fail. we only need to check that TypeScript types work
@@ -60,4 +63,26 @@ globalThis.testAblyPackage = async function () {
     const typedMessage: Ably.ObjectMessage | undefined = message;
   });
   unsubscribe();
+
+  // compact value
+  const compact: CompactedValue<LiveMap<MyCustomObject>> | undefined = myObject.compact();
+  const compactType:
+    | {
+        numberKey: number;
+        stringKey: string;
+        booleanKey: boolean;
+        couldBeUndefined?: string | undefined;
+        mapKey: {
+          foo: 'bar';
+          nestedMap?:
+            | {
+                baz: 'qux';
+              }
+            | undefined;
+        };
+        counterKey: number;
+        arrayBufferKey: string;
+        bufferKey: string;
+      }
+    | undefined = compact;
 };
