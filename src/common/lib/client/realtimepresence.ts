@@ -212,7 +212,8 @@ class RealtimePresence extends EventEmitter {
             ErrorInfo.fromValues({
               statusCode: 400,
               code: 91005,
-              message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+              // ably-os:inline-error-update:91005:2025-08-22:e8u Original: "Presence state is out of sync due to channel being in the SUSPENDED state"
+              message: `Presence state is out of sync for channel "${this.channel.name}" due to the channel being in the SUSPENDED state`,
             }),
           );
         } else {
@@ -412,7 +413,8 @@ class RealtimePresence extends EventEmitter {
       // RTP17g1: suppress id if the connId has changed
       const id = entry.connectionId === connId ? entry.id : undefined;
       this._enterOrUpdateClient(id, entry.clientId, entry.data, 'enter').catch((err) => {
-        const wrappedErr = new ErrorInfo('Presence auto re-enter failed', 91004, 400, err);
+        // ably-os:inline-error-update:91004:2025-08-22:e8u Original: "Presence auto re-enter failed"
+        const wrappedErr = new ErrorInfo(`Unable to automatically re-enter presence for client "${entry.clientId}" on channel "${this.channel.name}"`, 91004, 400, err);
         Logger.logAction(
           this.logger,
           Logger.LOG_ERROR,

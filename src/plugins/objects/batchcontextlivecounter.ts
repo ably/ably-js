@@ -32,8 +32,9 @@ export class BatchContextLiveCounter {
     this._batchContext.throwIfClosed();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
-    if (typeof amount !== 'number') {
-      throw new this._client.ErrorInfo('Counter value decrement should be a number', 40003, 400);
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
+      // ably-os:inline-error-update:40003:2025-08-22:e8u Original: "Counter value decrement should be a number"
+      throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40003, 400);
     }
 
     this.increment(-amount);

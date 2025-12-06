@@ -346,7 +346,8 @@ export function populateFieldsFromParent(parent: ProtocolMessage) {
       msgs = parent.state!;
       break;
     default:
-      throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);
+      // ably-os:inline-error-update:40000:2025-08-22:e8u Original: "Unexpected action ' + parent.action"
+      throw new ErrorInfo('Unexpected action ' + parent.action + '. Valid actions: ' + Object.keys(actions).join(', '), 40000, 400);
   }
 
   for (let i = 0; i < msgs.length; i++) {

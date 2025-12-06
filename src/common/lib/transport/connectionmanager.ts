@@ -1932,7 +1932,8 @@ class ConnectionManager extends EventEmitter {
 
   async ping(): Promise<number> {
     if (this.state.state !== 'connected') {
-      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
+      // ably-os:inline-error-update:40000:2025-08-22:e8u Original: "Unable to ping service; not connected"
+      throw new ErrorInfo('Unable to ping service; connection state is ' + this.state.state, 40000, 400);
     }
 
     const transport = this.activeProtocol?.getTransport();

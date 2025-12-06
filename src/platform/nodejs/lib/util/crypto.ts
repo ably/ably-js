@@ -180,7 +180,8 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       try {
         return generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8);
       } catch (err) {
-        throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 500, 50000, err as Error);
+        // ably-os:inline-error-update:50000:2025-08-22:e8u Original: "Failed to generate random key: {error message}"
+        throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 50000, 500, err as Error);
       }
     }
 
