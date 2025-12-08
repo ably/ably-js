@@ -1,21 +1,23 @@
 import { actions } from '../types/protocolmessagecommon';
-import ProtocolMessage, { stringify as stringifyProtocolMessage } from '../types/protocolmessage';
+import ProtocolMessage, { stringify as stringifyProtocolMessage, PublishResponse } from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
 import Transport from './transport';
-import { ErrCallback } from '../../types/utils';
+import { StandardCallback, ErrCallback } from '../../types/utils';
+
+export type PublishCallback = StandardCallback<PublishResponse>;
 
 export class PendingMessage {
   message: ProtocolMessage;
-  callback?: ErrCallback;
+  callback?: PublishCallback;
   merged: boolean;
   sendAttempted: boolean;
   ackRequired: boolean;
 
-  constructor(message: ProtocolMessage, callback?: ErrCallback) {
+  constructor(message: ProtocolMessage, callback?: PublishCallback) {
     this.message = message;
     this.callback = callback;
     this.merged = false;
@@ -35,17 +37,17 @@ class Protocol extends EventEmitter {
     super(transport.logger);
     this.transport = transport;
     this.messageQueue = new MessageQueue(this.logger);
-    transport.on('ack', (serial: number, count: number) => {
-      this.onAck(serial, count);
+    transport.on('ack', (serial: number, count: number, res?: PublishResponse[]) => {
+      this.onAck(serial, count, res);
     });
     transport.on('nack', (serial: number, count: number, err: ErrorInfo) => {
       this.onNack(serial, count, err);
     });
   }
 
-  onAck(serial: number, count: number): void {
+  onAck(serial: number, count: number, res?: PublishResponse[]): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
-    this.messageQueue.completeMessages(serial, count);
+    this.messageQueue.completeMessages(serial, count, null, res);
   }
 
   onNack(serial: number, count: number, err: ErrorInfo): void {

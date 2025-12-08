@@ -16,10 +16,13 @@ import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
+import { PublishResponse } from '../types/protocolmessage';
 import type { PushChannel } from 'plugins/push';
 import type RestAnnotations from './restannotations';
 
 const MSG_ID_ENTROPY_BYTES = 9;
+
+type RestPublishResponse = PublishResponse & { channel?: string; messageId?: string };
 
 function allEmptyIds(messages: Array<Message>) {
   return messages.every(function (message: Message) {
@@ -75,7 +78,7 @@ class RestChannel {
     return this.client.rest.channelMixin.history(this, params);
   }
 
-  async publish(...args: any[]): Promise<void> {
+  async publish(...args: any[]): Promise<PublishResponse> {
     const first = args[0],
       second = args[1];
     let messages: Array<Message>;
@@ -132,19 +135,29 @@ class RestChannel {
       );
     }
 
-    await this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);
+    return this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);
   }
 
-  async _publish(requestBody: RequestBody | null, headers: Record<string, string>, params: any): Promise<void> {
-    await Resource.post(
-      this.client,
-      this.client.rest.channelMixin.basePath(this) + '/messages',
+  async _publish(
+    requestBody: RequestBody | null,
+    headers: Record<string, string>,
+    params: any,
+  ): Promise<PublishResponse> {
+    const client = this.client;
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
+    const { body, unpacked } = await Resource.post<RestPublishResponse>(
+      client,
+      client.rest.channelMixin.basePath(this) + '/messages',
       requestBody,
       headers,
       params,
       null,
       true,
     );
+    const decoded = (unpacked ? body : Utils.decodeBody<RestPublishResponse>(body, client._MsgPack, format)) || {};
+    delete decoded['channel'];
+    delete decoded['messageId'];
+    return decoded;
   }
 
   async status(): Promise<API.ChannelDetails> {
@@ -156,12 +169,20 @@ class RestChannel {
     return this.client.rest.channelMixin.getMessage(this, serialOrMessage);
   }
 
-  async updateMessage(message: Message, operation?: API.MessageOperation, params?: Record<string, any>): Promise<void> {
+  async updateMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.updateMessage()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: false }, message, operation, params);
   }
 
-  async deleteMessage(message: Message, operation?: API.MessageOperation, params?: Record<string, any>): Promise<void> {
+  async deleteMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.deleteMessage()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: true }, message, operation, params);
   }
