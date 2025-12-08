@@ -2,9 +2,10 @@ import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
   stringify as stringifyProtocolMessage,
   fromValues as protocolMessageFromValues,
+  PublishResponse,
 } from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
-import Protocol, { PendingMessage } from './protocol';
+import Protocol, { PendingMessage, PublishCallback } from './protocol';
 import Defaults, { getAgentString } from 'common/lib/util/defaults';
 import Platform, { TransportImplementations } from 'common/platform';
 import EventEmitter from '../util/eventemitter';
@@ -1785,7 +1786,7 @@ class ConnectionManager extends EventEmitter {
    * event queueing
    ******************/
 
-  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: ErrCallback): void {
+  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: PublishCallback): void {
     callback = callback || noop;
     const state = this.state;
 
@@ -1839,7 +1840,7 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  queue(msg: ProtocolMessage, callback: ErrCallback): void {
+  queue(msg: ProtocolMessage, callback: PublishCallback): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
     const lastQueued = this.queuedMessages.last();
     const maxSize = this.options.maxMessageSize;
@@ -1851,7 +1852,7 @@ class ConnectionManager extends EventEmitter {
         lastQueued.callback = Multicaster.create(this.logger, [lastQueued.callback]);
         lastQueued.merged = true;
       }
-      (lastQueued.callback as MulticasterInstance<void>).push(callback);
+      (lastQueued.callback as MulticasterInstance<PublishResponse>).push(callback);
     } else {
       this.queuedMessages.push(new PendingMessage(msg, callback));
     }

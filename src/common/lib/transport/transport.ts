@@ -161,7 +161,7 @@ abstract class Transport extends EventEmitter {
         this.onDisconnect(message);
         break;
       case actions.ACK:
-        this.emit('ack', message.msgSerial, message.count);
+        this.emit('ack', message.msgSerial, message.count, message.res);
         break;
       case actions.NACK:
         this.emit('nack', message.msgSerial, message.count, message.error);
