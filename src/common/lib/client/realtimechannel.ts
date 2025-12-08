@@ -1,5 +1,5 @@
 import { actions, channelModes } from '../types/protocolmessagecommon';
-import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
+import ProtocolMessage, { fromValues as protocolMessageFromValues, PublishResponse } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
@@ -237,7 +237,7 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  async publish(...args: any[]): Promise<void> {
+  async publish(...args: any[]): Promise<PublishResponse> {
     let messages: Message[];
     let argCount = args.length;
 
@@ -486,13 +486,13 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  async sendMessage(msg: ProtocolMessage): Promise<void> {
+  async sendMessage(msg: ProtocolMessage): Promise<PublishResponse> {
     return new Promise((resolve, reject) => {
-      this.connectionManager.send(msg, this.client.options.queueMessages, (err) => {
+      this.connectionManager.send(msg, this.client.options.queueMessages, (err, publishResponse) => {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          resolve(publishResponse || {});
         }
       });
     });
@@ -504,16 +504,16 @@ class RealtimeChannel extends EventEmitter {
       channel: this.name,
       presence: presence,
     });
-    return this.sendMessage(msg);
+    await this.sendMessage(msg);
   }
 
-  sendState(objectMessages: WireObjectMessage[]): Promise<void> {
+  async sendState(objectMessages: WireObjectMessage[]): Promise<void> {
     const msg = protocolMessageFromValues({
       action: actions.OBJECT,
       channel: this.name,
       state: objectMessages,
     });
-    return this.sendMessage(msg);
+    await this.sendMessage(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
@@ -1023,16 +1023,54 @@ class RealtimeChannel extends EventEmitter {
     return restMixin.getMessage(this, serialOrMessage);
   }
 
-  async updateMessage(message: Message, operation?: API.MessageOperation, params?: Record<string, any>): Promise<void> {
+  async updateMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    _params?: Record<string, any>,
+  ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.updateMessage()', 'channel = ' + this.name);
-    const restMixin = this.client.rest.channelMixin;
-    return restMixin.updateDeleteMessage(this, { isDelete: false }, message, operation, params);
+    return this.sendUpdateDeleteMessage(message, 'message.update', operation);
   }
 
-  async deleteMessage(message: Message, operation?: API.MessageOperation, params?: Record<string, any>): Promise<void> {
+  async deleteMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    _params?: Record<string, any>,
+  ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.deleteMessage()', 'channel = ' + this.name);
-    const restMixin = this.client.rest.channelMixin;
-    return restMixin.updateDeleteMessage(this, { isDelete: true }, message, operation, params);
+    return this.sendUpdateDeleteMessage(message, 'message.delete', operation);
+  }
+
+  private async sendUpdateDeleteMessage(
+    message: Message,
+    action: 'message.update' | 'message.delete',
+    operation?: API.MessageOperation,
+  ): Promise<PublishResponse> {
+    if (!message.serial) {
+      throw new ErrorInfo(
+        'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
+        40003,
+        400,
+      );
+    }
+
+    this.throwIfUnpublishableState();
+
+    const updateDeleteMsg = Message.fromValues({
+      ...message,
+      action: action,
+    });
+    if (operation) {
+      updateDeleteMsg.version = operation;
+    }
+
+    const wireMessage = await updateDeleteMsg.encode(this.channelOptions as CipherOptions);
+    const pm = protocolMessageFromValues({
+      action: actions.MESSAGE,
+      channel: this.name,
+      messages: [wireMessage],
+    });
+    return this.sendMessage(pm);
   }
 
   async getMessageVersions(

@@ -1,4 +1,5 @@
 import ErrorInfo from '../types/errorinfo';
+import { PublishResponse } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import { PendingMessage } from './protocol';
@@ -39,7 +40,7 @@ class MessageQueue extends EventEmitter {
     this.messages.unshift.apply(this.messages, messages);
   }
 
-  completeMessages(serial: number, count: number, err?: ErrorInfo | null): void {
+  completeMessages(serial: number, count: number, err?: ErrorInfo | null, res?: PublishResponse[]): void {
     Logger.logAction(
       this.logger,
       Logger.LOG_MICRO,
@@ -57,8 +58,10 @@ class MessageQueue extends EventEmitter {
       const endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
       if (endSerial > startSerial) {
         const completeMessages = messages.splice(0, endSerial - startSerial);
-        for (const message of completeMessages) {
-          (message.callback as Function)(err);
+        for (let i = 0; i < completeMessages.length; i++) {
+          const message = completeMessages[i];
+          const publishResponse = res?.[i];
+          (message.callback as Function)(err, publishResponse);
         }
       }
       if (messages.length == 0) this.emit('idle');

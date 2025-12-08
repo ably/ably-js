@@ -151,6 +151,11 @@ export function stringify(
   return result;
 }
 
+export type PublishResponse = {
+  serials?: (string | null)[];
+  version?: string | null;
+};
+
 class ProtocolMessage {
   action?: number;
   flags?: number;
@@ -175,6 +180,7 @@ class ProtocolMessage {
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
   params?: Record<string, string>;
+  res?: PublishResponse[];
 
   hasFlag = (flag: string): boolean => {
     return ((this.flags as number) & flags[flag]) > 0;
