@@ -2606,6 +2606,9 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
   /**
    * Get a JavaScript object representation of the map at this path.
    * Binary values are returned as base64-encoded strings.
+   * Cyclic references are handled through memoization, returning shared compacted
+   * object references for previously visited objects. This means the value returned
+   * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
@@ -2756,6 +2759,11 @@ export interface AnyPathObject
    * Get a JavaScript object representation of the object at this path.
    * Binary values are returned as base64-encoded strings.
    *
+   * When compacting a {@link LiveMap}, cyclic references are handled through
+   * memoization, returning shared compacted object references for previously
+   * visited objects. This means the value returned from `compact()` cannot be
+   * directly JSON-stringified if the object may contain cycles.
+   *
    * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * @experimental
@@ -2859,6 +2867,9 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
   /**
    * Get a JavaScript object representation of the map instance.
    * Binary values are returned as base64-encoded strings.
+   * Cyclic references are handled through memoization, returning shared compacted
+   * object references for previously visited objects. This means the value returned
+   * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
@@ -2994,6 +3005,11 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
   /**
    * Get a JavaScript object representation of the object instance.
    * Binary values are returned as base64-encoded strings.
+   *
+   * When compacting a {@link LiveMap}, cyclic references are handled through
+   * memoization, returning shared compacted object references for previously
+   * visited objects. This means the value returned from `compact()` cannot be
+   * directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
@@ -3463,6 +3479,9 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
   /**
    * Get a JavaScript object representation of the map instance.
    * Binary values are returned as base64-encoded strings.
+   * Cyclic references are handled through memoization, returning shared compacted
+   * object references for previously visited objects. This means the value returned
+   * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
@@ -3603,6 +3622,11 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
   /**
    * Get a JavaScript object representation of the object instance.
    * Binary values are returned as base64-encoded strings.
+   *
+   * When compacting a {@link LiveMap}, cyclic references are handled through
+   * memoization, returning shared compacted object references for previously
+   * visited objects. This means the value returned from `compact()` cannot be
+   * directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
