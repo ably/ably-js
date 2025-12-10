@@ -277,5 +277,67 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(err).to.have.property('code', 40003);
       }
     });
+
+    /**
+     * Test appendMessage with operation metadata
+     *
+     * @spec RSL15
+     */
+    it('Should append to a message (with operation metadata)', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:updatesanddeletes_append_meta');
+
+      const { serials } = await channel.publish('original-message', 'Hello');
+      const serial = serials[0];
+      const originalMessage = await channel.getMessage(serial);
+
+      const appendMessage = {
+        serial: serial,
+        data: ' World',
+      };
+
+      const operation = {
+        clientId: 'appender-client',
+        description: 'Test append operation',
+        metadata: { reason: 'testing append' },
+      };
+
+      const appendResult = await channel.appendMessage(appendMessage, operation);
+      expect(appendResult).to.have.property('version');
+      expect(appendResult.version).to.be.a('string');
+
+      // Wait for the append to be the latest message
+      let latestMessage;
+      await helper.waitFor(async () => {
+        latestMessage = await channel.getMessage(originalMessage.serial);
+        return latestMessage.data === 'Hello World';
+      }, 10000);
+      expect(latestMessage.serial).to.equal(serial);
+      expect(latestMessage.version?.serial > originalMessage.serial).to.be.ok;
+      expect(latestMessage.version?.timestamp).to.be.greaterThan(originalMessage.timestamp);
+      expect(latestMessage.version?.clientId).to.equal('appender-client');
+      expect(latestMessage.version?.description).to.equal('Test append operation');
+      expect(latestMessage.version?.metadata).to.deep.equal({ reason: 'testing append' });
+      expect(latestMessage.action).to.equal('message.update');
+      expect(latestMessage.data).to.equal('Hello World');
+      expect(latestMessage.name).to.equal('original-message');
+    });
+
+    /**
+     * Test error handling for appendMessage without serial
+     */
+    it('Should error when appendMessage called without serial', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:updatesanddeletes_error');
+
+      try {
+        await channel.appendMessage({ data: 'test' });
+        expect.fail('Should have thrown an error');
+      } catch (err) {
+        expect(err).to.have.property('code', 40003);
+      }
+    });
   });
 });

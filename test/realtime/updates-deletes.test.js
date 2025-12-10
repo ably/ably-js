@@ -217,5 +217,82 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime.close();
       }
     });
+
+    /**
+     * Test appendMessage over realtime connection
+     */
+    it('Should append to a message over realtime', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      try {
+        const channel = realtime.channels.get('mutable:rt_updatesanddeletes_append');
+        await channel.attach();
+
+        // Set up subscription to capture the append (which comes back as an update)
+        let appendMsg;
+        const appendPromise = new Promise((resolve) => {
+          channel.subscribe((msg) => {
+            if (msg.action === 'message.update') {
+              appendMsg = msg;
+              resolve();
+            }
+          });
+        });
+
+        const { serials } = await channel.publish('original-message', 'Hello');
+        const serial = serials[0];
+
+        const appendMessage = {
+          serial: serial,
+          data: ' World',
+        };
+
+        const operation = {
+          clientId: 'rt-appender-client',
+          description: 'Realtime append operation',
+          metadata: { reason: 'testing realtime append' },
+        };
+
+        const appendResult = await channel.appendMessage(appendMessage, operation);
+        expect(appendResult).to.have.property('version');
+        expect(appendResult.version).to.be.a('string');
+
+        await appendPromise;
+
+        expect(appendMsg.serial).to.equal(serial);
+        expect(appendMsg.version?.serial).to.equal(appendResult.version);
+        expect(appendMsg.version?.clientId).to.equal('rt-appender-client');
+        expect(appendMsg.version?.description).to.equal('Realtime append operation');
+        expect(appendMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime append' });
+        expect(appendMsg.action).to.equal('message.update');
+        expect(appendMsg.data).to.equal('Hello World');
+        expect(appendMsg.name).to.equal('original-message');
+      } finally {
+        realtime.close();
+      }
+    });
+
+    /**
+     * Test error handling for appendMessage without serial
+     */
+    it('Should error when appendMessage called without serial', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      try {
+        const channel = realtime.channels.get('mutable:rt_updatesanddeletes_error');
+        await channel.attach();
+
+        try {
+          await channel.appendMessage({ data: 'test' });
+          expect.fail('Should have thrown an error');
+        } catch (err) {
+          expect(err).to.have.property('code', 40003);
+        }
+      } finally {
+        realtime.close();
+      }
+    });
   });
 });

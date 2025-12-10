@@ -175,7 +175,7 @@ class RestChannel {
     params?: Record<string, any>,
   ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.updateMessage()', 'channel = ' + this.name);
-    return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: false }, message, operation, params);
+    return this.client.rest.channelMixin.updateDeleteMessage(this, 'message.update', message, operation, params);
   }
 
   async deleteMessage(
@@ -184,7 +184,16 @@ class RestChannel {
     params?: Record<string, any>,
   ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.deleteMessage()', 'channel = ' + this.name);
-    return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: true }, message, operation, params);
+    return this.client.rest.channelMixin.updateDeleteMessage(this, 'message.delete', message, operation, params);
+  }
+
+  async appendMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<PublishResponse> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.appendMessage()', 'channel = ' + this.name);
+    return this.client.rest.channelMixin.updateDeleteMessage( this, 'message.append', message, operation, params);
   }
 
   async getMessageVersions(
