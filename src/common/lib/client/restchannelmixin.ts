@@ -3,7 +3,7 @@ import RestChannel from './restchannel';
 import ErrorInfo from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import Message, { WireMessage, _fromEncodedArray, _fromEncoded, serialize as serializeMessage } from '../types/message';
+import Message, { WireMessage, _fromEncodedArray, _fromEncoded, serialize as serializeMessage, encodeAction } from '../types/message';
 import { CipherOptions } from '../types/basemessage';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
@@ -25,6 +25,7 @@ type UpdateDeleteRequest = {
   encoding?: string | null;
   extras?: any;
   operation?: API.MessageOperation;
+  action?: number;
 };
 
 export class RestChannelMixin {
@@ -102,7 +103,7 @@ export class RestChannelMixin {
 
   static async updateDeleteMessage(
     channel: RestChannel | RealtimeChannel,
-    opts: { isDelete: boolean },
+    action: 'message.update' | 'message.delete' | 'message.append',
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
@@ -126,6 +127,7 @@ export class RestChannelMixin {
     }
 
     const req: UpdateDeleteRequest = {
+      action: encodeAction(action),
       serial: message.serial,
       operation: operation,
       name: message.name,
@@ -136,8 +138,12 @@ export class RestChannelMixin {
 
     const requestBody: RequestBody = serializeMessage(req, client._MsgPack, format);
 
-    const method = opts.isDelete ? Resource.post : Resource.patch;
-    const pathSuffix = opts.isDelete ? '/delete' : '';
+    let method = Resource.patch;
+    let pathSuffix = '';
+    if (action === 'message.delete') {
+      method = Resource.post;
+      pathSuffix = '/delete';
+    }
     const { body, unpacked } = await method<PublishResponse>(
       client,
       this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial) + pathSuffix,
