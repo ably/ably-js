@@ -11,6 +11,20 @@ import { BaseRealtime } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 /**
+ * Blocks inferences to the contained type.
+ * Polyfill for TypeScript's `NoInfer` utility type introduced in TypeScript 5.4.
+ *
+ * This works by leveraging deferred conditional types - the compiler can't
+ * evaluate the conditional until it knows what T is, which prevents TypeScript
+ * from digging into the type to find inference candidates.
+ *
+ * See:
+ * - https://stackoverflow.com/questions/56687668
+ * - https://www.typescriptlang.org/docs/handbook/utility-types.html#noinfertype
+ */
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
+/**
  * Static utilities related to LiveMap instances.
  */
 export class LiveMap {
@@ -23,7 +37,9 @@ export class LiveMap {
    * @experimental
    */
   static create<T extends Record<string, Value>>(
-    initialEntries?: T,
+    // block TypeScript from inferring T from the initialEntries argument, so instead it is inferred
+    // from the contextual type in a LiveMap.set call
+    initialEntries?: NoInfer<T>,
   ): LiveMapType<T extends Record<string, Value> ? T : {}>;
 }
 
