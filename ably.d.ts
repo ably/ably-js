@@ -2382,6 +2382,19 @@ export declare interface Channel {
     params?: Record<string, any>,
   ): Promise<UpdateDeleteResult>;
   /**
+   * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  appendMessage(
+    message: Message,
+    operation?: MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<UpdateDeleteResult>;
+  /**
    * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
    *
    * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
@@ -2629,6 +2642,19 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   deleteMessage(
+    message: Message,
+    operation?: MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<UpdateDeleteResult>;
+  /**
+   * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  appendMessage(
     message: Message,
     operation?: MessageOperation,
     params?: Record<string, any>,
@@ -3046,6 +3072,12 @@ declare namespace MessageActions {
    * the message.serial is the serial of the message for which this is a summary.
    */
   type MESSAGE_SUMMARY = 'message.summary';
+  /**
+   * Message action for an appended message. The `serial` field identifies the message to which
+   * data is being appended. The `data` field is appended to the previous message's data, while
+   * all other fields replace the previous values.
+   */
+  type MESSAGE_APPEND = 'message.append';
 }
 
 /**
@@ -3056,7 +3088,8 @@ export type MessageAction =
   | MessageActions.MESSAGE_UPDATE
   | MessageActions.MESSAGE_DELETE
   | MessageActions.META
-  | MessageActions.MESSAGE_SUMMARY;
+  | MessageActions.MESSAGE_SUMMARY
+  | MessageActions.MESSAGE_APPEND;
 
 /**
  * The namespace containing the different types of annotation actions.

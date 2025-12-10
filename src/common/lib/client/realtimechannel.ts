@@ -1029,7 +1029,7 @@ class RealtimeChannel extends EventEmitter {
     _params?: Record<string, any>,
   ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.updateMessage()', 'channel = ' + this.name);
-    return this.sendUpdateDeleteMessage(message, 'message.update', operation);
+    return this.sendUpdateDeleteAppendMessage(message, 'message.update', operation);
   }
 
   async deleteMessage(
@@ -1038,12 +1038,21 @@ class RealtimeChannel extends EventEmitter {
     _params?: Record<string, any>,
   ): Promise<PublishResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.deleteMessage()', 'channel = ' + this.name);
-    return this.sendUpdateDeleteMessage(message, 'message.delete', operation);
+    return this.sendUpdateDeleteAppendMessage(message, 'message.delete', operation);
   }
 
-  private async sendUpdateDeleteMessage(
+  async appendMessage(
     message: Message,
-    action: 'message.update' | 'message.delete',
+    operation?: API.MessageOperation,
+    _params?: Record<string, any>,
+  ): Promise<PublishResponse> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.appendMessage()', 'channel = ' + this.name);
+    return this.sendUpdateDeleteAppendMessage(message, 'message.append', operation);
+  }
+
+  private async sendUpdateDeleteAppendMessage(
+    message: Message,
+    action: 'message.update' | 'message.delete' | 'message.append',
     operation?: API.MessageOperation,
   ): Promise<PublishResponse> {
     if (!message.serial) {
