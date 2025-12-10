@@ -464,6 +464,11 @@ class RealtimeChannel extends EventEmitter {
     this.subscriptions.off(event, listener);
   }
 
+  listeners(event?: string | string[]): Function[] {
+    const result = this.subscriptions.listeners(event);
+    return result || [];
+  }
+
   sync(): void {
     /* check preconditions */
     switch (this.state) {
