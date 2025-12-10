@@ -34,27 +34,6 @@ function isAnonymousOrWildcard(realtimePresence: RealtimePresence) {
   return (!clientId || clientId === '*') && realtime.connection.state === 'connected';
 }
 
-/* Callback is called only in the event of an error */
-function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: () => void) {
-  switch (channel.state) {
-    case 'attached':
-    case 'suspended':
-      action();
-      break;
-    case 'initialized':
-    case 'detached':
-    case 'detaching':
-    case 'attaching':
-      Utils.whenPromiseSettles(channel.attach(), function (err: Error | null) {
-        if (err) callback(err);
-        else action();
-      });
-      break;
-    default:
-      callback(ErrorInfo.fromValues(channel.invalidStateError()));
-  }
-}
-
 class RealtimePresence extends EventEmitter {
   channel: RealtimeChannel;
   pendingPresence: { presence: WirePresenceMessage; callback: ErrCallback }[];
@@ -200,42 +179,29 @@ class RealtimePresence extends EventEmitter {
   async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
     const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
-    return new Promise((resolve, reject) => {
-      function returnMembers(members: PresenceMap) {
-        resolve(params ? members.list(params) : members.values());
-      }
+    function toMessages(members: PresenceMap): PresenceMessage[] {
+      return params ? members.list(params) : members.values();
+    }
 
-      /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
-      if (this.channel.state === 'suspended') {
-        if (waitForSync) {
-          reject(
-            ErrorInfo.fromValues({
-              statusCode: 400,
-              code: 91005,
-              message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
-            }),
-          );
-        } else {
-          returnMembers(this.members);
-        }
-        return;
+    /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+    if (this.channel.state === 'suspended') {
+      if (waitForSync) {
+        throw ErrorInfo.fromValues({
+          statusCode: 400,
+          code: 91005,
+          message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+        });
       }
+      return toMessages(this.members);
+    }
 
-      waitAttached(
-        this.channel,
-        (err) => reject(err),
-        () => {
-          const members = this.members;
-          if (waitForSync) {
-            members.waitSync(function () {
-              returnMembers(members);
-            });
-          } else {
-            returnMembers(members);
-          }
-        },
-      );
-    });
+    await this.channel.ensureAttached();
+    const members = this.members;
+    if (waitForSync) {
+      await members.waitSync();
+    }
+
+    return toMessages(this.members);
   }
 
   async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
