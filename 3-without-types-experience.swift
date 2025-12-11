@@ -34,10 +34,10 @@ enum Entries {
 
 protocol PathObject {
     /// Returns a non-empty list only if this PathObject resolves to a LiveMap
-    func entries() -> [(key: String, value: PathObject])
+    func entries() -> [(key: String, value: PathObject)]
 
     /// Returns a non-empty list only if this PathObject resolves to a LiveList
-    func entries() -> (key: String, value: PathObject)
+    func entries() -> [PathObject]
 }
 
 /*
