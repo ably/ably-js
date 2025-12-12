@@ -479,16 +479,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /* RTN7c
-     * Publish a message, then before it receives an ack, disconnect the
+     * Publish a message whilst CONNECTED, then before it receives an ack, disconnect the
      * transport, and let the connection go into some terminal failure state.
      * Check that the publish callback is called with an error.
      */
-    function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
+    function nack_of_sent_message_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
       return function (done) {
         /* Use one transport because stubbing out transport#onProtocolMesage */
-        var helper = this.test.helper.withParameterisedTestTitle('nack_on_connection_failure'),
+        var helper = this.test.helper.withParameterisedTestTitle('nack_of_sent_message_on_connection_failure'),
           realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
-          channel = realtime.channels.get('nack_on_connection_failure');
+          channel = realtime.channels.get('nack_of_sent_message_on_connection_failure');
 
         async.series(
           [
@@ -539,10 +539,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
     }
 
-    /** @specpartial RTN7c - test for SUSPENDED */
+    /** @specpartial RTN7c - test for SUSPENDED in the case where the message has been sent on the transport */
     it(
-      'nack_on_connection_suspended',
-      nack_on_connection_failure(
+      'nack_of_sent_message_on_connection_suspended',
+      nack_of_sent_message_on_connection_failure(
         function (realtime, helper) {
           helper.becomeSuspended(realtime);
         },
@@ -551,10 +551,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       ),
     );
 
-    /** @specpartial RTN7c - test for FAILED */
+    /** @specpartial RTN7c - test for FAILED in the case where the message has been sent on the transport */
     it(
-      'nack_on_connection_failed',
-      nack_on_connection_failure(
+      'nack_of_sent_message_on_connection_failed',
+      nack_of_sent_message_on_connection_failure(
         function (realtime, helper) {
           helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
           helper.recordPrivateApi('call.transport.onProtocolMessage');
@@ -568,10 +568,113 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       ),
     );
 
-    /** @specpartial RTN7c - test for CLOSED */
+    /** @specpartial RTN7c - test for CLOSED in the case where the message has been sent on the transport */
     it(
-      'nack_on_connection_closed',
-      nack_on_connection_failure(
+      'nack_of_sent_message_on_connection_closed',
+      nack_of_sent_message_on_connection_failure(
+        function (realtime) {
+          realtime.close();
+        },
+        'closed',
+        80017,
+      ),
+    );
+
+    /* RTN7c
+     * Publish a message whilst not CONNECTED, then whilst the message is still
+     * queued let the connection go into some terminal failure state. Check
+     * that the publish callback is called with an error.
+     */
+    function nack_of_queued_message_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
+      return function (done) {
+        /* Use one transport because stubbing out transport#onProtocolMesage */
+        var helper = this.test.helper.withParameterisedTestTitle('nack_of_queued_message_on_connection_failure'),
+          realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+          channel = realtime.channels.get('nack_of_queued_message_on_connection_failure');
+
+        // Drop inbound CONNECTED so that we don't become CONNECTED
+        helper.recordPrivateApi('listen.connectionManager.transport.pending');
+        realtime.connection.connectionManager.on('transport.pending', function (transport) {
+          var originalOnProtocolMessage = transport.onProtocolMessage;
+          helper.recordPrivateApi('replace.transport.onProtocolMessage');
+          transport.onProtocolMessage = function (message) {
+            if (message.action !== 4) {
+              helper.recordPrivateApi('call.transport.onProtocolMessage');
+              originalOnProtocolMessage.call(this, message);
+            }
+          };
+        });
+
+        async.series(
+          [
+            function (cb) {
+              Helper.whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
+                try {
+                  expect(err, 'Publish failed as expected').to.be.ok;
+                  expect(realtime.connection.state).to.equal(
+                    expectedRealtimeState,
+                    'check realtime state is ' + expectedRealtimeState,
+                  );
+                  expect(err.code).to.equal(expectedNackCode, 'Check error code was ' + expectedNackCode);
+                  cb();
+                } catch (err) {
+                  cb(err);
+                }
+              });
+              // We wait for the `publish()`-ed message to appear in the message queue before enacting the connection state change (queueing is preceded by asynchronous encoding). AFAIK there isn't an event-driven internal API for this so we'll just poll.
+              (async () => {
+                helper.recordPrivateApi('call.Platform.nextTick');
+                helper.recordPrivateApi('read.connectionManager.queuedMessages');
+                while (true) {
+                  await new Promise((res) => Ably.Realtime.Platform.Config.nextTick(res));
+                  if (realtime.connection.connectionManager.queuedMessages.count() > 0) {
+                    failureFn(realtime, helper.withParameterisedTestTitle(null));
+                    break;
+                  }
+                }
+              })();
+            },
+          ],
+          function (err) {
+            helper.closeAndFinish(done, realtime, err);
+          },
+        );
+      };
+    }
+
+    /** @specpartial RTN7c - test for SUSPENDED in the case where the message has not yet been sent on the transport */
+    it(
+      'nack_of_queued_message_on_connection_suspended',
+      nack_of_queued_message_on_connection_failure(
+        function (realtime, helper) {
+          helper.recordPrivateApi('call.connectionManager.notifyState');
+          realtime.connection.connectionManager.notifyState({ state: 'suspended' });
+        },
+        'suspended',
+        80002,
+      ),
+    );
+
+    /** @specpartial RTN7c - test for FAILED in the case where the message has not yet been sent on the transport */
+    it(
+      'nack_of_queued_message_on_connection_failed',
+      nack_of_queued_message_on_connection_failure(
+        function (realtime, helper) {
+          helper.recordPrivateApi('call.connectionManager.notifyState');
+          realtime.connection.connectionManager.notifyState({
+            state: 'failed',
+            error: { statusCode: 401, code: 40100, message: 'connection failed because reasons' },
+          });
+        },
+        'failed',
+        40100,
+      ),
+    );
+
+    /** @specpartial RTN7c - test for CLOSED in the case where the message has not yet been sent on the transport */
+    it(
+      'nack_of_queued_message_on_connection_closed',
+      nack_of_queued_message_on_connection_failure(
         function (realtime) {
           realtime.close();
         },
