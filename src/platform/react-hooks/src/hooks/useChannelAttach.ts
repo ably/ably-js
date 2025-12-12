@@ -39,7 +39,7 @@ export function useChannelAttach(
         logError(ably, reason.toString());
       });
     }
-  }, [shouldAttachToTheChannel, channel]);
+  }, [shouldAttachToTheChannel, channel, ably]);
 
   // we expose `connectionState` here for reuse in the usePresence hook, where we need to prevent
   // entering and leaving presence in a similar manner
