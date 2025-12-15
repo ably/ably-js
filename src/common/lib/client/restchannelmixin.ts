@@ -3,12 +3,11 @@ import RestChannel from './restchannel';
 import ErrorInfo from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import Message, { WireMessage, _fromEncodedArray, _fromEncoded, serialize as serializeMessage, encodeAction } from '../types/message';
+import Message, { WireMessage, _fromEncodedArray, _fromEncoded, serialize as serializeMessage } from '../types/message';
 import { CipherOptions } from '../types/basemessage';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
-import { RequestBody } from 'common/types/http';
 import { UpdateDeleteResponse } from '../types/protocolmessage';
 
 export interface RestHistoryParams {
@@ -17,16 +16,6 @@ export interface RestHistoryParams {
   direction?: string;
   limit?: number;
 }
-
-type UpdateDeleteRequest = {
-  serial: string;
-  data?: any;
-  name?: string | null;
-  encoding?: string | null;
-  extras?: any;
-  operation?: API.MessageOperation;
-  action?: number;
-};
 
 export class RestChannelMixin {
   static basePath(channel: RestChannel | RealtimeChannel) {
@@ -121,32 +110,18 @@ export class RestChannelMixin {
     const headers = Defaults.defaultPostHeaders(client.options);
     Utils.mixin(headers, client.options.headers);
 
-    let encoded: WireMessage | null = null;
-    if (message.data !== undefined) {
-      encoded = await Message.fromValues(message).encode(channel.channelOptions as CipherOptions);
-    }
+    // construct a new Message to avoid mutating the message the user passes in
+    const requestMessage = Message.fromValues(message);
+    requestMessage.action = action;
+    requestMessage.version = operation;
 
-    const req: UpdateDeleteRequest = {
-      action: encodeAction(action),
-      serial: message.serial,
-      operation: operation,
-      name: message.name,
-      data: encoded && encoded.data,
-      encoding: encoded && encoded.encoding,
-      extras: message.extras,
-    };
-
-    const requestBody: RequestBody = serializeMessage(req, client._MsgPack, format);
+    const encoded = await requestMessage.encode(channel.channelOptions as CipherOptions);
+    const requestBody = serializeMessage(encoded, client._MsgPack, format);
 
     let method = Resource.patch;
-    let pathSuffix = '';
-    if (action === 'message.delete') {
-      method = Resource.post;
-      pathSuffix = '/delete';
-    }
     const { body, unpacked } = await method<UpdateDeleteResponse>(
       client,
-      this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial) + pathSuffix,
+      this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial),
       requestBody,
       headers,
       params || {},
