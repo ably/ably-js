@@ -1,5 +1,9 @@
 import { actions, channelModes } from '../types/protocolmessagecommon';
-import ProtocolMessage, { fromValues as protocolMessageFromValues, PublishResponse } from '../types/protocolmessage';
+import ProtocolMessage, {
+  fromValues as protocolMessageFromValues,
+  PublishResponse,
+  UpdateDeleteResponse,
+} from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
@@ -1026,35 +1030,32 @@ class RealtimeChannel extends EventEmitter {
   async updateMessage(
     message: Message,
     operation?: API.MessageOperation,
-    _params?: Record<string, any>,
-  ): Promise<PublishResponse> {
+  ): Promise<UpdateDeleteResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.updateMessage()', 'channel = ' + this.name);
-    return this.sendUpdateDeleteAppendMessage(message, 'message.update', operation);
+    return this.sendUpdate(message, 'message.update', operation);
   }
 
   async deleteMessage(
     message: Message,
     operation?: API.MessageOperation,
-    _params?: Record<string, any>,
-  ): Promise<PublishResponse> {
+  ): Promise<UpdateDeleteResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.deleteMessage()', 'channel = ' + this.name);
-    return this.sendUpdateDeleteAppendMessage(message, 'message.delete', operation);
+    return this.sendUpdate(message, 'message.delete', operation);
   }
 
   async appendMessage(
     message: Message,
     operation?: API.MessageOperation,
-    _params?: Record<string, any>,
-  ): Promise<PublishResponse> {
+  ): Promise<UpdateDeleteResponse> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.appendMessage()', 'channel = ' + this.name);
-    return this.sendUpdateDeleteAppendMessage(message, 'message.append', operation);
+    return this.sendUpdate(message, 'message.append', operation);
   }
 
-  private async sendUpdateDeleteAppendMessage(
+  private async sendUpdate(
     message: Message,
     action: 'message.update' | 'message.delete' | 'message.append',
     operation?: API.MessageOperation,
-  ): Promise<PublishResponse> {
+  ): Promise<UpdateDeleteResponse> {
     if (!message.serial) {
       throw new ErrorInfo(
         'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
@@ -1079,7 +1080,8 @@ class RealtimeChannel extends EventEmitter {
       channel: this.name,
       messages: [wireMessage],
     });
-    return this.sendMessage(pm);
+    const publishResponse = await this.sendMessage(pm);
+    return { version: publishResponse.serials?.[0] ?? null };
   }
 
   async getMessageVersions(

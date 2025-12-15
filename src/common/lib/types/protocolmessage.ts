@@ -153,7 +153,10 @@ export function stringify(
 
 export type PublishResponse = {
   serials?: (string | null)[];
-  version?: string | null;
+};
+
+export type UpdateDeleteResponse = {
+  version: string | null;
 };
 
 class ProtocolMessage {
