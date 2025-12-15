@@ -78,12 +78,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         await channel.attach();
 
         // Set up subscription to capture the update
-        let updateMsg;
         const updatePromise = new Promise((resolve) => {
           channel.subscribe((msg) => {
             if (msg.action === 'message.update') {
-              updateMsg = msg;
-              resolve();
+              resolve(msg);
             }
           });
         });
@@ -106,7 +104,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(updateResult).to.have.property('version');
         expect(updateResult.version).to.be.a('string');
 
-        await updatePromise;
+        const updateMsg = await updatePromise;
 
         expect(updateMsg.serial).to.equal(serial);
         expect(updateMsg.version?.serial).to.equal(updateResult.version);
@@ -134,12 +132,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         await channel.attach();
 
         // Set up subscription to capture the delete
-        let deleteMsg;
         const deletePromise = new Promise((resolve) => {
           channel.subscribe((msg) => {
             if (msg.action === 'message.delete') {
-              deleteMsg = msg;
-              resolve();
+              resolve(msg);
             }
           });
         });
@@ -159,7 +155,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(deleteResult).to.have.property('version');
         expect(deleteResult.version).to.be.a('string');
 
-        await deletePromise;
+        const deleteMsg = await deletePromise;
 
         expect(deleteMsg.serial).to.equal(serial);
         expect(deleteMsg.version?.serial).to.equal(deleteResult.version);
@@ -177,7 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * Test error handling for updateMessage without serial
      */
-    it('Should error when updateMessage called without serial', async function () {
+    it('Should error when called without serial', async function () {
       const helper = this.test.helper;
       const realtime = helper.AblyRealtime();
 
@@ -191,24 +187,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         } catch (err) {
           expect(err).to.have.property('code', 40003);
         }
-      } finally {
-        realtime.close();
-      }
-    });
-
-    /**
-     * Test error handling for deleteMessage without serial
-     */
-    it('Should error when deleteMessage called without serial', async function () {
-      const helper = this.test.helper;
-      const realtime = helper.AblyRealtime();
-
-      try {
-        const channel = realtime.channels.get('mutable:rt_updatesanddeletes_error');
-        await channel.attach();
 
         try {
           await channel.deleteMessage({});
+          expect.fail('Should have thrown an error');
+        } catch (err) {
+          expect(err).to.have.property('code', 40003);
+        }
+
+        try {
+          await channel.appendMessage({ data: 'test' });
           expect.fail('Should have thrown an error');
         } catch (err) {
           expect(err).to.have.property('code', 40003);
@@ -229,13 +217,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         const channel = realtime.channels.get('mutable:rt_updatesanddeletes_append');
         await channel.attach();
 
-        // Set up subscription to capture the append (which comes back as an update)
-        let appendMsg;
         const appendPromise = new Promise((resolve) => {
           channel.subscribe((msg) => {
-            if (msg.action === 'message.update') {
-              appendMsg = msg;
-              resolve();
+            if (msg.action === 'message.append') {
+              resolve(msg);
             }
           });
         });
@@ -258,38 +243,37 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(appendResult).to.have.property('version');
         expect(appendResult.version).to.be.a('string');
 
-        await appendPromise;
+        const appendMsg = await appendPromise;
 
         expect(appendMsg.serial).to.equal(serial);
         expect(appendMsg.version?.serial).to.equal(appendResult.version);
         expect(appendMsg.version?.clientId).to.equal('rt-appender-client');
         expect(appendMsg.version?.description).to.equal('Realtime append operation');
         expect(appendMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime append' });
-        expect(appendMsg.action).to.equal('message.update');
-        expect(appendMsg.data).to.equal('Hello World');
+        expect(appendMsg.action).to.equal('message.append');
         expect(appendMsg.name).to.equal('original-message');
-      } finally {
-        realtime.close();
-      }
-    });
+        expect(appendMsg.data).to.equal(' World');
 
-    /**
-     * Test error handling for appendMessage without serial
-     */
-    it('Should error when appendMessage called without serial', async function () {
-      const helper = this.test.helper;
-      const realtime = helper.AblyRealtime();
+        // now reattach with rewind to get the full concatenated message
+        await channel.detach();
+        const updatePromise = new Promise((resolve) => {
+          channel.subscribe((msg) => {
+            resolve(msg);
+          });
+        });
 
-      try {
-        const channel = realtime.channels.get('mutable:rt_updatesanddeletes_error');
+        await channel.setOptions({ params: {rewind: '1' }});
         await channel.attach();
+        const updatedMsg = await updatePromise;
+        expect(updatedMsg.serial).to.equal(serial);
+        expect(updatedMsg.version?.serial).to.equal(appendResult.version);
+        expect(updatedMsg.version?.clientId).to.equal('rt-appender-client');
+        expect(updatedMsg.version?.description).to.equal('Realtime append operation');
+        expect(updatedMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime append' });
+        expect(updatedMsg.action).to.equal('message.update');
+        expect(updatedMsg.name).to.equal('original-message');
+        expect(updatedMsg.data).to.equal('Hello World');
 
-        try {
-          await channel.appendMessage({ data: 'test' });
-          expect.fail('Should have thrown an error');
-        } catch (err) {
-          expect(err).to.have.property('code', 40003);
-        }
       } finally {
         realtime.close();
       }
