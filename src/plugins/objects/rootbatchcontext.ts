@@ -51,7 +51,7 @@ export class RootBatchContext extends DefaultBatchContext {
 
   /** @internal */
   wrapInstance(instance: Instance<Value>): DefaultBatchContext {
-    const objectId = instance.id();
+    const objectId = instance.id;
     if (objectId) {
       // memoize liveobject instances by their object ids
       if (this._wrappedInstances.has(objectId)) {
