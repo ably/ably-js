@@ -250,7 +250,7 @@ shape.subscribe((update) => {
 const myObject = await channel.object.get();
 
 myObject.get('visits').subscribe(({ object, message }) => {
-  // object: PathObject representing the updated path
+  // object: PathObject representing the path at which there was an object change
   // message: ObjectMessage that carried the operation that led to the change, if applicable
   console.log('Updated path:', object.path());
   console.log('Operation:', message.operation);
