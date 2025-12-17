@@ -429,6 +429,34 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
+      /** @nospec */
+      it('RealtimeObject.get() on unattached channel implicitly attaches and waits for sync', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          expect(channel.state).to.equal('initialized', 'Channel should be in initialized state');
+
+          // Set up a timeout to catch if get() hangs
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('RealtimeObject.get() timed out')), 10000);
+          });
+
+          // Call get() on unattached channel - this should automatically attach and resolve
+          const getPromise = channel.object.get();
+
+          // Race between get() and timeout - get() should win by implicitly attaching and syncing state
+          const entryPathObject = await Promise.race([getPromise, timeoutPromise]);
+
+          // Channel should now be attached, and root object returned
+          expect(channel.state).to.equal('attached', 'Channel should be attached after RealtimeObject.get() call');
+
+          expectInstanceOf(entryPathObject, 'DefaultPathObject', 'entrypoint should be of DefaultPathObject type');
+          expect(entryPathObject.instance().id).to.equal('root', 'entrypoint should have an object id "root"');
+        }, client);
+      });
+
       function checkKeyDataOnPathObject({ helper, key, keyData, pathObject, msg }) {
         if (keyData.data.bytes != null) {
           helper.recordPrivateApi('call.BufferUtils.base64Decode');
@@ -7089,8 +7117,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       const expectAccessApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => realtimeObject.get(), errorMsg);
-
         expect(() => counter.value()).to.throw(errorMsg);
 
         expect(() => map.get('key')).to.throw(errorMsg);
@@ -7156,6 +7182,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
+            await expectToThrowAsync(async () => realtimeObject.get(), '"object_subscribe" channel mode');
             await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
             await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
           },
@@ -7178,6 +7205,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
+            await expectToThrowAsync(async () => realtimeObject.get(), '"object_subscribe" channel mode');
             await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
             await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
           },
@@ -7228,6 +7256,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is failed' });
             });
 
+            await expectToThrowAsync(async () => realtimeObject.get(), 'failed as channel state is failed');
             await expectAccessApiToThrow({
               realtimeObject,
               map,
