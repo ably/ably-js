@@ -3,6 +3,7 @@ import type {
   AnyPathObject,
   BatchContext,
   BatchFunction,
+  CompactedJsonValue,
   CompactedValue,
   EventCallback,
   Instance,
@@ -51,9 +52,12 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   /**
-   * Returns a JavaScript object representation of the object at this path
+   * Returns an in-memory JavaScript object representation of the object at this path.
    * If the path does not resolve to any specific entry, returns `undefined`.
-   * Buffers are converted to base64 strings.
+   * Buffers are returned as-is.
+   * For primitive types, this is an alias for calling value().
+   *
+   * Use compactJson() for a JSON-serializable representation.
    */
   compact<U extends Value = Value>(): CompactedValue<U> | undefined {
     try {
@@ -63,13 +67,39 @@ export class DefaultPathObject implements AnyPathObject {
         return resolved.compact() as CompactedValue<U>;
       }
 
+      return this.value() as CompactedValue<U>;
+    } catch (error) {
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
+        // ignore path resolution errors and return undefined
+        return undefined;
+      }
+      // rethrow everything else
+      throw error;
+    }
+  }
+
+  /**
+   * Returns a JSON-serializable representation of the object at this path.
+   * If the path does not resolve to any specific entry, returns `undefined`.
+   * Buffers are converted to base64 strings.
+   *
+   * Use compact() for an in-memory representation.
+   */
+  compactJson<U extends Value = Value>(): CompactedJsonValue<U> | undefined {
+    try {
+      const resolved = this._resolvePath(this._path);
+
+      if (resolved instanceof LiveMap) {
+        return resolved.compactJson() as CompactedJsonValue<U>;
+      }
+
       const value = this.value();
 
       if (this._client.Platform.BufferUtils.isBuffer(value)) {
-        return this._client.Platform.BufferUtils.base64Encode(value) as CompactedValue<U>;
+        return this._client.Platform.BufferUtils.base64Encode(value) as CompactedJsonValue<U>;
       }
 
-      return value as CompactedValue<U>;
+      return value as CompactedJsonValue<U>;
     } catch (error) {
       if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
         // ignore path resolution errors and return undefined

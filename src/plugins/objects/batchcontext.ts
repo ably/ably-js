@@ -1,5 +1,13 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { AnyBatchContext, BatchContext, CompactedValue, Instance, Primitive, Value } from '../../../ably';
+import type {
+  AnyBatchContext,
+  BatchContext,
+  CompactedJsonValue,
+  CompactedValue,
+  Instance,
+  Primitive,
+  Value,
+} from '../../../ably';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
@@ -37,6 +45,12 @@ export class DefaultBatchContext implements AnyBatchContext {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this._throwIfClosed();
     return this._instance.compact();
+  }
+
+  compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    return this._instance.compactJson();
   }
 
   get id(): string | undefined {
