@@ -297,7 +297,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await channel.attach();
           const entryPathObject = await channel.object.get();
 
-          expect(entryPathObject.instance().id()).to.equal('root', 'root object should have an object id "root"');
+          expect(entryPathObject.instance().id).to.equal('root', 'root object should have an object id "root"');
         }, client);
       });
 
@@ -2110,8 +2110,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectsCreatedPromise;
 
-            const mapId = entryInstance.get('map').id();
-            const counterId = entryInstance.get('counter').id();
+            const mapId = entryInstance.get('map').id;
+            const counterId = entryInstance.get('counter').id;
 
             const mapSubPromise = new Promise((resolve, reject) =>
               entryInstance.get('map').subscribe((event) => {
@@ -4846,7 +4846,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 expect(event.message.operation).to.deep.include(
                   {
                     action: 'map.set',
-                    objectId: entryPathObject.get('map').instance().id(),
+                    objectId: entryPathObject.get('map').instance().id,
                   },
                   'Check event message operation',
                 );
@@ -5185,7 +5185,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       const instanceScenarios = [
         {
-          description: 'DefaultInstance.id() returns object ID of the underlying LiveObject',
+          description: 'DefaultInstance.id returns object ID of the underlying LiveObject',
           action: async (ctx) => {
             const { objectsHelper, channelName, entryInstance } = ctx;
 
@@ -5208,8 +5208,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const map = entryInstance.get('map');
             const counter = entryInstance.get('counter');
 
-            expect(map.id()).to.equal(mapId, 'Check DefaultInstance.id() for map matches expected value');
-            expect(counter.id()).to.equal(counterId, 'Check DefaultInstance.id() for counter matches expected value');
+            expect(map.id).to.equal(mapId, 'Check DefaultInstance.id for map matches expected value');
+            expect(counter.id).to.equal(counterId, 'Check DefaultInstance.id for counter matches expected value');
           },
         },
 
@@ -5492,10 +5492,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const primitiveInstance = mapInstance.get('foo');
 
             // next methods silently handle incorrect underlying type
-            expect(
-              primitiveInstance.id(),
-              'Check DefaultInstance.id() for wrong underlying object type returns undefined',
-            ).to.be.undefined;
+            expect(primitiveInstance.id, 'Check DefaultInstance.id for wrong underlying object type returns undefined')
+              .to.be.undefined;
             expect(
               primitiveInstance.get('foo'),
               'Check DefaultInstance.get() for wrong underlying object type returns undefined',
@@ -5776,7 +5774,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 try {
                   expect(event.object, 'Check event object exists').to.exist;
                   expectInstanceOf(event.object, 'DefaultInstance', 'Check event object is DefaultInstance');
-                  expect(event.object.id()).to.equal('root', 'Check event object has correct object ID');
+                  expect(event.object.id).to.equal('root', 'Check event object has correct object ID');
                   expect(event.object).to.equal(entryInstance, 'Check event object is the same instance');
                   resolve();
                 } catch (error) {
@@ -5840,8 +5838,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 expect(event.message, 'Check event message exists').to.exist;
                 expect(event.message.operation).to.deep.include(
                   events.length === 0
-                    ? { action: 'map.set', objectId: map.id(), mapOp: { key: 'foo', data: { value: 'bar' } } }
-                    : { action: 'map.remove', objectId: map.id(), mapOp: { key: 'foo' } },
+                    ? { action: 'map.set', objectId: map.id, mapOp: { key: 'foo', data: { value: 'bar' } } }
+                    : { action: 'map.remove', objectId: map.id, mapOp: { key: 'foo' } },
                   'Check event message operation',
                 );
                 events.push(event);
@@ -5883,7 +5881,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 expect(event.message.operation).to.deep.include(
                   {
                     action: 'counter.inc',
-                    objectId: counter.id(),
+                    objectId: counter.id,
                     counterOp: { amount: events.length === 0 ? 1 : -2 },
                   },
                   'Check event message operation',
@@ -6291,7 +6289,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   expect(event?.message?.operation).to.deep.include(
                     {
                       action: 'counter.inc',
-                      objectId: counter.id(),
+                      objectId: counter.id,
                       counterOp: { amount: 1 },
                     },
                     'Check counter subscription callback is called with an expected event message for COUNTER_INC operation',
@@ -6332,7 +6330,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   expect(event?.message?.operation).to.deep.include(
                     {
                       action: 'counter.inc',
-                      objectId: counter.id(),
+                      objectId: counter.id,
                       counterOp: { amount: expectedInc },
                     },
                     `Check counter subscription callback is called with an expected event message operation for ${currentUpdateIndex + 1} times`,
@@ -6376,7 +6374,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   expect(event?.message?.operation).to.deep.include(
                     {
                       action: 'map.set',
-                      objectId: map.id(),
+                      objectId: map.id,
                       mapOp: { key: 'stringKey', data: { value: 'stringValue' } },
                     },
                     'Check map subscription callback is called with an expected event message for MAP_SET operation',
@@ -6412,7 +6410,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               map.subscribe((event) => {
                 try {
                   expect(event?.message?.operation).to.deep.include(
-                    { action: 'map.remove', objectId: map.id(), mapOp: { key: 'stringKey' } },
+                    { action: 'map.remove', objectId: map.id, mapOp: { key: 'stringKey' } },
                     'Check map subscription callback is called with an expected event message for MAP_REMOVE operation',
                   );
                   resolve();
@@ -7128,7 +7126,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         expect(() => ctx.get()).to.throw(errorMsg);
         expect(() => ctx.value()).to.throw(errorMsg);
         expect(() => ctx.compact()).to.throw(errorMsg);
-        expect(() => ctx.id()).to.throw(errorMsg);
+        expect(() => ctx.id).to.throw(errorMsg);
         expect(() => [...ctx.entries()]).to.throw(errorMsg);
         expect(() => [...ctx.keys()]).to.throw(errorMsg);
         expect(() => [...ctx.values()]).to.throw(errorMsg);

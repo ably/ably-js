@@ -2798,7 +2798,7 @@ interface BatchContextBase {
    *
    * @experimental
    */
-  id(): string | undefined;
+  readonly id: string | undefined;
 }
 
 /**
@@ -3372,7 +3372,7 @@ interface InstanceBase<T extends Value> {
    *
    * @experimental
    */
-  id(): string | undefined;
+  readonly id: string | undefined;
 
   /**
    * Registers a listener that is called each time this instance is updated.
