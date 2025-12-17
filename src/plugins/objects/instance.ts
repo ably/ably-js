@@ -34,7 +34,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     this._client = this._realtimeObject.getClient();
   }
 
-  id(): string | undefined {
+  get id(): string | undefined {
     if (!(this._value instanceof LiveObject)) {
       // no id exists for non-LiveObject types
       return undefined;
