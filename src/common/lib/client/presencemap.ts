@@ -176,7 +176,7 @@ export class PresenceMap extends EventEmitter {
     this.emit('sync');
   }
 
-  waitSync(callback: () => void) {
+  async waitSync(): Promise<void> {
     const syncInProgress = this.syncInProgress;
     Logger.logAction(
       this.logger,
@@ -185,10 +185,10 @@ export class PresenceMap extends EventEmitter {
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
     );
     if (!syncInProgress) {
-      callback();
       return;
     }
-    this.once('sync', callback);
+
+    await this.once('sync');
   }
 
   clear() {

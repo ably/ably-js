@@ -1043,6 +1043,31 @@ class RealtimeChannel extends EventEmitter {
     const restMixin = this.client.rest.channelMixin;
     return restMixin.getMessageVersions(this, serialOrMessage, params);
   }
+
+  /**
+   * Ensures the channel is attached, attaching if necessary.
+   *
+   * This method is intended for use by features like Presence or Objects that need to
+   * implicitly attach the channel when an operation is called (e.g., `presence.get()` per RTP11b,
+   * or `objects.get()`). This guarantees that the corresponding sync sequence will start and
+   * that the operation will resolve for callers even if they did not explicitly attach beforehand.
+   */
+  async ensureAttached(): Promise<void> {
+    switch (this.state) {
+      case 'attached':
+      case 'suspended':
+        break;
+      case 'initialized':
+      case 'detached':
+      case 'detaching':
+      case 'attaching':
+        await this.attach();
+        break;
+      case 'failed':
+      default:
+        throw ErrorInfo.fromValues(this.invalidStateError());
+    }
+  }
 }
 
 function omitAgent(channelParams?: API.ChannelParams) {
