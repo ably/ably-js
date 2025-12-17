@@ -39,10 +39,10 @@ export class DefaultBatchContext implements AnyBatchContext {
     return this._instance.compact();
   }
 
-  id(): string | undefined {
+  get id(): string | undefined {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this._throwIfClosed();
-    return this._instance.id();
+    return this._instance.id;
   }
 
   *entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]> {
@@ -81,7 +81,7 @@ export class DefaultBatchContext implements AnyBatchContext {
       throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 92007, 400);
     }
     this._rootContext.queueMessages(async () =>
-      LiveMap.createMapSetMessage(this._realtimeObject, this._instance.id()!, key, value),
+      LiveMap.createMapSetMessage(this._realtimeObject, this._instance.id!, key, value),
     );
   }
 
@@ -92,7 +92,7 @@ export class DefaultBatchContext implements AnyBatchContext {
       throw new this._client.ErrorInfo('Cannot remove a key from a non-LiveMap instance', 92007, 400);
     }
     this._rootContext.queueMessages(async () => [
-      LiveMap.createMapRemoveMessage(this._realtimeObject, this._instance.id()!, key),
+      LiveMap.createMapRemoveMessage(this._realtimeObject, this._instance.id!, key),
     ]);
   }
 
@@ -103,7 +103,7 @@ export class DefaultBatchContext implements AnyBatchContext {
       throw new this._client.ErrorInfo('Cannot increment a non-LiveCounter instance', 92007, 400);
     }
     this._rootContext.queueMessages(async () => [
-      LiveCounter.createCounterIncMessage(this._realtimeObject, this._instance.id()!, amount ?? 1),
+      LiveCounter.createCounterIncMessage(this._realtimeObject, this._instance.id!, amount ?? 1),
     ]);
   }
 
