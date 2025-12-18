@@ -1,6 +1,6 @@
 import * as Ably from 'ably';
-import { CompactedValue, LiveCounter, LiveMap } from 'ably';
-import Objects from 'ably/objects';
+import { CompactedJsonValue, CompactedValue, LiveCounter, LiveMap } from 'ably';
+import { Objects } from 'ably/objects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -64,7 +64,7 @@ globalThis.testAblyPackage = async function () {
   });
   unsubscribe();
 
-  // compact value
+  // compact values
   const compact: CompactedValue<LiveMap<MyCustomObject>> | undefined = myObject.compact();
   const compactType:
     | {
@@ -81,8 +81,33 @@ globalThis.testAblyPackage = async function () {
             | undefined;
         };
         counterKey: number;
+        arrayBufferKey: ArrayBuffer;
+        bufferKey: Buffer;
+      }
+    | undefined = compact;
+
+  const compactJson: CompactedJsonValue<LiveMap<MyCustomObject>> | undefined = myObject.compactJson();
+  const compactJsonType:
+    | {
+        numberKey: number;
+        stringKey: string;
+        booleanKey: boolean;
+        couldBeUndefined?: string | undefined;
+        mapKey:
+          | {
+              foo: 'bar';
+              nestedMap?:
+                | {
+                    baz: 'qux';
+                  }
+                | { objectId: string }
+                | undefined;
+            }
+          | { objectId: string };
+        counterKey: number;
         arrayBufferKey: string;
         bufferKey: string;
       }
-    | undefined = compact;
+    | { objectId: string }
+    | undefined = compactJson;
 };

@@ -138,11 +138,12 @@ module.exports = function (grunt) {
       });
   });
 
-  grunt.registerTask('build:objects', function () {
+  grunt.registerTask('build:objects:bundle', function () {
     var done = this.async();
 
     Promise.all([
       esbuild.build(esbuildConfig.objectsPluginConfig),
+      esbuild.build(esbuildConfig.objectsPluginEsmConfig),
       esbuild.build(esbuildConfig.objectsPluginCdnConfig),
       esbuild.build(esbuildConfig.minifiedObjectsPluginCdnConfig),
     ])
@@ -153,6 +154,19 @@ module.exports = function (grunt) {
         done(err);
       });
   });
+
+  grunt.registerTask(
+    'build:objects:types',
+    'Generate objects.d.mts from objects.d.ts by adding .js extensions to relative imports',
+    function () {
+      const dtsContent = fs.readFileSync('objects.d.ts', 'utf8');
+      const mtsContent = dtsContent.replace(/from '(\.\/[^']+)'/g, "from '$1.js'");
+      fs.writeFileSync('objects.d.mts', mtsContent);
+      grunt.log.ok('Generated objects.d.mts from objects.d.ts');
+    },
+  );
+
+  grunt.registerTask('build:objects', ['build:objects:bundle', 'build:objects:types']);
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
