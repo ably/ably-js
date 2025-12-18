@@ -59,24 +59,28 @@ export class LiveCounter {
 }
 
 /**
- * Provides a {@link RealtimeClient} instance with the ability to use Objects functionality.
+ * The Objects plugin that provides a {@link RealtimeClient} instance with the ability to use Objects functionality.
  *
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link RealtimeClient.constructor}:
  *
  * ```javascript
  * import { Realtime } from 'ably';
- * import Objects from 'ably/objects';
+ * import { Objects } from 'ably/objects';
  * const realtime = new Realtime({ ...options, plugins: { Objects } });
  * ```
  *
- * The Objects plugin can also be used with a {@link BaseRealtime} client
+ * The Objects plugin can also be used with a {@link BaseRealtime} client:
  *
  * ```javascript
  * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
- * import Objects from 'ably/objects';
+ * import { Objects } from 'ably/objects';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Objects } });
  * ```
+ *
+ * You can also import individual utilities alongside the plugin:
+ *
+ * ```javascript
+ * import { Objects, LiveCounter, LiveMap } from 'ably/objects';
+ * ```
  */
-declare const Objects: any;
-
-export = Objects;
+export declare const Objects: any;

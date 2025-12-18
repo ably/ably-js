@@ -85,6 +85,15 @@ const objectsPluginConfig = {
   external: ['dequal'],
 };
 
+const objectsPluginEsmConfig = {
+  ...createBaseConfig(),
+  format: 'esm',
+  plugins: [],
+  entryPoints: ['src/plugins/objects/index.ts'],
+  outfile: 'build/objects.mjs',
+  external: ['dequal'],
+};
+
 const objectsPluginCdnConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/plugins/objects/index.ts'],
@@ -109,6 +118,7 @@ module.exports = {
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
   objectsPluginConfig,
+  objectsPluginEsmConfig,
   objectsPluginCdnConfig,
   minifiedObjectsPluginCdnConfig,
 };
