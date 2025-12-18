@@ -7,10 +7,10 @@ import {
   LiveCounterPathObject,
   LiveMap,
   LiveMapPathObject,
+  LiveObjects,
   ObjectMessage,
-  Objects,
   PathObject,
-} from 'ably/objects';
+} from 'ably/liveobjects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -38,12 +38,12 @@ type MyCustomObject = {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { Objects } });
+  const realtime = new Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   await channel.attach();
-  // check Objects can be accessed on a channel with a custom type parameter.
-  // check that we can refer to the Objects types exported from 'ably/objects' by referencing a LiveMap interface.
+  // check LiveObjects can be accessed on a channel with a custom type parameter.
+  // check that we can refer to the LiveObjects types exported from 'ably/liveobjects' by referencing a LiveMap interface.
   const myObject: PathObject<LiveMap<MyCustomObject>> = await channel.object.get<MyCustomObject>();
 
   // check entrypoint has expected LiveMap TypeScript type methods

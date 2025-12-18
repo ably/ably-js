@@ -1,5 +1,5 @@
 import { __livetype } from '../../../ably';
-import { LiveCounter as PublicLiveCounter } from '../../../objects';
+import { LiveCounter as PublicLiveCounter } from '../../../liveobjects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';

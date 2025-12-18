@@ -1,7 +1,7 @@
-import Objects from './objects';
+import LiveObjects from './liveobjects';
 import Push from './push';
 
 export interface StandardPlugins {
-  Objects?: typeof Objects;
+  LiveObjects?: typeof LiveObjects;
   Push?: typeof Push;
 }

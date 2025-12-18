@@ -1,4 +1,4 @@
-import type { Instance, Value } from '../../../objects';
+import type { Instance, Value } from '../../../liveobjects';
 import { DefaultBatchContext } from './batchcontext';
 import { ObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';

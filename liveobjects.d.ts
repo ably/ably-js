@@ -1,7 +1,7 @@
 /**
- * You are currently viewing the Ably Objects plugin type definitions for the Ably JavaScript Client Library SDK.
+ * You are currently viewing the Ably LiveObjects plugin type definitions for the Ably JavaScript Client Library SDK.
  *
- * To get started with Objects, follow the [Quickstart Guide](https://ably.com/docs/liveobjects/quickstart/javascript) or view the [Introduction to Objects](https://ably.com/docs/liveobjects).
+ * To get started with LiveObjects, follow the [Quickstart Guide](https://ably.com/docs/liveobjects/quickstart/javascript) or view the [Introduction to LiveObjects](https://ably.com/docs/liveobjects).
  *
  * @module
  */
@@ -70,7 +70,7 @@ export declare interface RealtimeObject {
    * Example:
    *
    * ```typescript
-   * import { LiveCounter } from 'ably/objects';
+   * import { LiveCounter } from 'ably/liveobjects';
    *
    * type MyObject = {
    *   myTypedCounter: LiveCounter;
@@ -1852,35 +1852,35 @@ export class LiveCounter {
 }
 
 /**
- * The Objects plugin that provides a {@link RealtimeClient} instance with the ability to use Objects functionality.
+ * The LiveObjects plugin that provides a {@link RealtimeClient} instance with the ability to use LiveObjects functionality.
  *
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link RealtimeClient.constructor}:
  *
  * ```javascript
  * import { Realtime } from 'ably';
- * import { Objects } from 'ably/objects';
- * const realtime = new Realtime({ ...options, plugins: { Objects } });
+ * import { LiveObjects } from 'ably/liveobjects';
+ * const realtime = new Realtime({ ...options, plugins: { LiveObjects } });
  * ```
  *
- * The Objects plugin can also be used with a {@link BaseRealtime} client:
+ * The LiveObjects plugin can also be used with a {@link BaseRealtime} client:
  *
  * ```javascript
  * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
- * import { Objects } from 'ably/objects';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Objects } });
+ * import { LiveObjects } from 'ably/liveobjects';
+ * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, LiveObjects } });
  * ```
  *
  * You can also import individual utilities alongside the plugin:
  *
  * ```javascript
- * import { Objects, LiveCounter, LiveMap } from 'ably/objects';
+ * import { LiveObjects, LiveCounter, LiveMap } from 'ably/liveobjects';
  * ```
  */
-export declare const Objects: any;
+export declare const LiveObjects: any;
 
 /**
  * Module augmentation to add the `object` property to `RealtimeChannel` when
- * importing from 'ably/objects'. This ensures all Objects types come from
+ * importing from 'ably/liveobjects'. This ensures all LiveObjects types come from
  * the same module (CJS or ESM), avoiding type incompatibility issues.
  */
 declare module './ably' {

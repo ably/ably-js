@@ -12,9 +12,9 @@ export {
 };
 
 /**
- * The named Objects plugin object export to be passed to the Ably client.
+ * The named LiveObjects plugin object export to be passed to the Ably client.
  */
-export const Objects = {
+export const LiveObjects = {
   LiveCounter: LiveCounterValueType,
   LiveMap: LiveMapValueType,
   ObjectMessage,

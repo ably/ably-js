@@ -2,7 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import type { ChannelState } from '../../../ably';
-import type * as ObjectsApi from '../../../objects';
+import type * as ObjectsApi from '../../../liveobjects';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';

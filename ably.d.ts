@@ -304,7 +304,7 @@ export type Transport = 'web_socket' | 'xhr_polling' | 'comet';
  * This enables TypeScript to distinguish between these otherwise empty interfaces,
  * which would be structurally identical without this discriminating property.
  *
- * This symbol is exported from 'ably' so that the types in 'ably/objects'
+ * This symbol is exported from 'ably' so that the types in 'ably/liveobjects'
  * (both ESM and CJS versions) share the same symbol, ensuring type compatibility.
  */
 export declare const __livetype: unique symbol;
@@ -638,7 +638,7 @@ export interface CorePlugins {
   /**
    * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.object}.
    */
-  Objects?: unknown;
+  LiveObjects?: unknown;
 }
 
 /**

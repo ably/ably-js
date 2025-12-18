@@ -3,8 +3,8 @@
 /**
  * Helper class to create pre-determined objects tree on channels and create object messages.
  */
-define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlugin) {
-  const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
+define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObjectsPlugin) {
+  const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
 
   const ACTIONS = {
     MAP_CREATE: 0,
@@ -27,7 +27,7 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     return Helper.randomString();
   }
 
-  class ObjectsHelper {
+  class LiveObjectsHelper {
     constructor(helper) {
       this._helper = helper;
       this._rest = helper.AblyRest({ useBinaryProtocol: false });
@@ -426,5 +426,5 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
   }
 
-  return (module.exports = ObjectsHelper);
+  return (module.exports = LiveObjectsHelper);
 });

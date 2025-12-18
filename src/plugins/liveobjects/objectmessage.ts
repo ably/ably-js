@@ -2,7 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
-import type * as ObjectsApi from '../../../objects';
+import type * as ObjectsApi from '../../../liveobjects';
 
 const operationActions: ObjectsApi.ObjectOperationAction[] = [
   'map.create',

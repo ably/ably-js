@@ -1,5 +1,5 @@
 import { __livetype } from '../../../ably';
-import { LiveMap as PublicLiveMap, Primitive, Value } from '../../../objects';
+import { Primitive, LiveMap as PublicLiveMap, Value } from '../../../liveobjects';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
 import { ObjectId } from './objectid';

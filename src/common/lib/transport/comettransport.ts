@@ -357,7 +357,7 @@ abstract class CometTransport extends Transport {
               items[i],
               this.connectionManager.realtime._RealtimePresence,
               this.connectionManager.realtime._Annotations,
-              this.connectionManager.realtime._objectsPlugin,
+              this.connectionManager.realtime._liveObjectsPlugin,
             ),
           );
     } catch (e) {

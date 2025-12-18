@@ -30,22 +30,22 @@
       "types": "./push.d.ts",
       "import": "./build/push.js"
     },
-    "./objects": {
+    "./liveobjects": {
       "import": {
-        "types": "./objects.d.mts",
-        "default": "./build/objects.mjs"
+        "types": "./liveobjects.d.mts",
+        "default": "./build/liveobjects.mjs"
       },
       "require": {
-        "types": "./objects.d.ts",
-        "default": "./build/objects.js"
+        "types": "./liveobjects.d.ts",
+        "default": "./build/liveobjects.js"
       }
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
-    "objects.d.ts",
-    "objects.d.mts",
+    "liveobjects.d.ts",
+    "liveobjects.d.mts",
     "modular.d.ts",
     "push.d.ts",
     "resources/**",
@@ -151,8 +151,8 @@
     "start:react": "npx vite serve",
     "grunt": "grunt",
     "test": "npm run test:node",
-    "test:node": "npm run build:node && npm run build:push && npm run build:objects && mocha",
-    "test:grep": "npm run build:node && npm run build:push && npm run build:objects && mocha --grep",
+    "test:node": "npm run build:node && npm run build:push && npm run build:liveobjects && mocha",
+    "test:grep": "npm run build:node && npm run build:push && npm run build:liveobjects && mocha --grep",
     "test:node:skip-build": "mocha",
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
@@ -166,7 +166,7 @@
     "build:react:mjs": "tsc --project src/platform/react-hooks/tsconfig.mjs.json && cp src/platform/react-hooks/res/package.mjs.json react/mjs/package.json",
     "build:react:cjs": "tsc --project src/platform/react-hooks/tsconfig.cjs.json && cp src/platform/react-hooks/res/package.cjs.json react/cjs/package.json",
     "build:push": "grunt build:push",
-    "build:objects": "grunt build:objects",
+    "build:liveobjects": "grunt build:liveobjects",
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

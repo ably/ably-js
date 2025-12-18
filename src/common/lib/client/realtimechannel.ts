@@ -17,7 +17,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
-import type { RealtimeObject, WireObjectMessage } from 'plugins/objects';
+import type { RealtimeObject, WireObjectMessage } from 'plugins/liveobjects';
 import type RealtimePresence from './realtimepresence';
 import type RealtimeAnnotations from './realtimeannotations';
 
@@ -137,8 +137,8 @@ class RealtimeChannel extends EventEmitter {
       this._push = new client.options.plugins.Push.PushChannel(this);
     }
 
-    if (client.options.plugins?.Objects) {
-      this._object = new client.options.plugins.Objects.RealtimeObject(this);
+    if (client.options.plugins?.LiveObjects) {
+      this._object = new client.options.plugins.LiveObjects.RealtimeObject(this);
     }
   }
 
@@ -152,7 +152,7 @@ class RealtimeChannel extends EventEmitter {
   /** @spec RTL27 */
   get object() {
     if (!this._object) {
-      Utils.throwMissingPluginError('Objects'); // RTL27b
+      Utils.throwMissingPluginError('LiveObjects'); // RTL27b
     }
     return this._object; // RTL27a
   }

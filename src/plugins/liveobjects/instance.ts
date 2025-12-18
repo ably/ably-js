@@ -11,7 +11,7 @@ import type {
   LiveObject as LiveObjectType,
   Primitive,
   Value,
-} from '../../../objects';
+} from '../../../liveobjects';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
