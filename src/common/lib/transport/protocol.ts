@@ -84,7 +84,7 @@ class Protocol extends EventEmitter {
             pendingMessage.message,
             this.transport.connectionManager.realtime._RealtimePresence,
             this.transport.connectionManager.realtime._Annotations,
-            this.transport.connectionManager.realtime._objectsPlugin,
+            this.transport.connectionManager.realtime._liveObjectsPlugin,
           ),
       );
     }

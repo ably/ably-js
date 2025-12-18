@@ -13,7 +13,7 @@ import type {
   PathObjectSubscriptionOptions,
   Primitive,
   Value,
-} from '../../../objects';
+} from '../../../liveobjects';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';

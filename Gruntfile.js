@@ -73,7 +73,7 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push', 'build:objects']);
+  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push', 'build:liveobjects']);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
@@ -138,14 +138,14 @@ module.exports = function (grunt) {
       });
   });
 
-  grunt.registerTask('build:objects:bundle', function () {
+  grunt.registerTask('build:liveobjects:bundle', function () {
     var done = this.async();
 
     Promise.all([
-      esbuild.build(esbuildConfig.objectsPluginConfig),
-      esbuild.build(esbuildConfig.objectsPluginEsmConfig),
-      esbuild.build(esbuildConfig.objectsPluginCdnConfig),
-      esbuild.build(esbuildConfig.minifiedObjectsPluginCdnConfig),
+      esbuild.build(esbuildConfig.liveObjectsPluginConfig),
+      esbuild.build(esbuildConfig.liveObjectsPluginEsmConfig),
+      esbuild.build(esbuildConfig.liveObjectsPluginCdnConfig),
+      esbuild.build(esbuildConfig.minifiedLiveObjectsPluginCdnConfig),
     ])
       .then(() => {
         done(true);
@@ -156,22 +156,22 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask(
-    'build:objects:types',
-    'Generate objects.d.mts from objects.d.ts by adding .js extensions to relative imports',
+    'build:liveobjects:types',
+    'Generate liveobjects.d.mts from liveobjects.d.ts by adding .js extensions to relative imports',
     function () {
-      const dtsContent = fs.readFileSync('objects.d.ts', 'utf8');
+      const dtsContent = fs.readFileSync('liveobjects.d.ts', 'utf8');
       const mtsContent = dtsContent.replace(/from '(\.\/[^']+)'/g, "from '$1.js'");
-      fs.writeFileSync('objects.d.mts', mtsContent);
-      grunt.log.ok('Generated objects.d.mts from objects.d.ts');
+      fs.writeFileSync('liveobjects.d.mts', mtsContent);
+      grunt.log.ok('Generated liveobjects.d.mts from liveobjects.d.ts');
     },
   );
 
-  grunt.registerTask('build:objects', ['build:objects:bundle', 'build:objects:types']);
+  grunt.registerTask('build:liveobjects', ['build:liveobjects:bundle', 'build:liveobjects:types']);
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
     'build:push',
-    'build:objects',
+    'build:liveobjects',
     'checkGitSubmodules',
     'mocha:webserver',
   ]);

@@ -1,5 +1,5 @@
 import { __livetype } from '../../../ably';
-import { LiveCounter } from '../../../objects';
+import { LiveCounter } from '../../../liveobjects';
 import { ObjectId } from './objectid';
 import {
   createInitialValueJSONString,
