@@ -7,7 +7,7 @@ import type {
   Instance,
   Primitive,
   Value,
-} from '../../../ably';
+} from '../../../objects';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';

@@ -1,7 +1,8 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import type * as API from '../../../ably';
+import type { ChannelState } from '../../../ably';
+import type * as ObjectsApi from '../../../objects';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
@@ -79,7 +80,7 @@ export class RealtimeObject {
    * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
    */
-  async get<T extends Record<string, API.Value>>(): Promise<API.PathObject<API.LiveMap<T>>> {
+  async get<T extends Record<string, ObjectsApi.Value>>(): Promise<ObjectsApi.PathObject<ObjectsApi.LiveMap<T>>> {
     this._throwIfMissingChannelMode('object_subscribe');
 
     // implicit attach before proceeding
@@ -223,7 +224,7 @@ export class RealtimeObject {
   /**
    * @internal
    */
-  actOnChannelState(state: API.ChannelState, hasObjects?: boolean): void {
+  actOnChannelState(state: ChannelState, hasObjects?: boolean): void {
     switch (state) {
       case 'attached':
         this.onAttached(hasObjects);
@@ -474,7 +475,7 @@ export class RealtimeObject {
     }
   }
 
-  private _throwIfInChannelState(channelState: API.ChannelState[]): void {
+  private _throwIfInChannelState(channelState: ChannelState[]): void {
     if (channelState.includes(this._channel.state)) {
       throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }

@@ -1,20 +1,19 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import type { EventCallback, Subscription } from '../../../ably';
 import type {
   AnyPathObject,
   BatchContext,
   BatchFunction,
   CompactedJsonValue,
   CompactedValue,
-  EventCallback,
   Instance,
   LiveObject as LiveObjectType,
   PathObject,
   PathObjectSubscriptionEvent,
   PathObjectSubscriptionOptions,
   Primitive,
-  Subscription,
   Value,
-} from '../../../ably';
+} from '../../../objects';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';

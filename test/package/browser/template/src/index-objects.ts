@@ -1,6 +1,16 @@
-import * as Ably from 'ably';
-import { CompactedJsonValue, CompactedValue, LiveCounter, LiveMap } from 'ably';
-import { Objects } from 'ably/objects';
+import { Realtime } from 'ably';
+import {
+  AnyPathObject,
+  CompactedJsonValue,
+  CompactedValue,
+  LiveCounter,
+  LiveCounterPathObject,
+  LiveMap,
+  LiveMapPathObject,
+  ObjectMessage,
+  Objects,
+  PathObject,
+} from 'ably/objects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -28,13 +38,13 @@ type MyCustomObject = {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Ably.Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { Objects } });
+  const realtime = new Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { Objects } });
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   await channel.attach();
   // check Objects can be accessed on a channel with a custom type parameter.
-  // check that we can refer to the Objects types exported from 'ably' by referencing a LiveMap interface.
-  const myObject: Ably.PathObject<LiveMap<MyCustomObject>> = await channel.object.get<MyCustomObject>();
+  // check that we can refer to the Objects types exported from 'ably/objects' by referencing a LiveMap interface.
+  const myObject: PathObject<LiveMap<MyCustomObject>> = await channel.object.get<MyCustomObject>();
 
   // check entrypoint has expected LiveMap TypeScript type methods
   const size: number | undefined = myObject.size();
@@ -46,9 +56,8 @@ globalThis.testAblyPackage = async function () {
   const aBoolean: boolean | undefined = myObject.get('booleanKey').value();
   const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined').value();
   // objects:
-  const counter: Ably.LiveCounterPathObject = myObject.get('counterKey');
-  const map: Ably.LiveMapPathObject<MyCustomObject['mapKey'] extends LiveMap<infer T> ? T : never> =
-    myObject.get('mapKey');
+  const counter: LiveCounterPathObject = myObject.get('counterKey');
+  const map: LiveMapPathObject<MyCustomObject['mapKey'] extends LiveMap<infer T> ? T : never> = myObject.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the entrypoint object,
   // so the next calls would fail. we only need to check that TypeScript types work
@@ -59,8 +68,8 @@ globalThis.testAblyPackage = async function () {
 
   // check subscription callback has correct TypeScript types
   const { unsubscribe } = myObject.subscribe(({ object, message }) => {
-    const typedObject: Ably.AnyPathObject = object;
-    const typedMessage: Ably.ObjectMessage | undefined = message;
+    const typedObject: AnyPathObject = object;
+    const typedMessage: ObjectMessage | undefined = message;
   });
   unsubscribe();
 
