@@ -11,7 +11,10 @@ export {
   WireObjectMessage,
 };
 
-export default {
+/**
+ * The named Objects plugin object export to be passed to the Ably client.
+ */
+export const Objects = {
   LiveCounter: LiveCounterValueType,
   LiveMap: LiveMapValueType,
   ObjectMessage,

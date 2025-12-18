@@ -31,14 +31,21 @@
       "import": "./build/push.js"
     },
     "./objects": {
-      "types": "./objects.d.ts",
-      "import": "./build/objects.js"
+      "import": {
+        "types": "./objects.d.mts",
+        "default": "./build/objects.mjs"
+      },
+      "require": {
+        "types": "./objects.d.ts",
+        "default": "./build/objects.js"
+      }
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
     "objects.d.ts",
+    "objects.d.mts",
     "modular.d.ts",
     "push.d.ts",
     "resources/**",
