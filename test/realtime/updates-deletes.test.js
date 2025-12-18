@@ -262,7 +262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         });
 
-        await channel.setOptions({ params: {rewind: '1' }});
+        await channel.setOptions({ params: { rewind: '1' } });
         await channel.attach();
         const updatedMsg = await updatePromise;
         expect(updatedMsg.serial).to.equal(serial);
@@ -273,7 +273,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(updatedMsg.action).to.equal('message.update');
         expect(updatedMsg.name).to.equal('original-message');
         expect(updatedMsg.data).to.equal('Hello World');
-
       } finally {
         realtime.close();
       }

@@ -8,7 +8,6 @@ import { CipherOptions } from '../types/basemessage';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
-import { UpdateDeleteResponse } from '../types/protocolmessage';
 
 export interface RestHistoryParams {
   start?: number;
@@ -96,7 +95,7 @@ export class RestChannelMixin {
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<UpdateDeleteResponse> {
+  ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo(
         'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
@@ -119,7 +118,7 @@ export class RestChannelMixin {
     const requestBody = serializeMessage(encoded, client._MsgPack, format);
 
     let method = Resource.patch;
-    const { body, unpacked } = await method<UpdateDeleteResponse>(
+    const { body, unpacked } = await method<API.UpdateDeleteResult>(
       client,
       this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial),
       requestBody,
@@ -129,8 +128,8 @@ export class RestChannelMixin {
       true,
     );
 
-    const decoded = unpacked ? body : Utils.decodeBody<UpdateDeleteResponse>(body, client._MsgPack, format);
-    return decoded || { version: null };
+    const decoded = unpacked ? body : Utils.decodeBody<API.UpdateDeleteResult>(body, client._MsgPack, format);
+    return decoded || { versionSerial: null };
   }
 
   static getMessageVersions(

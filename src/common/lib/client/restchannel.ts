@@ -16,13 +16,12 @@ import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
-import { PublishResponse, UpdateDeleteResponse } from '../types/protocolmessage';
 import type { PushChannel } from 'plugins/push';
 import type RestAnnotations from './restannotations';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
-type RestPublishResponse = PublishResponse & { channel?: string; messageId?: string };
+type RestPublishResponse = API.PublishResult & { channel?: string; messageId?: string };
 
 function allEmptyIds(messages: Array<Message>) {
   return messages.every(function (message: Message) {
@@ -78,7 +77,7 @@ class RestChannel {
     return this.client.rest.channelMixin.history(this, params);
   }
 
-  async publish(...args: any[]): Promise<PublishResponse> {
+  async publish(...args: any[]): Promise<API.PublishResult> {
     const first = args[0],
       second = args[1];
     let messages: Array<Message>;
@@ -142,7 +141,7 @@ class RestChannel {
     requestBody: RequestBody | null,
     headers: Record<string, string>,
     params: any,
-  ): Promise<PublishResponse> {
+  ): Promise<API.PublishResult> {
     const client = this.client;
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
     const { body, unpacked } = await Resource.post<RestPublishResponse>(
@@ -154,7 +153,9 @@ class RestChannel {
       null,
       true,
     );
-    const decoded = (unpacked ? body : Utils.decodeBody<RestPublishResponse>(body, client._MsgPack, format)) || {};
+    const decoded =
+      (unpacked ? body : Utils.decodeBody<RestPublishResponse>(body, client._MsgPack, format)) ||
+      ({} as RestPublishResponse);
     delete decoded['channel'];
     delete decoded['messageId'];
     return decoded;
@@ -173,7 +174,7 @@ class RestChannel {
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<UpdateDeleteResponse> {
+  ): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.updateMessage()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.updateDeleteMessage(this, 'message.update', message, operation, params);
   }
@@ -182,7 +183,7 @@ class RestChannel {
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<UpdateDeleteResponse> {
+  ): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.deleteMessage()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.updateDeleteMessage(this, 'message.delete', message, operation, params);
   }
@@ -191,7 +192,7 @@ class RestChannel {
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<UpdateDeleteResponse> {
+  ): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.appendMessage()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.updateDeleteMessage(this, 'message.append', message, operation, params);
   }
