@@ -2432,8 +2432,8 @@ export type LiveObject = LiveMap | LiveCounter;
 export type Value = LiveObject | Primitive;
 
 /**
- * CompactedValue transforms LiveObject types into plain JavaScript equivalents.
- * LiveMap becomes an object, LiveCounter becomes a number, binary values become base64-encoded strings, other primitives remain unchanged.
+ * CompactedValue transforms LiveObject types into in-memory JavaScript equivalents.
+ * LiveMap becomes an object, LiveCounter becomes a number, primitive values remain unchanged.
  */
 export type CompactedValue<T extends Value> =
   // LiveMap types
@@ -2441,6 +2441,39 @@ export type CompactedValue<T extends Value> =
     ? { [K in keyof U]: CompactedValue<U[K]> }
     : [T] extends [LiveMap<infer U> | undefined]
       ? { [K in keyof U]: CompactedValue<U[K]> } | undefined
+      : // LiveCounter types
+        [T] extends [LiveCounter]
+        ? number
+        : [T] extends [LiveCounter | undefined]
+          ? number | undefined
+          : // Other primitive types
+            [T] extends [Primitive]
+            ? T
+            : [T] extends [Primitive | undefined]
+              ? T
+              : any;
+
+/**
+ * Represents a cyclic object reference in a JSON-serializable format.
+ */
+export interface ObjectIdReference {
+  /** The referenced object Id. */
+  objectId: string;
+}
+
+/**
+ * CompactedJsonValue transforms LiveObject types into JSON-serializable equivalents.
+ * LiveMap becomes an object, LiveCounter becomes a number, binary values become base64-encoded strings,
+ * other primitives remain unchanged.
+ *
+ * Additionally, cyclic references are represented as `{ objectId: string }` instead of in-memory pointers to same objects.
+ */
+export type CompactedJsonValue<T extends Value> =
+  // LiveMap types - note: cyclic references become ObjectIdReference
+  [T] extends [LiveMap<infer U>]
+    ? { [K in keyof U]: CompactedJsonValue<U[K]> | ObjectIdReference }
+    : [T] extends [LiveMap<infer U> | undefined]
+      ? { [K in keyof U]: CompactedJsonValue<U[K]> | ObjectIdReference } | undefined
       : // LiveCounter types
         [T] extends [LiveCounter]
         ? number
@@ -2604,17 +2637,32 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
   instance(): LiveMapInstance<T> | undefined;
 
   /**
-   * Get a JavaScript object representation of the map at this path.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the map at this path.
    * Cyclic references are handled through memoization, returning shared compacted
    * object references for previously visited objects. This means the value returned
    * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
+   * Use {@link LiveMapPathObject.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the map at this path.
+   * Binary values are converted to base64-encoded strings.
+   * Cyclic references are represented as `{ objectId: string }` instead of in-memory pointers,
+   * making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the path does not resolve to any specific instance, returns `undefined`.
+   *
+   * Use {@link LiveMapPathObject.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
 
 /**
@@ -2640,11 +2688,23 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
 
   /**
    * Get a number representation of the counter at this path.
+   * This is an alias for calling {@link LiveCounterPathObject.value | value()}.
+   *
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
+
+  /**
+   * Get a number representation of the counter at this path.
+   * This is an alias for calling {@link LiveCounterPathObject.value | value()}.
+   *
+   * If the path does not resolve to any specific instance, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
 
 /**
@@ -2661,13 +2721,23 @@ export interface PrimitivePathObject<T extends Primitive = Primitive> extends Pa
 
   /**
    * Get a JavaScript object representation of the primitive value at this path.
-   * Binary values are returned as base64-encoded strings.
+   * This is an alias for calling {@link PrimitivePathObject.value | value()}.
    *
    * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the primitive value at this path.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * If the path does not resolve to any specific entry, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<T> | undefined;
 }
 
 /**
@@ -2756,8 +2826,8 @@ export interface AnyPathObject
   instance<T extends Value = Value>(): Instance<T> | undefined;
 
   /**
-   * Get a JavaScript object representation of the object at this path.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the object at this path.
+   * For primitive types, this is an alias for calling {@link AnyPathObject.value | value()}.
    *
    * When compacting a {@link LiveMap}, cyclic references are handled through
    * memoization, returning shared compacted object references for previously
@@ -2766,9 +2836,26 @@ export interface AnyPathObject
    *
    * If the path does not resolve to any specific entry, returns `undefined`.
    *
+   * Use {@link AnyPathObject.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the object at this path.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * When compacting a {@link LiveMap}, cyclic references are represented as `{ objectId: string }`
+   * instead of in-memory pointers, making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the path does not resolve to any specific entry, returns `undefined`.
+   *
+   * Use {@link AnyPathObject.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
 
 /**
@@ -2865,17 +2952,32 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
   get<K extends keyof T & string>(key: K): BatchContext<T[K]> | undefined;
 
   /**
-   * Get a JavaScript object representation of the map instance.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the map instance.
    * Cyclic references are handled through memoization, returning shared compacted
    * object references for previously visited objects. This means the value returned
    * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
+   * Use {@link LiveMapBatchContext.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the map instance.
+   * Binary values are converted to base64-encoded strings.
+   * Cyclic references are represented as `{ objectId: string }` instead of in-memory pointers,
+   * making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * Use {@link LiveMapBatchContext.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
 
 /**
@@ -2892,11 +2994,23 @@ export interface LiveCounterBatchContext extends BatchContextBase, BatchContextL
 
   /**
    * Get a number representation of the counter instance.
+   * This is an alias for calling {@link LiveCounterBatchContext.value | value()}.
+   *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
+
+  /**
+   * Get a number representation of the counter instance.
+   * This is an alias for calling {@link LiveCounterBatchContext.value | value()}.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
 
 /**
@@ -2913,13 +3027,23 @@ export interface PrimitiveBatchContext<T extends Primitive = Primitive> {
 
   /**
    * Get a JavaScript object representation of the primitive value.
-   * Binary values are returned as base64-encoded strings.
+   * This is an alias for calling {@link PrimitiveBatchContext.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the primitive value.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<T> | undefined;
 }
 
 /**
@@ -3003,8 +3127,8 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
   /**
-   * Get a JavaScript object representation of the object instance.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the object instance.
+   * For primitive types, this is an alias for calling {@link AnyBatchContext.value | value()}.
    *
    * When compacting a {@link LiveMap}, cyclic references are handled through
    * memoization, returning shared compacted object references for previously
@@ -3013,9 +3137,26 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
+   * Use {@link AnyBatchContext.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the object instance.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * When compacting a {@link LiveMap}, cyclic references are represented as `{ objectId: string }`
+   * instead of in-memory pointers, making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * Use {@link AnyBatchContext.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
 
 /**
@@ -3477,17 +3618,32 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
   get<K extends keyof T & string>(key: K): Instance<T[K]> | undefined;
 
   /**
-   * Get a JavaScript object representation of the map instance.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the map instance.
    * Cyclic references are handled through memoization, returning shared compacted
    * object references for previously visited objects. This means the value returned
    * from `compact()` cannot be directly JSON-stringified if the object may contain cycles.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
+   * Use {@link LiveMapInstance.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the map instance.
+   * Binary values are converted to base64-encoded strings.
+   * Cyclic references are represented as `{ objectId: string }` instead of in-memory pointers,
+   * making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * Use {@link LiveMapInstance.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
 
 /**
@@ -3504,11 +3660,23 @@ export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCoun
 
   /**
    * Get a number representation of the counter instance.
+   * This is an alias for calling {@link LiveCounterInstance.value | value()}.
+   *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
+
+  /**
+   * Get a number representation of the counter instance.
+   * This is an alias for calling {@link LiveCounterInstance.value | value()}.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
 
 /**
@@ -3528,13 +3696,23 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
 
   /**
    * Get a JavaScript object representation of the primitive value.
-   * Binary values are returned as base64-encoded strings.
+   * This is an alias for calling {@link PrimitiveInstance.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
   compact(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the primitive value.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * @experimental
+   */
+  compactJson(): CompactedJsonValue<T> | undefined;
 }
 
 /**
@@ -3620,8 +3798,8 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
   /**
-   * Get a JavaScript object representation of the object instance.
-   * Binary values are returned as base64-encoded strings.
+   * Get an in-memory JavaScript object representation of the object instance.
+   * For primitive types, this is an alias for calling {@link AnyInstance.value | value()}.
    *
    * When compacting a {@link LiveMap}, cyclic references are handled through
    * memoization, returning shared compacted object references for previously
@@ -3630,9 +3808,26 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
+   * Use {@link AnyInstance.compactJson | compactJson()} for a JSON-serializable representation.
+   *
    * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
+
+  /**
+   * Get a JSON-serializable representation of the object instance.
+   * Binary values are converted to base64-encoded strings.
+   *
+   * When compacting a {@link LiveMap}, cyclic references are represented as `{ objectId: string }`
+   * instead of in-memory pointers, making the result safe to pass to `JSON.stringify()`.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
+   *
+   * Use {@link AnyInstance.compact | compact()} for an in-memory representation.
+   *
+   * @experimental
+   */
+  compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
 
 /**

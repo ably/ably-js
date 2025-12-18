@@ -4118,6 +4118,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // Next operations should not throw and silently handle non-existent path
             expect(nonExistentPathObj.compact(), 'Check PathObject.compact() for non-existent path returns undefined')
               .to.be.undefined;
+            expect(
+              nonExistentPathObj.compactJson(),
+              'Check PathObject.compactJson() for non-existent path returns undefined',
+            ).to.be.undefined;
             expect(nonExistentPathObj.value(), 'Check PathObject.value() for non-existent path returns undefined').to.be
               .undefined;
             expect(nonExistentPathObj.instance(), 'Check PathObject.instance() for non-existent path returns undefined')
@@ -4169,6 +4173,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // Next operations should not throw and silently handle incorrect path
             expect(wrongTypePathObj.compact(), 'Check PathObject.compact() for non-collection path returns undefined')
               .to.be.undefined;
+            expect(
+              wrongTypePathObj.compactJson(),
+              'Check PathObject.compactJson() for non-collection path returns undefined',
+            ).to.be.undefined;
             expect(wrongTypePathObj.value(), 'Check PathObject.value() for non-collection path returns undefined').to.be
               .undefined;
             expect(wrongTypePathObj.instance(), 'Check PathObject.instance() for non-collection path returns undefined')
@@ -4997,7 +5005,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'PathObject.compact() returns correct representation for primitive values',
+          description: 'PathObject.compact() returns value as is for primitive values',
           action: async (ctx) => {
             const { entryPathObject, entryInstance, helper } = ctx;
 
@@ -5024,12 +5032,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             primitiveKeyData.forEach((keyData) => {
               const pathObj = entryPathObject.get(keyData.key);
               const compactValue = pathObj.compact();
-              // expect buffer values to be base64-encoded strings
-              helper.recordPrivateApi('call.BufferUtils.isBuffer');
-              helper.recordPrivateApi('call.BufferUtils.base64Encode');
-              const expectedValue = BufferUtils.isBuffer(pathObj.value())
-                ? BufferUtils.base64Encode(pathObj.value())
-                : pathObj.value();
+              const expectedValue = pathObj.value();
 
               expect(compactValue).to.deep.equal(
                 expectedValue,
@@ -5054,13 +5057,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'PathObject.compact() returns plain object for LiveMap objects',
+          description: 'PathObject.compact() returns plain object for LiveMap objects with buffers as-is',
           action: async (ctx) => {
             const { entryInstance, entryPathObject, helper } = ctx;
 
             // Create nested structure with different value types
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
             helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            const bufferValue = BufferUtils.utf8Encode('value');
             await entryPathObject.set(
               'nestedMap',
               LiveMap.create({
@@ -5070,14 +5074,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 counterKey: LiveCounter.create(99),
                 array: [1, 2, 3],
                 obj: { nested: 'value' },
-                buffer: BufferUtils.utf8Encode('value'),
+                buffer: bufferValue,
               }),
             );
             await keysUpdatedPromise;
 
             const compactValue = entryPathObject.get('nestedMap').compact();
-            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
-            helper.recordPrivateApi('call.BufferUtils.base64Encode');
             const expected = {
               stringKey: 'stringValue',
               numberKey: 123,
@@ -5085,7 +5087,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counterKey: 99,
               array: [1, 2, 3],
               obj: { nested: 'value' },
-              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
+              buffer: bufferValue,
             };
 
             expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
@@ -5135,7 +5137,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectsHelper, channelName, entryInstance, entryPathObject } = ctx;
 
             // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
-            // root -> map1 -> map2 -> map1 (back reference)
+            // root -> map1 -> map2 -> map1 pointer (back reference)
 
             const { objectId: map1Id } = await objectsHelper.operationRequest(
               channelName,
@@ -5195,6 +5197,211 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               compactEntry.map1,
               'Check cyclic reference returns the same memoized result object',
             );
+          },
+        },
+
+        {
+          description: 'PathObject.compactJson() returns JSON-encodable value for primitive values',
+          action: async (ctx) => {
+            const { entryPathObject, entryInstance, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await entryPathObject.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            primitiveKeyData.forEach((keyData) => {
+              const pathObj = entryPathObject.get(keyData.key);
+              const compactJsonValue = pathObj.compactJson();
+              // expect buffer values to be base64-encoded strings
+              helper.recordPrivateApi('call.BufferUtils.isBuffer');
+              helper.recordPrivateApi('call.BufferUtils.base64Encode');
+              const expectedValue = BufferUtils.isBuffer(pathObj.value())
+                ? BufferUtils.base64Encode(pathObj.value())
+                : pathObj.value();
+
+              expect(compactJsonValue).to.deep.equal(
+                expectedValue,
+                `Check PathObject.compactJson() returns correct value for primitive "${keyData.key}"`,
+              );
+            });
+          },
+        },
+
+        {
+          description: 'PathObject.compactJson() returns number for LiveCounter objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create(42));
+            await keyUpdatedPromise;
+
+            const compactJsonValue = entryPathObject.get('counter').compactJson();
+            expect(compactJsonValue).to.equal(42, 'Check PathObject.compactJson() returns number for LiveCounter');
+          },
+        },
+
+        {
+          description: 'PathObject.compactJson() returns plain object for LiveMap with base64-encoded buffers',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            // Create nested structure with different value types
+            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            await entryPathObject.set(
+              'nestedMap',
+              LiveMap.create({
+                stringKey: 'stringValue',
+                numberKey: 123,
+                booleanKey: true,
+                counterKey: LiveCounter.create(99),
+                array: [1, 2, 3],
+                obj: { nested: 'value' },
+                buffer: BufferUtils.utf8Encode('value'),
+              }),
+            );
+            await keysUpdatedPromise;
+
+            const compactJsonValue = entryPathObject.get('nestedMap').compactJson();
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            helper.recordPrivateApi('call.BufferUtils.base64Encode');
+            const expected = {
+              stringKey: 'stringValue',
+              numberKey: 123,
+              booleanKey: true,
+              counterKey: 99,
+              array: [1, 2, 3],
+              obj: { nested: 'value' },
+              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
+            };
+
+            expect(compactJsonValue).to.deep.equal(expected, 'Check compact object has expected value');
+          },
+        },
+
+        {
+          description: 'PathObject.compactJson() handles complex nested structures',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'complex');
+            await entryPathObject.set(
+              'complex',
+              LiveMap.create({
+                level1: LiveMap.create({
+                  level2: LiveMap.create({
+                    counter: LiveCounter.create(10),
+                    primitive: 'deep value',
+                  }),
+                  directCounter: LiveCounter.create(20),
+                }),
+                topLevelCounter: LiveCounter.create(30),
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const compactJsonValue = entryPathObject.get('complex').compactJson();
+            const expected = {
+              level1: {
+                level2: {
+                  counter: 10,
+                  primitive: 'deep value',
+                },
+                directCounter: 20,
+              },
+              topLevelCounter: 30,
+            };
+
+            expect(compactJsonValue).to.deep.equal(expected, 'Check complex nested structure is compacted correctly');
+          },
+        },
+
+        {
+          description: 'PathObject.compactJson() handles cyclic references with objectId',
+          action: async (ctx) => {
+            const { objectsHelper, channelName, entryInstance, entryPathObject } = ctx;
+
+            // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
+            // root -> map1 -> map2 -> map1BackRef = { objectId: map1Id }
+
+            const { objectId: map1Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { foo: { string: 'bar' } } }),
+            );
+            const { objectId: map2Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { baz: { number: 42 } } }),
+            );
+
+            // Set up the cyclic references
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map1');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: 'root',
+                key: 'map1',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1'), 'map2');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map1Id,
+                key: 'map2',
+                value: { objectId: map2Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1').get('map2'), 'map1BackRef');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map2Id,
+                key: 'map1BackRef',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            // Test that compactJson() handles cyclic references by returning objectId
+            const compactJsonEntry = entryPathObject.compactJson();
+
+            expect(compactJsonEntry).to.exist;
+            expect(compactJsonEntry.map1).to.exist;
+            expect(compactJsonEntry.map1.foo).to.equal('bar', 'Check primitive value is preserved');
+            expect(compactJsonEntry.map1.map2).to.exist;
+            expect(compactJsonEntry.map1.map2.baz).to.equal(42, 'Check nested primitive value is preserved');
+            expect(compactJsonEntry.map1.map2.map1BackRef).to.exist;
+
+            // The back reference should be { objectId: string } instead of in-memory pointer
+            expect(compactJsonEntry.map1.map2.map1BackRef).to.deep.equal(
+              { objectId: map1Id },
+              'Check cyclic reference returns objectId structure for JSON serialization',
+            );
+
+            // Verify the result can be JSON stringified (no circular reference error)
+            expect(() => JSON.stringify(compactJsonEntry)).to.not.throw();
           },
         },
 
@@ -6020,7 +6227,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance.compact() returns correct representation for primitive values',
+          description: 'DefaultInstance.compact() returns value as is for primitive values',
           action: async (ctx) => {
             const { entryInstance, entryPathObject, helper } = ctx;
 
@@ -6047,12 +6254,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             primitiveKeyData.forEach((keyData) => {
               const instance = entryInstance.get(keyData.key);
               const compactValue = instance.compact();
-              // expect buffer values to be base64-encoded strings
-              helper.recordPrivateApi('call.BufferUtils.isBuffer');
-              helper.recordPrivateApi('call.BufferUtils.base64Encode');
-              const expectedValue = BufferUtils.isBuffer(instance.value())
-                ? BufferUtils.base64Encode(instance.value())
-                : instance.value();
+              const expectedValue = instance.value();
 
               expect(compactValue).to.deep.equal(
                 expectedValue,
@@ -6077,13 +6279,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance.compact() returns plain object for LiveMap objects',
+          description: 'DefaultInstance.compact() returns plain object for LiveMap objects with buffers as-is',
           action: async (ctx) => {
             const { entryInstance, entryPathObject, helper } = ctx;
 
             // Create nested structure with different value types
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
             helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            const bufferValue = BufferUtils.utf8Encode('value');
             await entryPathObject.set(
               'nestedMap',
               LiveMap.create({
@@ -6093,14 +6296,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 counterKey: LiveCounter.create(111),
                 array: [1, 2, 3],
                 obj: { nested: 'value' },
-                buffer: BufferUtils.utf8Encode('value'),
+                buffer: bufferValue,
               }),
             );
             await keysUpdatedPromise;
 
             const compactValue = entryInstance.get('nestedMap').compact();
-            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
-            helper.recordPrivateApi('call.BufferUtils.base64Encode');
             const expected = {
               stringKey: 'stringValue',
               numberKey: 456,
@@ -6108,7 +6309,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counterKey: 111,
               array: [1, 2, 3],
               obj: { nested: 'value' },
-              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
+              buffer: bufferValue,
             };
 
             expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
@@ -6189,7 +6390,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectsHelper, channelName, entryInstance } = ctx;
 
             // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
-            // root -> map1 -> map2 -> map1 (back reference)
+            // root -> map1 -> map2 -> map1 pointer (back reference)
 
             const { objectId: map1Id } = await objectsHelper.operationRequest(
               channelName,
@@ -6249,6 +6450,248 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               compactEntry.map1,
               'Check cyclic reference returns the same memoized result object',
             );
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() returns JSON-encodable value for primitive values',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await entryPathObject.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            primitiveKeyData.forEach((keyData) => {
+              const instance = entryInstance.get(keyData.key);
+              const compactJsonValue = instance.compactJson();
+              // expect buffer values to be base64-encoded strings
+              helper.recordPrivateApi('call.BufferUtils.isBuffer');
+              helper.recordPrivateApi('call.BufferUtils.base64Encode');
+              const expectedValue = BufferUtils.isBuffer(instance.value())
+                ? BufferUtils.base64Encode(instance.value())
+                : instance.value();
+
+              expect(compactJsonValue).to.deep.equal(
+                expectedValue,
+                `Check DefaultInstance.compactJson() returns correct value for primitive "${keyData.key}"`,
+              );
+            });
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() returns number for LiveCounter objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create(42));
+            await keyUpdatedPromise;
+
+            const compactJsonValue = entryInstance.get('counter').compactJson();
+            expect(compactJsonValue).to.equal(42, 'Check DefaultInstance.compactJson() returns number for LiveCounter');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() returns plain object for LiveMap with base64-encoded buffers',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            // Create nested structure with different value types
+            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMapInstance')]);
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            await entryPathObject.set(
+              'nestedMapInstance',
+              LiveMap.create({
+                stringKey: 'stringValue',
+                numberKey: 456,
+                booleanKey: false,
+                counterKey: LiveCounter.create(111),
+                array: [1, 2, 3],
+                obj: { nested: 'value' },
+                buffer: BufferUtils.utf8Encode('value'),
+              }),
+            );
+            await keysUpdatedPromise;
+
+            const compactJsonValue = entryInstance.get('nestedMapInstance').compactJson();
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            helper.recordPrivateApi('call.BufferUtils.base64Encode');
+            const expected = {
+              stringKey: 'stringValue',
+              numberKey: 456,
+              booleanKey: false,
+              counterKey: 111,
+              array: [1, 2, 3],
+              obj: { nested: 'value' },
+              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
+            };
+
+            expect(compactJsonValue).to.deep.equal(expected, 'Check compact object has expected value');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() handles complex nested structures',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'complex');
+            await entryPathObject.set(
+              'complex',
+              LiveMap.create({
+                level1: LiveMap.create({
+                  level2: LiveMap.create({
+                    counter: LiveCounter.create(100),
+                    primitive: 'instance deep value',
+                  }),
+                  directCounter: LiveCounter.create(200),
+                }),
+                topLevelCounter: LiveCounter.create(300),
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const compactJsonValue = entryInstance.get('complex').compactJson();
+            const expected = {
+              level1: {
+                level2: {
+                  counter: 100,
+                  primitive: 'instance deep value',
+                },
+                directCounter: 200,
+              },
+              topLevelCounter: 300,
+            };
+
+            expect(compactJsonValue).to.deep.equal(expected, 'Check complex nested structure is compacted correctly');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() and PathObject.compactJson() return equivalent results',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'comparison');
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            await entryPathObject.set(
+              'comparison',
+              LiveMap.create({
+                counter: LiveCounter.create(50),
+                nested: LiveMap.create({
+                  value: 'test',
+                  innerCounter: LiveCounter.create(25),
+                }),
+                primitive: 'comparison test',
+                buffer: BufferUtils.utf8Encode('value'),
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const pathCompactJson = entryPathObject.get('comparison').compactJson();
+            const instanceCompactJson = entryInstance.get('comparison').compactJson();
+
+            expect(pathCompactJson).to.deep.equal(
+              instanceCompactJson,
+              'Check PathObject.compactJson() and DefaultInstance.compactJson() return equivalent results',
+            );
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compactJson() handles cyclic references with objectId',
+          action: async (ctx) => {
+            const { objectsHelper, channelName, entryInstance } = ctx;
+
+            // Create a structure with cyclic references using REST API (realtime does not allow referencing objects by id):
+            // root -> map1 -> map2 -> map1BackRef = { objectId: map1Id }
+
+            const { objectId: map1Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { foo: { string: 'bar' } } }),
+            );
+            const { objectId: map2Id } = await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapCreateRestOp({ data: { baz: { number: 42 } } }),
+            );
+
+            // Set up the cyclic references
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map1Instance');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: 'root',
+                key: 'map1Instance',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map1Instance'), 'map2Instance');
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map1Id,
+                key: 'map2Instance',
+                value: { objectId: map2Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(
+              entryInstance.get('map1Instance').get('map2Instance'),
+              'map1BackRefInstance',
+            );
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapSetRestOp({
+                objectId: map2Id,
+                key: 'map1BackRefInstance',
+                value: { objectId: map1Id },
+              }),
+            );
+            await keyUpdatedPromise;
+
+            // Test that compactJson() handles cyclic references with objectId structure
+            const compactJsonEntry = entryInstance.compactJson();
+
+            expect(compactJsonEntry).to.exist;
+            expect(compactJsonEntry.map1Instance).to.exist;
+            expect(compactJsonEntry.map1Instance.foo).to.equal('bar', 'Check primitive value is preserved');
+            expect(compactJsonEntry.map1Instance.map2Instance).to.exist;
+            expect(compactJsonEntry.map1Instance.map2Instance.baz).to.equal(
+              42,
+              'Check nested primitive value is preserved',
+            );
+            expect(compactJsonEntry.map1Instance.map2Instance.map1BackRefInstance).to.exist;
+
+            // The back reference should be { objectId: string } instead of in-memory pointer
+            expect(compactJsonEntry.map1Instance.map2Instance.map1BackRefInstance).to.deep.equal(
+              { objectId: map1Id },
+              'Check cyclic reference returns objectId structure for JSON serialization',
+            );
+
+            // Verify the result can be JSON stringified (no circular reference error)
+            expect(() => JSON.stringify(compactJsonEntry)).to.not.throw();
           },
         },
 
@@ -7152,6 +7595,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         expect(() => ctx.get()).to.throw(errorMsg);
         expect(() => ctx.value()).to.throw(errorMsg);
         expect(() => ctx.compact()).to.throw(errorMsg);
+        expect(() => ctx.compactJson()).to.throw(errorMsg);
         expect(() => ctx.id).to.throw(errorMsg);
         expect(() => [...ctx.entries()]).to.throw(errorMsg);
         expect(() => [...ctx.keys()]).to.throw(errorMsg);

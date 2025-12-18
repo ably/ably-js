@@ -3,6 +3,7 @@ import type {
   AnyInstance,
   BatchContext,
   BatchFunction,
+  CompactedJsonValue,
   CompactedValue,
   EventCallback,
   Instance,
@@ -42,18 +43,39 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     return this._value.getObjectId();
   }
 
+  /**
+   * Returns an in-memory JavaScript object representation of this instance.
+   * Buffers are returned as-is.
+   * For primitive types, this is an alias for calling value().
+   *
+   * Use compactJson() for a JSON-serializable representation.
+   */
   compact<U extends Value = Value>(): CompactedValue<U> | undefined {
     if (this._value instanceof LiveMap) {
       return this._value.compact() as CompactedValue<U>;
     }
 
+    return this.value() as CompactedValue<U>;
+  }
+
+  /**
+   * Returns a JSON-serializable representation of this instance.
+   * Buffers are converted to base64 strings.
+   *
+   * Use compact() for an in-memory representation.
+   */
+  compactJson<U extends Value = Value>(): CompactedJsonValue<U> | undefined {
+    if (this._value instanceof LiveMap) {
+      return this._value.compactJson() as CompactedJsonValue<U>;
+    }
+
     const value = this.value();
 
     if (this._client.Platform.BufferUtils.isBuffer(value)) {
-      return this._client.Platform.BufferUtils.base64Encode(value) as CompactedValue<U>;
+      return this._client.Platform.BufferUtils.base64Encode(value) as CompactedJsonValue<U>;
     }
 
-    return value as CompactedValue<U>;
+    return value as CompactedJsonValue<U>;
   }
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
