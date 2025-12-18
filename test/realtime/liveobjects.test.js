@@ -22,7 +22,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
   }
 
-  function channelOptionsWithLiveObjects(options) {
+  function channelOptionsWithObjectModes(options) {
     return {
       ...options,
       modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'],
@@ -168,7 +168,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
    * This function waits for a channel to have all keys set.
    */
   async function waitFixtureChannelIsReady(client) {
-    const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithLiveObjects());
+    const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
     const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
 
     await channel.attach();
@@ -292,7 +292,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           await channel.attach();
           const entryPathObject = await channel.object.get();
@@ -307,7 +307,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           await channel.attach();
           const entryPathObject = await channel.object.get();
@@ -322,7 +322,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           const getPromise = channel.object.get();
 
@@ -350,7 +350,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           await channel.attach();
           // wait for sync sequence to complete by accessing root for the first time
@@ -376,7 +376,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           await channel.attach();
           // wait for initial sync sequence to complete
@@ -435,7 +435,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
           expect(channel.state).to.equal('initialized', 'Channel should be in initialized state');
 
           // Set up a timeout to catch if get() hangs
@@ -540,7 +540,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             await waitFixtureChannelIsReady(client);
 
-            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithLiveObjects());
+            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
             await channel.attach();
             const entryPathObject = await channel.object.get();
@@ -635,7 +635,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             const client2 = RealtimeWithLiveObjects(helper, clientOptions);
 
             await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-              const channel2 = client2.channels.get(channelName, channelOptionsWithLiveObjects());
+              const channel2 = client2.channels.get(channelName, channelOptionsWithObjectModes());
 
               await channel2.attach();
               const pathObject2 = await channel2.object.get();
@@ -712,7 +712,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             await waitFixtureChannelIsReady(client);
 
-            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithLiveObjects());
+            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
             await channel.attach();
             const entryPathObject = await channel.object.get();
@@ -738,7 +738,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             await waitFixtureChannelIsReady(client);
 
-            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithLiveObjects());
+            const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
             await channel.attach();
             const entryPathObject = await channel.object.get();
@@ -6724,7 +6724,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           const client = RealtimeWithLiveObjects(helper, clientOptions);
 
           await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
             const realtimeObject = channel.object;
 
             await channel.attach();
@@ -7072,7 +7072,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             ]);
 
             await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-              const publishChannel = publishClient.channels.get(channelName, channelOptionsWithLiveObjects());
+              const publishChannel = publishClient.channels.get(channelName, channelOptionsWithObjectModes());
               await publishChannel.attach();
               const publishRoot = await publishChannel.object.get();
 
@@ -7257,7 +7257,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         const client = RealtimeWithLiveObjects(helper, clientOptions);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
 
           await channel.attach();
           const entryPathObject = await channel.object.get();
@@ -7305,7 +7305,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           await client.connection.once('connected');
 
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
           const realtimeObject = channel.object;
           const connectionManager = client.connection.connectionManager;
           const connectionDetails = connectionManager.connectionDetails;
@@ -7354,7 +7354,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           await client.connection.once('connected');
 
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
           const realtimeObject = channel.object;
           const connectionManager = client.connection.connectionManager;
           const connectionDetails = connectionManager.connectionDetails;
@@ -7510,7 +7510,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           const client = RealtimeWithLiveObjects(helper, clientOptions);
 
           await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
             const realtimeObject = channel.object;
 
             await channel.attach();
@@ -7770,7 +7770,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           // attach with correct channel modes so we can create Objects on the root for testing.
           // some scenarios will modify the underlying modes array to test specific behavior
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
           const realtimeObject = channel.object;
 
           await channel.attach();
@@ -7835,7 +7835,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           helper.recordPrivateApi('listen.connectionManager.connectiondetails');
           await connectionDetailsPromise;
 
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const channel = client.channels.get('channel', channelOptionsWithObjectModes());
 
           await channel.attach();
           const entryPathObject = await channel.object.get();
@@ -8342,25 +8342,25 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       ];
 
       forScenarios(this, syncEventsScenarios, async function (helper, scenario, clientOptions, channelName) {
-        const client = RealtimeWithObjects(helper, clientOptions);
-        const objectsHelper = new ObjectsHelper(helper);
+        const client = RealtimeWithLiveObjects(helper, clientOptions);
+        const objectsHelper = new LiveObjectsHelper(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           await client.connection.whenState('connected');
 
           // Note that we don't attach the channel, so that the only ProtocolMessages the channel receives are those specified by the test scenario.
 
-          const channel = client.channels.get(channelName, channelOptionsWithObjects());
-          const objects = channel.objects;
+          const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+          const object = channel.object;
 
           // Track received sync events
           const receivedSyncEvents = [];
 
           // Subscribe to syncing and synced events
-          objects.on('syncing', () => {
+          object.on('syncing', () => {
             receivedSyncEvents.push('syncing');
           });
-          objects.on('synced', () => {
+          object.on('synced', () => {
             receivedSyncEvents.push('synced');
           });
 
