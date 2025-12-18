@@ -8,7 +8,7 @@ This directory is intended to be used for testing the following aspects of the a
 It contains three files, each of which import ably-js in different manners, and provide a way to briefly exercise its functionality:
 
 - `src/index-default.ts` imports the default ably-js package (`import { Realtime } from 'ably'`).
-- `src/index-objects.ts` imports the Objects ably-js plugin (`import Objects from 'ably/objects'`).
+- `src/index-objects.ts` imports the Objects ably-js plugin (`import { Objects } from 'ably/objects'`).
 - `src/index-modular.ts` imports the tree-shakable ably-js package (`import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular'`).
 - `src/ReactApp.tsx` imports React hooks from the ably-js package (`import { useChannel } from 'ably/react'`).
 
