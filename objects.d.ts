@@ -5,9 +5,10 @@ import {
   LiveMap as LiveMapType,
   LiveMapOperations,
   RealtimeClient,
+  RestClient,
   Value,
 } from './ably';
-import { BaseRealtime } from './modular';
+import { BaseRealtime, BaseRest, Rest } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 /**
@@ -59,9 +60,9 @@ export class LiveCounter {
 }
 
 /**
- * Provides a {@link RealtimeClient} instance with the ability to use Objects functionality.
+ * Provides a {@link RestClient} or {@link RealtimeClient} instance with the ability to use Objects functionality.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link RealtimeClient.constructor}:
+ * To create a client that includes this plugin, include it in the client options that you pass to the {@link RestClient.constructor} or {@link RealtimeClient.constructor}:
  *
  * ```javascript
  * import { Realtime } from 'ably';
@@ -69,12 +70,12 @@ export class LiveCounter {
  * const realtime = new Realtime({ ...options, plugins: { Objects } });
  * ```
  *
- * The Objects plugin can also be used with a {@link BaseRealtime} client
+ * The Objects plugin can also be used with a {@link BaseRest} or {@link BaseRealtime} client, with the additional requirement that you must also use the {@link Rest} plugin
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
+ * import { BaseRealtime, Rest, WebSocketTransport, FetchRequest } from 'ably/modular';
  * import Objects from 'ably/objects';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Objects } });
+ * const realtime = new BaseRealtime({ ...options, plugins: { Rest, WebSocketTransport, FetchRequest, Objects } });
  * ```
  */
 declare const Objects: any;

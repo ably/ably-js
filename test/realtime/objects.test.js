@@ -17,6 +17,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   const gcIntervalOriginal = ObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval;
   const LiveMap = ObjectsPlugin.LiveMap;
   const LiveCounter = ObjectsPlugin.LiveCounter;
+  const waitFixtureChannelIsReady = ObjectsHelper.waitFixtureChannelIsReady;
+  const waitForMapKeyUpdate = ObjectsHelper.waitForMapKeyUpdate;
+  const waitForCounterUpdate = ObjectsHelper.waitForCounterUpdate;
+  const waitForObjectOperation = ObjectsHelper.waitForObjectOperation;
+  const waitForObjectSync = ObjectsHelper.waitForObjectSync;
 
   function RealtimeWithObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
@@ -93,91 +98,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
   function objectMessageFromValues(values) {
     return ObjectsPlugin.ObjectMessage.fromValues(values, Utils, MessageEncoding);
-  }
-
-  async function waitForMapKeyUpdate(mapInstance, key) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if (message?.operation?.mapOp?.key === key) {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  async function waitForCounterUpdate(counterInstance) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = counterInstance.subscribe(() => {
-        unsubscribe();
-        resolve();
-      });
-    });
-  }
-
-  async function waitForObjectOperation(helper, client, waitForAction) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 19 && message.state[0]?.operation?.action === waitForAction) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
-  }
-
-  async function waitForObjectSync(helper, client) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 20) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
-  }
-
-  /**
-   * The channel with fixture data may not yet be populated by REST API requests made by ObjectsHelper.
-   * This function waits for a channel to have all keys set.
-   */
-  async function waitFixtureChannelIsReady(client) {
-    const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-    const expectedKeys = ObjectsHelper.fixtureRootKeys();
-
-    await channel.attach();
-    const entryPathObject = await channel.object.get();
-    const entryInstance = entryPathObject.instance();
-
-    await Promise.all(
-      expectedKeys.map((key) => (entryInstance.get(key) ? undefined : waitForMapKeyUpdate(entryInstance, key))),
-    );
   }
 
   describe('realtime/objects', function () {
@@ -538,7 +458,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { client, helper } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, objectsFixturesChannel);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
@@ -710,7 +630,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, objectsFixturesChannel);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
@@ -736,7 +656,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { helper, client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, objectsFixturesChannel);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
