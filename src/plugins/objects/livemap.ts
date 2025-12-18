@@ -490,29 +490,72 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
   }
 
   /**
-   * Returns a plain JavaScript object representation of this LiveMap.
+   * Returns an in-memory JavaScript object representation of this LiveMap.
    * LiveMap values are recursively compacted using their own compact methods.
-   * Compacted LiveMaps are memoized to handle cyclic references.
-   * Buffers are converted to base64 strings.
+   * Compacted LiveMaps are memoized to handle cyclic references (returned as in-memory pointers).
+   *
+   * Use compactJson() for a JSON-serializable representation.
    *
    * @internal
    */
-  compact(memoizedObjects?: Map<string, Record<string, any>>): API.CompactedValue<API.LiveMap<T>> {
-    const memo = memoizedObjects ?? new Map<string, Record<string, any>>();
+  compact(visitedObjects?: Map<string, Record<string, any>>): API.CompactedValue<API.LiveMap<T>> {
+    const visited = visitedObjects ?? new Map<string, Record<string, any>>();
     const result: Record<keyof T, any> = {} as Record<keyof T, any>;
 
     // Memoize the compacted result to handle circular references
-    memo.set(this.getObjectId(), result);
+    visited.set(this.getObjectId(), result);
 
     // Use public entries() method to ensure we only include publicly exposed properties
     for (const [key, value] of this.entries()) {
       if (value instanceof LiveMap) {
-        if (memo.has(value.getObjectId())) {
-          // If the LiveMap has already been compacted, just reference it to avoid infinite loops
-          result[key] = memo.get(value.getObjectId());
+        if (visited.has(value.getObjectId())) {
+          // If the LiveMap has already been visited, just reference it to avoid infinite loops
+          result[key] = visited.get(value.getObjectId());
         } else {
           // Otherwise, compact it
-          result[key] = value.compact(memo);
+          result[key] = value.compact(visited);
+        }
+        continue;
+      }
+
+      if (value instanceof LiveCounter) {
+        result[key] = value.value();
+        continue;
+      }
+
+      // other values are returned as-is
+      result[key] = value;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns a JSON-serializable representation of this LiveMap.
+   * LiveMap values are recursively compacted using their own compactJson methods.
+   * Cyclic references are represented as `{ objectId: string }` instead of in-memory pointers.
+   * Buffers are converted to base64 strings.
+   *
+   * Use compact() for an in-memory representation.
+   *
+   * @internal
+   */
+  compactJson(visitedObjectIds?: Set<string>): API.CompactedJsonValue<API.LiveMap<T>> {
+    const visited = visitedObjectIds ?? new Set<string>();
+    const result: Record<keyof T, any> = {} as Record<keyof T, any>;
+
+    // Mark this object ID as visited to handle circular references
+    visited.add(this.getObjectId());
+
+    // Use public entries() method to ensure we only include publicly exposed properties
+    for (const [key, value] of this.entries()) {
+      if (value instanceof LiveMap) {
+        if (visited.has(value.getObjectId())) {
+          // If the LiveMap has already been visited, return its objectId to avoid infinite loops
+          result[key] = { objectId: value.getObjectId() };
+        } else {
+          // Otherwise, compact it
+          result[key] = value.compactJson(visited);
         }
         continue;
       }
