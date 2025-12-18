@@ -1,8 +1,8 @@
 import ErrorInfo from '../types/errorinfo';
-import { PublishResponse } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import { PendingMessage } from './protocol';
+import type * as API from '../../../../ably';
 
 class MessageQueue extends EventEmitter {
   messages: Array<PendingMessage>;
@@ -48,7 +48,7 @@ class MessageQueue extends EventEmitter {
   completeMessages(
     selector: 'all' | { serial: number; count: number },
     err?: ErrorInfo | null,
-    res?: PublishResponse[],
+    res?: API.PublishResult[],
   ): void {
     Logger.logAction(
       this.logger,

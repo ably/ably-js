@@ -1,9 +1,5 @@
 import { actions, channelModes } from '../types/protocolmessagecommon';
-import ProtocolMessage, {
-  fromValues as protocolMessageFromValues,
-  PublishResponse,
-  UpdateDeleteResponse,
-} from '../types/protocolmessage';
+import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
@@ -241,7 +237,7 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  async publish(...args: any[]): Promise<PublishResponse> {
+  async publish(...args: any[]): Promise<API.PublishResult> {
     let messages: Message[];
     let argCount = args.length;
 
@@ -283,7 +279,8 @@ class RealtimeChannel extends EventEmitter {
     );
 
     const pm = protocolMessageFromValues({ action: actions.MESSAGE, channel: this.name, messages: wireMessages });
-    return this.sendMessage(pm);
+    const res = await this.sendMessage(pm);
+    return res || { serials: [] };
   }
 
   throwIfUnpublishableState(): void {
@@ -490,13 +487,13 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  async sendMessage(msg: ProtocolMessage): Promise<PublishResponse> {
+  async sendMessage(msg: ProtocolMessage): Promise<API.PublishResult | undefined> {
     return new Promise((resolve, reject) => {
       this.connectionManager.send(msg, this.client.options.queueMessages, (err, publishResponse) => {
         if (err) {
           reject(err);
         } else {
-          resolve(publishResponse || {});
+          resolve(publishResponse);
         }
       });
     });
@@ -1027,26 +1024,17 @@ class RealtimeChannel extends EventEmitter {
     return restMixin.getMessage(this, serialOrMessage);
   }
 
-  async updateMessage(
-    message: Message,
-    operation?: API.MessageOperation,
-  ): Promise<UpdateDeleteResponse> {
+  async updateMessage(message: Message, operation?: API.MessageOperation): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.updateMessage()', 'channel = ' + this.name);
     return this.sendUpdate(message, 'message.update', operation);
   }
 
-  async deleteMessage(
-    message: Message,
-    operation?: API.MessageOperation,
-  ): Promise<UpdateDeleteResponse> {
+  async deleteMessage(message: Message, operation?: API.MessageOperation): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.deleteMessage()', 'channel = ' + this.name);
     return this.sendUpdate(message, 'message.delete', operation);
   }
 
-  async appendMessage(
-    message: Message,
-    operation?: API.MessageOperation,
-  ): Promise<UpdateDeleteResponse> {
+  async appendMessage(message: Message, operation?: API.MessageOperation): Promise<API.UpdateDeleteResult> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.appendMessage()', 'channel = ' + this.name);
     return this.sendUpdate(message, 'message.append', operation);
   }
@@ -1055,7 +1043,7 @@ class RealtimeChannel extends EventEmitter {
     message: Message,
     action: 'message.update' | 'message.delete' | 'message.append',
     operation?: API.MessageOperation,
-  ): Promise<UpdateDeleteResponse> {
+  ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo(
         'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
@@ -1069,10 +1057,8 @@ class RealtimeChannel extends EventEmitter {
     const updateDeleteMsg = Message.fromValues({
       ...message,
       action: action,
+      version: operation,
     });
-    if (operation) {
-      updateDeleteMsg.version = operation;
-    }
 
     const wireMessage = await updateDeleteMsg.encode(this.channelOptions as CipherOptions);
     const pm = protocolMessageFromValues({
@@ -1081,7 +1067,7 @@ class RealtimeChannel extends EventEmitter {
       messages: [wireMessage],
     });
     const publishResponse = await this.sendMessage(pm);
-    return { version: publishResponse.serials?.[0] ?? null };
+    return { versionSerial: publishResponse?.serials?.[0] ?? null };
   }
 
   async getMessageVersions(

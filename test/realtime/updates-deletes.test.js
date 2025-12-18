@@ -101,14 +101,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         };
 
         const updateResult = await channel.updateMessage(updateMessage, operation);
-        expect(updateResult).to.have.property('version');
-        expect(updateResult.version).to.be.a('string');
+        expect(updateResult).to.have.property('versionSerial');
+        expect(updateResult.versionSerial).to.be.a('string');
 
         const updateMsg = await updatePromise;
 
         expect(updateMsg.serial).to.equal(serial);
-        expect(updateMsg.version?.serial).to.equal(updateResult.version);
-        expect(updateMsg.version?.clientId).to.equal('rt-updater-client');
+        expect(updateMsg.version?.serial).to.equal(updateResult.versionSerial);
         expect(updateMsg.version?.clientId).to.equal('rt-updater-client');
         expect(updateMsg.version?.description).to.equal('Realtime update operation');
         expect(updateMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime' });
@@ -152,13 +151,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         const deletion = { serial, data: {} };
 
         const deleteResult = await channel.deleteMessage(deletion, operation);
-        expect(deleteResult).to.have.property('version');
-        expect(deleteResult.version).to.be.a('string');
+        expect(deleteResult).to.have.property('versionSerial');
+        expect(deleteResult.versionSerial).to.be.a('string');
 
         const deleteMsg = await deletePromise;
 
         expect(deleteMsg.serial).to.equal(serial);
-        expect(deleteMsg.version?.serial).to.equal(deleteResult.version);
+        expect(deleteMsg.version?.serial).to.equal(deleteResult.versionSerial);
         expect(deleteMsg.data).to.deep.equal({});
         expect(deleteMsg.name).to.equal('message-to-delete');
         expect(deleteMsg.version?.clientId).to.equal('rt-deleter-client');
@@ -240,13 +239,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         };
 
         const appendResult = await channel.appendMessage(appendMessage, operation);
-        expect(appendResult).to.have.property('version');
-        expect(appendResult.version).to.be.a('string');
+        expect(appendResult).to.have.property('versionSerial');
+        expect(appendResult.versionSerial).to.be.a('string');
 
         const appendMsg = await appendPromise;
 
         expect(appendMsg.serial).to.equal(serial);
-        expect(appendMsg.version?.serial).to.equal(appendResult.version);
+        expect(appendMsg.version?.serial).to.equal(appendResult.versionSerial);
         expect(appendMsg.version?.clientId).to.equal('rt-appender-client');
         expect(appendMsg.version?.description).to.equal('Realtime append operation');
         expect(appendMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime append' });
@@ -262,18 +261,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         });
 
-        await channel.setOptions({ params: {rewind: '1' }});
+        await channel.setOptions({ params: { rewind: '1' } });
         await channel.attach();
         const updatedMsg = await updatePromise;
         expect(updatedMsg.serial).to.equal(serial);
-        expect(updatedMsg.version?.serial).to.equal(appendResult.version);
+        expect(updatedMsg.version?.serial).to.equal(appendResult.versionSerial);
         expect(updatedMsg.version?.clientId).to.equal('rt-appender-client');
         expect(updatedMsg.version?.description).to.equal('Realtime append operation');
         expect(updatedMsg.version?.metadata).to.deep.equal({ reason: 'testing realtime append' });
         expect(updatedMsg.action).to.equal('message.update');
         expect(updatedMsg.name).to.equal('original-message');
         expect(updatedMsg.data).to.equal('Hello World');
-
       } finally {
         realtime.close();
       }

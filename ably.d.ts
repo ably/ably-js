@@ -2361,7 +2361,7 @@ export declare interface Channel {
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   updateMessage(
     message: Message,
@@ -2374,7 +2374,7 @@ export declare interface Channel {
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   deleteMessage(
     message: Message,
@@ -2387,7 +2387,7 @@ export declare interface Channel {
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   appendMessage(
     message: Message,
@@ -2626,7 +2626,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   updateMessage(
     message: Message,
@@ -2639,7 +2639,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   deleteMessage(
     message: Message,
@@ -2652,7 +2652,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
    * @param params - Optional parameters sent as part of the query string.
-   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   appendMessage(
     message: Message,
@@ -3036,10 +3036,10 @@ export interface PublishResult {
  */
 export interface UpdateDeleteResult {
   /**
-   * The new version string of the updated or deleted message.
-   * Will be null if the message was discarded due to a configured conflation rule.
+   * The serial of the new version of the updated or deleted message.
+   * Will be null if the message was superseded by a subsequent update before it could be published.
    */
-  version: string | null;
+  versionSerial: string | null;
 }
 
 /**
