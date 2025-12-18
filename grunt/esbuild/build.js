@@ -77,35 +77,35 @@ const minifiedPushPluginCdnConfig = {
   minify: true,
 };
 
-const objectsPluginConfig = {
+const liveObjectsPluginConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.js',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.js',
   external: ['dequal'],
 };
 
-const objectsPluginEsmConfig = {
+const liveObjectsPluginEsmConfig = {
   ...createBaseConfig(),
   format: 'esm',
   plugins: [],
-  entryPoints: ['src/plugins/objects/index.ts'],
-  outfile: 'build/objects.mjs',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  outfile: 'build/liveobjects.mjs',
   external: ['dequal'],
 };
 
-const objectsPluginCdnConfig = {
+const liveObjectsPluginCdnConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.umd.js',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.js',
 };
 
-const minifiedObjectsPluginCdnConfig = {
+const minifiedLiveObjectsPluginCdnConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.umd.min.js',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.min.js',
   minify: true,
 };
 
@@ -117,8 +117,8 @@ module.exports = {
   pushPluginConfig,
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
-  objectsPluginConfig,
-  objectsPluginEsmConfig,
-  objectsPluginCdnConfig,
-  minifiedObjectsPluginCdnConfig,
+  liveObjectsPluginConfig,
+  liveObjectsPluginEsmConfig,
+  liveObjectsPluginCdnConfig,
+  minifiedLiveObjectsPluginCdnConfig,
 };

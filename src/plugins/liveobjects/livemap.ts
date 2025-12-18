@@ -1,14 +1,14 @@
 import { dequal } from 'dequal';
-import { __livetype } from '../../../ably';
 
+import { __livetype } from '../../../ably';
 import {
   CompactedJsonValue,
   CompactedValue,
+  Primitive,
   LiveMap as PublicLiveMap,
   LiveObject as PublicLiveObject,
-  Primitive,
   Value,
-} from '../../../objects';
+} from '../../../liveobjects';
 import { LiveCounter } from './livecounter';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';

@@ -4,7 +4,7 @@ ably-js.iml
 node_modules
 npm-debug.log
 .tool-versions
-objects.d.mts
+liveobjects.d.mts
 build/
 react/
 typedoc/generated/

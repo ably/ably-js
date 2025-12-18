@@ -1812,7 +1812,7 @@ class ConnectionManager extends EventEmitter {
             msg,
             this.realtime._RealtimePresence,
             this.realtime._Annotations,
-            this.realtime._objectsPlugin,
+            this.realtime._liveObjectsPlugin,
           ),
       );
     }

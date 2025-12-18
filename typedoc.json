@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["ably.d.ts", "modular.d.ts", "objects.d.ts"],
+  "entryPoints": ["ably.d.ts", "modular.d.ts", "liveobjects.d.ts"],
   "tsconfig": "tsconfig.typedoc.json",
   "out": "typedoc/generated",
   "readme": "typedoc/landing-page.md",

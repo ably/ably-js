@@ -141,7 +141,7 @@ class WebSocketTransport extends Transport {
           this.connectionManager.realtime._MsgPack,
           this.connectionManager.realtime._RealtimePresence,
           this.connectionManager.realtime._Annotations,
-          this.connectionManager.realtime._objectsPlugin,
+          this.connectionManager.realtime._liveObjectsPlugin,
           this.format,
         ),
       );
