@@ -1,3 +1,5 @@
+import { __livetype } from '../../../ably';
+import { LiveCounter as PublicLiveCounter } from '../../../objects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
@@ -12,7 +14,9 @@ export interface LiveCounterUpdate extends LiveObjectUpdate {
 }
 
 /** @spec RTLC1, RTLC2 */
-export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> {
+export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> implements PublicLiveCounter {
+  declare readonly [__livetype]: 'LiveCounter'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+
   /**
    * Returns a {@link LiveCounter} instance with a 0 value.
    *

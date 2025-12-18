@@ -2,10 +2,9 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
-import type * as API from '../../../ably';
-import type { JsonArray, JsonObject } from '../../../ably';
+import type * as ObjectsApi from '../../../objects';
 
-const operationActions: API.ObjectOperationAction[] = [
+const operationActions: ObjectsApi.ObjectOperationAction[] = [
   'map.create',
   'map.set',
   'map.remove',
@@ -14,7 +13,7 @@ const operationActions: API.ObjectOperationAction[] = [
   'object.delete',
 ];
 
-const mapSemantics: API.ObjectsMapSemantics[] = ['lww'];
+const mapSemantics: ObjectsApi.ObjectsMapSemantics[] = ['lww'];
 
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
@@ -41,7 +40,7 @@ export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string; // OD2a
   /** A decoded leaf value from {@link WireObjectData}. */
-  value?: API.Primitive;
+  value?: ObjectsApi.Primitive;
 }
 
 /**
@@ -337,7 +336,7 @@ function copyMsg(
   return result;
 }
 
-function stringifyOperation(operation: ObjectOperation<ObjectData>): API.ObjectOperation {
+function stringifyOperation(operation: ObjectOperation<ObjectData>): ObjectsApi.ObjectOperation {
   return {
     ...operation,
     action: operationActions[operation.action] || 'unknown',
@@ -444,7 +443,7 @@ export class ObjectMessage {
     return this.object != null;
   }
 
-  toUserFacingMessage(channel: RealtimeChannel): API.ObjectMessage {
+  toUserFacingMessage(channel: RealtimeChannel): ObjectsApi.ObjectMessage {
     return {
       id: this.id!,
       clientId: this.clientId,
@@ -789,7 +788,7 @@ export class WireObjectMessage {
               client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
       }
 
-      let decodedJson: JsonObject | JsonArray | undefined;
+      let decodedJson: ObjectsApi.JsonObject | ObjectsApi.JsonArray | undefined;
       if (objectData.json != null) {
         decodedJson = JSON.parse(objectData.json); // OD5a2, OD5b3
       }
