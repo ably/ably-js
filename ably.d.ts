@@ -2471,9 +2471,9 @@ export interface ObjectIdReference {
 export type CompactedJsonValue<T extends Value> =
   // LiveMap types - note: cyclic references become ObjectIdReference
   [T] extends [LiveMap<infer U>]
-    ? { [K in keyof U]: CompactedJsonValue<U[K]> | ObjectIdReference }
+    ? { [K in keyof U]: CompactedJsonValue<U[K]> } | ObjectIdReference
     : [T] extends [LiveMap<infer U> | undefined]
-      ? { [K in keyof U]: CompactedJsonValue<U[K]> | ObjectIdReference } | undefined
+      ? { [K in keyof U]: CompactedJsonValue<U[K]> } | ObjectIdReference | undefined
       : // LiveCounter types
         [T] extends [LiveCounter]
         ? number
