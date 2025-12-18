@@ -1,4 +1,5 @@
-import type * as API from '../../../ably';
+import { __livetype } from '../../../ably';
+import { LiveMap as PublicLiveMap, Primitive, Value } from '../../../objects';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
 import { ObjectId } from './objectid';
@@ -30,10 +31,8 @@ import { RealtimeObject } from './realtimeobject';
  * 4. This behavior should be documented and it's the user's responsibility to understand
  *    how they mutate their data when working with value type classes
  */
-export class LiveMapValueType<T extends Record<string, API.Value> = Record<string, API.Value>>
-  implements API.LiveMap<T>
-{
-  declare readonly [API.__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+export class LiveMapValueType<T extends Record<string, Value> = Record<string, Value>> implements PublicLiveMap<T> {
+  declare readonly [__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
   private readonly _livetype = 'LiveMap'; // use a runtime property to provide a reliable cross-bundle type identification instead of `instanceof` operator
   private readonly _entries: T | undefined;
 
@@ -42,9 +41,9 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
     Object.freeze(this);
   }
 
-  static create<T extends Record<string, API.Value>>(
+  static create<T extends Record<string, Value>>(
     initialEntries?: T,
-  ): API.LiveMap<T extends Record<string, API.Value> ? T : {}> {
+  ): PublicLiveMap<T extends Record<string, Value> ? T : {}> {
     // We can't directly import the ErrorInfo class from the core library into the plugin (as this would bloat the plugin size),
     // and, since we're in a user-facing static method, we can't expect a user to pass a client library instance, as this would make the API ugly.
     // Since we can't use ErrorInfo here, we won't do any validation at this step; instead, validation will happen in the mutation methods
@@ -114,7 +113,7 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
 
   private static async _createInitialValueOperation(
     realtimeObject: RealtimeObject,
-    entries?: Record<string, API.Value>,
+    entries?: Record<string, Value>,
   ): Promise<{
     initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
     nestedObjectsCreateMsgs: ObjectMessage[];
@@ -138,7 +137,7 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
         objectData = typedObjectData;
       } else {
         // Handle primitive values
-        const typedObjectData: ValueObjectData = { value: value as API.Primitive };
+        const typedObjectData: ValueObjectData = { value: value as Primitive };
         objectData = typedObjectData;
       }
 

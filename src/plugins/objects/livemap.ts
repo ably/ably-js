@@ -1,6 +1,14 @@
 import { dequal } from 'dequal';
+import { __livetype } from '../../../ably';
 
-import type * as API from '../../../ably';
+import {
+  CompactedJsonValue,
+  CompactedValue,
+  LiveMap as PublicLiveMap,
+  LiveObject as PublicLiveObject,
+  Primitive,
+  Value,
+} from '../../../objects';
 import { LiveCounter } from './livecounter';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
@@ -23,7 +31,7 @@ export interface ObjectIdObjectData {
 
 export interface ValueObjectData {
   /** A decoded leaf value from {@link WireObjectData}. */
-  value: API.Primitive;
+  value: Primitive;
 }
 
 export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
@@ -39,17 +47,17 @@ export interface LiveMapData extends LiveObjectData {
   data: Map<string, LiveMapEntry>; // RTLM3
 }
 
-export interface LiveMapUpdate<T extends Record<string, API.Value>> extends LiveObjectUpdate {
+export interface LiveMapUpdate<T extends Record<string, Value>> extends LiveObjectUpdate {
   update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
   _type: 'LiveMapUpdate';
 }
 
 /** @spec RTLM1, RTLM2 */
-export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Value>>
+export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   extends LiveObject<LiveMapData, LiveMapUpdate<T>>
-  implements API.LiveMap<T>
+  implements PublicLiveMap<T>
 {
-  declare readonly [API.__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+  declare readonly [__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
 
   constructor(
     realtimeObject: RealtimeObject,
@@ -88,7 +96,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
     realtimeObject: RealtimeObject,
     objectId: string,
     key: string,
-    value: API.Value,
+    value: Value,
   ): Promise<ObjectMessage[]> {
     const client = realtimeObject.getClient();
 
@@ -113,7 +121,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
       const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
     } else {
-      const typedObjectData: ValueObjectData = { value: value as API.Primitive };
+      const typedObjectData: ValueObjectData = { value: value as Primitive };
       objectData = typedObjectData;
     }
 
@@ -163,7 +171,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
   /**
    * @internal
    */
-  static validateKeyValue(realtimeObject: RealtimeObject, key: string, value: API.Value): void {
+  static validateKeyValue(realtimeObject: RealtimeObject, key: string, value: Value): void {
     const client = realtimeObject.getClient();
 
     if (typeof key !== 'string') {
@@ -498,7 +506,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
    *
    * @internal
    */
-  compact(visitedObjects?: Map<string, Record<string, any>>): API.CompactedValue<API.LiveMap<T>> {
+  compact(visitedObjects?: Map<string, Record<string, any>>): CompactedValue<PublicLiveMap<T>> {
     const visited = visitedObjects ?? new Map<string, Record<string, any>>();
     const result: Record<keyof T, any> = {} as Record<keyof T, any>;
 
@@ -540,7 +548,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
    *
    * @internal
    */
-  compactJson(visitedObjectIds?: Set<string>): API.CompactedJsonValue<API.LiveMap<T>> {
+  compactJson(visitedObjectIds?: Set<string>): CompactedJsonValue<PublicLiveMap<T>> {
     const visited = visitedObjectIds ?? new Set<string>();
     const result: Record<keyof T, any> = {} as Record<keyof T, any>;
 
@@ -954,7 +962,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
   /**
    * Returns value as is if object data stores a primitive type, or a reference to another LiveObject from the pool if it stores an objectId.
    */
-  private _getResolvedValueFromObjectData(data: LiveMapObjectData): API.Value | undefined {
+  private _getResolvedValueFromObjectData(data: LiveMapObjectData): Value | undefined {
     // if object data stores primitive value, just return it as is.
     const primitiveValue = (data as ValueObjectData).value;
     if (primitiveValue != null) {
@@ -973,7 +981,7 @@ export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Va
       return undefined;
     }
 
-    return refObject as unknown as API.LiveObject; // RTLM5d2f2
+    return refObject as unknown as PublicLiveObject; // RTLM5d2f2
   }
 
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
