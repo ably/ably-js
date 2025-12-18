@@ -1,5 +1,5 @@
 import { actions } from '../types/protocolmessagecommon';
-import ProtocolMessage, { stringify as stringifyProtocolMessage, PublishResponse } from '../types/protocolmessage';
+import ProtocolMessage, { stringify as stringifyProtocolMessage } from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -7,8 +7,9 @@ import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
 import Transport from './transport';
 import { StandardCallback, ErrCallback } from '../../types/utils';
+import * as API from '../../../../ably';
 
-export type PublishCallback = StandardCallback<PublishResponse>;
+export type PublishCallback = StandardCallback<API.PublishResult>;
 
 export class PendingMessage {
   message: ProtocolMessage;
@@ -37,7 +38,7 @@ class Protocol extends EventEmitter {
     super(transport.logger);
     this.transport = transport;
     this.messageQueue = new MessageQueue(this.logger);
-    transport.on('ack', (serial: number, count: number, res?: PublishResponse[]) => {
+    transport.on('ack', (serial: number, count: number, res?: API.PublishResult[]) => {
       this.onAck(serial, count, res);
     });
     transport.on('nack', (serial: number, count: number, err: ErrorInfo) => {
@@ -45,7 +46,7 @@ class Protocol extends EventEmitter {
     });
   }
 
-  onAck(serial: number, count: number, res?: PublishResponse[]): void {
+  onAck(serial: number, count: number, res?: API.PublishResult[]): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
     this.messageQueue.completeMessages(serial, count, null, res);
   }

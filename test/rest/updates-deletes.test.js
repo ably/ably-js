@@ -117,8 +117,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       const updateResult = await channel.updateMessage(updateMessage, operation);
-      expect(updateResult).to.have.property('version');
-      expect(updateResult.version).to.be.a('string');
+      expect(updateResult).to.have.property('versionSerial');
+      expect(updateResult.versionSerial).to.be.a('string');
 
       // Wait for the update to be the latest message
       let latestMessage;
@@ -160,8 +160,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const deletion = { serial, data: {} };
 
       const deleteResult = await channel.deleteMessage(deletion, operation);
-      expect(deleteResult).to.have.property('version');
-      expect(deleteResult.version).to.be.a('string');
+      expect(deleteResult).to.have.property('versionSerial');
+      expect(deleteResult.versionSerial).to.be.a('string');
 
       // Wait for the delete to be the latest message
       let latestMessage;
@@ -304,8 +304,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       const appendResult = await channel.appendMessage(appendMessage, operation);
-      expect(appendResult).to.have.property('version');
-      expect(appendResult.version).to.be.a('string');
+      expect(appendResult).to.have.property('versionSerial');
+      expect(appendResult.versionSerial).to.be.a('string');
 
       // Wait for the append to be the latest message
       let latestMessage;
