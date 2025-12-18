@@ -1883,7 +1883,7 @@ export declare const LiveObjects: any;
  * importing from 'ably/liveobjects'. This ensures all LiveObjects types come from
  * the same module (CJS or ESM), avoiding type incompatibility issues.
  */
-declare module './ably' {
+declare module 'ably' {
   interface RealtimeChannel {
     /**
      * A {@link RealtimeObject} object.
