@@ -99,11 +99,6 @@ export declare interface RealtimeObject {
    * @param callback - The event listener.
    */
   off(event: ObjectsEvent, callback: ObjectsEventCallback): void;
-
-  /**
-   * Deregisters all registrations, for all events and listeners.
-   */
-  offAll(): void;
 }
 
 /**

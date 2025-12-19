@@ -117,11 +117,6 @@ export class RealtimeObject {
     this._eventEmitterPublic.off(event, callback);
   }
 
-  offAll(): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._eventEmitterPublic.off();
-  }
-
   /**
    * @internal
    */
