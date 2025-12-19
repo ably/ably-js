@@ -636,7 +636,7 @@ export interface CorePlugins {
   Push?: unknown;
 
   /**
-   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.object}.
+   * A plugin which allows the client to use LiveObjects functionality at `RealtimeChannel.object`.
    */
   LiveObjects?: unknown;
 }
