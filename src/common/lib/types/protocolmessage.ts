@@ -11,7 +11,7 @@ import RealtimeAnnotations from '../client/realtimeannotations';
 import RestAnnotations from '../client/restannotations';
 import { flags, flagNames, channelModes, ActionName } from './protocolmessagecommon';
 import type { Properties } from '../util/utils';
-import type * as ObjectsPlugin from 'plugins/objects';
+import type * as LiveObjectsPlugin from 'plugins/liveobjects';
 import { MessageEncoding } from './basemessage';
 
 export const serialize = Utils.encodeBody;
@@ -31,7 +31,7 @@ export function deserialize(
   MsgPack: MsgPack | null,
   presenceMessagePlugin: PresenceMessagePlugin | null,
   annotationsPlugin: AnnotationsPlugin | null,
-  objectsPlugin: typeof ObjectsPlugin | null,
+  objectsPlugin: typeof LiveObjectsPlugin | null,
   format?: Utils.Format,
 ): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
@@ -42,7 +42,7 @@ export function fromDeserialized(
   deserialized: Record<string, unknown>,
   presenceMessagePlugin: PresenceMessagePlugin | null,
   annotationsPlugin: AnnotationsPlugin | null,
-  objectsPlugin: typeof ObjectsPlugin | null,
+  objectsPlugin: typeof LiveObjectsPlugin | null,
 ): ProtocolMessage {
   let error: ErrorInfo | undefined;
   if (deserialized.error) {
@@ -68,10 +68,10 @@ export function fromDeserialized(
     );
   }
 
-  let state: ObjectsPlugin.WireObjectMessage[] | undefined;
+  let state: LiveObjectsPlugin.WireObjectMessage[] | undefined;
   if (objectsPlugin && deserialized.state) {
     state = objectsPlugin.WireObjectMessage.fromValuesArray(
-      deserialized.state as ObjectsPlugin.WireObjectMessage[],
+      deserialized.state as LiveObjectsPlugin.WireObjectMessage[],
       Utils,
       MessageEncoding,
     );
@@ -83,10 +83,12 @@ export function fromDeserialized(
 /**
  * Used internally by the tests.
  *
- * ObjectsPlugin code can't be included as part of the core library to prevent size growth,
+ * LiveObjectsPlugin code can't be included as part of the core library to prevent size growth,
  * so if a test needs to build object messages, then it must provide the plugin upon call.
  */
-export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlugin: typeof ObjectsPlugin | null }) {
+export function makeFromDeserializedWithDependencies(dependencies?: {
+  LiveObjectsPlugin: typeof LiveObjectsPlugin | null;
+}) {
   return (deserialized: Record<string, unknown>): ProtocolMessage => {
     return fromDeserialized(
       deserialized,
@@ -95,7 +97,7 @@ export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlu
         WirePresenceMessage,
       },
       { Annotation, WireAnnotation, RealtimeAnnotations, RestAnnotations },
-      dependencies?.ObjectsPlugin ?? null,
+      dependencies?.LiveObjectsPlugin ?? null,
     );
   };
 }
@@ -108,7 +110,7 @@ export function stringify(
   msg: any,
   presenceMessagePlugin: PresenceMessagePlugin | null,
   annotationsPlugin: AnnotationsPlugin | null,
-  objectsPlugin: typeof ObjectsPlugin | null,
+  objectsPlugin: typeof LiveObjectsPlugin | null,
 ): string {
   let result = '[ProtocolMessage';
   if (msg.action !== undefined) result += '; action=' + ActionName[msg.action] || msg.action;
@@ -167,9 +169,9 @@ class ProtocolMessage {
   presence?: WirePresenceMessage[];
   annotations?: WireAnnotation[];
   /**
-   * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
+   * This will be undefined if we skipped decoding this property due to user not requesting LiveObjects functionality — see {@link fromDeserialized}
    */
-  state?: ObjectsPlugin.WireObjectMessage[]; // TR4r
+  state?: LiveObjectsPlugin.WireObjectMessage[]; // TR4r
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
   params?: Record<string, string>;

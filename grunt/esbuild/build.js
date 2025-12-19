@@ -77,26 +77,35 @@ const minifiedPushPluginCdnConfig = {
   minify: true,
 };
 
-const objectsPluginConfig = {
+const liveObjectsPluginConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.js',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.js',
   external: ['dequal'],
 };
 
-const objectsPluginCdnConfig = {
+const liveObjectsPluginEsmConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.umd.js',
+  format: 'esm',
+  plugins: [],
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  outfile: 'build/liveobjects.mjs',
+  external: ['dequal'],
 };
 
-const minifiedObjectsPluginCdnConfig = {
+const liveObjectsPluginCdnConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/objects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/objects.umd.min.js',
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.js',
+};
+
+const minifiedLiveObjectsPluginCdnConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.min.js',
   minify: true,
 };
 
@@ -108,7 +117,8 @@ module.exports = {
   pushPluginConfig,
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
-  objectsPluginConfig,
-  objectsPluginCdnConfig,
-  minifiedObjectsPluginCdnConfig,
+  liveObjectsPluginConfig,
+  liveObjectsPluginEsmConfig,
+  liveObjectsPluginCdnConfig,
+  minifiedLiveObjectsPluginCdnConfig,
 };

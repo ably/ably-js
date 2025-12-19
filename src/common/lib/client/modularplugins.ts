@@ -11,7 +11,7 @@ import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import Annotation, { WireAnnotation } from '../types/annotation';
 import { TransportCtor } from '../transport/transport';
 import type * as PushPlugin from 'plugins/push';
-import type * as ObjectsPlugin from 'plugins/objects';
+import type * as LiveObjectsPlugin from 'plugins/liveobjects';
 
 export interface PresenceMessagePlugin {
   PresenceMessage: typeof PresenceMessage;
@@ -41,7 +41,7 @@ export interface ModularPlugins {
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
   Push?: typeof PushPlugin;
-  Objects?: typeof ObjectsPlugin; // PC5, PT2b
+  LiveObjects?: typeof LiveObjectsPlugin; // PC5, PT2b
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };

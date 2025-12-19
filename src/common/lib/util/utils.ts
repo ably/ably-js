@@ -477,3 +477,56 @@ export async function withTimeoutAsync<A>(promise: Promise<A>, timeout = 5000, e
 
 type NonFunctionKeyNames<A> = { [P in keyof A]: A[P] extends Function ? never : P }[keyof A];
 export type Properties<A> = Pick<A, NonFunctionKeyNames<A>>;
+
+/**
+ * A subscription function that registers the provided listener and returns a function to deregister it.
+ */
+export type RegisterListenerFunction<T> = (listener: (event: T) => void) => () => void;
+
+/**
+ * Converts a listener-based event emitter API into an async iterator
+ * that can be consumed using a `for await...of` loop.
+ *
+ * @param registerListener - A function that registers a listener and returns a function to remove it
+ * @returns An async iterator that yields events from the listener
+ */
+export async function* listenerToAsyncIterator<T>(
+  registerListener: RegisterListenerFunction<T>,
+): AsyncIterableIterator<T> {
+  const eventQueue: T[] = [];
+  let resolveNext: ((event: T) => void) | null = null;
+
+  const removeListener = registerListener((event: T) => {
+    if (resolveNext) {
+      // If we have a waiting promise, resolve it immediately
+      const resolve = resolveNext;
+      resolveNext = null;
+      resolve(event);
+    } else {
+      // Otherwise, queue the event for later consumption
+      eventQueue.push(event);
+    }
+  });
+
+  try {
+    while (true) {
+      if (eventQueue.length > 0) {
+        // If we have queued events, yield the next one
+        yield eventQueue.shift()!;
+      } else {
+        if (resolveNext) {
+          throw new ErrorInfo('Concurrent next() calls are not supported', 40000, 400);
+        }
+
+        // Otherwise wait for the next event to arrive
+        const event = await new Promise<T>((resolve) => {
+          resolveNext = resolve;
+        });
+        yield event;
+      }
+    }
+  } finally {
+    // Clean up when iterator is done or abandoned
+    removeListener();
+  }
+}

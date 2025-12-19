@@ -1,11 +1,19 @@
 import { dequal } from 'dequal';
 
-import type { Bufferlike } from 'common/platform';
-import type * as API from '../../../ably';
-import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectId } from './objectid';
+import { __livetype } from '../../../ably';
 import {
-  createInitialValueJSONString,
+  CompactedJsonValue,
+  CompactedValue,
+  Primitive,
+  LiveMap as PublicLiveMap,
+  LiveObject as PublicLiveObject,
+  Value,
+} from '../../../liveobjects';
+import { LiveCounter } from './livecounter';
+import { LiveCounterValueType } from './livecountervaluetype';
+import { LiveMapValueType } from './livemapvaluetype';
+import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
+import {
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -13,9 +21,8 @@ import {
   ObjectsMapEntry,
   ObjectsMapOp,
   ObjectsMapSemantics,
-  PrimitiveObjectValue,
 } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObject } from './realtimeobject';
 
 export interface ObjectIdObjectData {
   /** A reference to another object, used to support composable object structures. */
@@ -24,7 +31,7 @@ export interface ObjectIdObjectData {
 
 export interface ValueObjectData {
   /** A decoded leaf value from {@link WireObjectData}. */
-  value: string | number | boolean | Bufferlike | API.JsonArray | API.JsonObject;
+  value: Primitive;
 }
 
 export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
@@ -40,18 +47,24 @@ export interface LiveMapData extends LiveObjectData {
   data: Map<string, LiveMapEntry>; // RTLM3
 }
 
-export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpdate {
+export interface LiveMapUpdate<T extends Record<string, Value>> extends LiveObjectUpdate {
   update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
+  _type: 'LiveMapUpdate';
 }
 
 /** @spec RTLM1, RTLM2 */
-export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate<T>> {
+export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
+  extends LiveObject<LiveMapData, LiveMapUpdate<T>>
+  implements PublicLiveMap<T>
+{
+  declare readonly [__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+
   constructor(
-    objects: Objects,
+    realtimeObject: RealtimeObject,
     private _semantics: ObjectsMapSemantics,
     objectId: string,
   ) {
-    super(objects, objectId);
+    super(realtimeObject, objectId);
   }
 
   /**
@@ -60,8 +73,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    * @spec RTLM4
    */
-  static zeroValue<T extends API.LiveMapType>(objects: Objects, objectId: string): LiveMap<T> {
-    return new LiveMap<T>(objects, ObjectsMapSemantics.LWW, objectId);
+  static zeroValue(realtimeObject: RealtimeObject, objectId: string): LiveMap {
+    return new LiveMap(realtimeObject, ObjectsMapSemantics.LWW, objectId);
   }
 
   /**
@@ -70,47 +83,49 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromObjectState<T extends API.LiveMapType>(objects: Objects, objectMessage: ObjectMessage): LiveMap<T> {
-    const obj = new LiveMap<T>(objects, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
+  static fromObjectState(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveMap {
+    const obj = new LiveMap(realtimeObject, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
     return obj;
   }
 
   /**
-   * Returns a {@link LiveMap} instance based on the provided MAP_CREATE object operation.
-   * The provided object operation must hold a valid map object data.
-   *
    * @internal
    */
-  static fromObjectOperation<T extends API.LiveMapType>(objects: Objects, objectMessage: ObjectMessage): LiveMap<T> {
-    const obj = new LiveMap<T>(objects, objectMessage.operation!.map?.semantics!, objectMessage.operation!.objectId);
-    obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
-    return obj;
-  }
-
-  /**
-   * @internal
-   */
-  static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
+  static async createMapSetMessage(
+    realtimeObject: RealtimeObject,
     objectId: string,
-    key: TKey,
-    value: API.LiveMapType[TKey],
-  ): ObjectMessage {
-    const client = objects.getClient();
+    key: string,
+    value: Value,
+  ): Promise<ObjectMessage[]> {
+    const client = realtimeObject.getClient();
 
-    LiveMap.validateKeyValue(objects, key, value);
+    LiveMap.validateKeyValue(realtimeObject, key, value);
 
     let objectData: LiveMapObjectData;
-    if (value instanceof LiveObject) {
-      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+    let createValueTypesMessages: ObjectMessage[] = [];
+
+    if (LiveCounterValueType.instanceof(value)) {
+      const counterCreateMsg = await LiveCounterValueType.createCounterCreateMessage(realtimeObject, value);
+      createValueTypesMessages = [counterCreateMsg];
+
+      const typedObjectData: ObjectIdObjectData = { objectId: counterCreateMsg.operation?.objectId! };
+      objectData = typedObjectData;
+    } else if (LiveMapValueType.instanceof(value)) {
+      const { mapCreateMsg, nestedObjectsCreateMsgs } = await LiveMapValueType.createMapCreateMessage(
+        realtimeObject,
+        value,
+      );
+      createValueTypesMessages = [...nestedObjectsCreateMsgs, mapCreateMsg];
+
+      const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
     } else {
-      const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
+      const typedObjectData: ValueObjectData = { value: value as Primitive };
       objectData = typedObjectData;
     }
 
-    const msg = ObjectMessage.fromValues(
+    const mapSetMsg = ObjectMessage.fromValues(
       {
         operation: {
           action: ObjectOperationAction.MAP_SET,
@@ -125,18 +140,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       client.MessageEncoding,
     );
 
-    return msg;
+    return [...createValueTypesMessages, mapSetMsg];
   }
 
   /**
    * @internal
    */
-  static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
-    objectId: string,
-    key: TKey,
-  ): ObjectMessage {
-    const client = objects.getClient();
+  static createMapRemoveMessage(realtimeObject: RealtimeObject, objectId: string, key: string): ObjectMessage {
+    const client = realtimeObject.getClient();
 
     if (typeof key !== 'string') {
       throw new client.ErrorInfo('Map key should be string', 40003, 400);
@@ -160,12 +171,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static validateKeyValue<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
-    key: TKey,
-    value: API.LiveMapType[TKey],
-  ): void {
-    const client = objects.getClient();
+  static validateKeyValue(realtimeObject: RealtimeObject, key: string, value: Value): void {
+    const client = realtimeObject.getClient();
 
     if (typeof key !== 'string') {
       throw new client.ErrorInfo('Map key should be string', 40003, 400);
@@ -183,77 +190,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   /**
-   * @internal
-   */
-  static async createMapCreateMessage(objects: Objects, entries?: API.LiveMapType): Promise<ObjectMessage> {
-    const client = objects.getClient();
-
-    if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
-      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
-    }
-
-    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(objects, key, value));
-
-    const initialValueOperation = LiveMap.createInitialValueOperation(entries);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
-
-    const objectId = ObjectId.fromInitialValue(
-      client.Platform,
-      'map',
-      initialValueJSONString,
-      nonce,
-      msTimestamp,
-    ).toString();
-
-    const msg = ObjectMessage.fromValues(
-      {
-        operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.MAP_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    return msg;
-  }
-
-  /**
-   * @internal
-   */
-  static createInitialValueOperation(entries?: API.LiveMapType): Pick<ObjectOperation<ObjectData>, 'map'> {
-    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
-
-    Object.entries(entries ?? {}).forEach(([key, value]) => {
-      let objectData: LiveMapObjectData;
-      if (value instanceof LiveObject) {
-        const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
-        objectData = typedObjectData;
-      } else {
-        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
-        objectData = typedObjectData;
-      }
-
-      mapEntries[key] = {
-        data: objectData,
-      };
-    });
-
-    return {
-      map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
-      },
-    };
-  }
-
-  /**
    * Returns the value associated with the specified key in the underlying Map object.
    *
    * - If this map object is tombstoned (deleted), `undefined` is returned.
@@ -267,22 +203,20 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    */
   // force the key to be of type string as we only allow strings as key in a map
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
-    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM5b, RTLM5c
-
     if (this.isTombstoned()) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     const element = this._dataRef.data.get(key);
 
     // RTLM5d1
     if (element === undefined) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     // RTLM5d2a
     if (element.tombstone === true) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     // data always exists for non-tombstoned elements
@@ -290,8 +224,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   size(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration();
-
     let size = 0;
     for (const value of this._dataRef.data.values()) {
       if (this._isMapEntryTombstoned(value)) {
@@ -306,8 +238,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
-    this._objects.throwIfInvalidAccessApiConfiguration();
-
     for (const [key, entry] of this._dataRef.data.entries()) {
       if (this._isMapEntryTombstoned(entry)) {
         // do not return tombstoned entries
@@ -341,10 +271,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
-  async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveMap.createMapSetMessage(this._objects, this.getObjectId(), key, value);
-    return this._objects.publish([msg]);
+  async set<TKey extends keyof T & string>(
+    key: TKey,
+    value: T[TKey] | LiveCounterValueType | LiveMapValueType,
+  ): Promise<void> {
+    const msgs = await LiveMap.createMapSetMessage(this._realtimeObject, this.getObjectId(), key, value);
+    return this._realtimeObject.publish(msgs);
   }
 
   /**
@@ -357,9 +289,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveMap.createMapRemoveMessage(this._objects, this.getObjectId(), key);
-    return this._objects.publish([msg]);
+    const msg = LiveMap.createMapRemoveMessage(this._realtimeObject, this.getObjectId(), key);
+    return this._realtimeObject.publish([msg]);
   }
 
   /**
@@ -498,24 +429,27 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     const previousDataRef = this._dataRef;
+    let update: LiveMapUpdate<T>;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      update = this.tombstone(objectMessage);
     } else {
-      // override data for this object with data from the object state
+      // otherwise override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLM6b
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
       // RTLM6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
         this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
       }
+
+      // update will contain the diff between previous value and new value from object state
+      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+      update.objectMessage = objectMessage;
     }
 
-    // if object got tombstoned, the update object will include all data that got cleared.
-    // otherwise it is a diff between previous value and new value from object state.
-    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
+    // Update parent references based on the calculated diff
+    this._updateParentReferencesFromUpdate(update, previousDataRef);
+
     return update;
   }
 
@@ -527,12 +461,121 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     const keysToDelete: string[] = [];
     for (const [key, value] of this._dataRef.data.entries()) {
-      if (value.tombstone === true && Date.now() - value.tombstonedAt! >= this._objects.gcGracePeriod) {
+      if (value.tombstone === true && Date.now() - value.tombstonedAt! >= this._realtimeObject.gcGracePeriod) {
         keysToDelete.push(key);
       }
     }
 
     keysToDelete.forEach((x) => this._dataRef.data.delete(x));
+  }
+
+  /**
+   * Override clearData to handle parent reference cleanup when this LiveMap is tombstoned.
+   *
+   * @internal
+   */
+  clearData(): LiveMapUpdate<T> {
+    // Remove all parent references for objects this map was referencing
+    for (const [key, entry] of this._dataRef.data.entries()) {
+      if (entry.data && 'objectId' in entry.data) {
+        const referencedObject = this._realtimeObject.getPool().get(entry.data.objectId);
+        if (referencedObject) {
+          referencedObject.removeParentReference(this, key);
+        }
+      }
+    }
+
+    // Call the parent clearData method
+    return super.clearData();
+  }
+
+  /**
+   * Returns an in-memory JavaScript object representation of this LiveMap.
+   * LiveMap values are recursively compacted using their own compact methods.
+   * Compacted LiveMaps are memoized to handle cyclic references (returned as in-memory pointers).
+   *
+   * Use compactJson() for a JSON-serializable representation.
+   *
+   * @internal
+   */
+  compact(visitedObjects?: Map<string, Record<string, any>>): CompactedValue<PublicLiveMap<T>> {
+    const visited = visitedObjects ?? new Map<string, Record<string, any>>();
+    const result: Record<keyof T, any> = {} as Record<keyof T, any>;
+
+    // Memoize the compacted result to handle circular references
+    visited.set(this.getObjectId(), result);
+
+    // Use public entries() method to ensure we only include publicly exposed properties
+    for (const [key, value] of this.entries()) {
+      if (value instanceof LiveMap) {
+        if (visited.has(value.getObjectId())) {
+          // If the LiveMap has already been visited, just reference it to avoid infinite loops
+          result[key] = visited.get(value.getObjectId());
+        } else {
+          // Otherwise, compact it
+          result[key] = value.compact(visited);
+        }
+        continue;
+      }
+
+      if (value instanceof LiveCounter) {
+        result[key] = value.value();
+        continue;
+      }
+
+      // other values are returned as-is
+      result[key] = value;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns a JSON-serializable representation of this LiveMap.
+   * LiveMap values are recursively compacted using their own compactJson methods.
+   * Cyclic references are represented as `{ objectId: string }` instead of in-memory pointers.
+   * Buffers are converted to base64 strings.
+   *
+   * Use compact() for an in-memory representation.
+   *
+   * @internal
+   */
+  compactJson(visitedObjectIds?: Set<string>): CompactedJsonValue<PublicLiveMap<T>> {
+    const visited = visitedObjectIds ?? new Set<string>();
+    const result: Record<keyof T, any> = {} as Record<keyof T, any>;
+
+    // Mark this object ID as visited to handle circular references
+    visited.add(this.getObjectId());
+
+    // Use public entries() method to ensure we only include publicly exposed properties
+    for (const [key, value] of this.entries()) {
+      if (value instanceof LiveMap) {
+        if (visited.has(value.getObjectId())) {
+          // If the LiveMap has already been visited, return its objectId to avoid infinite loops
+          result[key] = { objectId: value.getObjectId() };
+        } else {
+          // Otherwise, compact it
+          result[key] = value.compactJson(visited);
+        }
+        continue;
+      }
+
+      if (value instanceof LiveCounter) {
+        result[key] = value.value();
+        continue;
+      }
+
+      // Convert buffers to base64 strings
+      if (this._client.Platform.BufferUtils.isBuffer(value)) {
+        result[key] = this._client.Platform.BufferUtils.base64Encode(value);
+        continue;
+      }
+
+      // Other values return as is
+      result[key] = value;
+    }
+
+    return result;
   }
 
   /** @spec RTLM4 */
@@ -541,7 +584,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate<T> {
-    const update: LiveMapUpdate<T> = { update: {} };
+    const update: LiveMapUpdate<T> = { update: {}, _type: 'LiveMapUpdate' };
 
     for (const [key, currentEntry] of prevDataRef.data.entries()) {
       const typedKey: keyof T & string = key;
@@ -603,10 +646,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+      return { update: {}, objectMessage: msg, _type: 'LiveMapUpdate' };
     }
 
-    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    const aggregatedUpdate: LiveMapUpdate<T> = {
+      update: {},
+      objectMessage: msg,
+      _type: 'LiveMapUpdate',
+    };
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
@@ -709,12 +756,21 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      this._objects.getPool().createZeroValueObjectIfNotExists(op.data.objectId); // RTLM7c1
+      this._realtimeObject.getPool().createZeroValueObjectIfNotExists(op.data.objectId); // RTLM7c1
     } else {
       liveData = { value: op.data.value } as ValueObjectData;
     }
 
     if (existingEntry) {
+      // If there was an existing entry, we need to handle parent reference changes
+      if (existingEntry.data && 'objectId' in existingEntry.data) {
+        // Remove parent reference from the old object
+        const oldReferencedObject = this._realtimeObject.getPool().get(existingEntry.data.objectId);
+        if (oldReferencedObject) {
+          oldReferencedObject.removeParentReference(this, op.key);
+        }
+      }
+
       // RTLM7a2
       existingEntry.tombstone = false; // RTLM7a2c
       existingEntry.tombstonedAt = undefined;
@@ -731,7 +787,19 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    // Add parent reference to the new object (if it's an object reference)
+    if ('objectId' in liveData) {
+      const newReferencedObject = this._realtimeObject.getPool().get(liveData.objectId);
+      if (newReferencedObject) {
+        newReferencedObject.addParentReference(this, op.key);
+      }
+    }
+
+    const update: LiveMapUpdate<T> = {
+      update: {},
+      objectMessage: msg,
+      _type: 'LiveMapUpdate',
+    };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'updated';
 
@@ -772,6 +840,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     if (existingEntry) {
+      // Handle parent reference removal for object references
+      if (existingEntry.data && 'objectId' in existingEntry.data) {
+        // Remove parent reference from the object that was being referenced
+        const referencedObject = this._realtimeObject.getPool().get(existingEntry.data.objectId);
+        if (referencedObject) {
+          referencedObject.removeParentReference(this, op.key);
+        }
+      }
+
       // RTLM8a2
       existingEntry.tombstone = true; // RTLM8a2c
       existingEntry.tombstonedAt = tombstonedAt;
@@ -788,7 +865,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    const update: LiveMapUpdate<T> = {
+      update: {},
+      objectMessage: msg,
+      _type: 'LiveMapUpdate',
+    };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'removed';
 
@@ -873,7 +954,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * Returns value as is if object data stores a primitive type, or a reference to another LiveObject from the pool if it stores an objectId.
    */
-  private _getResolvedValueFromObjectData(data: LiveMapObjectData): PrimitiveObjectValue | LiveObject | undefined {
+  private _getResolvedValueFromObjectData(data: LiveMapObjectData): Value | undefined {
     // if object data stores primitive value, just return it as is.
     const primitiveValue = (data as ValueObjectData).value;
     if (primitiveValue != null) {
@@ -882,7 +963,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     // RTLM5d2f - otherwise, it has an objectId reference, and we should get the actual object from the pool
     const objectId = (data as ObjectIdObjectData).objectId;
-    const refObject: LiveObject | undefined = this._objects.getPool().get(objectId);
+    const refObject: LiveObject | undefined = this._realtimeObject.getPool().get(objectId);
     if (!refObject) {
       return undefined; // RTLM5d2f1
     }
@@ -892,7 +973,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return undefined;
     }
 
-    return refObject; // RTLM5d2f2
+    return refObject as unknown as PublicLiveObject; // RTLM5d2f2
   }
 
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
@@ -903,7 +984,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // data always exists for non-tombstoned entries
     const data = entry.data!;
     if ('objectId' in data) {
-      const refObject = this._objects.getPool().get(data.objectId);
+      const refObject = this._realtimeObject.getPool().get(data.objectId);
 
       if (refObject?.isTombstoned()) {
         // entry that points to tombstoned object should be considered tombstoned as well
@@ -912,5 +993,45 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     return false;
+  }
+
+  /**
+   * Update parent references based on the calculated update diff.
+   */
+  private _updateParentReferencesFromUpdate(update: LiveMapUpdate<T>, previousDataRef: LiveMapData): void {
+    for (const [key, changeType] of Object.entries(update.update)) {
+      if (changeType === 'removed') {
+        // Key was removed - remove parent reference from the old object if it was referencing one
+        const previousEntry = previousDataRef.data.get(key);
+        if (previousEntry?.data && 'objectId' in previousEntry.data) {
+          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
+          if (oldReferencedObject) {
+            oldReferencedObject.removeParentReference(this, key);
+          }
+        }
+      }
+
+      if (changeType === 'updated') {
+        // Key was updated - need to handle both removal of old reference and addition of new reference
+        const previousEntry = previousDataRef.data.get(key);
+        const newEntry = this._dataRef.data.get(key);
+
+        // Remove old parent reference if there was one
+        if (previousEntry?.data && 'objectId' in previousEntry.data) {
+          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
+          if (oldReferencedObject) {
+            oldReferencedObject.removeParentReference(this, key);
+          }
+        }
+
+        // Add new parent reference if the new value references an object
+        if (newEntry?.data && 'objectId' in newEntry.data) {
+          const newReferencedObject = this._realtimeObject.getPool().get(newEntry.data.objectId);
+          if (newReferencedObject) {
+            newReferencedObject.addParentReference(this, key);
+          }
+        }
+      }
+    }
   }
 }

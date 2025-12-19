@@ -1,12 +1,11 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import { ROOT_OBJECT_ID } from './constants';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { ObjectId } from './objectid';
-import { Objects } from './objects';
-
-export const ROOT_OBJECT_ID = 'root';
+import { RealtimeObject } from './realtimeobject';
 
 /**
  * @internal
@@ -17,8 +16,8 @@ export class ObjectsPool {
   private _pool: Map<string, LiveObject>; // RTO3a
   private _gcInterval: ReturnType<typeof setInterval>;
 
-  constructor(private _objects: Objects) {
-    this._client = this._objects.getClient();
+  constructor(private _realtimeObject: RealtimeObject) {
+    this._client = this._realtimeObject.getClient();
     this._pool = this._createInitialPool();
     this._gcInterval = setInterval(() => {
       this._onGCInterval();
@@ -29,6 +28,18 @@ export class ObjectsPool {
 
   get(objectId: string): LiveObject | undefined {
     return this._pool.get(objectId);
+  }
+
+  getRoot(): LiveMap {
+    return this._pool.get(ROOT_OBJECT_ID) as LiveMap;
+  }
+
+  /**
+   * Returns all objects in the pool as an iterable.
+   * Used internally for operations that need to process all objects.
+   */
+  getAll(): IterableIterator<LiveObject> {
+    return this._pool.values();
   }
 
   /**
@@ -51,7 +62,7 @@ export class ObjectsPool {
    */
   resetToInitialPool(emitUpdateEvents: boolean): void {
     // clear the pool first and keep the root object
-    const root = this._pool.get(ROOT_OBJECT_ID)!;
+    const root = this.getRoot();
     this._pool.clear();
     this._pool.set(root.getObjectId(), root);
 
@@ -82,12 +93,12 @@ export class ObjectsPool {
     let zeroValueObject: LiveObject;
     switch (parsedObjectId.type) {
       case 'map': {
-        zeroValueObject = LiveMap.zeroValue(this._objects, objectId); // RTO6b2
+        zeroValueObject = LiveMap.zeroValue(this._realtimeObject, objectId); // RTO6b2
         break;
       }
 
       case 'counter':
-        zeroValueObject = LiveCounter.zeroValue(this._objects, objectId); // RTO6b3
+        zeroValueObject = LiveCounter.zeroValue(this._realtimeObject, objectId); // RTO6b3
         break;
     }
 
@@ -98,7 +109,7 @@ export class ObjectsPool {
   private _createInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
     // RTO3b
-    const root = LiveMap.zeroValue(this._objects, ROOT_OBJECT_ID);
+    const root = LiveMap.zeroValue(this._realtimeObject, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;
   }
@@ -107,9 +118,9 @@ export class ObjectsPool {
     const toDelete: string[] = [];
     for (const [objectId, obj] of this._pool.entries()) {
       // tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
-      // by removing them from the local pool, Objects plugin no longer keeps a reference to those objects, allowing JS's
+      // by removing them from the local pool, LiveObjects plugin no longer keeps a reference to those objects, allowing JS's
       // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
-      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._objects.gcGracePeriod) {
+      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._realtimeObject.gcGracePeriod) {
         toDelete.push(objectId);
         continue;
       }

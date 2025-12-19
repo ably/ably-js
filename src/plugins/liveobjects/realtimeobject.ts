@@ -1,14 +1,16 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import type * as API from '../../../ably';
-import { BatchContext } from './batchcontext';
+import type { ChannelState, StatusSubscription } from '../../../ably';
+import type * as ObjectsApi from '../../../liveobjects';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectMessage, ObjectOperationAction } from './objectmessage';
-import { ObjectsPool, ROOT_OBJECT_ID } from './objectspool';
+import { ObjectsPool } from './objectspool';
+import { DefaultPathObject } from './pathobject';
+import { PathObjectSubscriptionRegister } from './pathobjectsubscriptionregister';
 import { SyncObjectsDataPool } from './syncobjectsdatapool';
 
 export enum ObjectsEvent {
@@ -30,13 +32,7 @@ const StateToEventsMap: Record<ObjectsState, ObjectsEvent | undefined> = {
 
 export type ObjectsEventCallback = () => void;
 
-export interface OnObjectsEventResponse {
-  off(): void;
-}
-
-export type BatchCallback = (batchContext: BatchContext) => void;
-
-export class Objects {
+export class RealtimeObject {
   gcGracePeriod: number;
 
   private _client: BaseClient;
@@ -52,6 +48,7 @@ export class Objects {
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedObjectOperations: ObjectMessage[];
+  private _pathObjectSubscriptionRegister: PathObjectSubscriptionRegister;
 
   // Used by tests
   static _DEFAULTS = DEFAULTS;
@@ -65,6 +62,7 @@ export class Objects {
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
     this._bufferedObjectOperations = [];
+    this._pathObjectSubscriptionRegister = new PathObjectSubscriptionRegister(this);
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
     this.gcGracePeriod =
       this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
@@ -75,102 +73,25 @@ export class Objects {
 
   /**
    * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
-   * A user can provide an explicit type for the getRoot method to explicitly set the type structure on this particular channel.
+   * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
-   * @spec RTO1
    */
-  async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
-    this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
+  async get<T extends Record<string, ObjectsApi.Value>>(): Promise<ObjectsApi.PathObject<ObjectsApi.LiveMap<T>>> {
+    this._throwIfMissingChannelMode('object_subscribe');
+
+    // implicit attach before proceeding
+    await this._channel.ensureAttached();
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
       await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
     }
 
-    return this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>; // RTO1d
+    const pathObject = new DefaultPathObject(this, this._objectsPool.getRoot(), []);
+    return pathObject;
   }
 
-  /**
-   * Provides access to the synchronous write API for Objects that can be used to batch multiple operations together in a single channel message.
-   */
-  async batch(callback: BatchCallback): Promise<void> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const root = await this.getRoot();
-    const context = new BatchContext(this, root);
-
-    try {
-      callback(context);
-      await context.flush();
-    } finally {
-      context.close();
-    }
-  }
-
-  /**
-   * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
-   *
-   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-   * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
-   *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
-   */
-  async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const msg = await LiveMap.createMapCreateMessage(this, entries);
-    const objectId = msg.operation?.objectId!;
-
-    await this.publish([msg]);
-
-    // we may have already received the MAP_CREATE operation at this point, as it could arrive before the ACK for our publish message.
-    // this means the object might already exist in the local pool, having been added during the usual MAP_CREATE operation process.
-    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveMap<T>;
-    }
-
-    // we haven't received the MAP_CREATE operation yet, so we can create a new map object using the locally constructed object operation.
-    // we don't know the serials for map entries, so we assign an "earliest possible" serial to each entry, so that any subsequent operation can be applied to them.
-    // we mark the MAP_CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
-    const map = LiveMap.fromObjectOperation<T>(this, msg);
-    this._objectsPool.set(objectId, map);
-
-    return map;
-  }
-
-  /**
-   * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
-   *
-   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-   * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
-   *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
-   */
-  async createCounter(count?: number): Promise<LiveCounter> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const msg = await LiveCounter.createCounterCreateMessage(this, count);
-    const objectId = msg.operation?.objectId!;
-
-    await this.publish([msg]);
-
-    // we may have already received the COUNTER_CREATE operation at this point, as it could arrive before the ACK for our publish message.
-    // this means the object might already exist in the local pool, having been added during the usual COUNTER_CREATE operation process.
-    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveCounter;
-    }
-
-    // we haven't received the COUNTER_CREATE operation yet, so we can create a new counter object using the locally constructed object operation.
-    // we mark the COUNTER_CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
-    const counter = LiveCounter.fromObjectOperation(this, msg);
-    this._objectsPool.set(objectId, counter);
-
-    return counter;
-  }
-
-  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): StatusSubscription {
     // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.on(event, callback);
 
@@ -192,11 +113,6 @@ export class Objects {
     this._eventEmitterPublic.off(event, callback);
   }
 
-  offAll(): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._eventEmitterPublic.off();
-  }
-
   /**
    * @internal
    */
@@ -216,6 +132,13 @@ export class Objects {
    */
   getClient(): BaseClient {
     return this._client;
+  }
+
+  /**
+   * @internal
+   */
+  getPathObjectSubscriptionRegister(): PathObjectSubscriptionRegister {
+    return this._pathObjectSubscriptionRegister;
   }
 
   /**
@@ -263,7 +186,7 @@ export class Objects {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
-      'Objects.onAttached()',
+      'RealtimeObject.onAttached()',
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
@@ -283,7 +206,7 @@ export class Objects {
   /**
    * @internal
    */
-  actOnChannelState(state: API.ChannelState, hasObjects?: boolean): void {
+  actOnChannelState(state: ChannelState, hasObjects?: boolean): void {
     switch (state) {
       case 'attached':
         this.onAttached(hasObjects);
@@ -383,7 +306,10 @@ export class Objects {
     }
 
     const receivedObjectIds = new Set<string>();
-    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
+    const existingObjectUpdates: {
+      object: LiveObject;
+      update: LiveObjectUpdate | LiveObjectUpdateNoop;
+    }[] = [];
 
     // RTO5c1
     for (const [objectId, entry] of this._syncObjectsDataPool.entries()) {
@@ -422,7 +348,11 @@ export class Objects {
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     this._objectsPool.deleteExtraObjectIds([...receivedObjectIds]);
 
-    // call subscription callbacks for all updated existing objects
+    // Rebuild all parent references after sync to ensure all object-to-object references are properly established
+    // This is necessary because objects may reference other objects that weren't in the pool when they were initially created
+    this._rebuildAllParentReferences();
+
+    // call subscription callbacks for all updated existing objects.
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
@@ -432,7 +362,7 @@ export class Objects {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'Objects._applyObjectMessages()',
+          'RealtimeObject._applyObjectMessages()',
           `object operation message is received without 'operation' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -461,7 +391,7 @@ export class Objects {
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
-            'Objects._applyObjectMessages()',
+            'RealtimeObject._applyObjectMessages()',
             `received unsupported action in object operation message: ${objectOperation.action}, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
           );
       }
@@ -495,7 +425,32 @@ export class Objects {
     this._eventEmitterPublic.emit(event);
   }
 
-  private _throwIfInChannelState(channelState: API.ChannelState[]): void {
+  /**
+   * Rebuilds all parent references in the objects pool.
+   * This is necessary after sync operations where objects may reference other objects
+   * that weren't available when the initial parent references were established.
+   */
+  private _rebuildAllParentReferences(): void {
+    // First, clear all existing parent references
+    for (const object of this._objectsPool.getAll()) {
+      object.clearParentReferences();
+    }
+
+    // Then, rebuild parent references by examining all objects and their data
+    for (const object of this._objectsPool.getAll()) {
+      if (object instanceof LiveMap) {
+        // For LiveMaps, iterate through their entries and establish parent references
+        for (const [key, value] of object.entries()) {
+          if (value instanceof LiveObject) {
+            value.addParentReference(object, key);
+          }
+        }
+      }
+      // Note: LiveCounter doesn't reference other objects, so no special handling needed
+    }
+  }
+
+  private _throwIfInChannelState(channelState: ChannelState[]): void {
     if (channelState.includes(this._channel.state)) {
       throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }

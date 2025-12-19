@@ -1,14 +1,8 @@
+import { __livetype } from '../../../ably';
+import { LiveCounter as PublicLiveCounter } from '../../../liveobjects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectId } from './objectid';
-import {
-  createInitialValueJSONString,
-  ObjectData,
-  ObjectMessage,
-  ObjectOperation,
-  ObjectOperationAction,
-  ObjectsCounterOp,
-} from './objectmessage';
-import { Objects } from './objects';
+import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
+import { RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number; // RTLC3
@@ -16,18 +10,21 @@ export interface LiveCounterData extends LiveObjectData {
 
 export interface LiveCounterUpdate extends LiveObjectUpdate {
   update: { amount: number };
+  _type: 'LiveCounterUpdate';
 }
 
 /** @spec RTLC1, RTLC2 */
-export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> {
+export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> implements PublicLiveCounter {
+  declare readonly [__livetype]: 'LiveCounter'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+
   /**
    * Returns a {@link LiveCounter} instance with a 0 value.
    *
    * @internal
    * @spec RTLC4
    */
-  static zeroValue(objects: Objects, objectId: string): LiveCounter {
-    return new LiveCounter(objects, objectId);
+  static zeroValue(realtimeObject: RealtimeObject, objectId: string): LiveCounter {
+    return new LiveCounter(realtimeObject, objectId);
   }
 
   /**
@@ -36,29 +33,17 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectState(objects: Objects, objectMessage: ObjectMessage): LiveCounter {
-    const obj = new LiveCounter(objects, objectMessage.object!.objectId);
+  static fromObjectState(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveCounter {
+    const obj = new LiveCounter(realtimeObject, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
     return obj;
   }
 
   /**
-   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE object operation.
-   * The provided object operation must hold a valid counter object data.
-   *
    * @internal
    */
-  static fromObjectOperation(objects: Objects, objectMessage: ObjectMessage): LiveCounter {
-    const obj = new LiveCounter(objects, objectMessage.operation!.objectId);
-    obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
-    return obj;
-  }
-
-  /**
-   * @internal
-   */
-  static createCounterIncMessage(objects: Objects, objectId: string, amount: number): ObjectMessage {
-    const client = objects.getClient();
+  static createCounterIncMessage(realtimeObject: RealtimeObject, objectId: string, amount: number): ObjectMessage {
+    const client = realtimeObject.getClient();
 
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
@@ -79,60 +64,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return msg;
   }
 
-  /**
-   * @internal
-   */
-  static async createCounterCreateMessage(objects: Objects, count?: number): Promise<ObjectMessage> {
-    const client = objects.getClient();
-
-    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
-      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
-    }
-
-    const initialValueOperation = LiveCounter.createInitialValueOperation(count);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
-
-    const objectId = ObjectId.fromInitialValue(
-      client.Platform,
-      'counter',
-      initialValueJSONString,
-      nonce,
-      msTimestamp,
-    ).toString();
-
-    const msg = ObjectMessage.fromValues(
-      {
-        operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.COUNTER_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    return msg;
-  }
-
-  /**
-   * @internal
-   */
-  static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
-    return {
-      counter: {
-        count: count ?? 0,
-      },
-    };
-  }
-
   /** @spec RTLC5 */
   value(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLC5a, RTLC5b
     return this._dataRef.data; // RTLC5c
   }
 
@@ -146,16 +79,14 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
-    return this._objects.publish([msg]);
+    const msg = LiveCounter.createCounterIncMessage(this._realtimeObject, this.getObjectId(), amount);
+    return this._realtimeObject.publish([msg]);
   }
 
   /**
    * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
@@ -275,24 +206,24 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     const previousDataRef = this._dataRef;
+    let update: LiveCounterUpdate;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      update = this.tombstone(objectMessage);
     } else {
-      // override data for this object with data from the object state
+      // otherwise override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLC6b
       this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
       // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
         this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
       }
+
+      // update will contain the diff between previous value and new value from object state
+      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+      update.objectMessage = objectMessage;
     }
 
-    // if object got tombstoned, the update object will include all data that got cleared.
-    // otherwise it is a diff between previous value and new value from object state.
-    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
     return update;
   }
 
@@ -311,7 +242,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   protected _updateFromDataDiff(prevDataRef: LiveCounterData, newDataRef: LiveCounterData): LiveCounterUpdate {
     const counterDiff = newDataRef.data - prevDataRef.data;
-    return { update: { amount: counterDiff } };
+    return { update: { amount: counterDiff }, _type: 'LiveCounterUpdate' };
   }
 
   protected _mergeInitialDataFromCreateOperation(
@@ -327,8 +258,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     return {
       update: { amount: objectOperation.counter?.count ?? 0 },
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
+      _type: 'LiveCounterUpdate',
     };
   }
 
@@ -362,6 +293,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { amount: op.amount }, clientId: msg.clientId, connectionId: msg.connectionId };
+    return {
+      update: { amount: op.amount },
+      objectMessage: msg,
+      _type: 'LiveCounterUpdate',
+    };
   }
 }
