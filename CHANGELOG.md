@@ -2,7 +2,39 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [2.15.0](https://github.com/ably/ably-js/tree/2.15.0)
+## [2.16.0](https://github.com/ably/ably-js/tree/2.16.0) (2025-12-19)
+
+**Introducing LiveObjects Path-based API**
+
+This release introduces a redesigned LiveObjects API centered around path-based operations. The new `PathObject` abstraction provides a more intuitive interaction model where operations resolve at runtime against the current value at a path, rather than being bound to specific object instances.
+
+With this release, the ably-js LiveObjects API is no longer marked as `@experimental` and is in Public Preview.
+
+Key improvements:
+
+- **Resilient subscriptions**: Subscribe to paths rather than object instances, so subscriptions automatically follow whatever object exists at that location even when it's replaced.
+- **Deep subscriptions**: Observe changes at any depth below a path with configurable depth control.
+- **Operation context**: Subscription callbacks now receive the complete `ObjectMessage` that triggered the change, including information about the publishing client and operation details.
+- **Simplified object creation**: Create deeply nested structures in a single operation using `LiveMap.create()` and `LiveCounter.create()` static methods, eliminating the risk of orphaned objects.
+- **Compact representations**: New `.compact()` and `.compactJson()` methods for converting LiveObjects to plain JavaScript objects.
+
+This release contains breaking changes to the LiveObjects API. See the [LiveObjects migration guide](./docs/migration-guides/v2/liveobjects.md) for detailed instructions on updating your code.
+
+Breaking changes:
+
+- The LiveObjects plugin import path changed from `'ably/objects'` to `'ably/liveobjects'`
+- The plugin is now a named export: `import { LiveObjects } from 'ably/liveobjects'`
+- The API entrypoint changed from `channel.objects` to `channel.object`
+- `channel.objects.getRoot()` replaced by `channel.object.get()`, which returns a `PathObject`
+- `channel.objects.createMap()` and `channel.objects.createCounter()` replaced by static `LiveMap.create()` and `LiveCounter.create()` methods
+- Subscription callback signature changed to receive `{ object, message }` context
+- LiveObject lifecycle event methods (`.on()`, `.off()`, `.offAll()`) removed; deleted events now surface via regular subscriptions
+- `LiveObject.unsubscribeAll()` removed; use individual `Subscription.unsubscribe()` instead
+- `RealtimeObject.offAll()` removed; use individual `StatusSubscription.off()` or `RealtimeObject.off(event, callback)` instead
+- `channel.objects.batch()` moved to `PathObject.batch()` / `Instance.batch()`
+- For TypeScript users: all LiveObjects types moved from `'ably'` to `'ably/liveobjects'`; global `AblyObjectsTypes` interface removed in favor of type parameters on `channel.object.get<T>()`; several types renamed, removed, or redesigned
+
+## [2.15.0](https://github.com/ably/ably-js/tree/2.15.0) (2025-12-02)
 
 - Implement `client.clientId` attribute as a shortcut for `client.auth.clientId` [#2100](https://github.com/ably/ably-js/pull/2100)
 - Add support for updating and deleting messages (REST-only for now) [#2088](https://github.com/ably/ably-js/pull/2088)
