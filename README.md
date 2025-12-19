@@ -59,11 +59,10 @@ The JavaScript SDK is available as an [NPM module](https://www.npmjs.com/package
 npm install ably
 ```
 
-Run the following to instantiate a client:
+You can also source it directly in your HTML. (This url will point to the latest version of v2 of the SDK, the current major version, avoiding breaking changes per semver)
 
-```javascript
-import * as Ably from 'ably';
-const realtime = new Ably.Realtime({ key: apiKey });
+```html
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 ```
 
 ## Usage
@@ -72,6 +71,7 @@ The following code connects to Ably's realtime messaging service, subscribes to 
 
 ```javascript
 // Initialize Ably Realtime client
+// (for the REST client use new Ably.Rest({...}) instead)
 const realtimeClient = new Ably.Realtime({ key: 'your-ably-api-key', clientId: 'me' });
 
 // Wait for connection to be established
