@@ -7,7 +7,15 @@
  */
 
 /* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
-import { ErrorInfo, EventCallback, RealtimeClient, StatusSubscription, Subscription, __livetype } from './ably';
+import {
+  ErrorInfo,
+  EventCallback,
+  RealtimeChannel,
+  RealtimeClient,
+  StatusSubscription,
+  Subscription,
+  __livetype,
+} from './ably';
 import { BaseRealtime } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
@@ -64,6 +72,7 @@ export type BatchFunction<T extends LiveObject> = (ctx: BatchContext<T>) => void
 export declare interface RealtimeObject {
   /**
    * Retrieves a {@link PathObject} for the object on a channel.
+   * Implicitly {@link RealtimeChannel.attach | attaches to the channel} if not already attached.
    *
    * A type parameter can be provided to describe the structure of the Objects on the channel.
    *
