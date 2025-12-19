@@ -20,10 +20,21 @@ import type RealtimeChannel from '../client/realtimechannel';
 import type ErrorInfo from './errorinfo';
 type Channel = RestChannel | RealtimeChannel;
 
-const actions: API.MessageAction[] = ['message.create', 'message.update', 'message.delete', 'meta', 'message.summary'];
+const actions: API.MessageAction[] = [
+  'message.create',
+  'message.update',
+  'message.delete',
+  'meta',
+  'message.summary',
+  'message.append',
+];
 
-function stringifyAction(action: number | undefined): string {
+export function stringifyAction(action: number | undefined): API.MessageAction {
   return actions[action || 0] || 'unknown';
+}
+
+export function encodeAction(action: API.MessageAction): number {
+  return actions.indexOf(action || 'message.create');
 }
 
 function getMessageSize(msg: WireMessage) {
