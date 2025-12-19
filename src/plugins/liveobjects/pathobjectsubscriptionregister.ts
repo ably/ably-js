@@ -57,7 +57,7 @@ export class PathObjectSubscriptionRegister {
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options: PathObjectSubscriptionOptions,
   ): Subscription {
-    if (options != null && typeof options !== 'object') {
+    if (options == null || typeof options !== 'object') {
       throw new this._client.ErrorInfo('Subscription options must be an object', 40000, 400);
     }
 
