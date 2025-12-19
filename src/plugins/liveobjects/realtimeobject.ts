@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import type { ChannelState } from '../../../ably';
+import type { ChannelState, StatusSubscription } from '../../../ably';
 import type * as ObjectsApi from '../../../liveobjects';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
@@ -31,10 +31,6 @@ const StateToEventsMap: Record<ObjectsState, ObjectsEvent | undefined> = {
 };
 
 export type ObjectsEventCallback = () => void;
-
-export interface OnObjectsEventResponse {
-  off(): void;
-}
 
 export class RealtimeObject {
   gcGracePeriod: number;
@@ -95,7 +91,7 @@ export class RealtimeObject {
     return pathObject;
   }
 
-  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): StatusSubscription {
     // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.on(event, callback);
 
