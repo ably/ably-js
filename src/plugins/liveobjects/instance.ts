@@ -50,6 +50,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
    * Use compactJson() for a JSON-serializable representation.
    */
   compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (this._value instanceof LiveMap) {
       return this._value.compact() as CompactedValue<U>;
     }
@@ -64,6 +66,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
    * Use compact() for an in-memory representation.
    */
   compactJson<U extends Value = Value>(): CompactedJsonValue<U> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (this._value instanceof LiveMap) {
       return this._value.compactJson() as CompactedJsonValue<U>;
     }
@@ -78,6 +82,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveMap)) {
       // can't get a key from a non-LiveMap type
       return undefined;
@@ -95,6 +101,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   value<U extends number | Primitive = number | Primitive>(): U | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (this._value instanceof LiveObject) {
       if (this._value instanceof LiveCounter) {
         return this._value.value() as U;
@@ -125,6 +133,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   *entries<U extends Record<string, Value>>(): IterableIterator<[keyof U, Instance<U[keyof U]>]> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveMap)) {
       // return empty iterator for non-LiveMap objects
       return;
@@ -137,6 +147,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   *keys<U extends Record<string, Value>>(): IterableIterator<keyof U> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveMap)) {
       // return empty iterator for non-LiveMap objects
       return;
@@ -152,6 +164,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   size(): number | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveMap)) {
       // can't return size for non-LiveMap objects
       return undefined;
@@ -163,6 +177,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     key: keyof U & string,
     value: U[keyof U],
   ): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     if (!(this._value instanceof LiveMap)) {
       throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 92007, 400);
     }
@@ -170,6 +185,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   remove<U extends Record<string, Value> = Record<string, Value>>(key: keyof U & string): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     if (!(this._value instanceof LiveMap)) {
       throw new this._client.ErrorInfo('Cannot remove a key from a non-LiveMap instance', 92007, 400);
     }
@@ -177,6 +193,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   increment(amount?: number | undefined): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     if (!(this._value instanceof LiveCounter)) {
       throw new this._client.ErrorInfo('Cannot increment a non-LiveCounter instance', 92007, 400);
     }
@@ -184,6 +201,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   decrement(amount?: number | undefined): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     if (!(this._value instanceof LiveCounter)) {
       throw new this._client.ErrorInfo('Cannot decrement a non-LiveCounter instance', 92007, 400);
     }
@@ -191,9 +209,12 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): Subscription {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveObject)) {
       throw new this._client.ErrorInfo('Cannot subscribe to a non-LiveObject instance', 92007, 400);
     }
+
     return this._value.subscribe((event: InstanceEvent) => {
       listener({
         object: this as unknown as Instance<T>,
@@ -203,9 +224,12 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   }
 
   subscribeIterator(): AsyncIterableIterator<InstanceSubscriptionEvent<T>> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     if (!(this._value instanceof LiveObject)) {
       throw new this._client.ErrorInfo('Cannot subscribe to a non-LiveObject instance', 92007, 400);
     }
+
     return this._client.Utils.listenerToAsyncIterator((listener) => {
       const { unsubscribe } = this.subscribe(listener);
       return unsubscribe;

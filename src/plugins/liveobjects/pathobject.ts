@@ -59,6 +59,8 @@ export class DefaultPathObject implements AnyPathObject {
    * Use compactJson() for a JSON-serializable representation.
    */
   compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
 
@@ -85,6 +87,8 @@ export class DefaultPathObject implements AnyPathObject {
    * Use compact() for an in-memory representation.
    */
   compactJson<U extends Value = Value>(): CompactedJsonValue<U> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
 
@@ -171,6 +175,8 @@ export class DefaultPathObject implements AnyPathObject {
    * If the path does not resolve to any specific entry, returns `undefined`.
    */
   value<U extends number | Primitive = number | Primitive>(): U | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
 
@@ -212,6 +218,8 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   instance<T extends Value = Value>(): Instance<T> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       return this._resolveInstance();
     } catch (error) {
@@ -228,6 +236,8 @@ export class DefaultPathObject implements AnyPathObject {
    * Returns an iterator of [key, value] pairs for LiveMap entries
    */
   *entries<U extends Record<string, Value>>(): IterableIterator<[keyof U, PathObject<U[keyof U]>]> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
       if (!(resolved instanceof LiveMap)) {
@@ -255,6 +265,8 @@ export class DefaultPathObject implements AnyPathObject {
    * Returns an iterator of keys for LiveMap entries
    */
   *keys<U extends Record<string, Value>>(): IterableIterator<keyof U> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
       if (!(resolved instanceof LiveMap)) {
@@ -286,6 +298,8 @@ export class DefaultPathObject implements AnyPathObject {
    * Returns the size of the collection at this path
    */
   size(): number | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+
     try {
       const resolved = this._resolvePath(this._path);
       if (!(resolved instanceof LiveMap)) {
@@ -308,6 +322,8 @@ export class DefaultPathObject implements AnyPathObject {
     key: keyof T & string,
     value: T[keyof T],
   ): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveMap)) {
       throw new this._client.ErrorInfo(
@@ -321,6 +337,8 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveMap)) {
       throw new this._client.ErrorInfo(
@@ -334,6 +352,8 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   increment(amount?: number): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveCounter)) {
       throw new this._client.ErrorInfo(
@@ -347,6 +367,8 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   decrement(amount?: number): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveCounter)) {
       throw new this._client.ErrorInfo(
@@ -381,10 +403,12 @@ export class DefaultPathObject implements AnyPathObject {
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options?: PathObjectSubscriptionOptions,
   ): Subscription {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     return this._realtimeObject.getPathObjectSubscriptionRegister().subscribe(this._path, listener, options ?? {});
   }
 
   subscribeIterator(options?: PathObjectSubscriptionOptions): AsyncIterableIterator<PathObjectSubscriptionEvent> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     return this._client.Utils.listenerToAsyncIterator((listener) => {
       const { unsubscribe } = this.subscribe(listener, options);
       return unsubscribe;
@@ -392,6 +416,8 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   async batch<T extends LiveObjectType = LiveObjectType>(fn: BatchFunction<T>): Promise<void> {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+
     const instance = this._resolveInstance();
     if (!instance) {
       throw new this._client.ErrorInfo(

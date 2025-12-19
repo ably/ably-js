@@ -7,7 +7,15 @@
  */
 
 /* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
-import { ErrorInfo, EventCallback, RealtimeClient, StatusSubscription, Subscription, __livetype } from './ably';
+import {
+  ErrorInfo,
+  EventCallback,
+  RealtimeChannel,
+  RealtimeClient,
+  StatusSubscription,
+  Subscription,
+  __livetype,
+} from './ably';
 import { BaseRealtime } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
@@ -64,6 +72,7 @@ export type BatchFunction<T extends LiveObject> = (ctx: BatchContext<T>) => void
 export declare interface RealtimeObject {
   /**
    * Retrieves a {@link PathObject} for the object on a channel.
+   * Implicitly {@link RealtimeChannel.attach | attaches to the channel} if not already attached.
    *
    * A type parameter can be provided to describe the structure of the Objects on the channel.
    *
@@ -80,7 +89,6 @@ export declare interface RealtimeObject {
    * ```
    *
    * @returns A promise which, upon success, will be fulfilled with a {@link PathObject}. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
-   * @experimental
    */
   get<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
 
@@ -90,7 +98,6 @@ export declare interface RealtimeObject {
    * @param event - The named event to listen for.
    * @param callback - The event listener.
    * @returns A {@link StatusSubscription} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
    */
   on(event: ObjectsEvent, callback: ObjectsEventCallback): StatusSubscription;
 
@@ -99,16 +106,8 @@ export declare interface RealtimeObject {
    *
    * @param event - The named event.
    * @param callback - The event listener.
-   * @experimental
    */
   off(event: ObjectsEvent, callback: ObjectsEventCallback): void;
-
-  /**
-   * Deregisters all registrations, for all events and listeners.
-   *
-   * @experimental
-   */
-  offAll(): void;
 }
 
 /**
@@ -250,8 +249,6 @@ interface PathObjectBase {
    *
    * Path segments with dots in them are escaped with a backslash.
    * For example, a path with segments `['a', 'b.c', 'd']` will be represented as `a.b\.c.d`.
-   *
-   * @experimental
    */
   path(): string;
 
@@ -272,7 +269,6 @@ interface PathObjectBase {
    * @param listener - An event listener function.
    * @param options - Optional subscription configuration.
    * @returns A {@link Subscription} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
    */
   subscribe(
     listener: EventCallback<PathObjectSubscriptionEvent>,
@@ -288,7 +284,6 @@ interface PathObjectBase {
    *
    * @param options - Optional subscription configuration.
    * @returns An async iterator that yields {@link PathObjectSubscriptionEvent} objects.
-   * @experimental
    */
   subscribeIterator(options?: PathObjectSubscriptionOptions): AsyncIterableIterator<PathObjectSubscriptionEvent>;
 }
@@ -305,7 +300,6 @@ interface PathObjectCollectionMethods {
    *
    * @param path - A fully-qualified path string to navigate to, relative to the current path.
    * @returns A {@link PathObject} for the specified path.
-   * @experimental
    */
   at<T extends Value = Value>(path: string): PathObject<T>;
 }
@@ -319,8 +313,6 @@ interface LiveMapPathObjectCollectionMethods<T extends Record<string, Value> = R
    * Each value is represented as a {@link PathObject} corresponding to its key.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   entries(): IterableIterator<[keyof T, PathObject<T[keyof T]>]>;
 
@@ -328,8 +320,6 @@ interface LiveMapPathObjectCollectionMethods<T extends Record<string, Value> = R
    * Returns an iterable of keys in the map at this path.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   keys(): IterableIterator<keyof T>;
 
@@ -338,8 +328,6 @@ interface LiveMapPathObjectCollectionMethods<T extends Record<string, Value> = R
    * Each value is represented as a {@link PathObject}.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   values(): IterableIterator<PathObject<T[keyof T]>>;
 
@@ -347,8 +335,6 @@ interface LiveMapPathObjectCollectionMethods<T extends Record<string, Value> = R
    * Returns the number of entries in the map at this path.
    *
    * If the path does not resolve to a map object, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -368,7 +354,6 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
    *
    * @param key - A string key for the next path segment within the map.
    * @returns A {@link PathObject} for the specified key.
-   * @experimental
    */
   get<K extends keyof T & string>(key: K): PathObject<T[K]>;
 
@@ -377,7 +362,6 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @returns The {@link LiveMapInstance} at this path, or `undefined` if none exists.
-   * @experimental
    */
   instance(): LiveMapInstance<T> | undefined;
 
@@ -390,8 +374,6 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * Use {@link LiveMapPathObject.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
 
@@ -404,8 +386,6 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * Use {@link LiveMapPathObject.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
@@ -417,8 +397,6 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
   /**
    * Get the current value of the counter instance currently at this path.
    * If the path does not resolve to any specific instance, returns `undefined`.
-   *
-   * @experimental
    */
   value(): number | undefined;
 
@@ -427,7 +405,6 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @returns The {@link LiveCounterInstance} at this path, or `undefined` if none exists.
-   * @experimental
    */
   instance(): LiveCounterInstance | undefined;
 
@@ -436,8 +413,6 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
    * This is an alias for calling {@link LiveCounterPathObject.value | value()}.
    *
    * If the path does not resolve to any specific instance, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
 
@@ -446,8 +421,6 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
    * This is an alias for calling {@link LiveCounterPathObject.value | value()}.
    *
    * If the path does not resolve to any specific instance, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
@@ -459,8 +432,6 @@ export interface PrimitivePathObject<T extends Primitive = Primitive> extends Pa
   /**
    * Get the current value of the primitive currently at this path.
    * If the path does not resolve to any specific entry, returns `undefined`.
-   *
-   * @experimental
    */
   value(): T | undefined;
 
@@ -469,8 +440,6 @@ export interface PrimitivePathObject<T extends Primitive = Primitive> extends Pa
    * This is an alias for calling {@link PrimitivePathObject.value | value()}.
    *
    * If the path does not resolve to any specific entry, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<T> | undefined;
 
@@ -479,8 +448,6 @@ export interface PrimitivePathObject<T extends Primitive = Primitive> extends Pa
    * Binary values are converted to base64-encoded strings.
    *
    * If the path does not resolve to any specific entry, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<T> | undefined;
 }
@@ -497,8 +464,6 @@ interface AnyPathObjectCollectionMethods {
    * Each value is represented as a {@link PathObject} corresponding to its key.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, PathObject<T[keyof T]>]>;
 
@@ -506,8 +471,6 @@ interface AnyPathObjectCollectionMethods {
    * Returns an iterable of keys in the map, if the path resolves to a {@link LiveMap}.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
 
@@ -516,8 +479,6 @@ interface AnyPathObjectCollectionMethods {
    * Each value is represented as a {@link PathObject}.
    *
    * If the path does not resolve to a map object, returns an empty iterator.
-   *
-   * @experimental
    */
   values<T extends Record<string, Value>>(): IterableIterator<PathObject<T[keyof T]>>;
 
@@ -525,8 +486,6 @@ interface AnyPathObjectCollectionMethods {
    * Returns the number of entries in the map, if the path resolves to a {@link LiveMap}.
    *
    * If the path does not resolve to a map object, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -549,15 +508,12 @@ export interface AnyPathObject
    *
    * @param key - A string key for the next path segment within the collection.
    * @returns A {@link PathObject} for the specified key.
-   * @experimental
    */
   get<T extends Value = Value>(key: string): PathObject<T>;
 
   /**
    * Get the current value of the LiveCounter or primitive currently at this path.
    * If the path does not resolve to any specific entry, returns `undefined`.
-   *
-   * @experimental
    */
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
@@ -566,7 +522,6 @@ export interface AnyPathObject
    * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @returns The object instance at this path, or `undefined` if none exists.
-   * @experimental
    */
   instance<T extends Value = Value>(): Instance<T> | undefined;
 
@@ -582,8 +537,6 @@ export interface AnyPathObject
    * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * Use {@link AnyPathObject.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
 
@@ -597,8 +550,6 @@ export interface AnyPathObject
    * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * Use {@link AnyPathObject.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
@@ -607,8 +558,6 @@ export interface AnyPathObject
  * PathObject wraps a reference to a path starting from the entrypoint object on a channel.
  * The type parameter specifies the underlying type defined at that path,
  * and is used to infer the correct set of methods available for that type.
- *
- * @experimental
  */
 export type PathObject<T extends Value = Value> = [T] extends [LiveMap<infer U>]
   ? LiveMapPathObject<U>
@@ -627,8 +576,6 @@ interface BatchContextBase {
    * Get the object ID of the underlying instance.
    *
    * If the underlying instance at runtime is not a {@link LiveObject}, returns `undefined`.
-   *
-   * @experimental
    */
   readonly id: string | undefined;
 }
@@ -642,8 +589,6 @@ interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> =
    * Each value is represented as a {@link BatchContext} corresponding to its key.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   entries(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]>;
 
@@ -651,8 +596,6 @@ interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> =
    * Returns an iterable of keys in the map.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   keys(): IterableIterator<keyof T>;
 
@@ -661,8 +604,6 @@ interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> =
    * Each value is represented as a {@link BatchContext}.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   values(): IterableIterator<BatchContext<T[keyof T]>>;
 
@@ -670,8 +611,6 @@ interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> =
    * Returns the number of entries in the map.
    *
    * If the underlying instance at runtime is not a map, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -692,7 +631,6 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
    *
    * @param key - The key to retrieve the value for.
    * @returns A {@link BatchContext} representing a {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the referenced {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
-   * @experimental
    */
   get<K extends keyof T & string>(key: K): BatchContext<T[K]> | undefined;
 
@@ -705,8 +643,6 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link LiveMapBatchContext.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
 
@@ -719,8 +655,6 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link LiveMapBatchContext.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
@@ -732,8 +666,6 @@ export interface LiveCounterBatchContext extends BatchContextBase, BatchContextL
   /**
    * Get the current value of the counter instance.
    * If the underlying instance at runtime is not a counter, returns `undefined`.
-   *
-   * @experimental
    */
   value(): number | undefined;
 
@@ -742,8 +674,6 @@ export interface LiveCounterBatchContext extends BatchContextBase, BatchContextL
    * This is an alias for calling {@link LiveCounterBatchContext.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
 
@@ -752,8 +682,6 @@ export interface LiveCounterBatchContext extends BatchContextBase, BatchContextL
    * This is an alias for calling {@link LiveCounterBatchContext.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
@@ -765,8 +693,6 @@ export interface PrimitiveBatchContext<T extends Primitive = Primitive> {
   /**
    * Get the underlying primitive value.
    * If the underlying instance at runtime is not a primitive value, returns `undefined`.
-   *
-   * @experimental
    */
   value(): T | undefined;
 
@@ -775,8 +701,6 @@ export interface PrimitiveBatchContext<T extends Primitive = Primitive> {
    * This is an alias for calling {@link PrimitiveBatchContext.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<T> | undefined;
 
@@ -785,8 +709,6 @@ export interface PrimitiveBatchContext<T extends Primitive = Primitive> {
    * Binary values are converted to base64-encoded strings.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<T> | undefined;
 }
@@ -803,8 +725,6 @@ interface AnyBatchContextCollectionMethods {
    * Each value is represented as an {@link BatchContext} corresponding to its key.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]>;
 
@@ -812,8 +732,6 @@ interface AnyBatchContextCollectionMethods {
    * Returns an iterable of keys in the map.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
 
@@ -822,8 +740,6 @@ interface AnyBatchContextCollectionMethods {
    * Each value is represented as a {@link BatchContext}.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   values<T extends Record<string, Value>>(): IterableIterator<BatchContext<T[keyof T]>>;
 
@@ -831,8 +747,6 @@ interface AnyBatchContextCollectionMethods {
    * Returns the number of entries in the map.
    *
    * If the underlying instance at runtime is not a map, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -857,7 +771,6 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
    *
    * @param key - The key to retrieve the value for.
    * @returns A {@link BatchContext} representing either a {@link LiveObject} or a primitive value (string, number, boolean, JSON-serializable object or array, or binary data), or `undefined` if the underlying instance at runtime is not a collection object, the key does not exist, the referenced {@link LiveObject} has been deleted, or this collection object itself has been deleted.
-   * @experimental
    */
   get<T extends Value = Value>(key: string): BatchContext<T> | undefined;
 
@@ -867,7 +780,6 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
    * If the underlying instance at runtime is neither a counter nor a primitive value, returns `undefined`.
    *
    * @returns The current value of the underlying primitive or counter, or `undefined` if the value cannot be retrieved.
-   * @experimental
    */
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
@@ -883,8 +795,6 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link AnyBatchContext.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
 
@@ -898,8 +808,6 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link AnyBatchContext.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
@@ -911,8 +819,6 @@ export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollec
  *
  * The type parameter specifies the underlying type of the instance,
  * and is used to infer the correct set of methods available for that type.
- *
- * @experimental
  */
 export type BatchContext<T extends Value> = [T] extends [LiveMap<infer U>]
   ? LiveMapBatchContext<U>
@@ -939,7 +845,6 @@ interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
-   * @experimental
    */
   set<K extends keyof T & string>(key: K, value: T[K]): void;
 
@@ -955,7 +860,6 @@ interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record
    * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to remove.
-   * @experimental
    */
   remove(key: keyof T & string): void;
 }
@@ -976,7 +880,6 @@ interface BatchContextLiveCounterOperations {
    * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
-   * @experimental
    */
   increment(amount?: number): void;
 
@@ -984,7 +887,6 @@ interface BatchContextLiveCounterOperations {
    * An alias for calling {@link BatchContextLiveCounterOperations.increment | increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
-   * @experimental
    */
   decrement(amount?: number): void;
 }
@@ -1008,7 +910,6 @@ interface BatchContextAnyOperations {
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
-   * @experimental
    */
   set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): void;
 
@@ -1024,7 +925,6 @@ interface BatchContextAnyOperations {
    * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to remove.
-   * @experimental
    */
   remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): void;
 
@@ -1042,7 +942,6 @@ interface BatchContextAnyOperations {
    * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
-   * @experimental
    */
   increment(amount?: number): void;
 
@@ -1050,7 +949,6 @@ interface BatchContextAnyOperations {
    * An alias for calling {@link BatchContextAnyOperations.increment | increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
-   * @experimental
    */
   decrement(amount?: number): void;
 }
@@ -1074,7 +972,6 @@ interface BatchOperations<T extends LiveObject> {
    *
    * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
    * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   batch(fn: BatchFunction<T>): Promise<void>;
 }
@@ -1099,7 +996,6 @@ interface LiveMapOperations<T extends Record<string, Value> = Record<string, Val
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   set<K extends keyof T & string>(key: K, value: T[K]): Promise<void>;
 
@@ -1117,7 +1013,6 @@ interface LiveMapOperations<T extends Record<string, Value> = Record<string, Val
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   remove(key: keyof T & string): Promise<void>;
 }
@@ -1140,7 +1035,6 @@ interface LiveCounterOperations extends BatchOperations<LiveCounter> {
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   increment(amount?: number): Promise<void>;
 
@@ -1149,7 +1043,6 @@ interface LiveCounterOperations extends BatchOperations<LiveCounter> {
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   decrement(amount?: number): Promise<void>;
 }
@@ -1173,7 +1066,6 @@ interface AnyOperations {
    *
    * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
    * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   batch<T extends LiveObject = LiveObject>(fn: BatchFunction<T>): Promise<void>;
 
@@ -1194,7 +1086,6 @@ interface AnyOperations {
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): Promise<void>;
 
@@ -1212,7 +1103,6 @@ interface AnyOperations {
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): Promise<void>;
 
@@ -1232,7 +1122,6 @@ interface AnyOperations {
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   increment(amount?: number): Promise<void>;
 
@@ -1241,7 +1130,6 @@ interface AnyOperations {
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
-   * @experimental
    */
   decrement(amount?: number): Promise<void>;
 }
@@ -1255,8 +1143,6 @@ interface InstanceBase<T extends Value> {
    * Get the object ID of the underlying instance.
    *
    * If the underlying instance at runtime is not a {@link LiveObject}, returns `undefined`.
-   *
-   * @experimental
    */
   readonly id: string | undefined;
 
@@ -1278,7 +1164,6 @@ interface InstanceBase<T extends Value> {
    *
    * @param listener - An event listener function.
    * @returns A {@link Subscription} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
    */
   subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): Subscription;
 
@@ -1290,7 +1175,6 @@ interface InstanceBase<T extends Value> {
    * but instead returns an async iterator that can be used in a `for await...of` loop for convenience.
    *
    * @returns An async iterator that yields {@link InstanceSubscriptionEvent} objects.
-   * @experimental
    */
   subscribeIterator(): AsyncIterableIterator<InstanceSubscriptionEvent<T>>;
 }
@@ -1304,8 +1188,6 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Each value is represented as an {@link Instance} corresponding to its key.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   entries(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
 
@@ -1313,8 +1195,6 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Returns an iterable of keys in the map.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   keys(): IterableIterator<keyof T>;
 
@@ -1323,8 +1203,6 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Each value is represented as an {@link Instance}.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   values(): IterableIterator<Instance<T[keyof T]>>;
 
@@ -1332,8 +1210,6 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Returns the number of entries in the map.
    *
    * If the underlying instance at runtime is not a map, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -1358,7 +1234,6 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
    *
    * @param key - The key to retrieve the value for.
    * @returns An {@link Instance} representing a {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the referenced {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
-   * @experimental
    */
   get<K extends keyof T & string>(key: K): Instance<T[K]> | undefined;
 
@@ -1371,8 +1246,6 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link LiveMapInstance.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveMap<T>> | undefined;
 
@@ -1385,8 +1258,6 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link LiveMapInstance.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveMap<T>> | undefined;
 }
@@ -1398,8 +1269,6 @@ export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCoun
   /**
    * Get the current value of the counter instance.
    * If the underlying instance at runtime is not a counter, returns `undefined`.
-   *
-   * @experimental
    */
   value(): number | undefined;
 
@@ -1408,8 +1277,6 @@ export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCoun
    * This is an alias for calling {@link LiveCounterInstance.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<LiveCounter> | undefined;
 
@@ -1418,8 +1285,6 @@ export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCoun
    * This is an alias for calling {@link LiveCounterInstance.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<LiveCounter> | undefined;
 }
@@ -1434,8 +1299,6 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
    * This reflects the value at the corresponding key in the collection at the time this instance was obtained.
    *
    * If the underlying instance at runtime is not a primitive value, returns `undefined`.
-   *
-   * @experimental
    */
   value(): T | undefined;
 
@@ -1444,8 +1307,6 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
    * This is an alias for calling {@link PrimitiveInstance.value | value()}.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compact(): CompactedValue<T> | undefined;
 
@@ -1454,8 +1315,6 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
    * Binary values are converted to base64-encoded strings.
    *
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
-   *
-   * @experimental
    */
   compactJson(): CompactedJsonValue<T> | undefined;
 }
@@ -1472,8 +1331,6 @@ interface AnyInstanceCollectionMethods {
    * Each value is represented as an {@link Instance} corresponding to its key.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
 
@@ -1481,8 +1338,6 @@ interface AnyInstanceCollectionMethods {
    * Returns an iterable of keys in the map.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
 
@@ -1491,8 +1346,6 @@ interface AnyInstanceCollectionMethods {
    * Each value is represented as a {@link Instance}.
    *
    * If the underlying instance at runtime is not a map, returns an empty iterator.
-   *
-   * @experimental
    */
   values<T extends Record<string, Value>>(): IterableIterator<Instance<T[keyof T]>>;
 
@@ -1500,8 +1353,6 @@ interface AnyInstanceCollectionMethods {
    * Returns the number of entries in the map.
    *
    * If the underlying instance at runtime is not a map, returns `undefined`.
-   *
-   * @experimental
    */
   size(): number | undefined;
 }
@@ -1526,7 +1377,6 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    *
    * @param key - The key to get the child entry for.
    * @returns An {@link Instance} representing either a {@link LiveObject} or a primitive value (string, number, boolean, JSON-serializable object or array, or binary data), or `undefined` if the underlying instance at runtime is not a collection object, the key does not exist, the referenced {@link LiveObject} has been deleted, or this collection object itself has been deleted.
-   * @experimental
    */
   get<T extends Value = Value>(key: string): Instance<T> | undefined;
 
@@ -1537,8 +1387,6 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    * in the collection at the time this instance was obtained.
    *
    * If the underlying instance at runtime is neither a counter nor a primitive value, returns `undefined`.
-   *
-   * @experimental
    */
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
@@ -1554,8 +1402,6 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link AnyInstance.compactJson | compactJson()} for a JSON-serializable representation.
-   *
-   * @experimental
    */
   compact<T extends Value = Value>(): CompactedValue<T> | undefined;
 
@@ -1569,8 +1415,6 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * Use {@link AnyInstance.compact | compact()} for an in-memory representation.
-   *
-   * @experimental
    */
   compactJson<T extends Value = Value>(): CompactedJsonValue<T> | undefined;
 }
@@ -1579,8 +1423,6 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
  * Instance wraps a specific object instance or entry in a specific collection object instance.
  * The type parameter specifies the underlying type of the instance,
  * and is used to infer the correct set of methods available for that type.
- *
- * @experimental
  */
 export type Instance<T extends Value> = [T] extends [LiveMap<infer U>]
   ? LiveMapInstance<U>
@@ -1827,7 +1669,6 @@ export class LiveMap {
    *
    * @param initialEntries - Optional initial entries for the new LiveMap object.
    * @returns A {@link LiveMap} value type representing the initial state of the new LiveMap.
-   * @experimental
    */
   static create<T extends Record<string, Value>>(
     // block TypeScript from inferring T from the initialEntries argument, so instead it is inferred
@@ -1846,7 +1687,6 @@ export class LiveCounter {
    *
    * @param initialCount - Optional initial count for the new LiveCounter object.
    * @returns A {@link LiveCounter} value type representing the initial state of the new LiveCounter.
-   * @experimental
    */
   static create(initialCount?: number): LiveCounter;
 }

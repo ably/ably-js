@@ -203,8 +203,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
    */
   // force the key to be of type string as we only allow strings as key in a map
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration(); // RTLM5b, RTLM5c
-
     if (this.isTombstoned()) {
       return undefined;
     }
@@ -226,8 +224,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   }
 
   size(): number {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-
     let size = 0;
     for (const value of this._dataRef.data.values()) {
       if (this._isMapEntryTombstoned(value)) {
@@ -242,8 +238,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   }
 
   *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-
     for (const [key, entry] of this._dataRef.data.entries()) {
       if (this._isMapEntryTombstoned(entry)) {
         // do not return tombstoned entries
@@ -281,7 +275,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     key: TKey,
     value: T[TKey] | LiveCounterValueType | LiveMapValueType,
   ): Promise<void> {
-    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     const msgs = await LiveMap.createMapSetMessage(this._realtimeObject, this.getObjectId(), key, value);
     return this._realtimeObject.publish(msgs);
   }
@@ -296,7 +289,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     const msg = LiveMap.createMapRemoveMessage(this._realtimeObject, this.getObjectId(), key);
     return this._realtimeObject.publish([msg]);
   }

@@ -3651,11 +3651,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               savedCtx = ctx;
             });
 
-            expectBatchContextAccessApiToThrow({
+            checkBatchContextAccessApiErrors({
               ctx: savedCtx,
               errorMsg: 'Batch is closed',
+              skipId: true,
             });
-            expectBatchContextWriteApiToThrow({
+            checkBatchContextWriteApiErrors({
               ctx: savedCtx,
               errorMsg: 'Batch is closed',
             });
@@ -3679,11 +3680,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             }
 
             expect(caughtError, 'Check batch call failed with an error').to.exist;
-            expectBatchContextAccessApiToThrow({
+            checkBatchContextAccessApiErrors({
               ctx: savedCtx,
               errorMsg: 'Batch is closed',
+              skipId: true,
             });
-            expectBatchContextWriteApiToThrow({
+            checkBatchContextWriteApiErrors({
               ctx: savedCtx,
               errorMsg: 'Batch is closed',
             });
@@ -7563,44 +7565,59 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         }
       });
 
-      const expectAccessApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
-        expect(() => counter.value()).to.throw(errorMsg);
+      const checkAccessApiErrors = async ({ entryPathObject, entryInstance, errorMsg }) => {
+        // PathObject
+        expect(() => entryPathObject.path()).not.to.throw(); // this should not throw
+        expect(() => entryPathObject.compact()).to.throw(errorMsg);
+        expect(() => entryPathObject.compactJson()).to.throw(errorMsg);
+        expect(() => entryPathObject.get('key')).not.to.throw(); // this should not throw
+        expect(() => entryPathObject.at('path')).not.to.throw(); // this should not throw
+        expect(() => entryPathObject.value()).to.throw(errorMsg);
+        expect(() => entryPathObject.instance()).to.throw(errorMsg);
+        expect(() => [...entryPathObject.entries()]).to.throw(errorMsg);
+        expect(() => [...entryPathObject.keys()]).to.throw(errorMsg);
+        expect(() => [...entryPathObject.values()]).to.throw(errorMsg);
+        expect(() => entryPathObject.size()).to.throw(errorMsg);
+        expect(() => entryPathObject.subscribe()).to.throw(errorMsg);
+        expect(() => [...entryPathObject.subscribeIterator()]).to.throw(errorMsg);
 
-        expect(() => map.get('key')).to.throw(errorMsg);
-        expect(() => map.size()).to.throw(errorMsg);
-        expect(() => [...map.entries()]).to.throw(errorMsg);
-        expect(() => [...map.keys()]).to.throw(errorMsg);
-        expect(() => [...map.values()]).to.throw(errorMsg);
-
-        for (const obj of [map, counter]) {
-          expect(() => obj.subscribe()).to.throw(errorMsg);
-          // TODO: replace with instance/pathobject .unsubscribe() call
-          // expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
-        }
+        // Instance
+        expect(() => entryInstance.id).not.to.throw(); // this should not throw
+        expect(() => entryInstance.compact()).to.throw(errorMsg);
+        expect(() => entryInstance.compactJson()).to.throw(errorMsg);
+        expect(() => entryInstance.get()).to.throw(errorMsg);
+        expect(() => entryInstance.value()).to.throw(errorMsg);
+        expect(() => [...entryInstance.entries()]).to.throw(errorMsg);
+        expect(() => [...entryInstance.keys()]).to.throw(errorMsg);
+        expect(() => [...entryInstance.values()]).to.throw(errorMsg);
+        expect(() => entryInstance.size()).to.throw(errorMsg);
+        expect(() => entryInstance.subscribe()).to.throw(errorMsg);
+        expect(() => [...entryInstance.subscribeIterator()]).to.throw(errorMsg);
       };
 
-      const expectWriteApiToThrow = async ({ entryInstance, map, counter, errorMsg }) => {
+      const checkWriteApiErrors = async ({ entryPathObject, entryInstance, errorMsg }) => {
+        // PathObject
+        await expectToThrowAsync(async () => entryPathObject.set(), errorMsg);
+        await expectToThrowAsync(async () => entryPathObject.remove(), errorMsg);
+        await expectToThrowAsync(async () => entryPathObject.increment(), errorMsg);
+        await expectToThrowAsync(async () => entryPathObject.decrement(), errorMsg);
+        await expectToThrowAsync(async () => entryPathObject.batch(), errorMsg);
+
+        // Instance
+        await expectToThrowAsync(async () => entryInstance.set(), errorMsg);
+        await expectToThrowAsync(async () => entryInstance.remove(), errorMsg);
+        await expectToThrowAsync(async () => entryInstance.increment(), errorMsg);
+        await expectToThrowAsync(async () => entryInstance.decrement(), errorMsg);
         await expectToThrowAsync(async () => entryInstance.batch(), errorMsg);
-
-        await expectToThrowAsync(async () => counter.increment(), errorMsg);
-        await expectToThrowAsync(async () => counter.decrement(), errorMsg);
-
-        await expectToThrowAsync(async () => map.set(), errorMsg);
-        await expectToThrowAsync(async () => map.remove(), errorMsg);
-
-        for (const obj of [map, counter]) {
-          // TODO: replace with instance/pathobject .unsubscribe() call
-          // expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
-        }
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
-      const expectBatchContextAccessApiToThrow = ({ ctx, errorMsg }) => {
+      const checkBatchContextAccessApiErrors = ({ ctx, errorMsg, skipId }) => {
+        if (!skipId) expect(() => ctx.id).not.to.throw(); // this should not throw
         expect(() => ctx.get()).to.throw(errorMsg);
         expect(() => ctx.value()).to.throw(errorMsg);
         expect(() => ctx.compact()).to.throw(errorMsg);
         expect(() => ctx.compactJson()).to.throw(errorMsg);
-        expect(() => ctx.id).to.throw(errorMsg);
         expect(() => [...ctx.entries()]).to.throw(errorMsg);
         expect(() => [...ctx.keys()]).to.throw(errorMsg);
         expect(() => [...ctx.values()]).to.throw(errorMsg);
@@ -7608,7 +7625,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
-      const expectBatchContextWriteApiToThrow = ({ ctx, errorMsg }) => {
+      const checkBatchContextWriteApiErrors = ({ ctx, errorMsg }) => {
         expect(() => ctx.set()).to.throw(errorMsg);
         expect(() => ctx.remove()).to.throw(errorMsg);
         expect(() => ctx.increment()).to.throw(errorMsg);
@@ -7619,20 +7636,20 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         {
           description: 'public API throws missing object modes error when attached without correct modes',
           action: async (ctx) => {
-            const { realtimeObject, entryInstance, channel, map, counter } = ctx;
+            const { realtimeObject, entryPathObject, entryInstance, channel } = ctx;
 
             // obtain batch context with valid modes first
             await entryInstance.batch((ctx) => {
               // now simulate missing modes
               channel.modes = [];
 
-              expectBatchContextAccessApiToThrow({ ctx, errorMsg: '"object_subscribe" channel mode' });
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
+              checkBatchContextAccessApiErrors({ ctx, errorMsg: '"object_subscribe" channel mode' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
             await expectToThrowAsync(async () => realtimeObject.get(), '"object_subscribe" channel mode');
-            await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
+            await checkAccessApiErrors({ entryPathObject, entryInstance, errorMsg: '"object_subscribe" channel mode' });
+            await checkWriteApiErrors({ entryPathObject, entryInstance, errorMsg: '"object_publish" channel mode' });
           },
         },
 
@@ -7640,7 +7657,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           description:
             'public API throws missing object modes error when not yet attached but client options are missing correct modes',
           action: async (ctx) => {
-            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
+            const { realtimeObject, entryPathObject, entryInstance, channel, helper } = ctx;
 
             // obtain batch context with valid modes first
             await entryInstance.batch((ctx) => {
@@ -7649,20 +7666,20 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('write.channel.channelOptions.modes');
               channel.channelOptions.modes = [];
 
-              expectBatchContextAccessApiToThrow({ ctx, errorMsg: '"object_subscribe" channel mode' });
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"object_publish" channel mode' });
+              checkBatchContextAccessApiErrors({ ctx, errorMsg: '"object_subscribe" channel mode' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: '"object_publish" channel mode' });
             });
 
             await expectToThrowAsync(async () => realtimeObject.get(), '"object_subscribe" channel mode');
-            await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"object_publish" channel mode' });
+            await checkAccessApiErrors({ entryPathObject, entryInstance, errorMsg: '"object_subscribe" channel mode' });
+            await checkWriteApiErrors({ entryPathObject, entryInstance, errorMsg: '"object_publish" channel mode' });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel DETACHED',
           action: async (ctx) => {
-            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
+            const { entryPathObject, entryInstance, channel, helper } = ctx;
 
             // obtain batch context with valid channel state first
             await entryInstance.batch((ctx) => {
@@ -7670,20 +7687,18 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('detached');
 
-              expectBatchContextAccessApiToThrow({ ctx, errorMsg: 'failed as channel state is detached' });
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is detached' });
+              checkBatchContextAccessApiErrors({ ctx, errorMsg: 'failed as channel state is detached' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: 'failed as channel state is detached' });
             });
 
-            await expectAccessApiToThrow({
-              realtimeObject,
-              map,
-              counter,
+            await checkAccessApiErrors({
+              entryPathObject,
+              entryInstance,
               errorMsg: 'failed as channel state is detached',
             });
-            await expectWriteApiToThrow({
+            await checkWriteApiErrors({
+              entryPathObject,
               entryInstance,
-              map,
-              counter,
               errorMsg: 'failed as channel state is detached',
             });
           },
@@ -7692,7 +7707,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         {
           description: 'public API throws invalid channel state error when channel FAILED',
           action: async (ctx) => {
-            const { realtimeObject, entryInstance, channel, map, counter, helper } = ctx;
+            const { realtimeObject, entryPathObject, entryInstance, channel, helper } = ctx;
 
             // obtain batch context with valid channel state first
             await entryInstance.batch((ctx) => {
@@ -7700,21 +7715,19 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('failed');
 
-              expectBatchContextAccessApiToThrow({ ctx, errorMsg: 'failed as channel state is failed' });
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is failed' });
+              checkBatchContextAccessApiErrors({ ctx, errorMsg: 'failed as channel state is failed' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: 'failed as channel state is failed' });
             });
 
             await expectToThrowAsync(async () => realtimeObject.get(), 'failed as channel state is failed');
-            await expectAccessApiToThrow({
-              realtimeObject,
-              map,
-              counter,
+            await checkAccessApiErrors({
+              entryPathObject,
+              entryInstance,
               errorMsg: 'failed as channel state is failed',
             });
-            await expectWriteApiToThrow({
+            await checkWriteApiErrors({
+              entryPathObject,
               entryInstance,
-              map,
-              counter,
               errorMsg: 'failed as channel state is failed',
             });
           },
@@ -7723,7 +7736,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         {
           description: 'public write API throws invalid channel state error when channel SUSPENDED',
           action: async (ctx) => {
-            const { entryInstance, channel, map, counter, helper } = ctx;
+            const { entryPathObject, entryInstance, channel, helper } = ctx;
 
             // obtain batch context with valid channel state first
             await entryInstance.batch((ctx) => {
@@ -7731,13 +7744,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('suspended');
 
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: 'failed as channel state is suspended' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: 'failed as channel state is suspended' });
             });
 
-            await expectWriteApiToThrow({
+            await checkWriteApiErrors({
+              entryPathObject,
               entryInstance,
-              map,
-              counter,
               errorMsg: 'failed as channel state is suspended',
             });
           },
@@ -7746,7 +7758,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         {
           description: 'public write API throws invalid channel option when "echoMessages" is disabled',
           action: async (ctx) => {
-            const { entryInstance, client, map, counter, helper } = ctx;
+            const { client, entryPathObject, entryInstance, helper } = ctx;
 
             // obtain batch context with valid client options first
             await entryInstance.batch((ctx) => {
@@ -7754,10 +7766,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('write.realtime.options.echoMessages');
               client.options.echoMessages = false;
 
-              expectBatchContextWriteApiToThrow({ ctx, errorMsg: '"echoMessages" client option' });
+              checkBatchContextWriteApiErrors({ ctx, errorMsg: '"echoMessages" client option' });
             });
 
-            await expectWriteApiToThrow({ entryInstance, map, counter, errorMsg: '"echoMessages" client option' });
+            await checkWriteApiErrors({ entryPathObject, entryInstance, errorMsg: '"echoMessages" client option' });
           },
         },
       ];

@@ -25,6 +25,11 @@ export class DefaultBatchContext implements AnyBatchContext {
     this._client = this._realtimeObject.getClient();
   }
 
+  get id(): string | undefined {
+    this._throwIfClosed();
+    return this._instance.id;
+  }
+
   get<T extends Value = Value>(key: string): BatchContext<T> | undefined {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this._throwIfClosed();
@@ -51,12 +56,6 @@ export class DefaultBatchContext implements AnyBatchContext {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this._throwIfClosed();
     return this._instance.compactJson();
-  }
-
-  get id(): string | undefined {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-    this._throwIfClosed();
-    return this._instance.id;
   }
 
   *entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]> {

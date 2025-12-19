@@ -66,7 +66,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /** @spec RTLC5 */
   value(): number {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration(); // RTLC5a, RTLC5b
     return this._dataRef.data; // RTLC5c
   }
 
@@ -80,7 +79,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     const msg = LiveCounter.createCounterIncMessage(this._realtimeObject, this.getObjectId(), amount);
     return this._realtimeObject.publish([msg]);
   }
@@ -89,7 +87,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
-    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {

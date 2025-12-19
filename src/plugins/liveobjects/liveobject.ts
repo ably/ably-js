@@ -69,8 +69,6 @@ export abstract class LiveObject<
   }
 
   subscribe(listener: EventCallback<InstanceEvent>): Subscription {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
 
     const unsubscribe = () => {
