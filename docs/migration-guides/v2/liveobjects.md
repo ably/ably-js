@@ -14,7 +14,7 @@ Here's how to migrate your LiveObjects usage to the new PathObject-based API int
 
 1. [Understand `PathObject`](#understand-pathobject).
 2. [Update to v2.16 or later and handle breaking changes](#update-to-v216-or-later-and-handle-breaking-changes).
-3. (Optional) [Take advantage of new Objects features that v2.16 introduces](#take-advantage-of-new-objects-features-that-v216-introduces).
+3. (Optional) [Take advantage of new LiveObjects features that v2.16 introduces](#take-advantage-of-new-liveobjects-features-that-v216-introduces).
 4. (Optional) Check out [common migration patterns](#common-migration-patterns) for a quick reference.
 
 ## Understand `PathObject`
@@ -43,6 +43,40 @@ The changes below are split into:
 - [changes that only affect TypeScript users](#only-typescript-users)
 
 ### General changes
+
+#### Update LiveObjects plugin import
+
+The LiveObjects plugin import has changed in several ways:
+
+1. The import path has changed from `'ably/objects'` to `'ably/liveobjects'`
+2. The plugin is now a named export instead of a default export
+3. The plugin name has changed from `Objects` to `LiveObjects`, which also affects the key used in the `plugins` client option
+
+**Before:**
+
+```typescript
+import * as Ably from 'ably';
+import Objects from 'ably/objects';
+
+const client = new Ably.Realtime({
+  key: 'your-api-key',
+  plugins: { Objects },
+});
+```
+
+**After:**
+
+```typescript
+import * as Ably from 'ably';
+import { LiveObjects } from 'ably/liveobjects';
+
+const client = new Ably.Realtime({
+  key: 'your-api-key',
+  plugins: { LiveObjects },
+});
+```
+
+**Note:** If you're using the UMD bundle via a `<script>` tag, the global variable name is now `AblyLiveObjectsPlugin` instead of `AblyObjectsPlugin`.
 
 #### Update the entrypoint: `channel.objects` → `channel.object`
 
@@ -172,7 +206,7 @@ await root.set('user', map);
 **After:**
 
 ```typescript
-import { LiveCounter, LiveMap } from 'ably/objects';
+import { LiveCounter, LiveMap } from 'ably/liveobjects';
 
 const myObject = await channel.object.get();
 await myObject.set('visits', LiveCounter.create(0));
@@ -340,6 +374,37 @@ subscription1.unsubscribe();
 subscription2.unsubscribe();
 ```
 
+#### Replace `offAll()` with individual listener management
+
+The `offAll()` method has been removed from the `RealtimeObject` status event API. Instead, deregister listeners individually using either the subscription object returned by `.on()`, or by calling `.off(event, callback)` with the callback reference.
+
+**Before:**
+
+```typescript
+const channelObjects = channel.objects;
+
+channelObjects.on('synced', () => console.log('Synced 1'));
+channelObjects.on('synced', () => console.log('Synced 2'));
+
+// Unregister all listeners at once
+channelObjects.offAll();
+```
+
+**After:**
+
+```typescript
+const channelObject = channel.object;
+
+// Option 1: Use the subscription object returned by .on()
+const subscription1 = channelObject.on('synced', () => console.log('Synced 1'));
+subscription1.off();
+
+// Option 2: Use .off(event, callback) with a callback reference
+const onSynced2 = () => console.log('Synced 2');
+channelObject.on('synced', onSynced2);
+channelObject.off('synced', onSynced2);
+```
+
 #### Change usage of `objects.batch()` to `PathObject.batch()`/`Instance.batch()`
 
 The batch API, previously available at `channel.objects.batch()`, is now available as a `.batch()` method on any `PathObject` or `Instance` instead. It now supports object creation inside a batch function.
@@ -406,7 +471,7 @@ In most scenarios, using `PathObject` is recommended as it provides path-based o
 
 1. **Subscribe to a specific instance regardless of its location**: Instance subscriptions follow the object even if it moves within the hierarchy or is stored in different map keys.
 
-2. **Get the underlying object ID for REST API operations**: Each LiveMap and LiveCounter has a unique object ID (accessible via the `.id` property) that can be used with the Objects REST API.
+2. **Get the underlying object ID for REST API operations**: Each LiveMap and LiveCounter has a unique object ID (accessible via the `.id` property) that can be used with the LiveObjects REST API.
 
 **Before:**
 
@@ -484,6 +549,22 @@ The `Instance` class behaves similarly to `PathObject` in terms of error handlin
 
 ### Only TypeScript users
 
+#### Update imports for LiveObjects types
+
+All LiveObjects-related types have been moved from the `'ably'` export to `'ably/liveobjects'`. This consolidates all LiveObjects functionality in one place.
+
+**Before:**
+
+```typescript
+import { Objects, LiveCounter, LiveMap } from 'ably';
+```
+
+**After:**
+
+```typescript
+import { RealtimeObject, LiveCounter, LiveMap } from 'ably/liveobjects';
+```
+
 #### Stop using global `AblyObjectsTypes` interface
 
 The global `AblyObjectsTypes` interface has been removed. You should now provide a type parameter that describes your object on a channel explicitly when calling `channel.object.get<T>()`.
@@ -508,7 +589,7 @@ const root = await channel.objects.getRoot(); // Automatically typed
 **After:**
 
 ```typescript
-import { LiveCounter, LiveMap } from 'ably';
+import { LiveCounter, LiveMap } from 'ably/liveobjects';
 
 type GameState = {
   players: LiveMap<{ name: string; score: LiveCounter }>;
@@ -676,7 +757,7 @@ if (player) {
 }
 ```
 
-## Take advantage of new Objects features that v2.16 introduces
+## Take advantage of new LiveObjects features that v2.16 introduces
 
 ### Implicit channel attach on `object.get()` call
 
