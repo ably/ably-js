@@ -255,7 +255,7 @@ interface PathObjectBase {
   /**
    * Registers a listener that is called each time the object or a primitive value at this path is updated.
    *
-   * The provided listener receives a {@link PathObject} representing the updated path,
+   * The provided listener receives a {@link PathObject} representing the path at which there was an object change,
    * and, if applicable, an {@link ObjectMessage} that carried the operation that led to the change.
    *
    * By default, subscriptions observe nested changes, but you can configure the observation depth
@@ -1436,7 +1436,7 @@ export type Instance<T extends Value> = [T] extends [LiveMap<infer U>]
  * The event object passed to a {@link PathObject} subscription listener.
  */
 export type PathObjectSubscriptionEvent = {
-  /** The {@link PathObject} representing the updated path. */
+  /** The {@link PathObject} representing the path at which there was an object change. */
   object: PathObject;
   /** The {@link ObjectMessage} that carried the operation that led to the change, if applicable. */
   message?: ObjectMessage;
