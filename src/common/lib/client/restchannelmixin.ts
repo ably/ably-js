@@ -8,7 +8,6 @@ import { CipherOptions } from '../types/basemessage';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
-import { RequestBody } from 'common/types/http';
 
 export interface RestHistoryParams {
   start?: number;
@@ -16,15 +15,6 @@ export interface RestHistoryParams {
   direction?: string;
   limit?: number;
 }
-
-type UpdateDeleteRequest = {
-  serial: string;
-  data?: any;
-  name?: string | null;
-  encoding?: string | null;
-  extras?: any;
-  operation?: API.MessageOperation;
-};
 
 export class RestChannelMixin {
   static basePath(channel: RestChannel | RealtimeChannel) {
@@ -101,11 +91,11 @@ export class RestChannelMixin {
 
   static async updateDeleteMessage(
     channel: RestChannel | RealtimeChannel,
-    opts: { isDelete: boolean },
+    action: 'message.update' | 'message.delete' | 'message.append',
     message: Message,
     operation?: API.MessageOperation,
     params?: Record<string, any>,
-  ): Promise<void> {
+  ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo(
         'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
@@ -119,33 +109,27 @@ export class RestChannelMixin {
     const headers = Defaults.defaultPostHeaders(client.options);
     Utils.mixin(headers, client.options.headers);
 
-    let encoded: WireMessage | null = null;
-    if (message.data !== undefined) {
-      encoded = await Message.fromValues(message).encode(channel.channelOptions as CipherOptions);
-    }
+    // construct a new Message to avoid mutating the message the user passes in
+    const requestMessage = Message.fromValues(message);
+    requestMessage.action = action;
+    requestMessage.version = operation;
 
-    const req: UpdateDeleteRequest = {
-      serial: message.serial,
-      operation: operation,
-      name: message.name,
-      data: encoded && encoded.data,
-      encoding: encoded && encoded.encoding,
-      extras: message.extras,
-    };
+    const encoded = await requestMessage.encode(channel.channelOptions as CipherOptions);
+    const requestBody = serializeMessage(encoded, client._MsgPack, format);
 
-    const requestBody: RequestBody = serializeMessage(req, client._MsgPack, format);
-
-    const method = opts.isDelete ? Resource.post : Resource.patch;
-    const pathSuffix = opts.isDelete ? '/delete' : '';
-    await method<WireMessage>(
+    let method = Resource.patch;
+    const { body, unpacked } = await method<API.UpdateDeleteResult>(
       client,
-      this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial) + pathSuffix,
+      this.basePath(channel) + '/messages/' + encodeURIComponent(message.serial),
       requestBody,
       headers,
       params || {},
       null,
       true,
     );
+
+    const decoded = unpacked ? body : Utils.decodeBody<API.UpdateDeleteResult>(body, client._MsgPack, format);
+    return decoded || { versionSerial: null };
   }
 
   static getMessageVersions(

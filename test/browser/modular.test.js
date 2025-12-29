@@ -22,6 +22,7 @@ import {
   XHRRequest,
   MessageInteractions,
   Annotations,
+  ErrorInfo,
 } from '../../build/modular/index.mjs';
 
 function registerAblyModularTests(Helper) {
@@ -609,12 +610,12 @@ function registerAblyModularTests(Helper) {
         const channelName = 'channel';
         const channel = rest.channels.get(channelName);
         const contentTypeUsedForPublishPromise = new Promise((resolve, reject) => {
+          const originalDo = rest.http.do;
           rest.http.do = async (method, path, headers, body, params) => {
-            if (!(method == 'post' && path == `/channels/${channelName}/messages`)) {
-              return new Promise(() => {});
+            if (method == 'post' && path == `/channels/${channelName}/messages`) {
+              resolve(headers['content-type']);
             }
-            resolve(headers['content-type']);
-            return { error: null };
+            return originalDo.call(rest.http, method, path, headers, body, params);
           };
         });
 
