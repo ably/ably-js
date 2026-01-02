@@ -662,6 +662,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
+     * check that string containing emoji correctly publishes on all transport and protocols
+     */
+    Helper.testOnAllTransportsAndProtocols(this, 'publish emoji string', function (realtimeOpts) {
+      return function (done) {
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime(realtimeOpts);
+        const channel = realtime.channels.get('publish_emoji' + JSON.stringify(realtimeOpts));
+
+        channel
+          .subscribe((msg) => {
+            if (msg.data === '😅🎉🚀') {
+              helper.closeAndFinish(done, realtime);
+            }
+          })
+          .then(() => {
+            channel.publish('test', '😅🎉🚀');
+          });
+      };
+    });
+
+    /**
      * Authenticate with a clientId and ensure that the clientId is not sent in the Message
      * and is implicitly added when published.
      *
