@@ -140,7 +140,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * Test deleteMessage with operation metadata
      *
-     * @spec RSL13a
+     * @spec RSL15a
      */
     it('Should delete a message (with operation metadata)', async function () {
       const helper = this.test.helper;
