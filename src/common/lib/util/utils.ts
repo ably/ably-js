@@ -245,6 +245,10 @@ export function toQueryString(params?: Record<string, string> | null): string {
   return parts.length ? '?' + parts.join('&') : '';
 }
 
+export function stringifyValues(params: Record<string, any>): Record<string, string> {
+  return Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]));
+}
+
 export function parseQueryString(query: string): Record<string, string> {
   let match;
   const search = /([^?&=]+)=?([^&]*)/g;

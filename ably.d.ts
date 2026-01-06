@@ -2360,40 +2360,28 @@ export declare interface Channel {
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  updateMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  deleteMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  appendMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
    *
@@ -2590,23 +2578,26 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    *
    * @param name - The event name.
    * @param data - The message payload.
+   * @param options - Optional parameters sent as part of the protocol message.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  publish(name: string, data: any): Promise<PublishResult>;
+  publish(name: string, data: any, options?: PublishOptions): Promise<PublishResult>;
   /**
    * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
    *
    * @param messages - An array of {@link Message} objects.
+   * @param options - Optional parameters sent as part of the protocol message.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serials of the published messages. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  publish(messages: Message[]): Promise<PublishResult>;
+  publish(messages: Message[], options?: PublishOptions): Promise<PublishResult>;
   /**
    * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
    *
    * @param message - A {@link Message} object.
+   * @param options - Optional parameters sent as part of the protocol message.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  publish(message: Message): Promise<PublishResult>;
+  publish(message: Message, options?: PublishOptions): Promise<PublishResult>;
   /**
    * If the channel is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the channel transitions to the given state.
    *
@@ -2625,40 +2616,28 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  updateMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  deleteMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
-   * @param params - Optional parameters sent as part of the query string.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  appendMessage(
-    message: Message,
-    operation?: MessageOperation,
-    params?: Record<string, any>,
-  ): Promise<UpdateDeleteResult>;
+  appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
    *
@@ -2677,12 +2656,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
  */
 export type PublishOptions = {
   /**
-   * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
-   */
-  quickAck?: boolean;
-  /**
-   * Support any publish options that may be added serverside without needing
-   * typings changes.
+   * Publish options are server-defined
    */
   [k: string]: string | number | boolean | undefined;
 };
