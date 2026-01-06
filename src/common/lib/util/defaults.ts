@@ -91,7 +91,7 @@ const Defaults = {
   maxMessageSize: 65536,
 
   version,
-  protocolVersion: 4,
+  protocolVersion: 5,
   agent,
   getPort,
   getHttpScheme,

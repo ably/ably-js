@@ -4,7 +4,7 @@ import ProtocolMessage, {
   fromValues as protocolMessageFromValues,
 } from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
-import Protocol, { PendingMessage } from './protocol';
+import Protocol, { PendingMessage, PublishCallback } from './protocol';
 import Defaults, { getAgentString } from 'common/lib/util/defaults';
 import Platform, { TransportImplementations } from 'common/platform';
 import EventEmitter from '../util/eventemitter';
@@ -14,11 +14,8 @@ import ConnectionStateChange from 'common/lib/client/connectionstatechange';
 import ConnectionErrors, { isRetriable } from './connectionerrors';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Auth from 'common/lib/client/auth';
-import Message, { getMessagesSize } from 'common/lib/types/message';
-import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
-import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
@@ -30,44 +27,6 @@ const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platf
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
 const noop = function () {};
 const transportPreferenceName = 'ably-transport-preference';
-
-function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number) {
-  let action;
-  if (dest.channel !== src.channel) {
-    /* RTL6d3 */
-    return false;
-  }
-  if ((action = dest.action) !== actions.PRESENCE && action !== actions.MESSAGE) {
-    /* RTL6d - can only bundle messages or presence */
-    return false;
-  }
-  if (action !== src.action) {
-    /* RTL6d4 */
-    return false;
-  }
-  const kind = action === actions.PRESENCE ? 'presence' : 'messages',
-    proposed = (dest as Record<string, any>)[kind].concat((src as Record<string, any>)[kind]),
-    size = getMessagesSize(proposed);
-  if (size > maxSize) {
-    /* RTL6d1 */
-    return false;
-  }
-  if (!Utils.allSame(proposed, 'clientId')) {
-    /* RTL6d2 */
-    return false;
-  }
-  if (
-    !proposed.every(function (msg: Message) {
-      return !msg.id;
-    })
-  ) {
-    /* RTL6d7 */
-    return false;
-  }
-  /* we're good to go! */
-  (dest as Record<string, any>)[kind] = proposed;
-  return true;
-}
 
 type RecoveryContext = {
   connectionKey: string;
@@ -1785,7 +1744,7 @@ class ConnectionManager extends EventEmitter {
    * event queueing
    ******************/
 
-  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: ErrCallback): void {
+  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: PublishCallback): void {
     callback = callback || noop;
     const state = this.state;
 
@@ -1839,22 +1798,9 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  queue(msg: ProtocolMessage, callback: ErrCallback): void {
+  queue(msg: ProtocolMessage, callback: PublishCallback): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
-    const lastQueued = this.queuedMessages.last();
-    const maxSize = this.options.maxMessageSize;
-    /* If have already attempted to send a message, don't merge more messages
-     * into it, as if the previous send actually succeeded and realtime ignores
-     * the dup, they'll be lost */
-    if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
-      if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create(this.logger, [lastQueued.callback]);
-        lastQueued.merged = true;
-      }
-      (lastQueued.callback as MulticasterInstance<void>).push(callback);
-    } else {
-      this.queuedMessages.push(new PendingMessage(msg, callback));
-    }
+    this.queuedMessages.push(new PendingMessage(msg, callback));
   }
 
   sendQueuedMessages(): void {

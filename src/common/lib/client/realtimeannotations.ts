@@ -45,12 +45,12 @@ class RealtimeAnnotations {
       channel: channelName,
       annotations: [wireAnnotation],
     });
-    return this.channel.sendMessage(pm);
+    await this.channel.sendMessage(pm);
   }
 
   async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
     annotationValues.action = 'annotation.delete';
-    return this.publish(msgOrSerial, annotationValues);
+    await this.publish(msgOrSerial, annotationValues);
   }
 
   async subscribe(..._args: unknown[] /* [type], listener */): Promise<void> {

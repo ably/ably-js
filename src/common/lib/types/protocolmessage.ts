@@ -175,6 +175,7 @@ class ProtocolMessage {
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
   params?: Record<string, string>;
+  res?: API.PublishResult[];
 
   hasFlag = (flag: string): boolean => {
     return ((this.flags as number) & flags[flag]) > 0;

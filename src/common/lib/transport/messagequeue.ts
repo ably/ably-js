@@ -2,6 +2,7 @@ import ErrorInfo from '../types/errorinfo';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import { PendingMessage } from './protocol';
+import type * as API from '../../../../ably';
 
 class MessageQueue extends EventEmitter {
   messages: Array<PendingMessage>;
@@ -44,7 +45,11 @@ class MessageQueue extends EventEmitter {
    *
    * @param selector - Describes which messages to target. 'all' means all messages in the queue (regardless of whether they have had a `msgSerial` assigned); `serial` / `count` targets a range of messages described by an `ACK` or `NACK` received from Ably (this assumes that all the messages in the queue have had a `msgSerial` assigned).
    */
-  completeMessages(selector: 'all' | { serial: number; count: number }, err?: ErrorInfo | null): void {
+  completeMessages(
+    selector: 'all' | { serial: number; count: number },
+    err?: ErrorInfo | null,
+    res?: API.PublishResult[],
+  ): void {
     Logger.logAction(
       this.logger,
       Logger.LOG_MICRO,
@@ -73,8 +78,10 @@ class MessageQueue extends EventEmitter {
       }
     }
 
-    for (const message of completeMessages) {
-      (message.callback as Function)(err);
+    for (let i = 0; i < completeMessages.length; i++) {
+      const message = completeMessages[i];
+      const publishResponse = res?.[i];
+      (message.callback as Function)(err, publishResponse);
     }
 
     if (messages.length == 0) this.emit('idle');

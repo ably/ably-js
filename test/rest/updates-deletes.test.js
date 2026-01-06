@@ -7,15 +7,50 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
-      console.log('Setting up app');
       const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
-          console.log('Error setting up app: ', err);
           done(err);
+          return;
         }
-        console.log('App setup complete');
         done();
+      });
+    });
+
+    /**
+     * Test that publish returns serials
+     */
+    it('Should return serials from publish', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:publish_serials');
+
+      const result = await channel.publish('test-message', { value: 'test' });
+      expect(result).to.have.property('serials');
+      expect(result.serials).to.be.an('array');
+      expect(result.serials.length).to.equal(1);
+      expect(result.serials[0]).to.be.a('string');
+    });
+
+    /**
+     * Test that publish with multiple messages returns multiple serials
+     */
+    it('Should return multiple serials for batch publish', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:publish_batch_serials');
+
+      const messages = [
+        { name: 'msg1', data: 'data1' },
+        { name: 'msg2', data: 'data2' },
+        { name: 'msg3', data: 'data3' },
+      ];
+
+      const result = await channel.publish(messages);
+      expect(result.serials).to.be.an('array');
+      expect(result.serials.length).to.equal(3);
+      result.serials.forEach((serial) => {
+        expect(serial).to.be.a('string');
       });
     });
 
@@ -29,25 +64,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const rest = helper.AblyRest({});
       const channel = rest.channels.get('mutable:updatesanddeletes_get');
 
-      // First publish a message
-      await channel.publish('test-message', { value: 'original' });
+      const { serials } = await channel.publish('test-message', { value: 'original' });
+      const serial = serials[0];
 
-      // Wait for the message to appear in history
-      let originalMessage;
-      await helper.waitFor(async () => {
-        const page = await channel.history();
-        if (page.items.length > 0) {
-          originalMessage = page.items[0];
-          return true;
-        }
-        return false;
-      }, 10000);
-
-      expect(originalMessage.serial, 'Message has a serial').to.be.ok;
-
-      // Now retrieve the message by serial
-      const retrievedMessage = await channel.getMessage(originalMessage.serial);
-      expect(retrievedMessage.serial).to.equal(originalMessage.serial);
+      const retrievedMessage = await channel.getMessage(serial);
+      expect(retrievedMessage.serial).to.equal(serial);
       expect(retrievedMessage.name).to.equal('test-message');
       expect(retrievedMessage.data).to.deep.equal({ value: 'original' });
     });
@@ -62,23 +83,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const rest = helper.AblyRest({});
       const channel = rest.channels.get('mutable:updatesanddeletes_get_obj');
 
-      // First publish a message
-      await channel.publish('test-message-obj', { value: 'original' });
+      const { serials } = await channel.publish('test-message-obj', { value: 'original' });
+      const serial = serials[0];
 
-      // Wait for the message to appear in history
-      let originalMessage;
-      await helper.waitFor(async () => {
-        const page = await channel.history();
-        if (page.items.length > 0) {
-          originalMessage = page.items[0];
-          return true;
-        }
-        return false;
-      }, 10000);
-
-      // Retrieve the message by passing the Message object
-      const retrievedMessage = await channel.getMessage(originalMessage);
-      expect(retrievedMessage.serial).to.equal(originalMessage.serial);
+      const retrievedMessage = await channel.getMessage({ serial });
+      expect(retrievedMessage.serial).to.equal(serial);
       expect(retrievedMessage.name).to.equal('test-message-obj');
     });
 
@@ -92,23 +101,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const rest = helper.AblyRest({});
       const channel = rest.channels.get('mutable:updatesanddeletes_update_meta');
 
-      // First publish a message
-      await channel.publish('original-message', { value: 'original' });
+      const { serials } = await channel.publish('original-message', { value: 'original' });
+      const serial = serials[0];
+      const originalMessage = await channel.getMessage(serial);
 
-      // Wait for the message to appear in history
-      let originalMessage;
-      await helper.waitFor(async () => {
-        const page = await channel.history();
-        if (page.items.length > 0) {
-          originalMessage = page.items[0];
-          return true;
-        }
-        return false;
-      }, 10000);
-
-      // Update the message with operation metadata
       const updateMessage = {
-        serial: originalMessage.serial,
+        serial: serial,
         data: { value: 'updated with metadata' },
       };
 
@@ -118,7 +116,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         metadata: { reason: 'testing' },
       };
 
-      await channel.updateMessage(updateMessage, operation);
+      const updateResult = await channel.updateMessage(updateMessage, operation);
+      expect(updateResult).to.have.property('versionSerial');
+      expect(updateResult.versionSerial).to.be.a('string');
 
       // Wait for the update to be the latest message
       let latestMessage;
@@ -126,14 +126,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         latestMessage = await channel.getMessage(originalMessage.serial);
         return latestMessage.data.value === 'updated with metadata';
       }, 10000);
-      expect(latestMessage.serial).to.equal(originalMessage.serial);
+      expect(latestMessage.serial).to.equal(serial);
       expect(latestMessage.version?.serial > originalMessage.serial).to.be.ok;
       expect(latestMessage.version?.timestamp).to.be.greaterThan(originalMessage.timestamp);
       expect(latestMessage.version?.clientId).to.equal('updater-client');
       expect(latestMessage.version?.description).to.equal('Test update operation');
       expect(latestMessage.version?.metadata).to.deep.equal({ reason: 'testing' });
       expect(latestMessage.action).to.equal('message.update');
-      // patch semantics: data was updated, name should be unchanged
       expect(latestMessage.data).to.deep.equal({ value: 'updated with metadata' });
       expect(latestMessage.name).to.equal('original-message');
     });
@@ -141,37 +140,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * Test deleteMessage with operation metadata
      *
-     * @spec RSL13a
+     * @spec RSL15a
      */
     it('Should delete a message (with operation metadata)', async function () {
       const helper = this.test.helper;
       const rest = helper.AblyRest({});
       const channel = rest.channels.get('mutable:updatesanddeletes_delete_meta');
 
-      // First publish a message
-      await channel.publish('message-to-delete', { value: 'will be deleted' });
+      const { serials } = await channel.publish('message-to-delete', { value: 'will be deleted' });
+      const serial = serials[0];
+      const originalMessage = await channel.getMessage(serial);
 
-      // Wait for the message to appear in history
-      let originalMessage;
-      await helper.waitFor(async () => {
-        const page = await channel.history();
-        if (page.items.length > 0) {
-          originalMessage = page.items[0];
-          return true;
-        }
-        return false;
-      }, 10000);
-
-      // Delete the message with operation metadata
       const operation = {
         clientId: 'deleter-client',
         description: 'Test delete operation',
         metadata: { reason: 'inappropriate content' },
       };
 
-      const deletion = Object.assign({}, originalMessage, { data: {} });
+      const deletion = { serial, data: {} };
 
-      await channel.deleteMessage(deletion, operation);
+      const deleteResult = await channel.deleteMessage(deletion, operation);
+      expect(deleteResult).to.have.property('versionSerial');
+      expect(deleteResult.versionSerial).to.be.a('string');
 
       // Wait for the delete to be the latest message
       let latestMessage;
@@ -179,9 +169,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         latestMessage = await channel.getMessage(originalMessage.serial);
         return latestMessage.action === 'message.delete';
       }, 10000);
-      expect(latestMessage.serial).to.equal(originalMessage.serial);
+      expect(latestMessage.serial).to.equal(serial);
       expect(latestMessage.data).to.deep.equal({});
-      // expect name to be still present if not explicitly erased
       expect(latestMessage.name).to.equal('message-to-delete');
       expect(latestMessage.version?.serial > originalMessage.serial).to.be.ok;
       expect(latestMessage.version?.timestamp).to.be.greaterThan(originalMessage.timestamp);
@@ -201,37 +190,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const rest = helper.AblyRest({});
       const channel = rest.channels.get('mutable:updatesanddeletes_versions');
 
-      // First publish a message
-      await channel.publish('versioned-message', { value: 'version-1' });
+      const { serials } = await channel.publish('versioned-message', { value: 'version-1' });
+      const serial = serials[0];
 
-      // Wait for the message to appear in history
-      let originalMessage;
-      await helper.waitFor(async () => {
-        const page = await channel.history();
-        if (page.items.length > 0) {
-          originalMessage = page.items[0];
-          return true;
-        }
-        return false;
-      }, 10000);
-
-      // Update the message
       const updateMessage = {
-        serial: originalMessage.serial,
+        serial: serial,
         data: { value: 'version-2' },
       };
       await channel.updateMessage(updateMessage);
 
-      // Get all versions
+      // Wait for versions to be available
       let items;
       await helper.waitFor(async () => {
-        const versionsPage = await channel.getMessageVersions(originalMessage.serial);
+        const versionsPage = await channel.getMessageVersions(serial);
         items = versionsPage.items;
         return items.length >= 2;
       }, 10000);
+
       expect(items.length).to.be.at.least(2);
 
-      // Check that we have both the original and the update
       const actions = items.map((m) => m.action);
       expect(actions).to.include('message.create');
       expect(actions).to.include('message.update');
@@ -295,6 +272,68 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       try {
         await channel.getMessageVersions({});
+        expect.fail('Should have thrown an error');
+      } catch (err) {
+        expect(err).to.have.property('code', 40003);
+      }
+    });
+
+    /**
+     * Test appendMessage with operation metadata
+     *
+     * @spec RSL15
+     */
+    it('Should append to a message (with operation metadata)', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:updatesanddeletes_append_meta');
+
+      const { serials } = await channel.publish('original-message', 'Hello');
+      const serial = serials[0];
+      const originalMessage = await channel.getMessage(serial);
+
+      const appendMessage = {
+        serial: serial,
+        data: ' World',
+      };
+
+      const operation = {
+        clientId: 'appender-client',
+        description: 'Test append operation',
+        metadata: { reason: 'testing append' },
+      };
+
+      const appendResult = await channel.appendMessage(appendMessage, operation);
+      expect(appendResult).to.have.property('versionSerial');
+      expect(appendResult.versionSerial).to.be.a('string');
+
+      // Wait for the append to be the latest message
+      let latestMessage;
+      await helper.waitFor(async () => {
+        latestMessage = await channel.getMessage(originalMessage.serial);
+        return latestMessage.data === 'Hello World';
+      }, 10000);
+      expect(latestMessage.serial).to.equal(serial);
+      expect(latestMessage.version?.serial > originalMessage.serial).to.be.ok;
+      expect(latestMessage.version?.timestamp).to.be.greaterThan(originalMessage.timestamp);
+      expect(latestMessage.version?.clientId).to.equal('appender-client');
+      expect(latestMessage.version?.description).to.equal('Test append operation');
+      expect(latestMessage.version?.metadata).to.deep.equal({ reason: 'testing append' });
+      expect(latestMessage.action).to.equal('message.update');
+      expect(latestMessage.data).to.equal('Hello World');
+      expect(latestMessage.name).to.equal('original-message');
+    });
+
+    /**
+     * Test error handling for appendMessage without serial
+     */
+    it('Should error when appendMessage called without serial', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({});
+      const channel = rest.channels.get('mutable:updatesanddeletes_error');
+
+      try {
+        await channel.appendMessage({ data: 'test' });
         expect.fail('Should have thrown an error');
       } catch (err) {
         expect(err).to.have.property('code', 40003);
