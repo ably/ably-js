@@ -45,7 +45,7 @@ class Protocol extends EventEmitter {
 
   onAck(serial: number, count: number): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
-    this.messageQueue.completeMessages(serial, count);
+    this.messageQueue.completeMessages({ serial, count });
   }
 
   onNack(serial: number, count: number, err: ErrorInfo): void {
@@ -58,7 +58,7 @@ class Protocol extends EventEmitter {
     if (!err) {
       err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
     }
-    this.messageQueue.completeMessages(serial, count, err);
+    this.messageQueue.completeMessages({ serial, count }, err);
   }
 
   onceIdle(listener: ErrCallback): void {

@@ -39,34 +39,49 @@ class MessageQueue extends EventEmitter {
     this.messages.unshift.apply(this.messages, messages);
   }
 
-  completeMessages(serial: number, count: number, err?: ErrorInfo | null): void {
+  /**
+   * For all messages targeted by the selector, calls their callback and removes them from the queue.
+   *
+   * @param selector - Describes which messages to target. 'all' means all messages in the queue (regardless of whether they have had a `msgSerial` assigned); `serial` / `count` targets a range of messages described by an `ACK` or `NACK` received from Ably (this assumes that all the messages in the queue have had a `msgSerial` assigned).
+   */
+  completeMessages(selector: 'all' | { serial: number; count: number }, err?: ErrorInfo | null): void {
     Logger.logAction(
       this.logger,
       Logger.LOG_MICRO,
       'MessageQueue.completeMessages()',
-      'serial = ' + serial + '; count = ' + count,
+      selector == 'all' ? '(all)' : 'serial = ' + selector.serial + '; count = ' + selector.count,
     );
     err = err || null;
     const messages = this.messages;
     if (messages.length === 0) {
       throw new Error('MessageQueue.completeMessages(): completeMessages called on any empty MessageQueue');
     }
-    const first = messages[0];
-    if (first) {
-      const startSerial = first.message.msgSerial as number;
-      const endSerial = serial + count; /* the serial of the first message that is *not* the subject of this call */
-      if (endSerial > startSerial) {
-        const completeMessages = messages.splice(0, endSerial - startSerial);
-        for (const message of completeMessages) {
-          (message.callback as Function)(err);
+
+    let completeMessages: PendingMessage[] = [];
+
+    if (selector === 'all') {
+      completeMessages = messages.splice(0);
+    } else {
+      const first = messages[0];
+      if (first) {
+        const startSerial = first.message.msgSerial as number;
+        const endSerial =
+          selector.serial + selector.count; /* the serial of the first message that is *not* the subject of this call */
+        if (endSerial > startSerial) {
+          completeMessages = messages.splice(0, endSerial - startSerial);
         }
       }
-      if (messages.length == 0) this.emit('idle');
     }
+
+    for (const message of completeMessages) {
+      (message.callback as Function)(err);
+    }
+
+    if (messages.length == 0) this.emit('idle');
   }
 
   completeAllMessages(err: ErrorInfo): void {
-    this.completeMessages(0, Number.MAX_SAFE_INTEGER || Number.MAX_VALUE, err);
+    this.completeMessages('all', err);
   }
 
   resetSendAttempted(): void {
