@@ -76,7 +76,10 @@ const client = new Ably.Realtime({
 });
 ```
 
-**Note:** If you're using the UMD bundle via a `<script>` tag, the global variable name is now `AblyLiveObjectsPlugin` instead of `AblyObjectsPlugin`.
+**Note:** If you're using the UMD bundle via a `<script>` tag:
+
+- The bundle filename has changed from `objects.umd.js` to `liveobjects.umd.js` (e.g., `https://cdn.ably.com/lib/liveobjects.umd.min-2.js` instead of `https://cdn.ably.com/lib/objects.umd.min-2.js`)
+- The global variable name is now `AblyLiveObjectsPlugin` instead of `AblyObjectsPlugin`
 
 #### Update the entrypoint: `channel.objects` → `channel.object`
 
