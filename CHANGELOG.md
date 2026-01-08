@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.17.0](https://github.com/ably/ably-js/tree/2.17.0) (2026-01-06)
+
+- Support update and delete operations over realtime connections [\#2127](https://github.com/ably/ably-js/pull/2127)
+- Implement message append for realtime and REST [\#2127](https://github.com/ably/ably-js/pull/2127)
+- Publish, update, delete, and append methods now return result objects containing message serial/version information [\#2127](https://github.com/ably/ably-js/pull/2127)
+- Fix msgpack encoding for multi-byte UTF-8 characters when using the binary protocol browsers [\#2145](https://github.com/ably/ably-js/pull/2145)
+- Fix failing of non-sent queued messages when connection enters suspended/failed/closed state [\#2123](https://github.com/ably/ably-js/pull/2123)
+- `channel.detach()` now immediately transitions to `detached` when the connection is not connected, instead of waiting or erroring [\#2149](https://github.com/ably/ably-js/pull/2149)
+
 ## [2.16.0](https://github.com/ably/ably-js/tree/2.16.0) (2025-12-19)
 
 **Introducing LiveObjects Path-based API**
