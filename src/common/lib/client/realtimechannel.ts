@@ -392,18 +392,22 @@ class RealtimeChannel extends EventEmitter {
 
   async detach(): Promise<void> {
     const connectionManager = this.connectionManager;
-    if (!connectionManager.activeState()) {
-      throw connectionManager.getError();
-    }
     switch (this.state) {
+      // RTL5j
       case 'suspended':
         this.notifyState('detached');
         return;
       case 'detached':
         return;
+      // RTL5b
       case 'failed':
         throw new ErrorInfo('Unable to detach; channel state = failed', 90001, 400);
       default:
+        // RTL5l: if connection is not connected, immediately transition to detached
+        if (connectionManager.state.state !== 'connected') {
+          this.notifyState('detached');
+          return;
+        }
         this.requestState('detaching');
       // eslint-disable-next-line no-fallthrough
       case 'detaching':
