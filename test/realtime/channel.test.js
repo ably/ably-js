@@ -1652,6 +1652,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
     });
 
+    /** @spec RTL5l */
+    it('detaching when connection is not connected immediately transitions channel to detached', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+      const channelName = 'detach_when_disconnected';
+      const channel = realtime.channels.get(channelName);
+
+      try {
+        await realtime.connection.once('connected');
+        await channel.attach();
+        expect(channel.state).to.equal('attached', 'channel should be attached');
+
+        // Simulate connection becoming disconnected
+        realtime.connection.connectionManager.requestState({ state: 'disconnected' });
+        await realtime.connection.once('disconnected');
+        expect(realtime.connection.state).to.equal('disconnected', 'connection should be disconnected');
+
+        // Detach should succeed immediately without waiting for reconnection
+        await channel.detach();
+        expect(channel.state).to.equal('detached', 'channel should immediately transition to detached');
+      } finally {
+        helper.closeAndFinish(helper.noop, realtime);
+      }
+    });
+
     /** @spec RTL5b */
     it('detaching from failed channel results in error', function (done) {
       const helper = this.test.helper;
