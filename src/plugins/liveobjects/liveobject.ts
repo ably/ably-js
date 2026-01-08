@@ -52,6 +52,11 @@ export abstract class LiveObject<
    * Multiple parents can reference the same object, so we use a Map of parent to Set of keys for efficient lookups.
    */
   private _parentReferences: Map<LiveObject, Set<string>>;
+  /**
+   * Runtime property to provide reliable cross-bundle type identification instead of `instanceof` operator.
+   * Set by subclasses to identify their specific type.
+   */
+  protected readonly _livetype: 'LiveObject' | 'LiveMap' | 'LiveCounter' = 'LiveObject';
 
   protected constructor(
     protected _realtimeObject: RealtimeObject,
@@ -66,6 +71,20 @@ export abstract class LiveObject<
     this._createOperationIsMerged = false;
     this._tombstone = false;
     this._parentReferences = new Map<LiveObject, Set<string>>();
+  }
+
+  /**
+   * Checks if the given value is a LiveObject instance.
+   * Uses runtime property check instead of `instanceof` to work across different bundle contexts (ESM/CJS mixups).
+   *
+   * @internal
+   */
+  static instanceof(value: unknown): value is LiveObject {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    const livetype = (value as LiveObject)._livetype;
+    return livetype === 'LiveObject' || livetype === 'LiveMap' || livetype === 'LiveCounter';
   }
 
   subscribe(listener: EventCallback<InstanceEvent>): Subscription {

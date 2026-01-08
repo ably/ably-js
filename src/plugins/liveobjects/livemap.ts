@@ -4,9 +4,9 @@ import { __livetype } from '../../../ably';
 import {
   CompactedJsonValue,
   CompactedValue,
-  Primitive,
   LiveMap as PublicLiveMap,
   LiveObject as PublicLiveObject,
+  Primitive,
   Value,
 } from '../../../liveobjects';
 import { LiveCounter } from './livecounter';
@@ -58,6 +58,17 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   implements PublicLiveMap<T>
 {
   declare readonly [__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+  protected override readonly _livetype = 'LiveMap'; // runtime property for cross-bundle type identification
+
+  /**
+   * Checks if the given value is a LiveMap instance.
+   * Uses runtime property check instead of `instanceof` to work across different bundle contexts (ESM/CJS mixups).
+   *
+   * @internal
+   */
+  static instanceof(value: unknown): value is LiveMap {
+    return typeof value === 'object' && value !== null && (value as LiveMap)._livetype === 'LiveMap';
+  }
 
   constructor(
     realtimeObject: RealtimeObject,
@@ -507,7 +518,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
     // Use public entries() method to ensure we only include publicly exposed properties
     for (const [key, value] of this.entries()) {
-      if (value instanceof LiveMap) {
+      if (LiveMap.instanceof(value)) {
         if (visited.has(value.getObjectId())) {
           // If the LiveMap has already been visited, just reference it to avoid infinite loops
           result[key] = visited.get(value.getObjectId());
@@ -518,7 +529,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         continue;
       }
 
-      if (value instanceof LiveCounter) {
+      if (LiveCounter.instanceof(value)) {
         result[key] = value.value();
         continue;
       }
@@ -549,7 +560,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
     // Use public entries() method to ensure we only include publicly exposed properties
     for (const [key, value] of this.entries()) {
-      if (value instanceof LiveMap) {
+      if (LiveMap.instanceof(value)) {
         if (visited.has(value.getObjectId())) {
           // If the LiveMap has already been visited, return its objectId to avoid infinite loops
           result[key] = { objectId: value.getObjectId() };
@@ -560,7 +571,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         continue;
       }
 
-      if (value instanceof LiveCounter) {
+      if (LiveCounter.instanceof(value)) {
         result[key] = value.value();
         continue;
       }

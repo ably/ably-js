@@ -438,10 +438,10 @@ export class RealtimeObject {
 
     // Then, rebuild parent references by examining all objects and their data
     for (const object of this._objectsPool.getAll()) {
-      if (object instanceof LiveMap) {
+      if (LiveMap.instanceof(object)) {
         // For LiveMaps, iterate through their entries and establish parent references
         for (const [key, value] of object.entries()) {
-          if (value instanceof LiveObject) {
+          if (LiveObject.instanceof(value)) {
             value.addParentReference(object, key);
           }
         }

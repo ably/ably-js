@@ -64,7 +64,7 @@ export class DefaultPathObject implements AnyPathObject {
     try {
       const resolved = this._resolvePath(this._path);
 
-      if (resolved instanceof LiveMap) {
+      if (LiveMap.instanceof(resolved)) {
         return resolved.compact() as CompactedValue<U>;
       }
 
@@ -92,7 +92,7 @@ export class DefaultPathObject implements AnyPathObject {
     try {
       const resolved = this._resolvePath(this._path);
 
-      if (resolved instanceof LiveMap) {
+      if (LiveMap.instanceof(resolved)) {
         return resolved.compactJson() as CompactedJsonValue<U>;
       }
 
@@ -180,8 +180,8 @@ export class DefaultPathObject implements AnyPathObject {
     try {
       const resolved = this._resolvePath(this._path);
 
-      if (resolved instanceof LiveObject) {
-        if (resolved instanceof LiveCounter) {
+      if (LiveObject.instanceof(resolved)) {
+        if (LiveCounter.instanceof(resolved)) {
           return resolved.value() as U;
         }
 
@@ -240,7 +240,7 @@ export class DefaultPathObject implements AnyPathObject {
 
     try {
       const resolved = this._resolvePath(this._path);
-      if (!(resolved instanceof LiveMap)) {
+      if (!LiveMap.instanceof(resolved)) {
         // return empty iterator for non-LiveMap objects
         return;
       }
@@ -269,7 +269,7 @@ export class DefaultPathObject implements AnyPathObject {
 
     try {
       const resolved = this._resolvePath(this._path);
-      if (!(resolved instanceof LiveMap)) {
+      if (!LiveMap.instanceof(resolved)) {
         // return empty iterator for non-LiveMap objects
         return;
       }
@@ -302,7 +302,7 @@ export class DefaultPathObject implements AnyPathObject {
 
     try {
       const resolved = this._resolvePath(this._path);
-      if (!(resolved instanceof LiveMap)) {
+      if (!LiveMap.instanceof(resolved)) {
         // can't return size for non-LiveMap objects
         return undefined;
       }
@@ -325,7 +325,7 @@ export class DefaultPathObject implements AnyPathObject {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
     const resolved = this._resolvePath(this._path);
-    if (!(resolved instanceof LiveMap)) {
+    if (!LiveMap.instanceof(resolved)) {
       throw new this._client.ErrorInfo(
         `Cannot set a key on a non-LiveMap object at path: ${this._escapePath(this._path).join('.')}`,
         92007,
@@ -340,7 +340,7 @@ export class DefaultPathObject implements AnyPathObject {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
     const resolved = this._resolvePath(this._path);
-    if (!(resolved instanceof LiveMap)) {
+    if (!LiveMap.instanceof(resolved)) {
       throw new this._client.ErrorInfo(
         `Cannot remove a key from a non-LiveMap object at path: ${this._escapePath(this._path).join('.')}`,
         92007,
@@ -355,7 +355,7 @@ export class DefaultPathObject implements AnyPathObject {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
     const resolved = this._resolvePath(this._path);
-    if (!(resolved instanceof LiveCounter)) {
+    if (!LiveCounter.instanceof(resolved)) {
       throw new this._client.ErrorInfo(
         `Cannot increment a non-LiveCounter object at path: ${this._escapePath(this._path).join('.')}`,
         92007,
@@ -370,7 +370,7 @@ export class DefaultPathObject implements AnyPathObject {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
     const resolved = this._resolvePath(this._path);
-    if (!(resolved instanceof LiveCounter)) {
+    if (!LiveCounter.instanceof(resolved)) {
       throw new this._client.ErrorInfo(
         `Cannot decrement a non-LiveCounter object at path: ${this._escapePath(this._path).join('.')}`,
         92007,
@@ -442,7 +442,7 @@ export class DefaultPathObject implements AnyPathObject {
     for (let i = 0; i < path.length; i++) {
       const segment = path[i];
 
-      if (!(current instanceof LiveMap)) {
+      if (!LiveMap.instanceof(current)) {
         throw new this._client.ErrorInfo(
           `Cannot resolve path segment '${segment}' on non-collection type at path: ${this._escapePath(path.slice(0, i)).join('.')}`,
           92005,
@@ -469,7 +469,7 @@ export class DefaultPathObject implements AnyPathObject {
   private _resolveInstance<T extends Value = Value>(): Instance<T> | undefined {
     const value = this._resolvePath(this._path);
 
-    if (value instanceof LiveObject) {
+    if (LiveObject.instanceof(value)) {
       // only return an Instance for LiveObject values
       return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
     }

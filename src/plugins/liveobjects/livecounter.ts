@@ -16,6 +16,17 @@ export interface LiveCounterUpdate extends LiveObjectUpdate {
 /** @spec RTLC1, RTLC2 */
 export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> implements PublicLiveCounter {
   declare readonly [__livetype]: 'LiveCounter'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+  protected override readonly _livetype = 'LiveCounter'; // runtime property for cross-bundle type identification
+
+  /**
+   * Checks if the given value is a LiveCounter instance.
+   * Uses runtime property check instead of `instanceof` to work across different bundle contexts (ESM/CJS mixups).
+   *
+   * @internal
+   */
+  static instanceof(value: unknown): value is LiveCounter {
+    return typeof value === 'object' && value !== null && (value as LiveCounter)._livetype === 'LiveCounter';
+  }
 
   /**
    * Returns a {@link LiveCounter} instance with a 0 value.
