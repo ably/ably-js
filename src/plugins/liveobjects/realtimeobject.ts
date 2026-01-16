@@ -144,6 +144,13 @@ export class RealtimeObject {
   /**
    * @internal
    * @spec RTO5
+   *
+   * Note on server-initiated resync: If the realtime server needs to force a resync, it is expected
+   * to send an ATTACHED message with RESUMED=false before the new OBJECT_SYNC sequence. However,
+   * if an OBJECT_SYNC is received after a previously completed sync (without preceding ATTACHED),
+   * we handle it as a best-effort case: we enter SYNCING state and start buffering OBJECT messages
+   * from that point. Since the buffer is cleared at the end of each completed sync sequence, receiving
+   * OBJECT_SYNC when we're in SYNCED state means we start with an empty buffer.
    */
   handleObjectSyncMessages(objectMessages: ObjectMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial); // RTO5a
@@ -182,14 +189,19 @@ export class RealtimeObject {
    * @internal
    * @spec RTO4
    */
-  onAttached(hasObjects?: boolean): void {
+  onNonResumeAttached(hasObjects?: boolean): void {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
-      'RealtimeObject.onAttached()',
+      'RealtimeObject.onNonResumeAttached()',
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
+    // RTO4d
+    // Clear buffered object operations on attach (RESUMED=false or absent).
+    // The realtime server caches the object state at the moment of channel attachment,
+    // so we must start fresh and buffer all incoming OBJECT messages from this point.
+    this._bufferedObjectOperations = [];
     // RTO4a
     this._startNewSync();
 
@@ -209,7 +221,7 @@ export class RealtimeObject {
   actOnChannelState(state: ChannelState, hasObjects?: boolean): void {
     switch (state) {
       case 'attached':
-        this.onAttached(hasObjects);
+        this.onNonResumeAttached(hasObjects);
         break;
 
       case 'detached':
@@ -259,8 +271,6 @@ export class RealtimeObject {
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
-    // need to discard all buffered object operation messages on new sync start
-    this._bufferedObjectOperations = [];
     this._syncObjectsDataPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
@@ -274,7 +284,7 @@ export class RealtimeObject {
     // can use regular object messages application logic
     this._applyObjectMessages(this._bufferedObjectOperations);
 
-    this._bufferedObjectOperations = [];
+    this._bufferedObjectOperations = []; // RTO5c5
     this._syncObjectsDataPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3

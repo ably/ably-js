@@ -564,7 +564,7 @@ class RealtimeChannel extends EventEmitter {
             }
             // the Objects tree needs to be re-synced
             if (this._object) {
-              this._object.onAttached(hasObjects);
+              this._object.onNonResumeAttached(hasObjects);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
