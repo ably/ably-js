@@ -343,28 +343,40 @@ class RealtimeChannel extends EventEmitter {
       return;
     }
 
-    if (this.state !== 'attaching' || forceReattach) {
-      this.requestState('attaching', attachReason);
+    let operationComplete;
+    if (this.state === 'attaching' || this.state === 'detaching') {
+      // RTL4h, waits for current operation to complete
+      operationComplete = new Promise((resolve) => {
+        this.once(resolve);
+      });
+    } else {
+      operationComplete = Promise.resolve();
     }
 
-    this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
-      switch (this.event) {
-        case 'attached':
-          callback?.(null, stateChange);
-          break;
-        case 'detached':
-        case 'suspended':
-        case 'failed':
-          callback?.(
-            stateChange.reason ||
-              connectionManager.getError() ||
-              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500),
-          );
-          break;
-        case 'detaching':
-          callback?.(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
-          break;
+    operationComplete.then(() => {
+      if (this.state !== 'attaching' || forceReattach) {
+        this.requestState('attaching', attachReason); // request a new attach
       }
+
+      this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+        switch (this.event) {
+          case 'attached':
+            callback?.(null, stateChange);
+            break;
+          case 'detached':
+          case 'suspended':
+          case 'failed':
+            callback?.(
+              stateChange.reason ||
+                connectionManager.getError() ||
+                new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500),
+            );
+            break;
+          case 'detaching':
+            callback?.(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
+            break;
+        }
+      });
     });
   }
 
