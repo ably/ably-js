@@ -355,6 +355,101 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
+     * When a connection becomes stale (checkConnectionStateFreshness detects
+     * lastActivity exceeds connectionStateTtl), clearConnection() is called.
+     * Any queued messages with sendAttempted=true must have sendAttempted reset
+     * so they get new msgSerial values on the new connection.
+     *
+     * Scenario: Client sends a message, transport disconnects before ACK,
+     * connection becomes stale while in disconnected state.
+     * Without the fix, old messages keep their serials while new messages start
+     * from 0, causing non-monotonic msgSerial values.
+     *
+     * @spec RTN19a2
+     */
+    it('stale_connection_resets_msgSerial_and_sendAttempted', function (done) {
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+        channel = realtime.channels.get('stale_connection_test'),
+        connectionManager = realtime.connection.connectionManager;
+
+      realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
+        var transport = connectionManager.activeProtocol.transport;
+
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
+          if (err) {
+            helper.closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          // Intercept transport.send to prevent ACKs
+          helper.recordPrivateApi('replace.transport.send');
+          transport.send = function () {
+            // Don't forward - message stays un-ACKed in pending queue
+          };
+
+          // Publish a message (will not be ACKed)
+          channel.publish('test', 'data');
+
+          setTimeout(function () {
+            try {
+              helper.recordPrivateApi('read.connectionManager.msgSerial');
+              expect(connectionManager.msgSerial).to.equal(1, 'msgSerial should be 1 after publish');
+
+              // Get the pending message details before disconnection
+              helper.recordPrivateApi('read.connectionManager.activeProtocol');
+              var pendingMessages = connectionManager.activeProtocol.getPendingMessages();
+              expect(pendingMessages.length).to.equal(1, 'Should have 1 pending message');
+              expect(pendingMessages[0].sendAttempted).to.equal(true, 'Message should have sendAttempted=true');
+
+              // Disconnect transport - this requeues pending messages
+              helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+              connectionManager.disconnectAllTransports();
+
+              realtime.connection.once('disconnected', function () {
+                // Verify message was requeued
+                helper.recordPrivateApi('read.connectionManager.queuedMessages');
+                expect(connectionManager.queuedMessages.count()).to.equal(1, 'Should have 1 queued message');
+
+                // Simulate stale connection by setting lastActivity to the past.
+                // This will cause checkConnectionStateFreshness to call clearConnection
+                // when we attempt to reconnect.
+                helper.recordPrivateApi('write.connectionManager.lastActivity');
+                connectionManager.lastActivity = Date.now() - connectionManager.connectionStateTtl - 100000;
+
+                // When we reconnect, checkConnectionStateFreshness will detect stale
+                // connection and call clearConnection before the transport is established
+                helper.recordPrivateApi('listen.connectionManager.transport.pending');
+                connectionManager.once('transport.pending', function () {
+                  try {
+                    // Verify msgSerial was reset by checkConnectionStateFreshness → clearConnection
+                    helper.recordPrivateApi('read.connectionManager.msgSerial');
+                    expect(connectionManager.msgSerial).to.equal(0, 'msgSerial should be 0 after stale connection');
+
+                    // Verify sendAttempted was reset on the queued message
+                    expect(pendingMessages[0].sendAttempted).to.equal(
+                      false,
+                      'sendAttempted should be reset so message gets new msgSerial on reconnect',
+                    );
+
+                    helper.closeAndFinish(done, realtime);
+                  } catch (err) {
+                    helper.closeAndFinish(done, realtime, err);
+                  }
+                });
+
+                realtime.connection.connect();
+              });
+            } catch (err) {
+              helper.closeAndFinish(done, realtime, err);
+            }
+          }, 0);
+        });
+      });
+    });
+
+    /**
      * @spec RTN26a
      * @spec RTN26b
      */
