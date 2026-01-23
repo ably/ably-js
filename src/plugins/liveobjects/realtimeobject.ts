@@ -43,8 +43,8 @@ export class RealtimeObject {
   // related to RTC10, should have a separate EventEmitter for users of the library
   private _eventEmitterPublic: EventEmitter;
   private _objectsPool: ObjectsPool; // RTO3
-  /** An array of ObjectMessages received during the sync sequence */
-  private _syncObjectsPool: ObjectMessage[];
+  /** Used to accumulate object state during a sync sequence, keyed by object ID */
+  private _syncObjectsPool: Map<string, ObjectMessage>;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedObjectOperations: ObjectMessage[];
@@ -60,7 +60,7 @@ export class RealtimeObject {
     this._eventEmitterInternal = new this._client.EventEmitter(this._client.logger);
     this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
     this._objectsPool = new ObjectsPool(this);
-    this._syncObjectsPool = [];
+    this._syncObjectsPool = new Map<string, ObjectMessage>();
     this._bufferedObjectOperations = [];
     this._pathObjectSubscriptionRegister = new PathObjectSubscriptionRegister(this);
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
@@ -198,7 +198,7 @@ export class RealtimeObject {
       // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
       // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
       this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
-      this._syncObjectsPool = []; // RTO4b3
+      this._syncObjectsPool.clear(); // RTO4b3
       this._endSync(); // RTO4b4
     }
   }
@@ -216,7 +216,7 @@ export class RealtimeObject {
       case 'failed':
         // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
         this._objectsPool.clearObjectsData(false);
-        this._syncObjectsPool = [];
+        this._syncObjectsPool.clear();
         break;
     }
   }
@@ -261,7 +261,7 @@ export class RealtimeObject {
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered object operation messages on new sync start
     this._bufferedObjectOperations = [];
-    this._syncObjectsPool = [];
+    this._syncObjectsPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
     this._stateChange(ObjectsState.syncing);
@@ -275,7 +275,7 @@ export class RealtimeObject {
     this._applyObjectMessages(this._bufferedObjectOperations);
 
     this._bufferedObjectOperations = [];
-    this._syncObjectsPool = []; // RTO5c4
+    this._syncObjectsPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
     this._stateChange(ObjectsState.synced);
@@ -301,7 +301,7 @@ export class RealtimeObject {
   }
 
   private _applySync(): void {
-    if (this._syncObjectsPool.length === 0) {
+    if (this._syncObjectsPool.size === 0) {
       return;
     }
 
@@ -312,8 +312,7 @@ export class RealtimeObject {
     }[] = [];
 
     // RTO5c1
-    for (const objectMessage of this._syncObjectsPool) {
-      const objectId = objectMessage.object?.objectId!;
+    for (const [objectId, objectMessage] of this._syncObjectsPool) {
       receivedObjectIds.add(objectId);
       const existingObject = this._objectsPool.get(objectId);
 
@@ -370,7 +369,57 @@ export class RealtimeObject {
         continue;
       }
 
-      this._syncObjectsPool.push(objectMessage);
+      // RTO5b2 - partial object sync handling
+      const objectState = objectMessage.object;
+      const objectId = objectState.objectId;
+
+      if (objectState.counter) {
+        // RTO5b2a, RTO5b2b2 - counter objects have a bounded size and will never be split
+        // across multiple sync messages, so they can be stored directly without merging.
+        this._syncObjectsPool.set(objectId, objectMessage);
+        continue;
+      }
+
+      if (objectState.map) {
+        const existingEntry = this._syncObjectsPool.get(objectId);
+
+        if (!existingEntry) {
+          // RTO5b2a - no ObjectState with the given objectId exists yet, store it
+          this._syncObjectsPool.set(objectId, objectMessage);
+        } else {
+          // RTO5b2b, RTO5b2b1 - merge entries from the new ObjectState into the existing one
+          this._mergeMapSyncState(existingEntry, objectMessage);
+        }
+        continue;
+      }
+
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'RealtimeObject._applyObjectSyncMessages()',
+        `received unsupported object state message during OBJECT_SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
+      );
+    }
+  }
+
+  /**
+   * Merges map entries from a partial sync message into an existing entry.
+   * Other fields on the ObjectState envelope are identical across all partial messages
+   * for the same object, so only the entries need to be merged.
+   * @spec RTO5b2b1
+   */
+  private _mergeMapSyncState(existingEntry: ObjectMessage, newObjectMessage: ObjectMessage): void {
+    const existingObjectState = existingEntry.object!;
+    const newObjectState = newObjectMessage.object!;
+
+    if (!existingObjectState.map!.entries) {
+      existingObjectState.map!.entries = {};
+    }
+
+    if (newObjectState.map?.entries) {
+      // During partial sync, no two messages contain the same map key,
+      // so entries can be merged directly without conflict checking.
+      Object.assign(existingObjectState.map!.entries, newObjectState.map.entries);
     }
   }
 
