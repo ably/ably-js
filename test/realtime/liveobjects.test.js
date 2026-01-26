@@ -1358,6 +1358,75 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
+          description: 'only one MAP_CREATE operation is applied for the same object ID',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            // It's possible for multiple MAP_CREATE operations, with different serials, to be received
+            // for the same object ID. The object ID is derived from the operation's content, so they will
+            // have identical content. The client should only merge one of these operations into the object's data.
+
+            // create new map and set on root
+            const mapId = objectsHelper.fakeMapObjectId();
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [
+                objectsHelper.mapCreateOp({
+                  objectId: mapId,
+                  entries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                  },
+                }),
+              ],
+            });
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
+            });
+
+            expect(entryInstance.get(mapId).size()).to.equal(1, 'Check map has 1 key after first MAP_CREATE');
+            expect(entryInstance.get(mapId).get('foo').value()).to.equal(
+              'bar',
+              'Check map has correct "foo" value after first MAP_CREATE',
+            );
+
+            // send another MAP_CREATE op for the same object ID, from a different site, with a later entry timeserial
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('ccc', 0, 0),
+              siteCode: 'ccc',
+              state: [
+                objectsHelper.mapCreateOp({
+                  objectId: mapId,
+                  entries: {
+                    foo: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { string: 'bar' } },
+                  },
+                }),
+              ],
+            });
+
+            // verify the second CREATE was not applied by checking that a MAP_SET with an intermediate
+            // timeserial ('bbb') can still be applied. if the second CREATE had been wrongly applied,
+            // the entry's timeserial would be 'ccc' and this MAP_SET would be rejected.
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [objectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { string: 'updated' } })],
+            });
+
+            expect(entryInstance.get(mapId).get('foo').value()).to.equal(
+              'updated',
+              'Check MAP_SET was applied, proving second MAP_CREATE did not update entry timeserial',
+            );
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with primitives object operation messages',
           action: async (ctx) => {
@@ -1846,6 +1915,52 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 `Check counter #${i + 1} has expected value after COUNTER_CREATE ops`,
               );
             }
+          },
+        },
+
+        {
+          description: 'only one COUNTER_CREATE operation is applied for the same object ID',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            // It's possible for multiple COUNTER_CREATE operations, with different serials, to be received
+            // for the same object ID. The object ID is derived from the operation's content, so they will
+            // have identical content. The client should only merge one of these operations into the object's data.
+
+            // create new counter and set on root
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+            });
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } })],
+            });
+
+            expect(entryInstance.get(counterId).value()).to.equal(
+              10,
+              'Check counter has value 10 after first COUNTER_CREATE',
+            );
+
+            // send another COUNTER_CREATE op for the same object ID, from a different site
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+            });
+
+            // verify the second CREATE was not applied - if it had been, the count would have been
+            // added again (10 + 10 = 20) due to how COUNTER_CREATE merges into existing state
+            expect(entryInstance.get(counterId).value()).to.equal(
+              10,
+              'Check counter still has value 10 after second COUNTER_CREATE (not applied)',
+            );
           },
         },
 
