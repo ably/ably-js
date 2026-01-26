@@ -334,8 +334,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       case ObjectOperationAction.MAP_SET:
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
-          // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
-          return;
         } else {
           update = this._applyMapSet(op.mapOp, opSerial, msg);
         }
@@ -344,8 +342,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       case ObjectOperationAction.MAP_REMOVE:
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
-          // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
-          return;
         } else {
           update = this._applyMapRemove(op.mapOp, opSerial, msg.serialTimestamp, msg);
         }
@@ -683,7 +679,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return aggregatedUpdate;
   }
 
-  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
+  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
       92000,
