@@ -536,13 +536,13 @@ class RealtimeChannel extends EventEmitter {
     await this.sendAndAwaitAck(msg);
   }
 
-  async sendState(objectMessages: WireObjectMessage[]): Promise<void> {
+  async sendState(objectMessages: WireObjectMessage[]): Promise<API.PublishResult> {
     const msg = protocolMessageFromValues({
       action: actions.OBJECT,
       channel: this.name,
       state: objectMessages,
     });
-    await this.sendAndAwaitAck(msg);
+    return this.sendAndAwaitAck(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.

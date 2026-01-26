@@ -1,6 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import type * as API from '../../../ably';
 import type { ChannelState, StatusSubscription } from '../../../ably';
 import type * as ObjectsApi from '../../../liveobjects';
 import { DEFAULTS } from './defaults';
@@ -16,6 +17,12 @@ import { SyncObjectsDataPool } from './syncobjectsdatapool';
 export enum ObjectsEvent {
   syncing = 'syncing',
   synced = 'synced',
+}
+
+/** @spec RTO22 */
+export enum ObjectsOperationSource {
+  local = 'local',
+  channel = 'channel',
 }
 
 export enum ObjectsState {
@@ -48,6 +55,7 @@ export class RealtimeObject {
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedObjectOperations: ObjectMessage[];
+  private _appliedOnAckSerials: Set<string>; // RTO7b
   private _pathObjectSubscriptionRegister: PathObjectSubscriptionRegister;
 
   // Used by tests
@@ -62,6 +70,7 @@ export class RealtimeObject {
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
     this._bufferedObjectOperations = [];
+    this._appliedOnAckSerials = new Set(); // RTO7b1
     this._pathObjectSubscriptionRegister = new PathObjectSubscriptionRegister(this);
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
     this.gcGracePeriod =
@@ -164,6 +173,7 @@ export class RealtimeObject {
 
   /**
    * @internal
+   * @spec RTO8
    */
   handleObjectMessages(objectMessages: ObjectMessage[]): void {
     if (this._state !== ObjectsState.synced) {
@@ -175,7 +185,7 @@ export class RealtimeObject {
       return;
     }
 
-    this._applyObjectMessages(objectMessages);
+    this._applyObjectMessages(objectMessages, ObjectsOperationSource.channel); // RTO8b
   }
 
   /**
@@ -223,8 +233,9 @@ export class RealtimeObject {
 
   /**
    * @internal
+   * @spec RTO15
    */
-  async publish(objectMessages: ObjectMessage[]): Promise<void> {
+  async publish(objectMessages: ObjectMessage[]): Promise<API.PublishResult> {
     this._channel.throwIfUnpublishableState();
 
     const encodedMsgs = objectMessages.map((x) => x.encode(this._client));
@@ -238,7 +249,123 @@ export class RealtimeObject {
       );
     }
 
+    // RTO15h
     return this._channel.sendState(encodedMsgs);
+  }
+
+  /**
+   * Publishes ObjectMessages and applies them locally upon receiving the ACK from the server.
+   *
+   * @internal
+   * @spec RTO20
+   */
+  async publishAndApply(objectMessages: ObjectMessage[]): Promise<void> {
+    // RTO20b
+    const publishResult = await this.publish(objectMessages);
+
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MICRO,
+      'RealtimeObject.publishAndApply()',
+      `received ACK for ${objectMessages.length} message(s), applying locally; channel=${this._channel.name}`,
+    );
+
+    // RTO20c - check required information is available
+    const siteCode = this._channel.connectionManager.connectionDetails?.siteCode;
+    // RTO20c1
+    if (!siteCode) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_ERROR,
+        'RealtimeObject.publishAndApply()',
+        `operations will not be applied locally: siteCode not available from connectionDetails; channel=${this._channel.name}`,
+      );
+      return;
+    }
+    // RTO20c2
+    if (!publishResult.serials || publishResult.serials.length !== objectMessages.length) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_ERROR,
+        'RealtimeObject.publishAndApply()',
+        `operations will not be applied locally: PublishResult.serials has unexpected length (expected ${objectMessages.length}, got ${publishResult.serials?.length}); channel=${this._channel.name}`,
+      );
+      return;
+    }
+
+    // RTO20d
+    const syntheticMessages: ObjectMessage[] = [];
+    for (let i = 0; i < objectMessages.length; i++) {
+      const serial = publishResult.serials[i];
+
+      // RTO20d1
+      if (serial === null) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'RealtimeObject.publishAndApply()',
+          `operation will not be applied locally: serial is null in PublishResult (index ${i}); channel=${this._channel.name}`,
+        );
+        continue;
+      }
+
+      // RTO20d2, RTO20d3
+      syntheticMessages.push(
+        ObjectMessage.fromValues(
+          {
+            ...objectMessages[i],
+            serial, // RTO20d2a
+            siteCode, // RTO20d2b
+          },
+          this._client.Utils,
+          this._client.MessageEncoding,
+        ),
+      );
+    }
+
+    // RTO20e - Wait for sync to complete if not synced
+    if (this._state !== ObjectsState.synced) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'RealtimeObject.publishAndApply()',
+        `waiting for sync to complete before applying ${syntheticMessages.length} message(s); channel=${this._channel.name}`,
+      );
+
+      await new Promise<void>((resolve, reject) => {
+        const cleanup = () => {
+          this._eventEmitterInternal.off(onSynced);
+          this._channel.internalStateChanges.off(onChannelState);
+        };
+        const onSynced = () => {
+          cleanup();
+          resolve();
+        };
+        // RTO20e1
+        const onChannelState = () => {
+          cleanup();
+          reject(
+            new this._client.ErrorInfo(
+              `the operation could not be applied locally due to the channel entering the ${this._channel.state} state whilst waiting for objects sync to complete`,
+              92008,
+              400,
+              this._channel.errorReason || undefined,
+            ),
+          );
+        };
+        this._eventEmitterInternal.once(ObjectsEvent.synced, onSynced);
+        this._channel.internalStateChanges.once(['detached', 'suspended', 'failed'], onChannelState);
+      });
+    }
+
+    // RTO20f - Apply synthetic messages
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MICRO,
+      'RealtimeObject.publishAndApply()',
+      `applying ${syntheticMessages.length} message(s); channel=${this._channel.name}`,
+    );
+    this._applyObjectMessages(syntheticMessages, ObjectsOperationSource.local);
   }
 
   /**
@@ -272,12 +399,16 @@ export class RealtimeObject {
     this._applySync();
     // should apply buffered object operations after we applied the sync.
     // can use regular object messages application logic
-    this._applyObjectMessages(this._bufferedObjectOperations);
+    this._applyObjectMessages(this._bufferedObjectOperations, ObjectsOperationSource.channel); // RTO5c6
 
     this._bufferedObjectOperations = [];
     this._syncObjectsDataPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
+
+    // RTO5c9 - Clear appliedOnAckSerials
+    this._appliedOnAckSerials.clear();
+
     this._stateChange(ObjectsState.synced);
   }
 
@@ -356,7 +487,8 @@ export class RealtimeObject {
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
-  private _applyObjectMessages(objectMessages: ObjectMessage[]): void {
+  /** @spec RTO9 */
+  private _applyObjectMessages(objectMessages: ObjectMessage[], source: ObjectsOperationSource): void {
     for (const objectMessage of objectMessages) {
       if (!objectMessage.operation) {
         this._client.Logger.logAction(
@@ -368,6 +500,20 @@ export class RealtimeObject {
         continue;
       }
 
+      const serial = objectMessage.serial;
+
+      // RTO9a3 - Skip if already applied on ACK
+      if (serial && this._appliedOnAckSerials.has(serial)) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'RealtimeObject._applyObjectMessages()',
+          `skipping message: already applied on ACK; serial=${serial}, channel=${this._channel.name}`,
+        );
+        this._appliedOnAckSerials.delete(serial);
+        continue;
+      }
+
       const objectOperation = objectMessage.operation;
 
       switch (objectOperation.action) {
@@ -376,7 +522,7 @@ export class RealtimeObject {
         case ObjectOperationAction.MAP_SET:
         case ObjectOperationAction.MAP_REMOVE:
         case ObjectOperationAction.COUNTER_INC:
-        case ObjectOperationAction.OBJECT_DELETE:
+        case ObjectOperationAction.OBJECT_DELETE: {
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
           // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
           // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
@@ -384,8 +530,16 @@ export class RealtimeObject {
           // so to simplify operations handling, we always try to create a zero-value object in the pool first,
           // and then we can always apply the operation on the existing object in the pool.
           this._objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId);
-          this._objectsPool.get(objectOperation.objectId)!.applyOperation(objectOperation, objectMessage);
+          const applied = this._objectsPool
+            .get(objectOperation.objectId)!
+            .applyOperation(objectOperation, objectMessage, source); // RTO9a2a3
+
+          // RTO9a2a4
+          if (source === ObjectsOperationSource.local && applied && serial) {
+            this._appliedOnAckSerials.add(serial);
+          }
           break;
+        }
 
         default:
           this._client.Logger.logAction(

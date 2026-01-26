@@ -22,7 +22,7 @@ import {
   ObjectsMapOp,
   ObjectsMapSemantics,
 } from './objectmessage';
-import { RealtimeObject } from './realtimeobject';
+import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
 export interface ObjectIdObjectData {
   /** A reference to another object, used to support composable object structures. */
@@ -265,38 +265,39 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   /**
    * Send a MAP_SET operation to the realtime system to set a key on this LiveMap object to a specified value.
    *
-   * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
-   * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
-   * operation application procedure.
+   * The change will be applied locally when the ACK is received from Realtime.
    *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message
+   * and applying the operation locally.
+   * @spec RTLM20
    */
   async set<TKey extends keyof T & string>(
     key: TKey,
     value: T[TKey] | LiveCounterValueType | LiveMapValueType,
   ): Promise<void> {
     const msgs = await LiveMap.createMapSetMessage(this._realtimeObject, this.getObjectId(), key, value);
-    return this._realtimeObject.publish(msgs);
+    return this._realtimeObject.publishAndApply(msgs);
   }
 
   /**
    * Send a MAP_REMOVE operation to the realtime system to tombstone a key on this LiveMap object.
    *
-   * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
-   * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
-   * operation application procedure.
+   * The change will be applied locally when the ACK is received from Realtime.
    *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message
+   * and applying the operation locally.
+   * @spec RTLM21
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
     const msg = LiveMap.createMapRemoveMessage(this._realtimeObject, this.getObjectId(), key);
-    return this._realtimeObject.publish([msg]);
+    return this._realtimeObject.publishAndApply([msg]);
   }
 
   /**
    * @internal
+   * @spec RTLM15
    */
-  applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void {
+  applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage, source: ObjectsOperationSource): boolean {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply object operation with objectId=${op.objectId}, to this LiveMap with objectId=${this.getObjectId()}`,
@@ -314,15 +315,19 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         'LiveMap.applyOperation()',
         `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
       );
-      return;
+      return false; // RTLM15b
     }
-    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
-    // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opSiteCode] = opSerial;
+
+    // RTLM15c
+    if (source === ObjectsOperationSource.channel) {
+      // should update stored site serial immediately. doesn't matter if we successfully apply the op,
+      // as it's important to mark that the op was processed by the object
+      this._siteTimeserials[opSiteCode] = opSerial;
+    }
 
     if (this.isTombstoned()) {
       // this object is tombstoned so the operation cannot be applied
-      return;
+      return false; // RTLM15e
     }
 
     let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
@@ -360,6 +365,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     }
 
     this.notifyUpdated(update);
+    return true; // RTLM15d1b, RTLM15d2b, RTLM15d3b, RTLM15d5b
   }
 
   /**
