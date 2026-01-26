@@ -44,7 +44,6 @@ export abstract class LiveObject<
    */
   protected _dataRef: TData;
   protected _siteTimeserials: Record<string, string>;
-  protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
   private _tombstonedAt: number | undefined;
   /**
@@ -63,7 +62,6 @@ export abstract class LiveObject<
     this._dataRef = this._getZeroValueData();
     // use empty map of serials by default, so any future operation can be applied to this object
     this._siteTimeserials = {};
-    this._createOperationIsMerged = false;
     this._tombstone = false;
     this._parentReferences = new Map<LiveObject, Set<string>>();
   }

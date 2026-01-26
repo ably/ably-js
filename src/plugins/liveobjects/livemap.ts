@@ -435,7 +435,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       update = this.tombstone(objectMessage);
     } else {
       // otherwise override data for this object with data from the object state
-      this._createOperationIsMerged = false; // RTLM6b
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
       // RTLM6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
@@ -678,8 +677,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       Object.assign(aggregatedUpdate.update, update.update);
     });
 
-    this._createOperationIsMerged = true; // RTLM6d2
-
     return aggregatedUpdate;
   }
 
@@ -695,19 +692,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     op: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
-    if (this._createOperationIsMerged) {
-      // There can't be two different create operation for the same object id, because the object id
-      // fully encodes that operation. This means we can safely ignore any new incoming create operations
-      // if we already merged it once.
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MICRO,
-        'LiveMap._applyMapCreate()',
-        `skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${this.getObjectId()}`,
-      );
-      return { noop: true };
-    }
-
     if (this._semantics !== op.map?.semantics) {
       throw new this._client.ErrorInfo(
         `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.map?.semantics}`,

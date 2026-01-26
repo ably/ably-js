@@ -212,7 +212,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       update = this.tombstone(objectMessage);
     } else {
       // otherwise override data for this object with data from the object state
-      this._createOperationIsMerged = false; // RTLC6b
       this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
       // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
@@ -254,7 +253,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
     this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
-    this._createOperationIsMerged = true; // RTLC6d2
 
     return {
       update: { amount: objectOperation.counter?.count ?? 0 },
@@ -275,19 +273,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     op: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveCounterUpdate | LiveObjectUpdateNoop {
-    if (this._createOperationIsMerged) {
-      // There can't be two different create operation for the same object id, because the object id
-      // fully encodes that operation. This means we can safely ignore any new incoming create operations
-      // if we already merged it once.
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MICRO,
-        'LiveCounter._applyCounterCreate()',
-        `skipping applying COUNTER_CREATE op on a counter instance as it was already applied before; objectId=${this.getObjectId()}`,
-      );
-      return { noop: true };
-    }
-
     return this._mergeInitialDataFromCreateOperation(op, msg);
   }
 
