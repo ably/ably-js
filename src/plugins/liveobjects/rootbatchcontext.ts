@@ -31,7 +31,7 @@ export class RootBatchContext extends DefaultBatchContext {
       const msgs = (await Promise.all(this._queuedMessageConstructors.map((x) => x()))).flat();
 
       if (msgs.length > 0) {
-        await this._realtimeObject.publish(msgs);
+        await this._realtimeObject.publishAndApply(msgs);
       }
     } finally {
       this._wrappedInstances.clear();
