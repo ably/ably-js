@@ -846,6 +846,9 @@ class ConnectionManager extends EventEmitter {
     this.realtime.connection.id = this.connectionId = undefined;
     this.realtime.connection.key = this.connectionKey = undefined;
     this.msgSerial = 0;
+    // RTN19a2: On a new connection, previous msgSerials are meaningless.
+    // Reset sendAttempted so queued messages get new serials.
+    this.queuedMessages.resetSendAttempted();
     this.unpersistConnection();
   }
 
