@@ -94,11 +94,12 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     const mapCreateMsg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
           action: ObjectOperationAction.MAP_CREATE,
           objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          mapCreateWithObjectId: {
+            nonce,
+            initialValue: initialValueJSONString,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -115,7 +116,7 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     realtimeObject: RealtimeObject,
     entries?: Record<string, Value>,
   ): Promise<{
-    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
+    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'mapCreate'>;
     nestedObjectsCreateMsgs: ObjectMessage[];
   }> {
     const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
@@ -147,7 +148,7 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     }
 
     const initialValueOperation = {
-      map: {
+      mapCreate: {
         semantics: ObjectsMapSemantics.LWW,
         entries: mapEntries,
       },

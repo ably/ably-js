@@ -74,11 +74,12 @@ export class LiveCounterValueType implements LiveCounter {
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
           action: ObjectOperationAction.COUNTER_CREATE,
           objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          counterCreateWithObjectId: {
+            nonce,
+            initialValue: initialValueJSONString,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -88,9 +89,9 @@ export class LiveCounterValueType implements LiveCounter {
     return msg;
   }
 
-  private static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
+  private static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counterCreate'> {
     return {
-      counter: {
+      counterCreate: {
         count: count ?? 0,
       },
     };
