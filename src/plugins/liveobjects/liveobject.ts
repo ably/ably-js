@@ -5,7 +5,7 @@ import { ROOT_OBJECT_ID } from './constants';
 import { InstanceEvent } from './instance';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
 import { PathEvent } from './pathobjectsubscriptionregister';
-import { RealtimeObject } from './realtimeobject';
+import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
 export enum LiveObjectSubscriptionEvent {
   updated = 'updated',
@@ -326,9 +326,11 @@ export abstract class LiveObject<
   /**
    * Apply object operation message on this LiveObject.
    *
+   * @returns `true` if the operation was applied successfully, `false` if it was skipped.
+   * @spec RTLC7g, RTLM15g
    * @internal
    */
-  abstract applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void;
+  abstract applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage, source: ObjectsOperationSource): boolean;
   /**
    * Overrides internal data for this LiveObject with object state from the given object message.
    * Provided object state should hold a valid data for current LiveObject, e.g. counter data for LiveCounter, map data for LiveMap.
