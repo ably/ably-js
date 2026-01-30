@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.17.1](https://github.com/ably/ably-js/tree/2.17.1) (2026-01-30)
+
+- Fix non-monotonic `msgSerial` on stale connection reset [\#2153](https://github.com/ably/ably-js/pull/2153)
+- Fix missing capabilities in `CapabilityOp` type [\#2160](https://github.com/ably/ably-js/pull/2160)
+
 ## [2.17.0](https://github.com/ably/ably-js/tree/2.17.0) (2026-01-06)
 
 - Support update and delete operations over realtime connections [\#2127](https://github.com/ably/ably-js/pull/2127)
