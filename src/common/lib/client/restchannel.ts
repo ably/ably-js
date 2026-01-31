@@ -18,6 +18,7 @@ import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
 import type { PushChannel } from 'plugins/push';
 import type RestAnnotations from './restannotations';
+import type { RestObject } from '../../../plugins/objects';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -36,12 +37,7 @@ class RestChannel {
   channelOptions: ChannelOptions;
   _push?: PushChannel;
   private _annotations: RestAnnotations | null = null;
-  get annotations(): RestAnnotations {
-    if (!this._annotations) {
-      Utils.throwMissingPluginError('Annotations');
-    }
-    return this._annotations;
-  }
+  private _object?: RestObject;
 
   constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
     Logger.logAction(client.logger, Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
@@ -55,6 +51,9 @@ class RestChannel {
     if (client._Annotations) {
       this._annotations = new client._Annotations.RestAnnotations(this);
     }
+    if (client._liveObjectsPlugin) {
+      this._object = new client._liveObjectsPlugin.RestObject(this);
+    }
   }
 
   get push() {
@@ -62,6 +61,20 @@ class RestChannel {
       Utils.throwMissingPluginError('Push');
     }
     return this._push;
+  }
+
+  get annotations(): RestAnnotations {
+    if (!this._annotations) {
+      Utils.throwMissingPluginError('Annotations');
+    }
+    return this._annotations;
+  }
+
+  get object(): RestObject {
+    if (!this._object) {
+      Utils.throwMissingPluginError('Objects');
+    }
+    return this._object;
   }
 
   get logger(): Logger {

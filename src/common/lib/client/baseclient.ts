@@ -20,6 +20,7 @@ import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
 import EventEmitter from '../util/eventemitter';
 import { MessageEncoding } from '../types/basemessage';
+import type * as LiveObjectsPlugin from 'plugins/liveobjects';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;
@@ -50,6 +51,7 @@ class BaseClient {
   readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations | null;
   private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
   readonly _Annotations: AnnotationsPlugin | null;
+  readonly _liveObjectsPlugin: typeof LiveObjectsPlugin | null;
   readonly logger: Logger;
   _device?: LocalDevice;
 
@@ -103,6 +105,7 @@ class BaseClient {
     this._Crypto = options.plugins?.Crypto ?? null;
     this.__FilteredSubscriptions = options.plugins?.MessageInteractions ?? null;
     this._Annotations = options.plugins?.Annotations ?? null;
+    this._liveObjectsPlugin = options.plugins?.LiveObjects ?? null; ?? null;
   }
 
   get rest(): Rest {

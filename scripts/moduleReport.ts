@@ -341,6 +341,7 @@ async function checkLiveObjectsPluginFiles() {
     'src/plugins/liveobjects/pathobject.ts',
     'src/plugins/liveobjects/pathobjectsubscriptionregister.ts',
     'src/plugins/liveobjects/realtimeobject.ts',
+    'src/plugins/liveobjects/restobject.ts',
     'src/plugins/liveobjects/rootbatchcontext.ts',
     'src/plugins/liveobjects/syncobjectsdatapool.ts',
   ]);
