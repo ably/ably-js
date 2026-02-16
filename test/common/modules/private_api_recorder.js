@@ -135,7 +135,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'replace.RealtimeObject.publish',
     'replace.channel.attachImpl',
     'replace.channel.processMessage',
-    'replace.channel.sendMessage',
+    'replace.channel.send',
     'replace.channel.sendPresence',
     'replace.connectionManager.onChannelMessage',
     'replace.connectionManager.send',
