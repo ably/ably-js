@@ -35,6 +35,31 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
     expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
   }
 
+  /**
+   * Recursively checks that `actual` contains all properties from `expected` (deep subset match).
+   *
+   * Chai's `deep.include` only does subset matching at the top level of the object - nested
+   * object values are compared using strict deep equality. For example,
+   * `expect({a: {b: 1, c: 2}}).to.deep.include({a: {b: 1}})` fails because `{b: 1, c: 2}`
+   * does not deep-equal `{b: 1}`. This helper performs subset matching at every nesting level,
+   * so extra properties in nested objects are allowed.
+   */
+  function expectDeepSubset(actual, expected, msg) {
+    if (typeof expected !== 'object' || expected === null || Array.isArray(expected)) {
+      expect(actual).to.deep.equal(expected, msg);
+      return;
+    }
+
+    // ensure actual is a non-null object when expected is an object (even an empty one)
+    expect(actual, msg).to.be.an('object').and.not.be.null;
+
+    for (const [key, expectedVal] of Object.entries(expected)) {
+      const desc = msg ? `${msg} (at key '${key}')` : `at key '${key}'`;
+      expect(actual, desc).to.have.property(key);
+      expectDeepSubset(actual[key], expectedVal, desc);
+    }
+  }
+
   function forScenarios(thisInDescribe, scenarios, testFn) {
     for (const scenario of scenarios) {
       if (scenario.allTransportsAndProtocols) {
@@ -98,7 +123,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   async function waitForMapKeyUpdate(mapInstance, key) {
     return new Promise((resolve) => {
       const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if (message?.operation?.mapOp?.key === key) {
+        if ((message?.operation?.mapSet?.key ?? message?.operation?.mapRemove?.key) === key) {
           unsubscribe();
           resolve();
         }
@@ -4775,7 +4800,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                       'counter.inc',
                       'Check first event is COUNTER_INC with positive value',
                     );
-                    expect(event.message.operation.counterOp.amount).to.equal(
+                    expect(event.message.operation.counterInc.number).to.equal(
                       1,
                       'Check first event is COUNTER_INC with positive value',
                     );
@@ -4784,7 +4809,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                       'counter.inc',
                       'Check second event is COUNTER_INC with negative value',
                     );
-                    expect(event.message.operation.counterOp.amount).to.equal(
+                    expect(event.message.operation.counterInc.number).to.equal(
                       -1,
                       'Check first event is COUNTER_INC with positive value',
                     );
@@ -5055,17 +5080,14 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               for await (const event of entryPathObject.get('map').subscribeIterator({ depth: 1 })) {
                 expect(event.object, 'Check event object exists').to.exist;
                 expect(event.message, 'Check event message exists').to.exist;
-                expect(event.message.operation).to.deep.include(
+                expectDeepSubset(
+                  event.message.operation,
                   {
                     action: 'map.set',
                     objectId: entryPathObject.get('map').instance().id,
+                    mapSet: { key: 'directKey' },
                   },
                   'Check event message operation',
-                );
-                // check mapOp separately so it doesn't break due to the additional data field with objectId in there
-                expect(event.message.operation.mapOp).to.deep.include(
-                  { key: 'directKey' },
-                  'Check event message operation mapOp',
                 );
 
                 events.push(event);
@@ -6066,7 +6088,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                       'counter.inc',
                       'Check first event is COUNTER_INC with positive value',
                     );
-                    expect(event.message.operation.counterOp.amount).to.equal(
+                    expect(event.message.operation.counterInc.number).to.equal(
                       1,
                       'Check first event is COUNTER_INC with positive value',
                     );
@@ -6075,7 +6097,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                       'counter.inc',
                       'Check second event is COUNTER_INC with negative value',
                     );
-                    expect(event.message.operation.counterOp.amount).to.equal(
+                    expect(event.message.operation.counterInc.number).to.equal(
                       -1,
                       'Check first event is COUNTER_INC with positive value',
                     );
@@ -6247,10 +6269,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 expect(event.object, 'Check event object exists').to.exist;
                 expect(event.object).to.equal(map, 'Check event object is the same map instance');
                 expect(event.message, 'Check event message exists').to.exist;
-                expect(event.message.operation).to.deep.include(
+                expectDeepSubset(
+                  event.message.operation,
                   events.length === 0
-                    ? { action: 'map.set', objectId: map.id, mapOp: { key: 'foo', data: { value: 'bar' } } }
-                    : { action: 'map.remove', objectId: map.id, mapOp: { key: 'foo' } },
+                    ? { action: 'map.set', objectId: map.id, mapSet: { key: 'foo', value: { string: 'bar' } } }
+                    : { action: 'map.remove', objectId: map.id, mapRemove: { key: 'foo' } },
                   'Check event message operation',
                 );
                 events.push(event);
@@ -6293,7 +6316,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                   {
                     action: 'counter.inc',
                     objectId: counter.id,
-                    counterOp: { amount: events.length === 0 ? 1 : -2 },
+                    counterInc: { number: events.length === 0 ? 1 : -2 },
                   },
                   'Check event message operation',
                 );
@@ -6937,7 +6960,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                     {
                       action: 'counter.inc',
                       objectId: counter.id,
-                      counterOp: { amount: 1 },
+                      counterInc: { number: 1 },
                     },
                     'Check counter subscription callback is called with an expected event message for COUNTER_INC operation',
                   );
@@ -6978,7 +7001,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                     {
                       action: 'counter.inc',
                       objectId: counter.id,
-                      counterOp: { amount: expectedInc },
+                      counterInc: { number: expectedInc },
                     },
                     `Check counter subscription callback is called with an expected event message operation for ${currentUpdateIndex + 1} times`,
                   );
@@ -7018,11 +7041,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             const subscriptionPromise = new Promise((resolve, reject) =>
               map.subscribe((event) => {
                 try {
-                  expect(event?.message?.operation).to.deep.include(
+                  expectDeepSubset(
+                    event?.message?.operation,
                     {
                       action: 'map.set',
                       objectId: map.id,
-                      mapOp: { key: 'stringKey', data: { value: 'stringValue' } },
+                      mapSet: { key: 'stringKey', value: { string: 'stringValue' } },
                     },
                     'Check map subscription callback is called with an expected event message for MAP_SET operation',
                   );
@@ -7057,7 +7081,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               map.subscribe((event) => {
                 try {
                   expect(event?.message?.operation).to.deep.include(
-                    { action: 'map.remove', objectId: map.id, mapOp: { key: 'stringKey' } },
+                    { action: 'map.remove', objectId: map.id, mapRemove: { key: 'stringKey' } },
                     'Check map subscription callback is called with an expected event message for MAP_REMOVE operation',
                   );
                   resolve();
@@ -7087,18 +7111,19 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             const map = entryInstance.get(sampleMapKey);
             const expectedMapUpdates = [
-              { action: 'map.set', mapOp: { key: 'foo', data: { value: '1' } } },
-              { action: 'map.set', mapOp: { key: 'bar', data: { value: '2' } } },
-              { action: 'map.remove', mapOp: { key: 'foo' } },
-              { action: 'map.set', mapOp: { key: 'baz', data: { value: '3' } } },
-              { action: 'map.remove', mapOp: { key: 'bar' } },
+              { action: 'map.set', mapSet: { key: 'foo', value: { string: '1' } } },
+              { action: 'map.set', mapSet: { key: 'bar', value: { string: '2' } } },
+              { action: 'map.remove', mapRemove: { key: 'foo' } },
+              { action: 'map.set', mapSet: { key: 'baz', value: { string: '3' } } },
+              { action: 'map.remove', mapRemove: { key: 'bar' } },
             ];
             let currentUpdateIndex = 0;
 
             const subscriptionPromise = new Promise((resolve, reject) =>
               map.subscribe(({ message }) => {
                 try {
-                  expect(message?.operation).to.deep.include(
+                  expectDeepSubset(
+                    message?.operation,
                     expectedMapUpdates[currentUpdateIndex],
                     `Check map subscription callback is called with an expected event message operation for ${currentUpdateIndex + 1} times`,
                   );
@@ -8086,7 +8111,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
                 },
@@ -8100,7 +8125,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
+                mapCreate: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
               },
             }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
@@ -8111,7 +8136,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
                 },
@@ -8125,7 +8150,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: {
                     'key-1': { tombstone: false, data: { boolean: true } },
@@ -8142,7 +8167,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: {
                     'key-1': { tombstone: false, data: { number: 123.456 } },
@@ -8159,7 +8184,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { json: { foo: 'bar' } } } },
                 },
@@ -8173,7 +8198,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { json: ['foo', 'bar', 'baz'] } } },
                 },
@@ -8182,11 +8207,26 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expected: Utils.dataSizeBytes('key-1') + JSON.stringify(['foo', 'bar', 'baz']).length,
           },
           {
-            description: 'map remove op',
+            description: 'map create op with client-generated object id and _derivedFrom',
             message: objectMessageFromValues({
-              operation: { action: 2, objectId: 'object-id', mapOp: { key: 'my-key' } },
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                mapCreateWithObjectId: {
+                  nonce: '1234567890',
+                  initialValue: JSON.stringify({
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } },
+                  }),
+                  _derivedFrom: {
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } },
+                  },
+                },
+              },
             }),
-            expected: Utils.dataSizeBytes('my-key'),
+            // size is calculated from mapCreateWithObjectId._derivedFrom and is not double counted
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
           },
           {
             description: 'map set operation value=objectId',
@@ -8194,7 +8234,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { objectId: 'another-object-id' } },
+                mapSet: { key: 'my-key', value: { objectId: 'another-object-id' } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key'),
@@ -8202,7 +8242,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=string',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { string: 'my-value' } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { string: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
@@ -8212,7 +8252,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { bytes: BufferUtils.utf8Encode('my-value') } },
+                mapSet: { key: 'my-key', value: { bytes: BufferUtils.utf8Encode('my-value') } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
@@ -8220,28 +8260,28 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=boolean true',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: true } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { boolean: true } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=boolean false',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: false } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { boolean: false } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 123.456 } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { number: 123.456 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
           {
             description: 'map set operation value=double 0',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 0 } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { number: 0 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
@@ -8251,7 +8291,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { json: { foo: 'bar' } } },
+                mapSet: { key: 'my-key', value: { json: { foo: 'bar' } } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify({ foo: 'bar' }).length,
@@ -8262,10 +8302,17 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { json: ['foo', 'bar', 'baz'] } },
+                mapSet: { key: 'my-key', value: { json: ['foo', 'bar', 'baz'] } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify(['foo', 'bar', 'baz']).length,
+          },
+          {
+            description: 'map remove op',
+            message: objectMessageFromValues({
+              operation: { action: 2, objectId: 'object-id', mapRemove: { key: 'my-key' } },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
           },
           {
             description: 'map object',
@@ -8282,7 +8329,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 createOp: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { string: 'third string' } } } },
+                  mapCreate: {
+                    semantics: 0,
+                    entries: { 'key-3': { tombstone: false, data: { string: 'third string' } } },
+                  },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
@@ -8306,14 +8356,30 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'counter create op with payload',
             message: objectMessageFromValues({
-              operation: { action: 3, objectId: 'object-id', counter: { count: 1234567 } },
+              operation: { action: 3, objectId: 'object-id', counterCreate: { count: 1234567 } },
             }),
+            expected: 8,
+          },
+          {
+            description: 'counter create op with client-generated object id and _derivedFrom',
+            message: objectMessageFromValues({
+              operation: {
+                action: 3,
+                objectId: 'object-id',
+                counterCreateWithObjectId: {
+                  nonce: '1234567890',
+                  initialValue: JSON.stringify({ count: 1234567 }),
+                  _derivedFrom: { count: 1234567 },
+                },
+              },
+            }),
+            // size is calculated from counterCreateWithObjectId._derivedFrom and is not double counted
             expected: 8,
           },
           {
             description: 'counter inc op',
             message: objectMessageFromValues({
-              operation: { action: 4, objectId: 'object-id', counterOp: { amount: 123.456 } },
+              operation: { action: 4, objectId: 'object-id', counterInc: { number: 123.456 } },
             }),
             expected: 8,
           },
@@ -8326,7 +8392,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 createOp: {
                   action: 3,
                   objectId: 'object-id',
-                  counter: { count: 9876543 },
+                  counterCreate: { count: 9876543 },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
@@ -8341,12 +8407,130 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
           helper.recordPrivateApi('call.ObjectMessage.encode');
           const encodedMessage = scenario.message.encode(client);
-          helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
-          helper.recordPrivateApi('call.ObjectMessage.fromValues'); // was called by a scenario to create an ObjectMessage instance
-          helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
+          helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // called by a scenario to create buffers
+          helper.recordPrivateApi('call.ObjectMessage.fromValues'); // called by a scenario to create an ObjectMessage instance
+          helper.recordPrivateApi('call.Utils.dataSizeBytes'); // called by a scenario to calculated the expected byte size
+          helper.recordPrivateApi('write.ObjectOperation.counterCreateWithObjectId._derivedFrom'); // prop set by a scenario
+          helper.recordPrivateApi('write.ObjectOperation.mapCreateWithObjectId._derivedFrom'); // prop set by a scenario
           helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
           expect(encodedMessage.getMessageSize()).to.equal(scenario.expected);
         });
+      });
+
+      /** @nospec */
+      it('toUserFacingMessage returns correct public ObjectOperation for all operation types', function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
+        const channel = client.channels.get('channel');
+
+        helper.recordPrivateApi('write.ObjectOperation.counterCreateWithObjectId._derivedFrom');
+        helper.recordPrivateApi('write.ObjectOperation.mapCreateWithObjectId._derivedFrom');
+        const scenarios = [
+          {
+            description: 'MAP_CREATE',
+            operation: {
+              action: 0,
+              objectId: 'obj-1',
+              mapCreate: { semantics: 0, entries: { foo: { tombstone: false, data: { string: 'bar' } } } },
+            },
+            expectedCurrentFields: {
+              mapCreate: { semantics: 'lww', entries: { foo: { tombstone: false, data: { string: 'bar' } } } },
+            },
+            expectedDeprecatedFields: {
+              map: { semantics: 'lww', entries: { foo: { tombstone: false, data: { value: 'bar' } } } },
+            },
+          },
+          {
+            description: 'MAP_CREATE with mapCreateWithObjectId._derivedFrom',
+            operation: {
+              action: 0,
+              objectId: 'obj-1',
+              mapCreateWithObjectId: {
+                nonce: '1234567890',
+                initialValue: JSON.stringify({
+                  semantics: 0,
+                  entries: { foo: { tombstone: false, data: { string: 'bar' } } },
+                }),
+                _derivedFrom: {
+                  semantics: 0,
+                  entries: { foo: { tombstone: false, data: { string: 'bar' } } },
+                },
+              },
+            },
+            expectedCurrentFields: {
+              mapCreate: { semantics: 'lww', entries: { foo: { tombstone: false, data: { string: 'bar' } } } },
+            },
+            expectedDeprecatedFields: {
+              map: { semantics: 'lww', entries: { foo: { tombstone: false, data: { value: 'bar' } } } },
+            },
+            expectedAbsentFields: ['mapCreateWithObjectId'],
+          },
+          {
+            description: 'MAP_SET',
+            operation: { action: 1, objectId: 'obj-1', mapSet: { key: 'foo', value: { string: 'bar' } } },
+            expectedCurrentFields: { mapSet: { key: 'foo', value: { string: 'bar' } } },
+            expectedDeprecatedFields: { mapOp: { key: 'foo', data: { value: 'bar' } } },
+          },
+          {
+            description: 'MAP_REMOVE',
+            operation: { action: 2, objectId: 'obj-1', mapRemove: { key: 'foo' } },
+            expectedCurrentFields: { mapRemove: { key: 'foo' } },
+            expectedDeprecatedFields: { mapOp: { key: 'foo' } },
+          },
+          {
+            description: 'COUNTER_CREATE',
+            operation: { action: 3, objectId: 'obj-2', counterCreate: { count: 42 } },
+            expectedCurrentFields: { counterCreate: { count: 42 } },
+            expectedDeprecatedFields: { counter: { count: 42 } },
+          },
+          {
+            description: 'COUNTER_CREATE with counterCreateWithObjectId._derivedFrom',
+            operation: {
+              action: 3,
+              objectId: 'obj-2',
+              counterCreateWithObjectId: {
+                nonce: '1234567890',
+                initialValue: JSON.stringify({ count: 42 }),
+                _derivedFrom: { count: 42 },
+              },
+            },
+            expectedCurrentFields: { counterCreate: { count: 42 } },
+            expectedDeprecatedFields: { counter: { count: 42 } },
+            expectedAbsentFields: ['counterCreateWithObjectId'],
+          },
+          {
+            description: 'COUNTER_INC',
+            operation: { action: 4, objectId: 'obj-2', counterInc: { number: 5 } },
+            expectedCurrentFields: { counterInc: { number: 5 } },
+            expectedDeprecatedFields: { counterOp: { amount: 5 } },
+          },
+          {
+            description: 'OBJECT_DELETE',
+            operation: { action: 5, objectId: 'obj-3', objectDelete: {} },
+            expectedCurrentFields: { objectDelete: {} },
+          },
+        ];
+
+        for (const {
+          description,
+          operation,
+          expectedCurrentFields,
+          expectedDeprecatedFields,
+          expectedAbsentFields,
+        } of scenarios) {
+          helper.recordPrivateApi('call.ObjectMessage.fromValues');
+          const msg = objectMessageFromValues({ operation });
+          helper.recordPrivateApi('call.ObjectMessage.toUserFacingMessage');
+          const result = msg.toUserFacingMessage(channel);
+
+          expectDeepSubset(result.operation, expectedCurrentFields, `${description}: Check current fields`);
+          if (expectedDeprecatedFields) {
+            expectDeepSubset(result.operation, expectedDeprecatedFields, `${description}: Check deprecated fields`);
+          }
+          for (const field of expectedAbsentFields ?? []) {
+            expect(result.operation[field], `${description}: check '${field}' is not set`).to.not.exist;
+          }
+        }
       });
     });
 
@@ -8865,7 +9049,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             counter.subscribe((event) => {
               receivedEvents.push({
                 action: event.message?.operation?.action,
-                amount: event.message?.operation?.counterOp?.amount,
+                number: event.message?.operation?.counterInc?.number,
               });
             });
 
@@ -8881,7 +9065,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             // is invoked synchronously before increment() returns
             expect(receivedEvents.length).to.equal(1, 'Check event fires for locally-applied operation');
             expect(receivedEvents[0]).to.deep.equal(
-              { action: 'counter.inc', amount: 5 },
+              { action: 'counter.inc', number: 5 },
               'Check event from local apply has correct structure',
             );
 
@@ -8898,7 +9082,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             expect(receivedEvents.length).to.equal(2, 'Check event fires for Realtime-received operation');
             expect(receivedEvents[1]).to.deep.equal(
-              { action: 'counter.inc', amount: 10 },
+              { action: 'counter.inc', number: 10 },
               'Check event from Realtime receive has correct structure',
             );
 

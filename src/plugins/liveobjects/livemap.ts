@@ -4,9 +4,9 @@ import { __livetype } from '../../../ably';
 import {
   CompactedJsonValue,
   CompactedValue,
-  Primitive,
   LiveMap as PublicLiveMap,
   LiveObject as PublicLiveObject,
+  Primitive,
   Value,
 } from '../../../liveobjects';
 import { LiveCounter } from './livecounter';
@@ -15,12 +15,13 @@ import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import {
   getObjectDataPrimitive,
+  MapRemove,
+  MapSet,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
   ObjectOperationAction,
   ObjectsMapEntry,
-  ObjectsMapOp,
   ObjectsMapSemantics,
   primitiveToObjectData,
 } from './objectmessage';
@@ -118,17 +119,18 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
     } else {
+      // RTLM20e7b, RTLM20e7c, RTLM20e7d, RTLM20e7e, RTLM20e7f
       objectData = primitiveToObjectData(value as Primitive, client);
     }
 
     const mapSetMsg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.MAP_SET,
-          objectId,
-          mapOp: {
-            key,
-            data: objectData,
+          action: ObjectOperationAction.MAP_SET, // RTLM20e2
+          objectId, // RTLM20e3
+          mapSet: {
+            key, // RTLM20e6
+            value: objectData, // RTLM20e7
           },
         } as ObjectOperation<ObjectData>,
       },
@@ -152,9 +154,9 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.MAP_REMOVE,
-          objectId,
-          mapOp: { key },
+          action: ObjectOperationAction.MAP_REMOVE, // RTLM21e2
+          objectId, // RTLM21e3
+          mapRemove: { key }, // RTLM21e5
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -329,26 +331,30 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.MAP_CREATE:
+        // RTLM15d1
         update = this._applyMapCreate(op, msg);
         break;
 
       case ObjectOperationAction.MAP_SET:
-        if (this._client.Utils.isNil(op.mapOp)) {
+        if (this._client.Utils.isNil(op.mapSet)) {
           this._throwNoPayloadError(op);
         } else {
-          update = this._applyMapSet(op.mapOp, opSerial, msg);
+          // RTLM15d6
+          update = this._applyMapSet(op.mapSet, opSerial, msg);
         }
         break;
 
       case ObjectOperationAction.MAP_REMOVE:
-        if (this._client.Utils.isNil(op.mapOp)) {
+        if (this._client.Utils.isNil(op.mapRemove)) {
           this._throwNoPayloadError(op);
         } else {
-          update = this._applyMapRemove(op.mapOp, opSerial, msg.serialTimestamp, msg);
+          // RTLM15d7
+          update = this._applyMapRemove(op.mapRemove, opSerial, msg.serialTimestamp, msg);
         }
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
+        // RTLM15d5
         update = this._applyObjectDelete(msg);
         break;
 
@@ -360,8 +366,8 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         );
     }
 
-    this.notifyUpdated(update);
-    return true; // RTLM15d1b, RTLM15d2b, RTLM15d3b, RTLM15d5b
+    this.notifyUpdated(update); // RTLM15d1a, RTLM15d6a, RTLM15d7a, RTLM15d5a
+    return true; // RTLM15d1b, RTLM15d6b, RTLM15d7b, RTLM15d5b
   }
 
   /**
@@ -408,9 +414,9 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         );
       }
 
-      if (objectState.createOp.map?.semantics !== this._semantics) {
+      if (objectState.createOp.mapCreate?.semantics !== this._semantics) {
         throw new this._client.ErrorInfo(
-          `Invalid object state: object state createOp map semantics=${objectState.createOp.map?.semantics}; LiveMap semantics=${this._semantics}`,
+          `Invalid object state: object state createOp map semantics=${objectState.createOp.mapCreate?.semantics}; LiveMap semantics=${this._semantics}`,
           92000,
           500,
         );
@@ -641,7 +647,10 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveMapUpdate<T> {
-    if (this._client.Utils.isNil(objectOperation.map)) {
+    // RTLM23 - resolve mapCreate from either the direct property or the one from which mapCreateWithObjectId was derived
+    const mapCreate = objectOperation.mapCreate ?? objectOperation.mapCreateWithObjectId?._derivedFrom;
+
+    if (this._client.Utils.isNil(mapCreate)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
       return { update: {}, objectMessage: msg, _type: 'LiveMapUpdate' };
@@ -652,19 +661,19 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       objectMessage: msg,
       _type: 'LiveMapUpdate',
     };
-    // RTLM6d1
+    // RTLM23a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    Object.entries(objectOperation.map.entries ?? {}).forEach(([key, entry]) => {
+    Object.entries(mapCreate.entries ?? {}).forEach(([key, entry]) => {
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       const opSerial = entry.timeserial;
       let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
-        // RTLM6d1b - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
+        // RTLM23a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
         update = this._applyMapRemove({ key }, opSerial, entry.serialTimestamp, msg);
       } else {
-        // RTLM6d1a - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
-        update = this._applyMapSet({ key, data: entry.data }, opSerial, msg);
+        // RTLM23a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
+        update = this._applyMapSet({ key, value: entry.data! }, opSerial, msg);
       }
 
       // skip noop updates
@@ -676,9 +685,9 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       Object.assign(aggregatedUpdate.update, update.update);
     });
 
-    this._createOperationIsMerged = true; // RTLM6d2
+    this._createOperationIsMerged = true; // RTLM23b
 
-    return aggregatedUpdate;
+    return aggregatedUpdate; // RTLM23c
   }
 
   private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
@@ -706,9 +715,12 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    if (this._semantics !== op.map?.semantics) {
+    // RTLM23 - resolve mapCreate from either the direct property or the one from which mapCreateWithObjectId was derived
+    const mapCreate = op.mapCreate ?? op.mapCreateWithObjectId?._derivedFrom;
+
+    if (this._semantics !== mapCreate?.semantics) {
       throw new this._client.ErrorInfo(
-        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.map?.semantics}`,
+        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${mapCreate?.semantics}`,
         92000,
         500,
       );
@@ -717,9 +729,9 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return this._mergeInitialDataFromCreateOperation(op, msg);
   }
 
-  /** @spec RTLM7 */
+  /** @spec RTLM7, RTLM7d3 */
   private _applyMapSet(
-    op: ObjectsMapOp<ObjectData>,
+    op: MapSet<ObjectData>,
     opSerial: string | undefined,
     msg: ObjectMessage,
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
@@ -738,7 +750,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    if (Utils.isNil(op.data) || (Utils.isNil(op.data.objectId) && Utils.isNil(getObjectDataPrimitive(op.data)))) {
+    if (Utils.isNil(op.value) || (Utils.isNil(op.value.objectId) && Utils.isNil(getObjectDataPrimitive(op.value)))) {
       throw new ErrorInfo(
         `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key="${op.key}"`,
         92000,
@@ -747,16 +759,16 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     }
 
     let liveData: LiveMapObjectData;
-    // RTLM7c
-    if (!Utils.isNil(op.data.objectId)) {
-      liveData = { objectId: op.data.objectId } as ObjectIdObjectData;
+    // RTLM7g
+    if (!Utils.isNil(op.value.objectId)) {
+      liveData = { objectId: op.value.objectId } as ObjectIdObjectData;
       // this MAP_SET op is setting a key to point to another object via its object id,
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      this._realtimeObject.getPool().createZeroValueObjectIfNotExists(op.data.objectId); // RTLM7c1
+      this._realtimeObject.getPool().createZeroValueObjectIfNotExists(op.value.objectId); // RTLM7g1
     } else {
-      liveData = op.data;
+      liveData = op.value;
     }
 
     if (existingEntry) {
@@ -771,14 +783,14 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
       // RTLM7a2
       existingEntry.tombstone = false; // RTLM7a2c
-      existingEntry.tombstonedAt = undefined;
+      existingEntry.tombstonedAt = undefined; // RTLM7a2d
       existingEntry.timeserial = opSerial; // RTLM7a2b
-      existingEntry.data = liveData; // RTLM7a2a
+      existingEntry.data = liveData; // RTLM7a2e
     } else {
-      // RTLM7b, RTLM7b1
+      // RTLM7b, RTLM7b4
       const newEntry: LiveMapEntry = {
         tombstone: false, // RTLM7b2
-        tombstonedAt: undefined,
+        tombstonedAt: undefined, // RTLM7b3
         timeserial: opSerial,
         data: liveData,
       };
@@ -804,9 +816,9 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return update;
   }
 
-  /** @spec RTLM8 */
+  /** @spec RTLM8, RTLM8c4 */
   private _applyMapRemove(
-    op: ObjectsMapOp<ObjectData>,
+    op: MapRemove,
     opSerial: string | undefined,
     opTimestamp: number | undefined,
     msg: ObjectMessage,
