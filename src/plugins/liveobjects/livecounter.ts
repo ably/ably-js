@@ -1,7 +1,7 @@
 import { __livetype } from '../../../ably';
 import { LiveCounter as PublicLiveCounter } from '../../../liveobjects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
+import { CounterInc, ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -54,7 +54,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         operation: {
           action: ObjectOperationAction.COUNTER_INC,
           objectId,
-          counterOp: { amount },
+          counterInc: { number: amount },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -135,12 +135,12 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       case ObjectOperationAction.COUNTER_INC:
-        if (this._client.Utils.isNil(op.counterOp)) {
+        if (this._client.Utils.isNil(op.counterInc)) {
           this._throwNoPayloadError(op);
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyCounterInc(op.counterOp, msg);
+          update = this._applyCounterInc(op.counterInc, msg);
         }
         break;
 
@@ -253,11 +253,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
+    this._dataRef.data += objectOperation.counterCreate?.count ?? 0; // RTLC6d1
     this._createOperationIsMerged = true; // RTLC6d2
 
     return {
-      update: { amount: objectOperation.counter?.count ?? 0 },
+      update: { amount: objectOperation.counterCreate?.count ?? 0 },
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };
@@ -291,10 +291,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return this._mergeInitialDataFromCreateOperation(op, msg);
   }
 
-  private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
-    this._dataRef.data += op.amount;
+  private _applyCounterInc(op: CounterInc, msg: ObjectMessage): LiveCounterUpdate {
+    this._dataRef.data += op.number;
     return {
-      update: { amount: op.amount },
+      update: { amount: op.number },
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };

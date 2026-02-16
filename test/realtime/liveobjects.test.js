@@ -8027,7 +8027,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
                 },
@@ -8041,7 +8041,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
+                mapCreate: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
               },
             }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
@@ -8052,7 +8052,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
                 },
@@ -8066,7 +8066,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: {
                     'key-1': { tombstone: false, data: { value: true } },
@@ -8083,7 +8083,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: {
                     'key-1': { tombstone: false, data: { value: 123.456 } },
@@ -8100,7 +8100,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { value: { foo: 'bar' } } } },
                 },
@@ -8114,7 +8114,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: {
+                mapCreate: {
                   semantics: 0,
                   entries: { 'key-1': { tombstone: false, data: { value: ['foo', 'bar', 'baz'] } } },
                 },
@@ -8123,19 +8123,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expected: Utils.dataSizeBytes('key-1') + JSON.stringify(['foo', 'bar', 'baz']).length,
           },
           {
-            description: 'map remove op',
-            message: objectMessageFromValues({
-              operation: { action: 2, objectId: 'object-id', mapOp: { key: 'my-key' } },
-            }),
-            expected: Utils.dataSizeBytes('my-key'),
-          },
-          {
             description: 'map set operation value=objectId',
             message: objectMessageFromValues({
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { objectId: 'another-object-id' } },
+                mapSet: { key: 'my-key', value: { objectId: 'another-object-id' } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key'),
@@ -8143,7 +8136,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=string',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { value: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
@@ -8153,7 +8146,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
+                mapSet: { key: 'my-key', value: { value: BufferUtils.utf8Encode('my-value') } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
@@ -8161,28 +8154,28 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=boolean true',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { value: true } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=boolean false',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: false } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { value: false } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { value: 123.456 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
           {
             description: 'map set operation value=double 0',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 0 } } },
+              operation: { action: 1, objectId: 'object-id', mapSet: { key: 'my-key', value: { value: 0 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
@@ -8192,7 +8185,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: { foo: 'bar' } } },
+                mapSet: { key: 'my-key', value: { value: { foo: 'bar' } } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify({ foo: 'bar' }).length,
@@ -8203,10 +8196,17 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: ['foo', 'bar', 'baz'] } },
+                mapSet: { key: 'my-key', value: { value: ['foo', 'bar', 'baz'] } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify(['foo', 'bar', 'baz']).length,
+          },
+          {
+            description: 'map remove op',
+            message: objectMessageFromValues({
+              operation: { action: 2, objectId: 'object-id', mapRemove: { key: 'my-key' } },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
           },
           {
             description: 'map object',
@@ -8223,7 +8223,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 createOp: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
+                  mapCreate: {
+                    semantics: 0,
+                    entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } },
+                  },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
@@ -8247,14 +8250,14 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'counter create op with payload',
             message: objectMessageFromValues({
-              operation: { action: 3, objectId: 'object-id', counter: { count: 1234567 } },
+              operation: { action: 3, objectId: 'object-id', counterCreate: { count: 1234567 } },
             }),
             expected: 8,
           },
           {
             description: 'counter inc op',
             message: objectMessageFromValues({
-              operation: { action: 4, objectId: 'object-id', counterOp: { amount: 123.456 } },
+              operation: { action: 4, objectId: 'object-id', counterInc: { number: 123.456 } },
             }),
             expected: 8,
           },
@@ -8267,7 +8270,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 createOp: {
                   action: 3,
                   objectId: 'object-id',
-                  counter: { count: 9876543 },
+                  counterCreate: { count: 9876543 },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
