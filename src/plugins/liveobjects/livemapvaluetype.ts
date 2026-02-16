@@ -1,10 +1,11 @@
 import { __livetype } from '../../../ably';
-import { Primitive, LiveMap as PublicLiveMap, Value } from '../../../liveobjects';
+import { LiveMap as PublicLiveMap, Primitive, Value } from '../../../liveobjects';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
 import { ObjectId } from './objectid';
 import {
-  createInitialValueJSONString,
+  encodePartialObjectOperationForWire,
+  MapCreate,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -75,11 +76,9 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
 
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(realtimeObject, key, value));
 
-    const { initialValueOperation, nestedObjectsCreateMsgs } = await LiveMapValueType._createInitialValueOperation(
-      realtimeObject,
-      entries,
-    );
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
+    const { mapCreate, nestedObjectsCreateMsgs } = await LiveMapValueType._getMapCreate(realtimeObject, entries);
+    const { mapCreate: encodedMapCreate } = encodePartialObjectOperationForWire({ mapCreate }, client);
+    const initialValueJSONString = JSON.stringify(encodedMapCreate);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -94,11 +93,13 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     const mapCreateMsg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
           action: ObjectOperationAction.MAP_CREATE,
           objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          mapCreateWithObjectId: {
+            nonce,
+            // initialValue is the JSON string representation of the encoded mapCreate operation that contains the initial value
+            initialValue: initialValueJSONString,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -111,11 +112,11 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     };
   }
 
-  private static async _createInitialValueOperation(
+  private static async _getMapCreate(
     realtimeObject: RealtimeObject,
     entries?: Record<string, Value>,
   ): Promise<{
-    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
+    mapCreate: MapCreate<ObjectData>;
     nestedObjectsCreateMsgs: ObjectMessage[];
   }> {
     const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
@@ -146,15 +147,13 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
       };
     }
 
-    const initialValueOperation = {
-      map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
-      },
+    const mapCreate: MapCreate<ObjectData> = {
+      semantics: ObjectsMapSemantics.LWW,
+      entries: mapEntries,
     };
 
     return {
-      initialValueOperation,
+      mapCreate,
       nestedObjectsCreateMsgs,
     };
   }

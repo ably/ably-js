@@ -1577,18 +1577,61 @@ export interface ObjectOperation {
   action: ObjectOperationAction;
   /** The ID of the object the operation was applied to. */
   objectId: string;
-  /** The payload for the operation if it is a mutation operation on a map object. */
+
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_CREATE}.
+   * Defines the initial value of the map object.
+   */
+  mapCreate?: MapCreate;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_SET}.
+   * Describes the key and value to set on the map object.
+   */
+  mapSet?: MapSet;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_REMOVE}.
+   * Describes the key to remove from the map object.
+   */
+  mapRemove?: MapRemove;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.COUNTER_CREATE}.
+   * Defines the initial value of the counter object.
+   */
+  counterCreate?: CounterCreate;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.COUNTER_INC}.
+   * Describes the value to add to the counter.
+   */
+  counterInc?: CounterInc;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.OBJECT_DELETE}.
+   */
+  objectDelete?: ObjectDelete;
+
+  /**
+   * The payload for the operation if it is a mutation operation on a map object.
+   *
+   * @deprecated This property is deprecated and will be removed in a future major version. Use {@link mapSet} and {@link mapRemove} instead.
+   */
   mapOp?: ObjectsMapOp;
-  /** The payload for the operation if it is a mutation operation on a counter object. */
+  /**
+   * The payload for the operation if it is a mutation operation on a counter object.
+   *
+   * @deprecated This property is deprecated and will be removed in a future major version. Use {@link counterInc} instead.
+   */
   counterOp?: ObjectsCounterOp;
   /**
    * The payload for the operation if the action is {@link ObjectOperationActions.MAP_CREATE}.
    * Defines the initial value of the map object.
+   *
+   * @deprecated This property is deprecated and will be removed in a future major version. Use {@link mapCreate} instead.
    */
   map?: ObjectsMap;
   /**
    * The payload for the operation if the action is {@link ObjectOperationActions.COUNTER_CREATE}.
    * Defines the initial value of the counter object.
+   *
+   * @deprecated This property is deprecated and will be removed in a future major version. Use {@link counterCreate} instead.
    */
   counter?: ObjectsCounter;
 }
@@ -1642,6 +1685,55 @@ export interface ObjectsCounter {
   /** The value of the counter. */
   count?: number;
 }
+
+/**
+ * Describes the payload for a MAP_CREATE operation.
+ */
+export interface MapCreate {
+  /** The conflict-resolution semantics used by the map object, one of the {@link ObjectsMapSemantics} enum values. */
+  semantics: ObjectsMapSemantics;
+  /** The map entries, indexed by key. */
+  entries: Record<string, ObjectsMapEntry>;
+}
+
+/**
+ * Describes the payload for a MAP_SET operation on a map object.
+ */
+export interface MapSet {
+  /** The key to set. */
+  key: string;
+  /** The value to set. */
+  value: ObjectData;
+}
+
+/**
+ * Describes the payload for a MAP_REMOVE operation on a map object.
+ */
+export interface MapRemove {
+  /** The key to remove. */
+  key: string;
+}
+
+/**
+ * Describes the payload for a COUNTER_CREATE operation.
+ */
+export interface CounterCreate {
+  /** The initial counter value. */
+  count: number;
+}
+
+/**
+ * Describes the payload for a COUNTER_INC operation on a counter object.
+ */
+export interface CounterInc {
+  /** The value to be added to the counter. */
+  number: number;
+}
+
+/**
+ * Describes the payload for an OBJECT_DELETE operation.
+ */
+export interface ObjectDelete {}
 
 /**
  * Represents a value in an object on a channel.

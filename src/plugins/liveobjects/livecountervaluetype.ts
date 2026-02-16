@@ -2,7 +2,8 @@ import { __livetype } from '../../../ably';
 import { LiveCounter } from '../../../liveobjects';
 import { ObjectId } from './objectid';
 import {
-  createInitialValueJSONString,
+  CounterCreate,
+  encodePartialObjectOperationForWire,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -58,8 +59,9 @@ export class LiveCounterValueType implements LiveCounter {
       throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
     }
 
-    const initialValueOperation = LiveCounterValueType.createInitialValueOperation(count);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
+    const counterCreate = LiveCounterValueType._getCounterCreate(count);
+    const { counterCreate: encodedCounterCreate } = encodePartialObjectOperationForWire({ counterCreate }, client);
+    const initialValueJSONString = JSON.stringify(encodedCounterCreate);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -74,11 +76,13 @@ export class LiveCounterValueType implements LiveCounter {
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
           action: ObjectOperationAction.COUNTER_CREATE,
           objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          counterCreateWithObjectId: {
+            nonce,
+            // initialValue is the JSON string representation of the encoded counterCreate operation that contains the initial value
+            initialValue: initialValueJSONString,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -88,11 +92,9 @@ export class LiveCounterValueType implements LiveCounter {
     return msg;
   }
 
-  private static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
+  private static _getCounterCreate(count?: number): CounterCreate {
     return {
-      counter: {
-        count: count ?? 0,
-      },
+      count: count ?? 0,
     };
   }
 }
