@@ -1,7 +1,7 @@
 import { __livetype } from '../../../ably';
 import { LiveCounter as PublicLiveCounter } from '../../../liveobjects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
+import { CounterInc, ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction } from './objectmessage';
 import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -52,9 +52,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.COUNTER_INC,
-          objectId,
-          counterOp: { amount },
+          action: ObjectOperationAction.COUNTER_INC, // RTLC12e2
+          objectId, // RTLC12e3
+          counterInc: { number: amount }, // RTLC12e5
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -136,18 +136,21 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.COUNTER_CREATE:
+        // RTLC7d1
         update = this._applyCounterCreate(op, msg);
         break;
 
       case ObjectOperationAction.COUNTER_INC:
-        if (this._client.Utils.isNil(op.counterOp)) {
+        if (this._client.Utils.isNil(op.counterInc)) {
           this._throwNoPayloadError(op);
         } else {
-          update = this._applyCounterInc(op.counterOp, msg);
+          // RTLC7d5
+          update = this._applyCounterInc(op.counterInc, msg);
         }
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
+        // RTLC7d4
         update = this._applyObjectDelete(msg);
         break;
 
@@ -159,8 +162,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         );
     }
 
-    this.notifyUpdated(update);
-    return true; // RTLC7d1b, RTLC7d2b, RTLC7d4b
+    this.notifyUpdated(update); // RTLC7d1a, RTLC7d5a, RTLC7d4a
+    return true; // RTLC7d1b, RTLC7d5b, RTLC7d4b
   }
 
   /**
@@ -253,15 +256,19 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveCounterUpdate {
+    // RTLC16 - resolve counterCreate from either the direct property or the one from which counterCreateWithObjectId was derived
+    const counterCreate = objectOperation.counterCreate ?? objectOperation.counterCreateWithObjectId?._derivedFrom;
+
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
-    this._createOperationIsMerged = true; // RTLC6d2
+    this._dataRef.data += counterCreate?.count ?? 0; // RTLC16a
+    this._createOperationIsMerged = true; // RTLC16b
 
+    // RTLC16c
     return {
-      update: { amount: objectOperation.counter?.count ?? 0 },
+      update: { amount: counterCreate?.count ?? 0 },
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };
@@ -295,10 +302,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return this._mergeInitialDataFromCreateOperation(op, msg);
   }
 
-  private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
-    this._dataRef.data += op.amount;
+  /** @spec RTLC9, RTLC9a2 */
+  private _applyCounterInc(op: CounterInc, msg: ObjectMessage): LiveCounterUpdate {
+    this._dataRef.data += op.number; // RTLC9f
     return {
-      update: { amount: op.amount },
+      update: { amount: op.number }, // RTLC9g
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };

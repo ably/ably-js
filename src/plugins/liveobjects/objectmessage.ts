@@ -91,26 +91,6 @@ export interface WireObjectData {
 }
 
 /**
- * An ObjectsMapOp describes an operation to be applied to a Map object.
- * @spec OMO1
- */
-export interface ObjectsMapOp<TData> {
-  /** The key of the map entry to which the operation should be applied. */
-  key: string; // OMO2a
-  /** The data that the map entry should contain if the operation is a MAP_SET operation. */
-  data?: TData; // OMO2b
-}
-
-/**
- * An ObjectsCounterOp describes an operation to be applied to a Counter object.
- * @spec OCO1
- */
-export interface ObjectsCounterOp {
-  /** The data value that should be added to the counter. */
-  amount: number; // OCO2a
-}
-
-/**
  * An ObjectsMapEntry represents the value at a given key in a Map object.
  * @spec OME1
  */
@@ -151,6 +131,103 @@ export interface ObjectsCounter {
 }
 
 /**
+ * A MapCreate describes the payload for a MAP_CREATE operation on a map object
+ * @spec MCR1
+ */
+export interface MapCreate<TData> {
+  /** The conflict-resolution semantics used by the map object. */
+  semantics: ObjectsMapSemantics; // MCR2a
+  /** The map entries, indexed by key. */
+  entries: Record<string, ObjectsMapEntry<TData>>; // MCR2b
+}
+
+/**
+ * A MapSet describes the payload for a MAP_SET operation on a map object
+ * @spec MST1
+ */
+export interface MapSet<TData> {
+  /** The key to set. */
+  key: string; // MST2a
+  /** The value to set. */
+  value: TData; // MST2b
+}
+
+/**
+ * A MapRemove describes the payload for a MAP_REMOVE operation on a map object
+ * @spec MRM1
+ */
+export interface MapRemove {
+  /** The key to remove. */
+  key: string; // MRM2a
+}
+
+/**
+ * A CounterCreate describes the payload for a COUNTER_CREATE operation on a counter object
+ * @spec CCR1
+ */
+export interface CounterCreate {
+  /** The initial counter value */
+  count: number; // CCR2a
+}
+
+/**
+ * A CounterInc describes the payload for a COUNTER_INC operation on a counter object
+ * @spec CIN1
+ */
+export interface CounterInc {
+  /** The value to be added to the counter */
+  number: number; // CIN2a
+}
+
+/**
+ * An ObjectDelete describes the payload for an OBJECT_DELETE operation
+ * @spec ODE1
+ */
+export interface ObjectDelete {
+  // ODE2 - Empty message, OBJECT_DELETE requires no operation-specific data
+}
+
+/**
+ * A MapCreateWithObjectId describes the payload for a MAP_CREATE operation with a client-specified object ID
+ * @spec MCRO1
+ */
+export interface MapCreateWithObjectId<TData> {
+  /**
+   * The initial value of the object - an encoded {@link MapCreate} used to create a map represented as a JSON string.
+   */
+  initialValue: string; // MCRO2a
+  /** The nonce used to generate the object ID */
+  nonce: string; // MCRO2b
+  /**
+   * The source {@link MapCreate} from which this was derived. For local use only (message size
+   * calculation and apply-on-ACK); not transmitted over the wire.
+   * @spec RTO11f18
+   * @internal
+   */
+  _derivedFrom?: MapCreate<TData>;
+}
+
+/**
+ * A CounterCreateWithObjectId describes the payload for a COUNTER_CREATE operation with a client-specified object ID
+ * @spec CCRO1
+ */
+export interface CounterCreateWithObjectId {
+  /**
+   * The initial value of the object - an encoded {@link CounterCreate} used to create a counter represented as a JSON string.
+   */
+  initialValue: string; // CCRO2a
+  /** The nonce used to generate the object ID */
+  nonce: string; // CCRO2b
+  /**
+   * The source {@link CounterCreate} from which this was derived. For local use only (message size
+   * calculation and apply-on-ACK); not transmitted over the wire.
+   * @spec RTO12f16
+   * @internal
+   */
+  _derivedFrom?: CounterCreate;
+}
+
+/**
  * An ObjectOperation describes an operation to be applied to an object on a channel.
  * @spec OOP1
  */
@@ -159,36 +236,43 @@ export interface ObjectOperation<TData> {
   action: ObjectOperationAction; // OOP3a
   /** The object ID of the object on a channel to which the operation should be applied. */
   objectId: string; // OOP3b
-  /** The payload for the operation if it is an operation on a Map object type. */
-  mapOp?: ObjectsMapOp<TData>; // OOP3c
-  /** The payload for the operation if it is an operation on a Counter object type. */
-  counterOp?: ObjectsCounterOp; // OOP3d
+
   /**
-   * The payload for the operation if the operation is MAP_CREATE.
-   * Defines the initial value for the Map object.
+   * The payload for MAP_CREATE operation when received from the server.
+   * Contains the unmarshalled initial value for the Map object.
    */
-  map?: ObjectsMap<TData>; // OOP3e
+  mapCreate?: MapCreate<TData>; // OOP3j
   /**
-   * The payload for the operation if the operation is COUNTER_CREATE.
-   * Defines the initial value for the Counter object.
+   * The payload for MAP_SET operation.
    */
-  counter?: ObjectsCounter; // OOP3f
+  mapSet?: MapSet<TData>; // OOP3k
   /**
-   * The nonce, must be present on create operations. This is the random part
-   * that has been hashed with the type and initial value to create the object ID.
+   * The payload for MAP_REMOVE operation.
    */
-  nonce?: string; // OOP3g
+  mapRemove?: MapRemove; // OOP3l
   /**
-   * The initial value of the object, represented as a JSON string.
-   * Used along with the nonce and timestamp to create the object ID.
-   *
-   * This field must be set by the client for MAP_CREATE and COUNTER_CREATE operations.
-   * The server uses it to verify the object ID, and after verification, the JSON string
-   * is decoded into the initial value for new Map or Counter objects.
-   *
-   * This field must not be read by the client if received from the server.
+   * The payload for COUNTER_CREATE operation when received from the server.
+   * Contains the unmarshalled initial value for the Counter object.
    */
-  initialValue?: string; // OOP3h
+  counterCreate?: CounterCreate; // OOP3m
+  /**
+   * The payload for COUNTER_INC operation.
+   */
+  counterInc?: CounterInc; // OOP3n
+  /**
+   * The payload for OBJECT_DELETE operation.
+   */
+  objectDelete?: ObjectDelete; // OOP3o
+  /**
+   * The payload for MAP_CREATE operation when sending to the server.
+   * Contains the nonce and JSON-encoded initial value from {@link MapCreate} for object ID verification.
+   */
+  mapCreateWithObjectId?: MapCreateWithObjectId<TData>; // OOP3p
+  /**
+   * The payload for COUNTER_CREATE operation when sending to the server.
+   * Contains the nonce and JSON-encoded initial value from {@link CounterCreate} for object ID verification.
+   */
+  counterCreateWithObjectId?: CounterCreateWithObjectId; // OOP3q
 }
 
 /**
@@ -247,22 +331,29 @@ function encode(
     result.object!.map!.entries = encodeMapEntries(message.object.map.entries, encodeObjectDataFn);
   }
 
-  if (message.object?.createOp?.map?.entries) {
-    result.object!.createOp!.map!.entries = encodeMapEntries(message.object.createOp.map.entries, encodeObjectDataFn);
+  if (message.object?.createOp?.mapCreate?.entries) {
+    result.object!.createOp!.mapCreate!.entries = encodeMapEntries(
+      message.object.createOp.mapCreate.entries,
+      encodeObjectDataFn,
+    );
   }
 
-  if (message.object?.createOp?.mapOp?.data) {
-    result.object!.createOp!.mapOp!.data = encodeObjectData(message.object.createOp.mapOp.data, encodeObjectDataFn);
-  }
-
-  // OOP5
   // encode "operation" field
-  if (message.operation?.map?.entries) {
-    result.operation!.map!.entries = encodeMapEntries(message.operation.map.entries, encodeObjectDataFn);
+  if (message.operation?.mapCreate?.entries) {
+    result.operation!.mapCreate!.entries = encodeMapEntries(message.operation.mapCreate.entries, encodeObjectDataFn);
   }
 
-  if (message.operation?.mapOp?.data) {
-    result.operation!.mapOp!.data = encodeObjectData(message.operation.mapOp.data, encodeObjectDataFn);
+  if (message.operation?.mapSet?.value) {
+    result.operation!.mapSet!.value = encodeObjectData(message.operation.mapSet.value, encodeObjectDataFn);
+  }
+
+  // encode _derivedFrom entries on *CreateWithObjectId - these hold ObjectData that needs
+  // encoding to WireObjectData for correct message size calculation.
+  if (message.operation?.mapCreateWithObjectId?._derivedFrom?.entries) {
+    result.operation!.mapCreateWithObjectId!._derivedFrom!.entries = encodeMapEntries(
+      message.operation.mapCreateWithObjectId._derivedFrom.entries,
+      encodeObjectDataFn,
+    );
   }
 
   return result;
@@ -293,19 +384,22 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
 }
 
 /**
- * Used to create an {@link ObjectOperation.initialValue} JSON string for *_CREATE operations,
- * based on the object operation message that contains the initial value for the object.
+ * Encodes a partial {@link ObjectOperation} for wire transmission.
+ *
+ * This is used during CREATE operations to produce the wire-safe representation of the operation
+ * that will be JSON-stringified and set as the `initialValue` field in
+ * {@link MapCreateWithObjectId} or {@link CounterCreateWithObjectId}.
+ *
+ * The provided operation may contain user-provided data that requires encoding
+ * (e.g. buffers must be encoded for JSON wire format).
  */
-export function createInitialValueJSONString(
+export function encodePartialObjectOperationForWire(
   operation: Partial<ObjectOperation<ObjectData>>,
   client: BaseClient,
-): string {
-  // the object operation may contain user-provided data that requires encoding.
-  // for example, buffers must be encoded since the initial value will be represented as a JSON string.
-  // we can use ObjectMessage methods to encode the object operation.
+): Partial<ObjectOperation<WireObjectData>> {
   const msg = ObjectMessage.fromValues(
-    // cast initialValue to ObjectOperation here, even though it may lack some properties
-    // that are usually present on ObjectOperation.
+    // cast to ObjectOperation here, even though provided operation may lack some properties
+    // that are usually present on the ObjectOperation.
     // this ObjectMessage instance is only used to get the encoded body,
     // so it's ok for the operation field to be incomplete in this context.
     // doing the type assertion here avoids the need to define a separate ObjectMessage
@@ -318,9 +412,7 @@ export function createInitialValueJSONString(
 
   // get the encoded operation that is safe to be sent over the wire as a JSON string.
   const { operation: encodedOperation } = wireMsg.encodeForWire(client.Utils.Format.json);
-
-  // finally, initialValue is the JSON string representation of the encoded operation.
-  return JSON.stringify(encodedOperation);
+  return encodedOperation!;
 }
 
 function strMsg(msg: any, className: string) {
@@ -381,6 +473,8 @@ function toUserFacingObjectData(data: ObjectData): ObjectsApi.ObjectData {
   }
 
   return {
+    ...data,
+    // deprecated field for backwards compatibility
     value: getObjectDataPrimitive(data),
   };
 }
@@ -393,27 +487,61 @@ function toUserFacingMapEntry(entry: ObjectsMapEntry<ObjectData>): ObjectsApi.Ob
 }
 
 function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): ObjectsApi.ObjectOperation {
-  const { map: internalMap, mapOp: internalMapOp } = operation;
+  const { mapSet: internalMapSet, mapRemove, counterInc, objectDelete } = operation;
 
-  const map: ObjectsApi.ObjectsMap | undefined = internalMap
-    ? {
-        ...internalMap,
-        semantics: internalMap.semantics != null ? mapSemantics[internalMap.semantics] || 'unknown' : undefined,
-        entries: Object.fromEntries(
-          Object.entries(internalMap.entries ?? {}).map(([key, entry]) => [key, toUserFacingMapEntry(entry)]),
-        ),
-      }
-    : undefined;
+  // resolve *Create from direct property or from *CreateWithObjectId._derivedFrom
+  const internalMapCreate = operation.mapCreate ?? operation.mapCreateWithObjectId?._derivedFrom;
+  const counterCreate = operation.counterCreate ?? operation.counterCreateWithObjectId?._derivedFrom;
 
-  const mapOp: ObjectsApi.ObjectsMapOp | undefined = internalMapOp
-    ? { ...internalMapOp, data: internalMapOp.data ? toUserFacingObjectData(internalMapOp.data) : undefined }
-    : undefined;
+  let mapCreate: ObjectsApi.MapCreate | undefined;
+  if (internalMapCreate) {
+    mapCreate = {
+      ...internalMapCreate,
+      semantics: mapSemantics[internalMapCreate.semantics] ?? 'unknown',
+      entries: Object.fromEntries(
+        Object.entries(internalMapCreate.entries).map(([key, entry]) => [key, toUserFacingMapEntry(entry)]),
+      ),
+    };
+  }
+
+  let mapSet: ObjectsApi.MapSet | undefined;
+  if (internalMapSet) {
+    mapSet = {
+      ...internalMapSet,
+      value: toUserFacingObjectData(internalMapSet.value),
+    };
+  }
+
+  // ObjectOperation deprecated fields for backwards compatibility
+  let mapOp: ObjectsApi.ObjectsMapOp | undefined;
+  if (mapSet) {
+    mapOp = {
+      key: mapSet.key,
+      data: mapSet.value,
+    };
+  } else if (mapRemove) {
+    mapOp = { key: mapRemove.key };
+  }
+
+  let counterOp: ObjectsApi.ObjectsCounterOp | undefined;
+  if (counterInc) {
+    counterOp = { amount: counterInc.number };
+  }
 
   return {
-    ...operation,
     action: operationActions[operation.action] || 'unknown',
-    map,
+    objectId: operation.objectId,
+    mapCreate,
+    mapSet,
+    mapRemove,
+    counterCreate,
+    counterInc,
+    objectDelete,
+    // deprecated fields
     mapOp,
+    counterOp,
+    map: mapCreate,
+    counter: counterCreate,
   };
 }
 
@@ -587,7 +715,17 @@ export class WireObjectMessage {
       return { ...data };
     };
 
-    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
+    const result = encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
+
+    // Strip _derivedFrom from *CreateWithObjectId — it is for local use only and must not be sent over the wire.
+    if (result.operation?.mapCreateWithObjectId) {
+      delete result.operation.mapCreateWithObjectId._derivedFrom;
+    }
+    if (result.operation?.counterCreateWithObjectId) {
+      delete result.operation.counterCreateWithObjectId._derivedFrom;
+    }
+
+    return result;
   }
 
   /**
@@ -610,25 +748,21 @@ export class WireObjectMessage {
         result.object!.map!.entries = this._decodeMapEntries(this.object.map.entries, client, format);
       }
 
-      if (this.object?.createOp?.map?.entries) {
-        result.object!.createOp!.map!.entries = this._decodeMapEntries(
-          this.object.createOp.map.entries,
+      if (this.object?.createOp?.mapCreate?.entries) {
+        result.object!.createOp!.mapCreate!.entries = this._decodeMapEntries(
+          this.object.createOp.mapCreate.entries,
           client,
           format,
         );
       }
 
-      if (this.object?.createOp?.mapOp?.data) {
-        result.object!.createOp!.mapOp!.data = this._decodeObjectData(this.object.createOp.mapOp.data, client, format);
-      }
-
       // decode "operation" field
-      if (this.operation?.map?.entries) {
-        result.operation!.map!.entries = this._decodeMapEntries(this.operation.map.entries, client, format);
+      if (this.operation?.mapCreate?.entries) {
+        result.operation!.mapCreate!.entries = this._decodeMapEntries(this.operation.mapCreate.entries, client, format);
       }
 
-      if (this.operation?.mapOp?.data) {
-        result.operation!.mapOp!.data = this._decodeObjectData(this.operation.mapOp.data, client, format);
+      if (this.operation?.mapSet?.value) {
+        result.operation!.mapSet!.value = this._decodeObjectData(this.operation.mapSet.value, client, format);
       }
     } catch (error) {
       client.Logger.logAction(
@@ -684,18 +818,24 @@ export class WireObjectMessage {
   private _getObjectOperationSize(operation: ObjectOperation<WireObjectData>): number {
     let size = 0;
 
-    // OOP4a
-    if (operation.mapOp) {
-      size += this._getMapOpSize(operation.mapOp); // OOP4b
+    // OOP4h - map create size: from mapCreate if present (OOP4h1), else from mapCreateWithObjectId._derivedFrom (OOP4h2)
+    const mapCreate = operation.mapCreate ?? operation.mapCreateWithObjectId?._derivedFrom;
+    if (mapCreate) {
+      size += this._getMapCreateSize(mapCreate);
     }
-    if (operation.counterOp) {
-      size += this._getCounterOpSize(operation.counterOp); // OOP4c
+    if (operation.mapSet) {
+      size += this._getMapSetSize(operation.mapSet); // OOP4i
     }
-    if (operation.map) {
-      size += this._getObjectMapSize(operation.map); // OOP4d
+    if (operation.mapRemove) {
+      size += this._getMapRemoveSize(operation.mapRemove); // OOP4j
     }
-    if (operation.counter) {
-      size += this._getObjectCounterSize(operation.counter); // OOP4e
+    // OOP4k - counter create size: from counterCreate if present (OOP4k1), else from counterCreateWithObjectId._derivedFrom (OOP4k2)
+    const counterCreate = operation.counterCreate ?? operation.counterCreateWithObjectId?._derivedFrom;
+    if (counterCreate) {
+      size += this._getCounterCreateSize(counterCreate);
+    }
+    if (operation.counterInc) {
+      size += this._getCounterIncSize(operation.counterInc); // OOP4l
     }
 
     return size;
@@ -757,28 +897,54 @@ export class WireObjectMessage {
     return size;
   }
 
-  /** @spec OMO3 */
-  private _getMapOpSize(mapOp: ObjectsMapOp<WireObjectData>): number {
+  /** @spec MCR3 */
+  private _getMapCreateSize(mapCreate: MapCreate<WireObjectData>): number {
     let size = 0;
 
-    // OMO3a
-    size += mapOp.key?.length ?? 0; // OMO3d
-    if (mapOp.data) {
-      size += this._getObjectDataSize(mapOp.data); // OMO3b
+    // MCR3a
+    Object.entries(mapCreate.entries ?? {}).forEach(([key, entry]) => {
+      size += key?.length ?? 0; // MCR3a1
+      if (entry) {
+        size += this._getMapEntrySize(entry); // MCR3a2
+      }
+    });
+
+    return size;
+  }
+
+  /** @spec MST3 */
+  private _getMapSetSize(mapSet: MapSet<WireObjectData>): number {
+    let size = 0;
+
+    size += mapSet.key?.length ?? 0; // MST3c
+    if (mapSet.value) {
+      size += this._getObjectDataSize(mapSet.value); // MST3b
     }
 
     return size;
   }
 
-  /** @spec OCO3 */
-  private _getCounterOpSize(operation: ObjectsCounterOp): number {
-    // OCO3b
-    if (operation.amount == null) {
-      return 0;
+  /** @spec MRM3 */
+  private _getMapRemoveSize(mapRemove: MapRemove): number {
+    return mapRemove.key.length ?? 0; // MRM3a
+  }
+
+  /** @spec CCR3 */
+  private _getCounterCreateSize(counterCreate: CounterCreate): number {
+    if (counterCreate.count == null) {
+      return 0; // CCR3b
     }
 
-    // OCO3a
-    return 8;
+    return 8; // CCR3a
+  }
+
+  /** @spec CIN3 */
+  private _getCounterIncSize(counterInc: CounterInc): number {
+    if (counterInc.number == null) {
+      return 0; // CIN3b
+    }
+
+    return 8; // CIN3a
   }
 
   /** @spec OD3 */
