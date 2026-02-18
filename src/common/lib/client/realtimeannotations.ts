@@ -45,7 +45,7 @@ class RealtimeAnnotations {
       channel: channelName,
       annotations: [wireAnnotation],
     });
-    await this.channel.sendMessage(pm);
+    await this.channel.sendAndAwaitAck(pm);
   }
 
   async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {

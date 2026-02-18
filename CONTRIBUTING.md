@@ -165,8 +165,8 @@ When you use a private API in a test, record its usage using the `recordPrivateA
 
 ```javascript
 /* Sabotage the reattach attempt, then simulate a server-sent detach */
-helper.recordPrivateApi('replace.channel.sendMessage');
-channel.sendMessage = function () {};
+helper.recordPrivateApi('replace.channel.send');
+channel.send = function () {};
 ```
 
 The current list of private API usage identifiers can be found in [`test/common/modules/private_api_recorder.js`](test/common/modules/private_api_recorder.js); add new ones there as necessary.

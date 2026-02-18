@@ -1252,8 +1252,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* Sabotage the reattach attempt, then simulate a server-sent detach */
-            helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = async function () {};
+            helper.recordPrivateApi('replace.channel.send');
+            channel.send = function () {};
             helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
             realtime.options.timeouts.realtimeRequestTimeout = 100;
             channel.once(function (stateChange) {
@@ -1302,9 +1302,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       realtime.connection.once('connected', function () {
         helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
         var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-        /* Mock sendMessage to respond to attaches with a DETACHED */
-        helper.recordPrivateApi('replace.channel.sendMessage');
-        channel.sendMessage = async function (msg) {
+        /* Mock send to respond to attaches with a DETACHED */
+        helper.recordPrivateApi('replace.channel.send');
+        channel.send = function (msg) {
           try {
             expect(msg.action).to.equal(10, 'check attach action');
           } catch (err) {
@@ -1468,8 +1468,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = realtime.channels.get(channelName);
 
       /* Stub out the channel's ability to communicate */
-      helper.recordPrivateApi('replace.channel.sendMessage');
-      channel.sendMessage = async function () {};
+      helper.recordPrivateApi('replace.channel.send');
+      channel.send = function () {};
 
       async.series(
         [
@@ -1535,8 +1535,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             /* Have the connection go into the suspended state, and check that the
              * channel goes into the suspended state and doesn't try to reattach
              * until the connection reconnects */
-            helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = async function (msg) {
+            helper.recordPrivateApi('replace.channel.send');
+            channel.send = function (msg) {
               expect(false, 'Channel tried to send a message ' + JSON.stringify(msg)).to.be.ok;
             };
             helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
@@ -1555,8 +1555,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             realtime.connection.once(function (stateChange) {
               expect(stateChange.current).to.equal('connecting', 'Check we try to connect again');
               /* We no longer want to fail the test for an attach, but still want to sabotage it */
-              helper.recordPrivateApi('replace.channel.sendMessage');
-              channel.sendMessage = async function () {};
+              helper.recordPrivateApi('replace.channel.send');
+              channel.send = function () {};
               cb();
             });
           },
@@ -1604,8 +1604,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             /* Sabotage the detach attempt, detach, then simulate a server-sent attached while
              * the detach is ongoing. Expect to see the library reassert the detach */
             let detachCount = 0;
-            helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = async function (msg) {
+            helper.recordPrivateApi('replace.channel.send');
+            channel.send = function (msg) {
               expect(msg.action).to.equal(12, 'Check we only see a detach. No attaches!');
               expect(channel.state).to.equal('detaching', 'Check still in detaching state after both detaches');
               detachCount++;

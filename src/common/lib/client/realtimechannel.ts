@@ -30,8 +30,6 @@ interface RealtimeHistoryParams {
   from_serial?: string;
 }
 
-const noop = function () {};
-
 function validateChannelOptions(options?: API.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
@@ -287,8 +285,7 @@ class RealtimeChannel extends EventEmitter {
       messages: wireMessages,
       params: params ? Utils.stringifyValues(params) : undefined,
     });
-    const res = await this.sendMessage(pm);
-    return res || { serials: [] };
+    return this.sendAndAwaitAck(pm);
   }
 
   throwIfUnpublishableState(): void {
@@ -387,7 +384,7 @@ class RealtimeChannel extends EventEmitter {
     if (this._lastPayload.decodeFailureRecoveryInProgress) {
       attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
     }
-    this.sendMessage(attachMsg).catch(noop);
+    this.send(attachMsg);
   }
 
   async detach(): Promise<void> {
@@ -438,7 +435,7 @@ class RealtimeChannel extends EventEmitter {
   detachImpl(): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
-    this.sendMessage(msg).catch(noop);
+    this.send(msg);
   }
 
   async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
@@ -499,13 +496,17 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  async sendMessage(msg: ProtocolMessage): Promise<API.PublishResult | undefined> {
+  send(msg: ProtocolMessage): void {
+    this.connectionManager.send(msg);
+  }
+
+  async sendAndAwaitAck(msg: ProtocolMessage): Promise<API.PublishResult> {
     return new Promise((resolve, reject) => {
       this.connectionManager.send(msg, this.client.options.queueMessages, (err, publishResponse) => {
         if (err) {
           reject(err);
         } else {
-          resolve(publishResponse);
+          resolve(publishResponse!);
         }
       });
     });
@@ -517,7 +518,7 @@ class RealtimeChannel extends EventEmitter {
       channel: this.name,
       presence: presence,
     });
-    await this.sendMessage(msg);
+    await this.sendAndAwaitAck(msg);
   }
 
   async sendState(objectMessages: WireObjectMessage[]): Promise<void> {
@@ -526,7 +527,7 @@ class RealtimeChannel extends EventEmitter {
       channel: this.name,
       state: objectMessages,
     });
-    await this.sendMessage(msg);
+    await this.sendAndAwaitAck(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
@@ -1092,8 +1093,8 @@ class RealtimeChannel extends EventEmitter {
       messages: [wireMessage],
       params: params ? Utils.stringifyValues(params) : undefined,
     });
-    const publishResponse = await this.sendMessage(pm);
-    return { versionSerial: publishResponse?.serials?.[0] ?? null };
+    const publishResponse = await this.sendAndAwaitAck(pm);
+    return { versionSerial: publishResponse.serials[0] ?? null };
   }
 
   async getMessageVersions(
