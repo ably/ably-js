@@ -88,6 +88,14 @@ class RealtimeChannel extends EventEmitter {
     decodeFailureRecoveryInProgress: null | boolean;
   };
   _allChannelChanges: EventEmitter;
+  /**
+   * Internal event emitter for channel state changes, not affected by public
+   * off() calls. Exists to satisfy RTC10: the client library should never
+   * register internal listeners with the public EventEmitter in such a way
+   * that a user calling off() would result in the library not working as
+   * expected.
+   */
+  internalStateChanges: EventEmitter;
   params?: Record<string, any>;
   modes: API.ChannelMode[] | undefined;
   stateTimer?: number | NodeJS.Timeout | null;
@@ -130,6 +138,7 @@ class RealtimeChannel extends EventEmitter {
     /* Only differences between this and the public event emitter is that this emits an
      * update event for all ATTACHEDs, whether resumed or not */
     this._allChannelChanges = new EventEmitter(this.logger);
+    this.internalStateChanges = new EventEmitter(this.logger);
 
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
@@ -153,6 +162,12 @@ class RealtimeChannel extends EventEmitter {
       Utils.throwMissingPluginError('LiveObjects'); // RTL27b
     }
     return this._object; // RTL27a
+  }
+
+  // Override of EventEmitter method
+  emit(event: string, ...args: unknown[]) {
+    super.emit(event, ...args);
+    this.internalStateChanges.emit(event, ...args);
   }
 
   invalidStateError(): ErrorInfo {
@@ -344,7 +359,7 @@ class RealtimeChannel extends EventEmitter {
       this.requestState('attaching', attachReason);
     }
 
-    this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+    this.internalStateChanges.once(function (this: { event: string }, stateChange: ChannelStateChange) {
       switch (this.event) {
         case 'attached':
           callback?.(null, stateChange);
@@ -409,7 +424,7 @@ class RealtimeChannel extends EventEmitter {
       // eslint-disable-next-line no-fallthrough
       case 'detaching':
         return new Promise((resolve, reject) => {
-          this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+          this.internalStateChanges.once(function (this: { event: string }, stateChange: ChannelStateChange) {
             switch (this.event) {
               case 'detached':
                 resolve();
