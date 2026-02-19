@@ -295,7 +295,7 @@ class RealtimePresence extends EventEmitter {
       this.members.clear();
     }
 
-    // RTP17f: Re-enter own members when moving into the attached state.
+    // RTP17i: Re-enter own members when moving into the attached state.
     this._ensureMyMembersPresent();
 
     /* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
@@ -385,6 +385,7 @@ class RealtimePresence extends EventEmitter {
           'RealtimePresence._ensureMyMembersPresent()',
           'Presence auto re-enter failed; reason = ' + Utils.inspectError(err),
         );
+        // RTP17e
         const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
         this.channel.emit('update', change);
       });
