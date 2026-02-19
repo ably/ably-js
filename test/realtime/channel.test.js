@@ -753,8 +753,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.update');
-                  channel._allChannelChanges.on(['update'], function () {
+                  helper.recordPrivateApi('listen.channel._attachedReceived.attached');
+                  channel._attachedReceived.on('attached', function () {
                     channelUpdated = true;
                   });
 
@@ -778,9 +778,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.update');
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.attached');
-                  channel._allChannelChanges.on(['attached', 'update'], function () {
+                  helper.recordPrivateApi('listen.channel._attachedReceived.attached');
+                  channel._attachedReceived.on('attached', function () {
                     channelUpdated = true;
                   });
 
