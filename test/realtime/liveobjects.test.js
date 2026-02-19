@@ -164,6 +164,22 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   }
 
   /**
+   * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
+   */
+  async function injectAttachedMessage(helper, channel, hasObjects) {
+    helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+    helper.recordPrivateApi('call.transport.onProtocolMessage');
+    helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+    const transport = channel.client.connection.connectionManager.activeProtocol.getTransport();
+    const pm = createPM({
+      action: 11, // ATTACHED
+      channel: channel.name,
+      flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
+    });
+    await transport.onProtocolMessage(pm);
+  }
+
+  /**
    * The channel with fixture data may not yet be populated by REST API requests made by LiveObjectsHelper.
    * This function waits for a channel to have all keys set.
    */
@@ -8311,22 +8327,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
     /** @nospec */
     describe('Sync events', () => {
-      /**
-       * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
-       */
-      async function injectAttachedMessage(helper, channel, hasObjects) {
-        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-        helper.recordPrivateApi('call.transport.onProtocolMessage');
-        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-        const transport = channel.client.connection.connectionManager.activeProtocol.getTransport();
-        const pm = createPM({
-          action: 11, // ATTACHED
-          channel: channel.name,
-          flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
-        });
-        await transport.onProtocolMessage(pm);
-      }
-
       const syncEventsScenarios = [
         // 1. ATTACHED with HAS_OBJECTS false
 
