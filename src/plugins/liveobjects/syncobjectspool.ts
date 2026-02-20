@@ -18,11 +18,11 @@ export interface LiveMapDataEntry extends LiveObjectDataEntry {
 
 export type AnyDataEntry = LiveCounterDataEntry | LiveMapDataEntry;
 
-// TODO: investigate if this class is still needed after changes with createOp. objects are now initialized from the stateObject and this class does minimal processing
 /**
  * @internal
+ * @spec RTO5b
  */
-export class SyncObjectsDataPool {
+export class SyncObjectsPool {
   private _client: BaseClient;
   private _channel: RealtimeChannel;
   private _pool: Map<string, AnyDataEntry>;
@@ -55,7 +55,7 @@ export class SyncObjectsDataPool {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'SyncObjectsDataPool.applyObjectSyncMessages()',
+          'SyncObjectsPool.applyObjectSyncMessages()',
           `object message is received during OBJECT_SYNC without 'object' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -71,7 +71,7 @@ export class SyncObjectsDataPool {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'SyncObjectsDataPool.applyObjectSyncMessages()',
+          'SyncObjectsPool.applyObjectSyncMessages()',
           `received unsupported object state message during OBJECT_SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
       }
