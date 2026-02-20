@@ -342,7 +342,7 @@ async function checkLiveObjectsPluginFiles() {
     'src/plugins/liveobjects/pathobjectsubscriptionregister.ts',
     'src/plugins/liveobjects/realtimeobject.ts',
     'src/plugins/liveobjects/rootbatchcontext.ts',
-    'src/plugins/liveobjects/syncobjectsdatapool.ts',
+    'src/plugins/liveobjects/syncobjectspool.ts',
   ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
