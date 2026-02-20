@@ -163,11 +163,11 @@ export class RealtimeObject {
     }
 
     // RTO5a3 - continue current sync sequence
-    this._syncObjectsPool.applyObjectSyncMessages(objectMessages); // RTO5b
+    this._syncObjectsPool.applyObjectSyncMessages(objectMessages); // RTO5f
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
-      this._endSync();
+      this._endSync(); // RTO5c
     }
   }
 
@@ -443,34 +443,34 @@ export class RealtimeObject {
     }[] = [];
 
     // RTO5c1
-    for (const [objectId, entry] of this._syncObjectsPool.entries()) {
+    for (const [objectId, objectMessage] of this._syncObjectsPool.entries()) {
       receivedObjectIds.add(objectId);
       const existingObject = this._objectsPool.get(objectId);
 
       // RTO5c1a
       if (existingObject) {
-        const update = existingObject.overrideWithObjectState(entry.objectMessage); // RTO5c1a1
+        const update = existingObject.overrideWithObjectState(objectMessage); // RTO5c1a1
         // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
 
-      // RTO5c1b,
+      // RTO5c1b
       let newObject: LiveObject;
-      // assign to a variable so TS doesn't complain about 'never' type in the default case
-      const objectType = entry.objectType;
-      switch (objectType) {
-        case 'LiveCounter':
-          newObject = LiveCounter.fromObjectState(this, entry.objectMessage); // RTO5c1b1a
-          break;
-
-        case 'LiveMap':
-          newObject = LiveMap.fromObjectState(this, entry.objectMessage); // RTO5c1b1b
-          break;
-
-        default:
-          throw new this._client.ErrorInfo(`Unknown LiveObject type: ${objectType}`, 50000, 500); // RTO5c1b1c
+      if (objectMessage.object?.counter) {
+        newObject = LiveCounter.fromObjectState(this, objectMessage); // RTO5c1b1a
+      } else if (objectMessage.object?.map) {
+        newObject = LiveMap.fromObjectState(this, objectMessage); // RTO5c1b1b
+      } else {
+        // RTO5c1b1c
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'RealtimeObject._applySync()',
+          `received unsupported object state message during OBJECT_SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
+        );
+        continue;
       }
 
       this._objectsPool.set(objectId, newObject); // RTO5c1b1
