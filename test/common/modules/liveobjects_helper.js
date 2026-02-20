@@ -23,10 +23,6 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     OBJECT_DELETE: 'OBJECT_DELETE',
   };
 
-  function nonce() {
-    return Helper.randomString();
-  }
-
   class LiveObjectsHelper {
     constructor(helper) {
       this._helper = helper;
@@ -106,20 +102,13 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       const op = {
         operation: {
           action: ACTIONS.MAP_CREATE,
-          nonce: nonce(),
           objectId,
-          map: {
+          mapCreate: {
             semantics: 0,
+            entries: entries ?? {},
           },
         },
       };
-
-      if (entries) {
-        op.operation.map = {
-          ...op.operation.map,
-          entries,
-        };
-      }
 
       return op;
     }
@@ -130,9 +119,9 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.MAP_SET,
           objectId,
-          mapOp: {
+          mapSet: {
             key,
-            data,
+            value: data,
           },
         },
       };
@@ -146,7 +135,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.MAP_REMOVE,
           objectId,
-          mapOp: {
+          mapRemove: {
             key,
           },
         },
@@ -160,14 +149,12 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       const op = {
         operation: {
           action: ACTIONS.COUNTER_CREATE,
-          nonce: nonce(),
           objectId,
+          counterCreate: {
+            count: count ?? 0,
+          },
         },
       };
-
-      if (count != null) {
-        op.operation.counter = { count };
-      }
 
       return op;
     }
@@ -178,8 +165,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.COUNTER_INC,
           objectId,
-          counterOp: {
-            amount,
+          counterInc: {
+            number: amount,
           },
         },
       };
@@ -193,6 +180,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.OBJECT_DELETE,
           objectId,
+          objectDelete: {},
         },
       };
 
@@ -321,11 +309,18 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapCreateRestOp(opts) {
       const { objectId, nonce, data } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_CREATE,
+        mapCreate: {
+          semantics: 0,
+        },
       };
 
       if (data) {
-        opBody.data = data;
+        // Convert data format: { key: { string: 'value' } } -> { key: { data: { string: 'value' } } }
+        const entries = {};
+        for (const [key, value] of Object.entries(data)) {
+          entries[key] = { data: value };
+        }
+        opBody.mapCreate.entries = entries;
       }
 
       if (objectId != null) {
@@ -339,9 +334,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapSetRestOp(opts) {
       const { objectId, key, value } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_SET,
         objectId,
-        data: {
+        mapSet: {
           key,
           value,
         },
@@ -353,9 +347,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapRemoveRestOp(opts) {
       const { objectId, key } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_REMOVE,
         objectId,
-        data: {
+        mapRemove: {
           key,
         },
       };
@@ -366,11 +359,11 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     counterCreateRestOp(opts) {
       const { objectId, nonce, number } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.COUNTER_CREATE,
+        counterCreate: {},
       };
 
       if (number != null) {
-        opBody.data = { number };
+        opBody.counterCreate.count = number;
       }
 
       if (objectId != null) {
@@ -384,9 +377,10 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     counterIncRestOp(opts) {
       const { objectId, number } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.COUNTER_INC,
         objectId,
-        data: { number },
+        counterInc: {
+          number,
+        },
       };
 
       return opBody;
