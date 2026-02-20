@@ -839,9 +839,9 @@ interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record
    *
    * If the underlying instance at runtime is not a map, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the map. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -855,9 +855,9 @@ interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record
    *
    * If the underlying instance at runtime is not a map, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the map. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param key - The key to remove.
    */
@@ -875,9 +875,9 @@ interface BatchContextLiveCounterOperations {
    *
    * If the underlying instance at runtime is not a counter, this method throws an error.
    *
-   * This does not modify the underlying data of the counter. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the counter. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    */
@@ -904,9 +904,9 @@ interface BatchContextAnyOperations {
    *
    * If the underlying instance at runtime is not a map, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the map. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -920,9 +920,9 @@ interface BatchContextAnyOperations {
    *
    * If the underlying instance at runtime is not a map, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the map. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param key - The key to remove.
    */
@@ -937,9 +937,9 @@ interface BatchContextAnyOperations {
    *
    * If the underlying instance at runtime is not a counter, this method throws an error.
    *
-   * This does not modify the underlying data of the counter. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * This does not modify the underlying data of the counter. Instead, when the batch function returns, the
+   * batched operations are sent to Ably. Once accepted, they are applied locally before the
+   * promise returned by {@link BatchOperations.batch | batch()} resolves.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    */
@@ -967,11 +967,11 @@ interface BatchOperations<T extends LiveObject> {
    * Batching enables you to group multiple operations together and send them to the Ably service in a single channel message.
    * As a result, other clients will receive the changes in a single channel message once the batch function has completed.
    *
-   * The objects' data is not modified inside the batch function. Instead, the objects will be updated
-   * when the batched operations are applied by the Ably service and echoed back to the client.
+   * The objects' data is not modified inside the batch function. The batched operations are sent to Ably
+   * and, once accepted, applied locally. The returned promise resolves after all operations have been applied.
    *
    * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
-   * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after all batched operations have been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   batch(fn: BatchFunction<T>): Promise<void>;
 }
@@ -989,13 +989,12 @@ interface LiveMapOperations<T extends Record<string, Value> = Record<string, Val
    * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   set<K extends keyof T & string>(key: K, value: T[K]): Promise<void>;
 
@@ -1007,12 +1006,11 @@ interface LiveMapOperations<T extends Record<string, Value> = Record<string, Val
    * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param key - The key to remove.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   remove(key: keyof T & string): Promise<void>;
 }
@@ -1029,12 +1027,11 @@ interface LiveCounterOperations extends BatchOperations<LiveCounter> {
    * or if called via {@link LiveCounterPathObject} and the counter instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the counter. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   increment(amount?: number): Promise<void>;
 
@@ -1042,7 +1039,7 @@ interface LiveCounterOperations extends BatchOperations<LiveCounter> {
    * An alias for calling {@link LiveCounterOperations.increment | increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   decrement(amount?: number): Promise<void>;
 }
@@ -1061,11 +1058,11 @@ interface AnyOperations {
    * Batching enables you to group multiple operations together and send them to the Ably service in a single channel message.
    * As a result, other clients will receive the changes in a single channel message once the batch function has completed.
    *
-   * The objects' data is not modified inside the batch function. Instead, the objects will be updated
-   * when the batched operations are applied by the Ably service and echoed back to the client.
+   * The objects' data is not modified inside the batch function. The batched operations are sent to Ably
+   * and, once accepted, applied locally. The returned promise resolves after all operations have been applied.
    *
    * @param fn - A synchronous function that receives a {@link BatchContext} used to group operations together.
-   * @returns A promise which resolves upon success of the batch operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after all batched operations have been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   batch<T extends LiveObject = LiveObject>(fn: BatchFunction<T>): Promise<void>;
 
@@ -1079,13 +1076,12 @@ interface AnyOperations {
    * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): Promise<void>;
 
@@ -1097,12 +1093,11 @@ interface AnyOperations {
    * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the map. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param key - The key to remove.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): Promise<void>;
 
@@ -1116,12 +1111,11 @@ interface AnyOperations {
    * or if called via {@link AnyPathObject} and the counter instance at the specified path cannot
    * be resolved at the time of the call, this method throws an error.
    *
-   * This does not modify the underlying data of the counter. Instead, the change is applied when
-   * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   * The operation is sent to Ably and, once accepted, applied locally. The returned promise resolves
+   * after the operation has been applied.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   increment(amount?: number): Promise<void>;
 
@@ -1129,7 +1123,7 @@ interface AnyOperations {
    * An alias for calling {@link AnyOperations.increment | increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
-   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves after the operation has been accepted by Ably and applied locally, or rejects with an {@link ErrorInfo} object upon failure.
    */
   decrement(amount?: number): Promise<void>;
 }

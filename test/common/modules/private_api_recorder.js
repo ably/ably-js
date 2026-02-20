@@ -87,6 +87,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.PathObjectSubscriptionRegister._subscriptions',
     'read.Platform.Config.push',
     'read.ProtocolMessage.channelSerial',
+    'read.ProtocolMessage.state',
     'read.Realtime._transports',
     'read.RealtimeObject._DEFAULTS.gcGracePeriod',
     'read.RealtimeObject.gcGracePeriod',

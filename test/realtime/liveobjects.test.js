@@ -164,6 +164,155 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   }
 
   /**
+   * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
+   */
+  async function injectAttachedMessage(helper, channel, hasObjects) {
+    helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+    helper.recordPrivateApi('call.transport.onProtocolMessage');
+    helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+    const transport = channel.client.connection.connectionManager.activeProtocol.getTransport();
+    const pm = createPM({
+      action: 11, // ATTACHED
+      channel: channel.name,
+      flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
+    });
+    await transport.onProtocolMessage(pm);
+  }
+
+  /**
+   * Creates an interceptor that holds OBJECT messages and allows controlled release, to test ACK-before-echo scenarios.
+   * Call when CONNECTING or CONNECTED to intercept messages on the active transport.
+   *
+   * Note: An echo is a subset of OBJECT messages — specifically, OBJECT messages that originated from
+   * this client and are being echoed back. The name "echo" reflects how this interceptor is intended
+   * to be used in tests, but it doesn't actually filter for echoes — it intercepts ALL OBJECT messages.
+   *
+   * Returns an object with:
+   *   - heldEchoes: array of { message, release } objects, where `message` is the held OBJECT message
+   *     and `release()` returns a Promise that resolves when processing completes
+   *   - waitForEcho(): resolves immediately if an OBJECT message has already been intercepted, otherwise
+   *     waits until the next OBJECT message is intercepted. Only one call can be pending at a time;
+   *     subsequent calls overwrite the previous callback.
+   *   - releaseAll(): releases all held OBJECT messages and returns a Promise that resolves when
+   *     all processing completes
+   *   - restore(): restores normal message handling
+   */
+  function createEchoInterceptor(helper, client) {
+    helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+    const transport = client.connection.connectionManager.activeProtocol.getTransport();
+    const originalOnProtocolMessage = transport.onProtocolMessage;
+    const heldEchoes = [];
+    let onEchoIntercepted = null;
+
+    helper.recordPrivateApi('replace.transport.onProtocolMessage');
+    transport.onProtocolMessage = function (message) {
+      if (message.action === 19) {
+        // OBJECT message
+        heldEchoes.push({
+          message,
+          // release() calls channel.processMessage directly and returns the Promise,
+          // allowing callers to await processing completion
+          release: () => {
+            helper.recordPrivateApi('call.channel.processMessage');
+            const channel = client.channels.get(message.channel);
+            return channel.processMessage(message);
+          },
+        });
+        if (onEchoIntercepted) {
+          onEchoIntercepted();
+          onEchoIntercepted = null;
+        }
+        return;
+      }
+      helper.recordPrivateApi('call.transport.onProtocolMessage');
+      originalOnProtocolMessage.call(transport, message);
+    };
+
+    return {
+      heldEchoes,
+      waitForEcho: () =>
+        new Promise((resolve) => {
+          if (heldEchoes.length > 0) {
+            resolve();
+          } else {
+            onEchoIntercepted = resolve;
+          }
+        }),
+      releaseAll: async () => {
+        while (heldEchoes.length > 0) {
+          await heldEchoes.shift().release();
+        }
+      },
+      restore: () => {
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = originalOnProtocolMessage;
+      },
+    };
+  }
+
+  /**
+   * Creates an interceptor that holds ACK messages and allows controlled release, to test echo-before-ACK scenarios.
+   * Call when CONNECTING or CONNECTED to intercept messages on the active transport.
+   *
+   * Returns an object with:
+   *   - heldAcks: array of { message, release } objects, where `message` is the held ACK message
+   *     and `release` is a function to release it
+   *   - waitForAck(): resolves immediately if an ACK has already been intercepted, otherwise waits for one.
+   *     Only one call can be pending at a time; subsequent calls overwrite the previous callback.
+   *   - releaseAll(): releases all held ACKs
+   *   - restore(): restores normal message handling
+   */
+  function createAckInterceptor(helper, client) {
+    helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+    const transport = client.connection.connectionManager.activeProtocol.getTransport();
+    const originalOnProtocolMessage = transport.onProtocolMessage;
+    const heldAcks = [];
+    let onAckIntercepted = null;
+
+    helper.recordPrivateApi('replace.transport.onProtocolMessage');
+    transport.onProtocolMessage = function (message) {
+      if (message.action === 1) {
+        // ACK
+        heldAcks.push({
+          message,
+          release: () => {
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            originalOnProtocolMessage.call(transport, message);
+          },
+        });
+        if (onAckIntercepted) {
+          onAckIntercepted();
+          onAckIntercepted = null;
+        }
+        return;
+      }
+      helper.recordPrivateApi('call.transport.onProtocolMessage');
+      originalOnProtocolMessage.call(transport, message);
+    };
+
+    return {
+      heldAcks,
+      waitForAck: () =>
+        new Promise((resolve) => {
+          if (heldAcks.length > 0) {
+            resolve();
+          } else {
+            onAckIntercepted = resolve;
+          }
+        }),
+      releaseAll: () => {
+        while (heldAcks.length > 0) {
+          heldAcks.shift().release();
+        }
+      },
+      restore: () => {
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = originalOnProtocolMessage;
+      },
+    };
+  }
+
+  /**
    * The channel with fixture data may not yet be populated by REST API requests made by LiveObjectsHelper.
    * This function waits for a channel to have all keys set.
    */
@@ -1134,6 +1283,14 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
       ];
 
+      /**
+       * These scenarios test that operations received over the Realtime connection
+       * (triggered via REST API) are correctly applied. All operations here are sent
+       * via REST, so the client receives them as echoes over Realtime.
+       *
+       * For tests of operations applied locally on ACK (via SDK write methods),
+       * see the "Apply on ACK" test section.
+       */
       const applyOperationsScenarios = [
         {
           allTransportsAndProtocols: true,
@@ -2888,9 +3045,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               const increment = increments[i];
               expectedCounterValue += increment;
 
-              const counterUpdatedPromise = waitForCounterUpdate(counter);
               await counter.increment(increment);
-              await counterUpdatedPromise;
 
               expect(counter.value()).to.equal(
                 expectedCounterValue,
@@ -2990,9 +3145,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               const decrement = decrements[i];
               expectedCounterValue -= decrement;
 
-              const counterUpdatedPromise = waitForCounterUpdate(counter);
               await counter.decrement(decrement);
-              await counterUpdatedPromise;
 
               expect(counter.value()).to.equal(
                 expectedCounterValue,
@@ -3066,9 +3219,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(
-              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
-            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -3084,7 +3234,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 await entryInstance.set(keyData.key, value);
               }),
             );
-            await keysUpdatedPromise;
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
@@ -3105,13 +3254,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance, helper } = ctx;
 
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await keysUpdatedPromise;
 
             const counter = entryInstance.get('counter');
             const map = entryInstance.get('map');
@@ -3179,10 +3323,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             const map = entryInstance.get('map');
 
-            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(map, 'foo'), waitForMapKeyUpdate(map, 'bar')]);
             await map.remove('foo');
             await map.remove('bar');
-            await keysUpdatedPromise;
 
             expect(map.get('foo'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
             expect(map.get('bar'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
@@ -3234,9 +3376,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance, helper } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryInstance.set('counter', LiveCounter.create(1));
-            await counterCreatedPromise;
 
             const counter = entryInstance.get('counter');
 
@@ -3252,13 +3392,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance, helper } = ctx;
 
-            const objectsCreatedPromise = Promise.all(
-              countersFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
-            );
             await Promise.all(
               countersFixtures.map(async (x) => entryInstance.set(x.name, LiveCounter.create(x.count))),
             );
-            await objectsCreatedPromise;
 
             for (let i = 0; i < countersFixtures.length; i++) {
               const counter = entryInstance.get(countersFixtures[i].name);
@@ -3346,9 +3482,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance, helper } = ctx;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await mapCreatedPromise;
 
             const map = entryInstance.get('map');
 
@@ -3368,9 +3502,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { helper, entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all(
-              primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
-            );
             await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
                 const entries = mapFixture.entries
@@ -3393,7 +3524,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 return entryInstance.set(mapFixture.name, LiveMap.create(entries));
               }),
             );
-            await objectsCreatedPromise;
 
             for (let i = 0; i < primitiveMapsFixtures.length; i++) {
               const map = entryInstance.get(primitiveMapsFixtures[i].name);
@@ -3427,7 +3557,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance, helper } = ctx;
 
-            const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await entryInstance.set(
               'map',
               LiveMap.create({
@@ -3435,7 +3564,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 counter: LiveCounter.create(),
               }),
             );
-            await objectCreatedPromise;
 
             const map = entryInstance.get('map');
             const nestedMap = map.get('map');
@@ -3514,15 +3642,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-              waitForMapKeyUpdate(entryInstance, 'primitive'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ nestedCounter: LiveCounter.create(1) }));
             await entryInstance.set('primitive', 'foo');
-            await objectsCreatedPromise;
 
             await entryInstance.batch((ctx) => {
               const ctxCounter = ctx.get('counter');
@@ -3564,13 +3686,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
 
             await entryInstance.batch((ctx) => {
               const ctxCounter = ctx.get('counter');
@@ -3610,13 +3727,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
 
             await entryInstance.batch((ctx) => {
               const ctxCounter = ctx.get('counter');
@@ -3655,13 +3767,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
 
             await entryInstance.batch((ctx) => {
               const ctxCounter = ctx.get('counter');
@@ -3712,13 +3819,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-              waitForMapKeyUpdate(entryInstance, 'map'),
-            ]);
             await entryInstance.set('counter', LiveCounter.create(1));
             await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
-            await objectsCreatedPromise;
 
             const cancelError = new Error('cancel batch');
             let caughtError;
@@ -3840,7 +3942,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set(
               'nested',
               LiveMap.create({
@@ -3850,7 +3951,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 deep: LiveMap.create({ nested: 'deepValue' }),
               }),
             );
-            await keyUpdatedPromise;
 
             // Test path with .get() method
             expect(entryPathObject.path()).to.equal('', 'Check root PathObject has empty path');
@@ -3891,12 +3991,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             const { entryPathObject, entryInstance } = ctx;
 
             // Create nested structure
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set(
               'nested',
               LiveMap.create({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' }),
             );
-            await keyUpdatedPromise;
 
             const nestedPathObj = entryPathObject.at('nested.deepKey');
             expect(nestedPathObj, 'Check nested PathObject exists').to.exist;
@@ -3921,14 +4019,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested.key');
             await entryPathObject.set(
               'nested.key',
               LiveMap.create({
                 'key.with.dots.and\\escaped\\characters': 'nestedValue',
               }),
             );
-            await keyUpdatedPromise;
 
             // Test complex path via chaining .get()
             const pathObjViaGetChain = entryPathObject.get('nested.key').get('key.with.dots.and\\escaped\\characters');
@@ -3959,9 +4055,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(
-              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
-            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -3977,7 +4070,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 await entryPathObject.set(keyData.key, value);
               }),
             );
-            await keysUpdatedPromise;
 
             // check PathObject returns primitive values correctly
             primitiveKeyData.forEach((keyData) => {
@@ -3997,9 +4089,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create(10));
-            await keyUpdatedPromise;
 
             const counterPathObj = entryPathObject.get('counter');
 
@@ -4012,13 +4102,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'map'),
-              waitForMapKeyUpdate(entryInstance, 'counter'),
-            ]);
             await entryPathObject.set('map', LiveMap.create());
             await entryPathObject.set('counter', LiveCounter.create());
-            await keysUpdatedPromise;
 
             const counterInstance = entryPathObject.get('counter').instance();
             expect(counterInstance, 'Check instance exists for counter path').to.exist;
@@ -4035,15 +4120,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'key1'),
-              waitForMapKeyUpdate(entryInstance, 'key2'),
-              waitForMapKeyUpdate(entryInstance, 'key3'),
-            ]);
             await entryPathObject.set('key1', 'value1');
             await entryPathObject.set('key2', 'value2');
             await entryPathObject.set('key3', 'value3');
-            await keysUpdatedPromise;
 
             // Test size
             expect(entryPathObject.size()).to.equal(3, 'Check PathObject size');
@@ -4080,9 +4159,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(
-              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
-            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -4098,7 +4174,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 await entryPathObject.set(keyData.key, value);
               }),
             );
-            await keysUpdatedPromise;
 
             // check primitive values were set correctly via PathObject
             primitiveKeyData.forEach((keyData) => {
@@ -4118,9 +4193,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterKey');
             await entryPathObject.set('counterKey', LiveCounter.create(5));
-            await keyUpdatedPromise;
 
             expect(entryInstance.get('counterKey'), 'Check counter object was set via PathObject').to.exist;
             expect(entryPathObject.get('counterKey').value()).to.equal(5, 'Check PathObject reflects counter value');
@@ -4132,15 +4205,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyAddedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.set('keyToRemove', 'valueToRemove');
-            await keyAddedPromise;
 
             expect(entryPathObject.get('keyToRemove'), 'Check key exists on root').to.exist;
 
-            const keyRemovedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.remove('keyToRemove');
-            await keyRemovedPromise;
 
             expect(entryInstance.get('keyToRemove'), 'Check key on root is removed after PathObject.remove()').to.be
               .undefined;
@@ -4156,38 +4225,28 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create(10));
-            await keyUpdatedPromise;
 
             const counter = entryInstance.get('counter');
             const counterPathObj = entryPathObject.get('counter');
 
-            let counterUpdatedPromise = waitForCounterUpdate(counter);
             await counterPathObj.increment(5);
-            await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(15, 'Check counter incremented via PathObject');
             expect(counterPathObj.value()).to.equal(15, 'Check PathObject reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counter);
             await counterPathObj.decrement(3);
-            await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(12, 'Check counter decremented via PathObject');
             expect(counterPathObj.value()).to.equal(12, 'Check PathObject reflects decremented value');
 
             // test increment/decrement without argument (should increment/decrement by 1)
-            counterUpdatedPromise = waitForCounterUpdate(counter);
             await counterPathObj.increment();
-            await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(13, 'Check counter incremented via PathObject without argument');
             expect(counterPathObj.value()).to.equal(13, 'Check PathObject reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counter);
             await counterPathObj.decrement();
-            await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(12, 'Check counter decremented via PathObject without argument');
             expect(counterPathObj.value()).to.equal(12, 'Check PathObject reflects decremented value');
@@ -8309,24 +8368,549 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       }, client);
     });
 
+    describe('Apply on ACK', () => {
+      /**
+       * Operations applied locally on ACK
+       *
+       * Verify that after a write operation promise resolves, the value is immediately
+       * visible. Echoes are held to prove the value comes from apply-on-ACK, not the echo.
+       */
+      describe('Operations applied locally on ACK', function () {
+        const applyOnAckScenarios = [
+          {
+            description: 'creating a LiveCounter applies immediately on ACK',
+            action: async (root) => {
+              await root.set('newCounter', LiveCounter.create(42));
+              expect(root.get('newCounter').value()).to.equal(42, 'Check counter has initial value');
+            },
+          },
+          {
+            description: 'LiveCounter.increment applies operation immediately on ACK',
+            action: async (root) => {
+              await root.set('counter', LiveCounter.create(10));
+              const counter = root.get('counter');
+              expect(counter.value()).to.equal(10, 'Check counter has initial value of 10');
+              await counter.increment(5);
+              expect(counter.value()).to.equal(15, 'Check counter value is 15 after increment');
+            },
+          },
+          {
+            description: 'creating a LiveMap applies immediately on ACK',
+            action: async (root) => {
+              await root.set('newMap', LiveMap.create({ key: 'value' }));
+              expect(root.get('newMap').get('key').value()).to.equal('value', 'Check map has initial entry');
+            },
+          },
+          {
+            description: 'LiveMap.set applies operation immediately on ACK',
+            action: async (root) => {
+              await root.set('key', 'value');
+              expect(root.get('key').value()).to.equal('value', 'Check map value is available after set');
+            },
+          },
+          {
+            description: 'LiveMap.remove applies operation immediately on ACK',
+            action: async (root) => {
+              await root.set('keyToRemove', 'valueToRemove');
+              expect(root.get('keyToRemove').value()).to.equal('valueToRemove', 'Check key exists');
+              await root.remove('keyToRemove');
+              expect(root.get('keyToRemove').value(), 'Check key is removed').to.be.undefined;
+            },
+          },
+          {
+            description: 'batch operations apply immediately on ACK',
+            action: async (root) => {
+              await root.set('counter', LiveCounter.create(10));
+              const counter = root.get('counter');
+              await root.batch((ctx) => {
+                ctx.get('counter').increment(5);
+                ctx.get('counter').increment(3);
+              });
+              expect(counter.value()).to.equal(18, 'Check batch increments applied on ACK');
+            },
+          },
+        ];
+
+        forScenarios(this, applyOnAckScenarios, async function (helper, scenario, clientOptions, channelName) {
+          const client = RealtimeWithLiveObjects(helper, clientOptions);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // hold echoes so we can verify value comes from ACK, not echo
+            createEchoInterceptor(helper, client);
+
+            await scenario.action(root);
+          }, client);
+        });
+      });
+
+      /**
+       * Does not double-apply
+       *
+       * Verify that operations are not applied twice regardless of message ordering.
+       * Uses counter.increment as a representative example of an operation.
+       */
+      describe('Does not double-apply', () => {
+        it('echo after ACK does not double-apply', async function () {
+          const helper = this.test.helper;
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-no-double-apply-echo-after-ack';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // create a counter
+            await root.set('counter', LiveCounter.create(10));
+            const counter = root.get('counter');
+
+            // set up echo interceptor
+            const interceptor = createEchoInterceptor(helper, client);
+
+            // perform increment
+            await counter.increment(5);
+            expect(counter.value()).to.equal(15, 'Check counter is 15 after increment');
+
+            // wait for the echo to be intercepted
+            await interceptor.waitForEcho();
+
+            // release the held echo and wait for processing to complete
+            await interceptor.releaseAll();
+
+            // counter should still be 15, not 20 (no double-apply)
+            expect(counter.value()).to.equal(15, 'Check counter is still 15 after echo, not 20');
+          }, client);
+        });
+
+        it('ACK after echo does not double-apply', async function () {
+          const helper = this.test.helper;
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-no-double-apply-ack-after-echo';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // create a counter
+            await root.set('counter', LiveCounter.create(10));
+            const counter = root.get('counter');
+
+            // set up ACK interceptor (hold ACKs, let OBJECT messages through)
+            const interceptor = createAckInterceptor(helper, client);
+
+            // set up subscription to wait for the echo
+            const echoAppliedPromise = waitForCounterUpdate(counter);
+
+            // start the increment but don't await - it won't resolve until we release the held ACK
+            const incrementPromise = counter.increment(5);
+
+            // wait for the echo to be applied
+            await echoAppliedPromise;
+            expect(counter.value()).to.equal(15, 'Check counter is 15 from echo');
+
+            // release the ACK
+            await interceptor.waitForAck();
+            interceptor.releaseAll();
+
+            // wait for the operation to complete
+            await incrementPromise;
+
+            // counter should still be 15 (not 20)
+            expect(counter.value()).to.equal(15, 'Check counter is still 15 after ACK, not 20');
+          }, client);
+        });
+      });
+
+      /**
+       * Does not incorrectly skip operations
+       *
+       * Verify that applying operations on ACK doesn't cause earlier operations
+       * for the same site, received over the Realtime connection, to be skipped.
+       */
+      describe('Does not incorrectly skip operations', () => {
+        /**
+         * Tests that apply-on-ACK does not update siteTimeserials.
+         *
+         * When an operation is applied via the echo, it updates
+         * siteTimeserials[siteCode] = serial. When applied via apply-on-ACK, it should NOT.
+         *
+         * This test verifies this by:
+         * 1. Creating a counter via the write API (echo held to extract its serial,
+         *    then released to set siteTimeserials)
+         * 2. Performing an increment via apply-on-ACK (echo held so it doesn't update
+         *    siteTimeserials - we want to test if apply-on-ACK does)
+         * 3. Injecting an operation with a serial between the create and increment serials
+         * 4. Asserting the injected op was applied (it would be rejected if
+         *    siteTimeserials had been updated by apply-on-ACK to the increment's serial)
+         */
+        it('apply-on-ACK does not update siteTimeserials', async function () {
+          const helper = this.test.helper;
+          const objectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-does-not-update-site-timeserials';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // set up echo interceptor before any operations
+            const interceptor = createEchoInterceptor(helper, client);
+
+            // create a counter - echo is held so we can extract its serial
+            await root.set('counter', LiveCounter.create(10));
+            const counter = root.get('counter');
+            const counterId = counter.instance().id;
+
+            // wait for create echo and extract the COUNTER_CREATE serial
+            await interceptor.waitForEcho();
+            helper.recordPrivateApi('read.ProtocolMessage.state');
+            const createEcho = interceptor.heldEchoes[0].message;
+            // the create echo has two operations (COUNTER_CREATE and MAP_SET);
+            // extract the COUNTER_CREATE one since that sets the counter's siteTimeserials
+            const counterCreateState = createEcho.state.find(
+              (x) => x.operation.action === LiveObjectsHelper.ACTIONS.COUNTER_CREATE,
+            );
+            const counterCreateSerial = counterCreateState.serial;
+            const siteCode = counterCreateState.siteCode;
+
+            // release the create echo and wait for processing so siteTimeserials gets set
+            await interceptor.heldEchoes[0].release();
+            interceptor.heldEchoes.shift();
+
+            // perform increment - applied via apply-on-ACK
+            await counter.increment(5);
+            expect(counter.value()).to.equal(15, 'Check counter is 15 after apply-on-ACK');
+
+            // wait for increment echo (held so it doesn't update siteTimeserials) and extract its serial
+            await interceptor.waitForEcho();
+            const incrementEcho = interceptor.heldEchoes[0].message;
+            const incrementState = incrementEcho.state[0];
+            const incrementSerial = incrementState.serial;
+
+            // construct a serial between the create and increment serials by appending a
+            // character to counterCreateSerial; this works as long as counterCreateSerial is
+            // not a prefix of incrementSerial (which we expect since they're from different
+            // protocol messages)
+            const injectedSerial = counterCreateSerial + 'a';
+
+            // verify our assumptions
+            expect(injectedSerial > counterCreateSerial).to.equal(true, 'injectedSerial > counterCreateSerial');
+            expect(injectedSerial < incrementSerial).to.equal(true, 'injectedSerial < incrementSerial');
+
+            // inject an operation with this serial
+            // if siteTimeserials was NOT updated by apply-on-ACK (still at counterCreateSerial level):
+            //   injectedSerial > counterCreateSerial, so operation is applied
+            // if siteTimeserials WAS updated by apply-on-ACK (now at incrementSerial level):
+            //   injectedSerial < incrementSerial, so operation is rejected
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: injectedSerial,
+              siteCode,
+              state: [objectsHelper.counterIncOp({ objectId: counterId, amount: 100 })],
+            });
+
+            // counter should be 115, proving siteTimeserials was not updated by apply-on-ACK
+            expect(counter.value()).to.equal(
+              115,
+              'Check counter is 115, proving siteTimeserials was not updated by apply-on-ACK',
+            );
+          }, client);
+        });
+      });
+
+      /**
+       * ACKs buffered during OBJECT_SYNC
+       *
+       * Verify that when an ACK arrives during an OBJECT_SYNC sequence,
+       * the operation is buffered and applied after sync completes.
+       */
+      describe('ACKs buffered during OBJECT_SYNC', () => {
+        it('operation buffered during sync is applied after sync completes', async function () {
+          const helper = this.test.helper;
+          const objectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-buffered-during-sync';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            // first, set up the channel and create a counter
+            await channel.attach();
+            const root = await channel.object.get();
+
+            await root.set('counter', LiveCounter.create(10));
+            const counter = root.get('counter');
+            const counterId = counter.instance().id;
+
+            // now simulate a new OBJECT_SYNC sequence starting
+            // inject an ATTACHED with HAS_OBJECTS to trigger SYNCING state
+            await injectAttachedMessage(helper, channel, true);
+
+            // perform an increment while in SYNCING state
+            // the ACK will be buffered until sync completes
+            const incrementPromise = counter.increment(5);
+
+            // complete the sync sequence
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    counter: {
+                      timeserial: lexicoTimeserial('aaa', 0, 0),
+                      data: { objectId: counterId },
+                    },
+                  },
+                }),
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialCount: 10, // original value before increment
+                }),
+              ],
+            });
+
+            // wait for the increment to complete
+            await incrementPromise;
+
+            // the buffered ACK should now have been applied
+            expect(counter.value()).to.equal(15, 'Check counter reflects the increment after sync completes');
+          }, client);
+        });
+
+        /**
+         * Tests that appliedOnAckSerials is cleared when a new OBJECT_SYNC completes.
+         *
+         * The test works by:
+         * 1. Performing an operation (serial X added to appliedOnAckSerials), holding the echo
+         * 2. Injecting an OBJECT_SYNC with siteTimeserials that uses a fake siteCode (not the
+         *    real siteCode from the echo). This ensures the echo will pass the siteTimeserials
+         *    check (since there's no entry for the echo's siteCode).
+         * 3. After sync, appliedOnAckSerials should be cleared
+         * 4. Releasing the held echo
+         * 5. If cleared: echo applies (no matching entry in appliedOnAckSerials) - value changes
+         * 6. If NOT cleared: echo rejected (X in appliedOnAckSerials) - value unchanged
+         */
+        it('appliedOnAckSerials is cleared on sync', async function () {
+          const helper = this.test.helper;
+          const objectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-serials-cleared-on-sync';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // create a counter
+            await root.set('counter', LiveCounter.create(10));
+            const counter = root.get('counter');
+            const counterId = counter.instance().id;
+
+            // set up echo interceptor to hold OBJECT messages
+            const interceptor = createEchoInterceptor(helper, client);
+
+            // perform increment - value becomes 15 via ACK, echo is held
+            await counter.increment(5);
+            expect(counter.value()).to.equal(15, 'Check counter is 15 after apply-on-ACK');
+
+            // wait for echo to be intercepted
+            await interceptor.waitForEcho();
+
+            // now inject an OBJECT_SYNC that doesn't include our operation
+            // this simulates a re-sync where the server state doesn't include our operation yet
+            // the sync will reset the counter to 10 and clear appliedOnAckSerials
+            // inject ATTACHED with HAS_OBJECTS to start sync
+            await injectAttachedMessage(helper, channel, true);
+
+            // complete sync with state that uses a fake siteCode
+            // using a clearly fake siteCode ensures the echo (which has the real siteCode)
+            // will pass the siteTimeserials check since there's no entry for it
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { fake: lexicoTimeserial('fake', 0, 0) },
+                  initialEntries: {
+                    counter: {
+                      timeserial: lexicoTimeserial('fake', 0, 0),
+                      data: { objectId: counterId },
+                    },
+                  },
+                }),
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: { fake: lexicoTimeserial('fake', 0, 0) },
+                  initialCount: 10, // value WITHOUT our increment
+                }),
+              ],
+            });
+
+            // after sync, counter should be reset to 10 (from sync state)
+            expect(counter.value()).to.equal(10, 'Check counter is 10 after sync');
+
+            // now release the held echo and wait for processing to complete
+            // if appliedOnAckSerials was cleared, the echo should be applied
+            // (the echo will pass siteTimeserials check since there's no entry for its siteCode)
+            await interceptor.releaseAll();
+
+            // counter should now be 15 (echo was applied because appliedOnAckSerials was cleared)
+            expect(counter.value()).to.equal(
+              15,
+              'Check counter is 15 after echo, proving appliedOnAckSerials was cleared on sync',
+            );
+          }, client);
+        });
+
+        describe('publishAndApply rejects when channel state changes during sync wait', () => {
+          for (const targetState of ['detached', 'suspended', 'failed']) {
+            it(`rejects with error 92008 when channel enters ${targetState} state`, async function () {
+              const helper = this.test.helper;
+              const client = RealtimeWithLiveObjects(helper);
+
+              await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+                const channelName = `apply-on-ack-sync-reject-${targetState}`;
+                const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+                // attach channel and create counter
+                await channel.attach();
+                const root = await channel.object.get();
+
+                await root.set('counter', LiveCounter.create(10));
+                const counter = root.get('counter');
+
+                // inject ATTACHED with HAS_OBJECTS to trigger SYNCING state
+                await injectAttachedMessage(helper, channel, true);
+
+                // set up ACK interceptor so we can control when ACK is delivered
+                const interceptor = createAckInterceptor(helper, client);
+
+                // start increment - this will publish and wait for ACK
+                const incrementPromise = counter.increment(5);
+
+                // wait for ACK to be intercepted, then release it
+                // this lets publishAndApply proceed past publish into the sync-wait
+                await interceptor.waitForAck();
+                interceptor.releaseAll();
+
+                // (Note: this is Claude's explanation of why the tests failed in browser when using nextTick; I'm not familiar with JS's task model and so I'm very much taking this on trust; but it makes the test work and I think that's good enough)
+                // yield to the event loop so publishAndApply reaches the sync wait.
+                // Must use setTimeout (macrotask) rather than nextTick/queueMicrotask because
+                // the publishAndApply async chain (sendAndAwaitAck → sendState → publish) needs
+                // multiple microtask ticks to propagate. In Node.js, process.nextTick runs at
+                // higher priority than the microtask queue so happens to work, but in the browser
+                // queueMicrotask interleaves with the chain and the test can run before
+                // publishAndApply reaches the sync-wait.
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                // trigger channel state change
+                helper.recordPrivateApi('call.channel.requestState');
+                channel.requestState(targetState);
+
+                // the increment promise should reject with error 92008
+                const err = await expectToThrowAsync(
+                  () => incrementPromise,
+                  `channel entering the ${targetState} state`,
+                  { withCode: 92008 },
+                );
+                expect(err.statusCode).to.equal(400, 'Check statusCode is 400');
+              }, client);
+            });
+          }
+        });
+      });
+
+      /**
+       * Subscription events
+       *
+       * Verify that subscription callbacks fire correctly regardless of whether
+       * the operation was applied locally (ACK) or received over Realtime.
+       */
+      describe('Subscription events', () => {
+        it('subscription callbacks fire for both locally-applied and Realtime-received operations', async function () {
+          const helper = this.test.helper;
+          const objectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'apply-on-ack-subscription-both-paths';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            // create a counter
+            await root.set('counter', LiveCounter.create(0));
+            const counter = root.get('counter');
+            const counterId = counter.instance().id;
+
+            const receivedEvents = [];
+
+            counter.subscribe((event) => {
+              receivedEvents.push({
+                action: event.message?.operation?.action,
+                amount: event.message?.operation?.counterOp?.amount,
+              });
+            });
+
+            // 1. trigger operation via SDK (applied locally on ACK)
+
+            // intercept echoes to ensure the subscription fires from the apply-on-ACK path,
+            // not from the echo arriving before the ACK
+            const interceptor = createEchoInterceptor(helper, client);
+
+            await counter.increment(5);
+
+            // no need to wait for event - with apply-on-ACK, the subscription callback
+            // is invoked synchronously before increment() returns
+            expect(receivedEvents.length).to.equal(1, 'Check event fires for locally-applied operation');
+            expect(receivedEvents[0]).to.deep.equal(
+              { action: 'counter.inc', amount: 5 },
+              'Check event from local apply has correct structure',
+            );
+
+            // restore normal echo handling before testing the Realtime path
+            interceptor.restore();
+
+            // 2. trigger operation via REST (received over Realtime)
+            const realtimeEventPromise = waitForCounterUpdate(counter);
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.counterIncRestOp({ objectId: counterId, number: 10 }),
+            );
+            await realtimeEventPromise;
+
+            expect(receivedEvents.length).to.equal(2, 'Check event fires for Realtime-received operation');
+            expect(receivedEvents[1]).to.deep.equal(
+              { action: 'counter.inc', amount: 10 },
+              'Check event from Realtime receive has correct structure',
+            );
+
+            // verify final state
+            expect(counter.value()).to.equal(15, 'Check counter reflects both operations');
+          }, client);
+        });
+      });
+    });
+
     /** @nospec */
     describe('Sync events', () => {
-      /**
-       * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
-       */
-      async function injectAttachedMessage(helper, channel, hasObjects) {
-        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-        helper.recordPrivateApi('call.transport.onProtocolMessage');
-        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-        const transport = channel.client.connection.connectionManager.activeProtocol.getTransport();
-        const pm = createPM({
-          action: 11, // ATTACHED
-          channel: channel.name,
-          flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
-        });
-        await transport.onProtocolMessage(pm);
-      }
-
       const syncEventsScenarios = [
         // 1. ATTACHED with HAS_OBJECTS false
 

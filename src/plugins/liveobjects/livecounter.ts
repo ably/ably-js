@@ -2,7 +2,7 @@ import { __livetype } from '../../../ably';
 import { LiveCounter as PublicLiveCounter } from '../../../liveobjects';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
-import { RealtimeObject } from './realtimeobject';
+import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number; // RTLC3
@@ -72,15 +72,15 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * Send a COUNTER_INC operation to the realtime system to increment a value on this LiveCounter object.
    *
-   * This does not modify the underlying data of this LiveCounter object. Instead, the change will be applied when
-   * the published COUNTER_INC operation is echoed back to the client and applied to the object following the regular
-   * operation application procedure.
+   * The change will be applied locally when the ACK is received from Realtime.
    *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message
+   * and applying the operation locally.
+   * @spec RTLC12
    */
   async increment(amount: number): Promise<void> {
     const msg = LiveCounter.createCounterIncMessage(this._realtimeObject, this.getObjectId(), amount);
-    return this._realtimeObject.publish([msg]);
+    return this._realtimeObject.publishAndApply([msg]);
   }
 
   /**
@@ -98,8 +98,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTLC7
    */
-  applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void {
+  applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage, source: ObjectsOperationSource): boolean {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply object operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
@@ -117,15 +118,19 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         'LiveCounter.applyOperation()',
         `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
       );
-      return;
+      return false; // RTLC7b
     }
-    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
-    // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opSiteCode] = opSerial;
+
+    // RTLC7c
+    if (source === ObjectsOperationSource.channel) {
+      // should update stored site serial immediately. doesn't matter if we successfully apply the op,
+      // as it's important to mark that the op was processed by the object
+      this._siteTimeserials[opSiteCode] = opSerial;
+    }
 
     if (this.isTombstoned()) {
       // this object is tombstoned so the operation cannot be applied
-      return;
+      return false; // RTLC7e
     }
 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
@@ -137,8 +142,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       case ObjectOperationAction.COUNTER_INC:
         if (this._client.Utils.isNil(op.counterOp)) {
           this._throwNoPayloadError(op);
-          // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
-          return;
         } else {
           update = this._applyCounterInc(op.counterOp, msg);
         }
@@ -157,6 +160,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     this.notifyUpdated(update);
+    return true; // RTLC7d1b, RTLC7d2b, RTLC7d4b
   }
 
   /**
@@ -263,7 +267,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     };
   }
 
-  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
+  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
       92000,
