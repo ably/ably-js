@@ -753,8 +753,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.update');
-                  channel._allChannelChanges.on(['update'], function () {
+                  helper.recordPrivateApi('listen.channel._attachedReceived.attached');
+                  channel._attachedReceived.on('attached', function () {
                     channelUpdated = true;
                   });
 
@@ -778,9 +778,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.update');
-                  helper.recordPrivateApi('listen.channel._allChannelChanges.attached');
-                  channel._allChannelChanges.on(['attached', 'update'], function () {
+                  helper.recordPrivateApi('listen.channel._attachedReceived.attached');
+                  channel._attachedReceived.on('attached', function () {
                     channelUpdated = true;
                   });
 
@@ -2015,6 +2014,50 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       }, realtime);
 
       await helper.closeAndFinishAsync(realtime);
+    });
+
+    /**
+     * Regression test: calling channel.off() while attaching should not
+     * prevent the attach() promise from resolving.
+     *
+     * @specpartial RTC10
+     */
+    it('attach resolves even if channel.off() is called while attaching', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+        const channel = realtime.channels.get('attach_off_regression');
+
+        const attachPromise = channel.attach();
+        expect(channel.state).to.equal('attaching');
+        channel.off();
+
+        await attachPromise;
+      }, realtime);
+    });
+
+    /**
+     * Regression test: calling channel.off() while detaching should not
+     * prevent the detach() promise from resolving.
+     *
+     * @specpartial RTC10
+     */
+    it('detach resolves even if channel.off() is called while detaching', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+        const channel = realtime.channels.get('detach_off_regression');
+
+        await channel.attach();
+
+        const detachPromise = channel.detach();
+        expect(channel.state).to.equal('detaching');
+        channel.off();
+
+        await detachPromise;
+      }, realtime);
     });
   });
 });

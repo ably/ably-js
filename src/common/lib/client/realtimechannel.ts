@@ -9,7 +9,6 @@ import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
-import ConnectionStateChange from './connectionstatechange';
 import { StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
@@ -87,7 +86,20 @@ class RealtimeChannel extends EventEmitter {
     protocolMessageChannelSerial?: string | null;
     decodeFailureRecoveryInProgress: null | boolean;
   };
-  _allChannelChanges: EventEmitter;
+  /**
+   * Emits an 'attached' event (with no payload) whenever an ATTACHED protocol
+   * message is received from the server. Used by setOptions (RTL16a) to know
+   * when the server has confirmed new channel options.
+   */
+  _attachedReceived: EventEmitter;
+  /**
+   * Internal event emitter for channel state changes, not affected by public
+   * off() calls. Exists to satisfy RTC10: the client library should never
+   * register internal listeners with the public EventEmitter in such a way
+   * that a user calling off() would result in the library not working as
+   * expected.
+   */
+  internalStateChanges: EventEmitter;
   params?: Record<string, any>;
   modes: API.ChannelMode[] | undefined;
   stateTimer?: number | NodeJS.Timeout | null;
@@ -127,9 +139,8 @@ class RealtimeChannel extends EventEmitter {
       protocolMessageChannelSerial: null,
       decodeFailureRecoveryInProgress: null,
     };
-    /* Only differences between this and the public event emitter is that this emits an
-     * update event for all ATTACHEDs, whether resumed or not */
-    this._allChannelChanges = new EventEmitter(this.logger);
+    this._attachedReceived = new EventEmitter(this.logger);
+    this.internalStateChanges = new EventEmitter(this.logger);
 
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
@@ -153,6 +164,12 @@ class RealtimeChannel extends EventEmitter {
       Utils.throwMissingPluginError('LiveObjects'); // RTL27b
     }
     return this._object; // RTL27a
+  }
+
+  // Override of EventEmitter method
+  emit(event: string, ...args: unknown[]) {
+    super.emit(event, ...args);
+    this.internalStateChanges.emit(event, ...args);
   }
 
   invalidStateError(): ErrorInfo {
@@ -189,23 +206,21 @@ class RealtimeChannel extends EventEmitter {
        * rejecting messages until we have confirmation that the options have changed,
        * which would unnecessarily lose message continuity. */
       this.attachImpl();
-      return new Promise((resolve, reject) => {
-        // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
-        // call back setOptions until we're definitely attached with the new options (or
-        // else in a terminal state)
-        this._allChannelChanges.once(
-          ['attached', 'update', 'detached', 'failed'],
-          function (this: { event: string }, stateChange: ConnectionStateChange) {
-            switch (this.event) {
-              case 'update':
-              case 'attached':
-                resolve();
-                break;
-              default:
-                reject(stateChange.reason);
-            }
-          },
-        );
+      return new Promise<void>((resolve, reject) => {
+        const cleanup = () => {
+          this._attachedReceived.off(onAttached);
+          this.internalStateChanges.off(onFailure);
+        };
+        const onAttached = () => {
+          cleanup();
+          resolve();
+        };
+        const onFailure = (stateChange: ChannelStateChange) => {
+          cleanup();
+          reject(stateChange.reason);
+        };
+        this._attachedReceived.once('attached', onAttached);
+        this.internalStateChanges.once(['detached', 'failed'], onFailure);
       });
     }
   }
@@ -344,7 +359,7 @@ class RealtimeChannel extends EventEmitter {
       this.requestState('attaching', attachReason);
     }
 
-    this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+    this.internalStateChanges.once(function (this: { event: string }, stateChange: ChannelStateChange) {
       switch (this.event) {
         case 'attached':
           callback?.(null, stateChange);
@@ -409,7 +424,7 @@ class RealtimeChannel extends EventEmitter {
       // eslint-disable-next-line no-fallthrough
       case 'detaching':
         return new Promise((resolve, reject) => {
-          this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+          this.internalStateChanges.once(function (this: { event: string }, stateChange: ChannelStateChange) {
             switch (this.event) {
               case 'detached':
                 resolve();
@@ -556,6 +571,7 @@ class RealtimeChannel extends EventEmitter {
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
         const hasObjects = message.hasFlag('HAS_OBJECTS');
+        this._attachedReceived.emit('attached');
         if (this.state === 'attached') {
           if (!resumed) {
             // we have lost continuity.
@@ -569,7 +585,6 @@ class RealtimeChannel extends EventEmitter {
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
-          this._allChannelChanges.emit('update', change);
           if (!resumed || this.channelOptions.updateOnAttached) {
             this.emit('update', change);
           }
@@ -848,7 +863,6 @@ class RealtimeChannel extends EventEmitter {
     }
 
     this.state = state;
-    this._allChannelChanges.emit(state, change);
     this.emit(state, change);
   }
 
