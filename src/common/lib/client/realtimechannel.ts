@@ -579,11 +579,15 @@ class RealtimeChannel extends EventEmitter {
             if (this._presence) {
               this._presence.onAttached(hasPresence);
             }
-            // the Objects tree needs to be re-synced
-            if (this._object) {
-              this._object.onAttached(hasObjects);
-            }
           }
+
+          // Must always resync the Objects tree after an ATTACHED.
+          // Whether there are objects on the channel and whether an OBJECT_SYNC sequence will follow
+          // is determined by the HAS_OBJECTS flag.
+          if (this._object) {
+            this._object.onAttached(hasObjects);
+          }
+
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
           if (!resumed || this.channelOptions.updateOnAttached) {
             this.emit('update', change);
