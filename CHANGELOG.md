@@ -2,6 +2,26 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.18.0](https://github.com/ably/ably-js/tree/2.18.0) (2026-02-23)
+
+### New features
+
+#### LiveObjects operations are now applied on acknowledgement
+
+When you call a LiveObjects mutation method (e.g. `map.set()`), the SDK now applies the effects of this operation to the local LiveObjects data as soon as it receives the server's acknowledgement of the operation. This is an improvement over earlier versions, in which the SDK did not apply such an operation until receiving the operation's echo.
+
+Concretely, this means that in the following example, `fetchedValue` is now guaranteed to be `myValue`:
+
+```javascript
+await map.set('myKey', 'myValue');
+const fetchedValue = map.get('myKey').value();
+```
+
+### Bug fixes
+
+- Fix bug where calling `channel.off()` could prevent `attach()` and `detach()` calls from completing [\#2167](https://github.com/ably/ably-js/pull/2167)
+- Make sure that `ErrorInfo.cause` is always an `ErrorInfo` [\#2169](https://github.com/ably/ably-js/pull/2169)
+
 ## [2.17.1](https://github.com/ably/ably-js/tree/2.17.1) (2026-01-30)
 
 - Fix non-monotonic `msgSerial` on stale connection reset [\#2153](https://github.com/ably/ably-js/pull/2153)
