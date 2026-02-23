@@ -77,7 +77,7 @@ class RealtimeChannel extends EventEmitter {
     attachSerial: string | null | undefined;
     channelSerial: string | null | undefined;
   };
-  errorReason: ErrorInfo | string | null;
+  errorReason: ErrorInfo | null;
   _mode = 0;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;

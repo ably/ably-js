@@ -3693,7 +3693,7 @@ export declare class ErrorInfo extends Error {
   /**
    * The underlying cause of the error, where applicable.
    */
-  cause?: string | Error | ErrorInfo;
+  cause?: ErrorInfo;
 
   /**
    * Construct an ErrorInfo object.
@@ -3703,5 +3703,5 @@ export declare class ErrorInfo extends Error {
    * @param statusCode - HTTP Status Code corresponding to this error.
    * @param cause - The underlying cause of the error.
    */
-  constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo);
+  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo);
 }
