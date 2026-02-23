@@ -5,7 +5,7 @@ import * as API from '../../../../ably';
 export interface IPartialErrorInfo extends Error {
   code: number | null;
   statusCode?: number;
-  cause?: string | Error | ErrorInfo;
+  cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
 }
 
@@ -35,10 +35,10 @@ export interface IConvertibleToPartialErrorInfo {
 export default class ErrorInfo extends Error implements IPartialErrorInfo, API.ErrorInfo {
   code: number;
   statusCode: number;
-  cause?: string | Error | ErrorInfo;
+  cause?: ErrorInfo;
   href?: string;
 
-  constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo) {
+  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, ErrorInfo.prototype);
@@ -68,10 +68,10 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
 export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   code: number | null;
   statusCode?: number;
-  cause?: string | Error | ErrorInfo;
+  cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
 
-  constructor(message: string, code: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
+  constructor(message: string, code: number | null, statusCode?: number, cause?: ErrorInfo | PartialErrorInfo) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, PartialErrorInfo.prototype);

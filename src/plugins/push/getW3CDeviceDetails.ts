@@ -84,7 +84,9 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
     machine.handleEvent(new GotPushDeviceDetails());
   } catch (err) {
     machine.handleEvent(
-      new GettingPushDeviceDetailsFailed(new ErrorInfo('Failed to register service worker', 50000, 500, err as Error)),
+      new GettingPushDeviceDetailsFailed(
+        new ErrorInfo('Failed to register service worker: ' + (err as Error).message, 50000, 500),
+      ),
     );
   }
 }
