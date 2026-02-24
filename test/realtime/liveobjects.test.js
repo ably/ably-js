@@ -879,6 +879,114 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
+          description: 'OBJECT_SYNC sequence builds object tree across multiple sync messages',
+          action: async (ctx) => {
+            const { channel, objectsHelper, entryPathObject } = ctx;
+
+            const counterId = objectsHelper.fakeCounterObjectId();
+            const mapId = objectsHelper.fakeMapObjectId();
+
+            // send three separate OBJECT_SYNC messages: one for root, one for counter, one for map
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor1',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    stringKey: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'hello' } },
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                    map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
+                  },
+                }),
+              ],
+            });
+
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor2',
+              state: [
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialCount: 10,
+                  materialisedCount: 5,
+                }),
+              ],
+            });
+
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // end sync sequence
+              state: [
+                objectsHelper.mapObject({
+                  objectId: mapId,
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                  },
+                  materialisedEntries: {
+                    baz: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'qux' } },
+                  },
+                }),
+              ],
+            });
+
+            expect(entryPathObject.get('stringKey').value()).to.equal('hello', 'Check root has correct string value');
+            expect(entryPathObject.get('counter').value()).to.equal(15, 'Check counter has correct aggregated value');
+            expect(entryPathObject.get('map').get('foo').value()).to.equal('bar', 'Check map has initial entries');
+            expect(entryPathObject.get('map').get('baz').value()).to.equal('qux', 'Check map has materialised entries');
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC does not break when receiving an unknown object type',
+          action: async (ctx) => {
+            const { channel, objectsHelper } = ctx;
+
+            // first message: unknown object type (no counter or map field set)
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor',
+              state: [
+                {
+                  object: {
+                    objectId: 'unknown:object123',
+                    siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                    tombstone: false,
+                    // intentionally not setting counter or map fields
+                  },
+                },
+              ],
+            });
+
+            // second message: root with a key, ends sync sequence
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                  },
+                }),
+              ],
+            });
+
+            const root = await channel.object.get();
+
+            // verify root has the expected key - SDK should not break due to unknown object type
+            expect(root.get('foo').value()).to.equal(
+              'bar',
+              'Check root has correct value after unknown object type in sync',
+            );
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'LiveCounter is initialized with initial value from OBJECT_SYNC sequence',
           action: async (ctx) => {
