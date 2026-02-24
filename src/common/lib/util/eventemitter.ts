@@ -178,10 +178,21 @@ class EventEmitter {
 
   /**
    * Get the array of listeners for a given event; excludes once events
-   * @param event (optional) the name of the event, or none for 'any'
+   * @param event (optional) the name of the event, array of event names, or none for 'any'
    * @return array of events, or null if none
    */
-  listeners(event: string) {
+  listeners(event?: string | string[]) {
+    if (Array.isArray(event)) {
+      const allListeners: Function[] = [];
+      event.forEach((eventName) => {
+        const listeners = this.listeners(eventName);
+        if (listeners) {
+          allListeners.push(...listeners);
+        }
+      });
+      return allListeners.length ? allListeners : null;
+    }
+
     if (event) {
       const listeners = this.events[event] || [];
       if (this.eventsOnce[event]) Array.prototype.push.apply(listeners, this.eventsOnce[event]);

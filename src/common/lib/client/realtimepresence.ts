@@ -431,6 +431,11 @@ class RealtimePresence extends EventEmitter {
     const listener = args[1];
     this.subscriptions.off(event, listener);
   }
+
+  listeners(event?: string | string[]): Function[] {
+    const result = this.subscriptions.listeners(event);
+    return result || [];
+  }
 }
 
 export default RealtimePresence;
