@@ -3694,6 +3694,10 @@ export declare class ErrorInfo extends Error {
    * The underlying cause of the error, where applicable.
    */
   cause?: ErrorInfo;
+  /**
+   * Optional map of string key-value pairs containing structured metadata associated with the error.
+   */
+  detail?: Record<string, string>;
 
   /**
    * Construct an ErrorInfo object.
