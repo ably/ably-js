@@ -253,15 +253,18 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveCounterUpdate {
+    // RTLC16 - resolve counterCreate from either the direct property or the one from which counterCreateWithObjectId was derived
+    const counterCreate = objectOperation.counterCreate ?? objectOperation.counterCreateWithObjectId?._derivedFrom;
+
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += objectOperation.counterCreate?.count ?? 0; // RTLC6d1
-    this._createOperationIsMerged = true; // RTLC6d2
+    this._dataRef.data += counterCreate?.count ?? 0; // RTLC16a
+    this._createOperationIsMerged = true; // RTLC16b
 
     return {
-      update: { amount: objectOperation.counterCreate?.count ?? 0 },
+      update: { amount: counterCreate?.count ?? 0 },
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };

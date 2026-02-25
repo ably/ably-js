@@ -8385,7 +8385,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         });
 
         /** @nospec */
-        it('counter create message from LiveCounter.create has correct size with both counterCreate and counterCreateWithObjectId', async function () {
+        it('counter create message from LiveCounter.create has correct size', async function () {
           const helper = this.test.helper;
           const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
           const channel = client.channels.get('channel');
@@ -8395,19 +8395,14 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           helper.recordPrivateApi('call.LiveCounterValueType.createCounterCreateMessage');
           const msg = await LiveCounter.createCounterCreateMessage(realtimeObject, counterValue);
 
-          // verify the message has both counterCreate and counterCreateWithObjectId fields
-          expect(msg.operation.counterCreate, 'Check counterCreate field exists').to.exist;
-          expect(msg.operation.counterCreateWithObjectId, 'Check counterCreateWithObjectId field exists').to.exist;
-
           helper.recordPrivateApi('call.ObjectMessage.encode');
           const encodedMessage = msg.encode(client);
           helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
-          // size should only account for counterCreate, not double-counted with counterCreateWithObjectId
           expect(encodedMessage.getMessageSize()).to.equal(8);
         });
 
         /** @nospec */
-        it('map create message from LiveMap.create has correct size with both mapCreate and mapCreateWithObjectId', async function () {
+        it('map create message from LiveMap.create has correct size', async function () {
           const helper = this.test.helper;
           const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
           const channel = client.channels.get('channel');
@@ -8417,14 +8412,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           helper.recordPrivateApi('call.LiveMapValueType.createMapCreateMessage');
           const { mapCreateMsg } = await LiveMap.createMapCreateMessage(realtimeObject, mapValue);
 
-          // verify the message has both mapCreate and mapCreateWithObjectId fields
-          expect(mapCreateMsg.operation.mapCreate, 'Check mapCreate field exists').to.exist;
-          expect(mapCreateMsg.operation.mapCreateWithObjectId, 'Check mapCreateWithObjectId field exists').to.exist;
-
           helper.recordPrivateApi('call.ObjectMessage.encode');
           const encodedMessage = mapCreateMsg.encode(client);
           helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
-          // size should only account for mapCreate, not double-counted with mapCreateWithObjectId
           expect(encodedMessage.getMessageSize()).to.equal(
             Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
           );

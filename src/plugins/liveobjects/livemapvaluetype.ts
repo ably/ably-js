@@ -95,13 +95,12 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
         operation: {
           action: ObjectOperationAction.MAP_CREATE,
           objectId,
-          // mapCreate is kept on the operation for local use: message size calculation and apply-on-ACK.
-          // it is stripped during wire serialization so that only mapCreateWithObjectId is sent.
-          mapCreate,
           mapCreateWithObjectId: {
             nonce,
             // initialValue is the JSON string representation of the encoded mapCreate operation that contains the initial value
             initialValue: initialValueJSONString,
+            // RTO11f18 - retain the source MapCreate for local use (size calculation and apply-on-ACK)
+            _derivedFrom: mapCreate,
           },
         } as ObjectOperation<ObjectData>,
       },

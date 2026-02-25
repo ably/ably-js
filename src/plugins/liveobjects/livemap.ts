@@ -646,7 +646,10 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
   ): LiveMapUpdate<T> {
-    if (this._client.Utils.isNil(objectOperation.mapCreate)) {
+    // RTLM23 - resolve mapCreate from either the direct property or the one from which mapCreateWithObjectId was derived
+    const mapCreate = objectOperation.mapCreate ?? objectOperation.mapCreateWithObjectId?._derivedFrom;
+
+    if (this._client.Utils.isNil(mapCreate)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
       return { update: {}, objectMessage: msg, _type: 'LiveMapUpdate' };
@@ -660,7 +663,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    Object.entries(objectOperation.mapCreate.entries ?? {}).forEach(([key, entry]) => {
+    Object.entries(mapCreate.entries ?? {}).forEach(([key, entry]) => {
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       const opSerial = entry.timeserial;
       let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
@@ -711,9 +714,12 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    if (this._semantics !== op.mapCreate?.semantics) {
+    // RTLM23 - resolve mapCreate from either the direct property or the one from which mapCreateWithObjectId was derived
+    const mapCreate = op.mapCreate ?? op.mapCreateWithObjectId?._derivedFrom;
+
+    if (this._semantics !== mapCreate?.semantics) {
       throw new this._client.ErrorInfo(
-        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.mapCreate?.semantics}`,
+        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${mapCreate?.semantics}`,
         92000,
         500,
       );
