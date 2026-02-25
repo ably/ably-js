@@ -260,31 +260,48 @@ function encode(
   utils: typeof Utils,
   messageEncoding: typeof MessageEncoding,
   encodeObjectDataFn: EncodeObjectDataFunction,
+  /**
+   * When true, strips mapCreate/counterCreate from the deep copy before encoding.
+   * Used by encodeForWire() for outgoing create operations where only *WithObjectId variants
+   * should be transmitted. This avoids unnecessarily encoding data that will be discarded.
+   */
+  stripCreateForWire?: boolean,
 ): WireObjectMessage {
   // deep copy the message to avoid mutating the original one.
   // buffer values won't be correctly copied, so we will need to use the original message when encoding.
   const result = Object.assign(new WireObjectMessage(utils, messageEncoding), copyMsg(message));
 
-  // encode "object" field
-  if (message.object?.map?.entries) {
-    result.object!.map!.entries = encodeMapEntries(message.object.map.entries, encodeObjectDataFn);
+  // For wire transmission of outgoing create operations, strip mapCreate/counterCreate
+  // from the copy before encoding. Only *WithObjectId variants are sent over the wire.
+  if (stripCreateForWire && result.operation) {
+    if (result.operation.mapCreateWithObjectId) {
+      delete result.operation.mapCreate;
+    }
+    if (result.operation.counterCreateWithObjectId) {
+      delete result.operation.counterCreate;
+    }
   }
 
-  if (message.object?.createOp?.mapCreate?.entries) {
-    result.object!.createOp!.mapCreate!.entries = encodeMapEntries(
-      message.object.createOp.mapCreate.entries,
+  // encode "object" field
+  if (result.object?.map?.entries) {
+    result.object.map.entries = encodeMapEntries(message.object!.map!.entries!, encodeObjectDataFn);
+  }
+
+  if (result.object?.createOp?.mapCreate?.entries) {
+    result.object.createOp.mapCreate.entries = encodeMapEntries(
+      message.object!.createOp!.mapCreate!.entries,
       encodeObjectDataFn,
     );
   }
 
   // OOP5
   // encode "operation" field
-  if (message.operation?.mapCreate?.entries) {
-    result.operation!.mapCreate!.entries = encodeMapEntries(message.operation.mapCreate.entries, encodeObjectDataFn);
+  if (result.operation?.mapCreate?.entries) {
+    result.operation.mapCreate.entries = encodeMapEntries(message.operation!.mapCreate!.entries, encodeObjectDataFn);
   }
 
-  if (message.operation?.mapSet?.value) {
-    result.operation!.mapSet!.value = encodeObjectData(message.operation.mapSet.value, encodeObjectDataFn);
+  if (result.operation?.mapSet?.value) {
+    result.operation.mapSet.value = encodeObjectData(message.operation!.mapSet!.value, encodeObjectDataFn);
   }
 
   return result;
@@ -616,7 +633,7 @@ export class WireObjectMessage {
       return { ...data };
     };
 
-    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
+    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn, true);
   }
 
   /**
@@ -709,6 +726,9 @@ export class WireObjectMessage {
   private _getObjectOperationSize(operation: ObjectOperation<WireObjectData>): number {
     let size = 0;
 
+    // For create operations, size is based on mapCreate/counterCreate, not their *WithObjectId
+    // counterparts (which are derived from them). Outgoing operations carry both fields for this
+    // purpose; mapCreate/counterCreate are stripped before being transmitted over the wire.
     if (operation.mapCreate) {
       size += this._getMapCreateSize(operation.mapCreate);
     }

@@ -15,6 +15,8 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'call.Defaults.normaliseOptions',
     'call.EventEmitter.emit',
     'call.EventEmitter.listeners',
+    'call.LiveCounterValueType.createCounterCreateMessage',
+    'call.LiveMapValueType.createMapCreateMessage',
     'call.LiveObject.isTombstoned',
     'call.LiveObject.tombstonedAt',
     'call.Message.decode',

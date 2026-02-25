@@ -8182,6 +8182,24 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expected: Utils.dataSizeBytes('key-1') + JSON.stringify(['foo', 'bar', 'baz']).length,
           },
           {
+            description: 'map create op with client-generated object id',
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                mapCreateWithObjectId: {
+                  nonce: '1234567890',
+                  initialValue: JSON.stringify({
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } },
+                  }),
+                },
+              },
+            }),
+            // size must be calculated based on mapCreate/counterCreate, not from *WithObjectId
+            expected: 0,
+          },
+          {
             description: 'map set operation value=objectId',
             message: objectMessageFromValues({
               operation: {
@@ -8314,6 +8332,21 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expected: 8,
           },
           {
+            description: 'counter create op with client-generated object id',
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                counterCreateWithObjectId: {
+                  nonce: '1234567890',
+                  initialValue: JSON.stringify({ count: 1234567 }),
+                },
+              },
+            }),
+            // size must be calculated based on mapCreate/counterCreate, not from *WithObjectId
+            expected: 0,
+          },
+          {
             description: 'counter inc op',
             message: objectMessageFromValues({
               operation: { action: 4, objectId: 'object-id', counterInc: { number: 123.456 } },
@@ -8349,6 +8382,52 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
           helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
           expect(encodedMessage.getMessageSize()).to.equal(scenario.expected);
+        });
+
+        /** @nospec */
+        it('counter create message from LiveCounter.create has correct size with both counterCreate and counterCreateWithObjectId', async function () {
+          const helper = this.test.helper;
+          const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
+          const channel = client.channels.get('channel');
+          const realtimeObject = channel.object;
+
+          const counterValue = LiveCounter.create(1234567);
+          helper.recordPrivateApi('call.LiveCounterValueType.createCounterCreateMessage');
+          const msg = await LiveCounter.createCounterCreateMessage(realtimeObject, counterValue);
+
+          // verify the message has both counterCreate and counterCreateWithObjectId fields
+          expect(msg.operation.counterCreate, 'Check counterCreate field exists').to.exist;
+          expect(msg.operation.counterCreateWithObjectId, 'Check counterCreateWithObjectId field exists').to.exist;
+
+          helper.recordPrivateApi('call.ObjectMessage.encode');
+          const encodedMessage = msg.encode(client);
+          helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
+          // size should only account for counterCreate, not double-counted with counterCreateWithObjectId
+          expect(encodedMessage.getMessageSize()).to.equal(8);
+        });
+
+        /** @nospec */
+        it('map create message from LiveMap.create has correct size with both mapCreate and mapCreateWithObjectId', async function () {
+          const helper = this.test.helper;
+          const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
+          const channel = client.channels.get('channel');
+          const realtimeObject = channel.object;
+
+          const mapValue = LiveMap.create({ 'key-1': 'a string' });
+          helper.recordPrivateApi('call.LiveMapValueType.createMapCreateMessage');
+          const { mapCreateMsg } = await LiveMap.createMapCreateMessage(realtimeObject, mapValue);
+
+          // verify the message has both mapCreate and mapCreateWithObjectId fields
+          expect(mapCreateMsg.operation.mapCreate, 'Check mapCreate field exists').to.exist;
+          expect(mapCreateMsg.operation.mapCreateWithObjectId, 'Check mapCreateWithObjectId field exists').to.exist;
+
+          helper.recordPrivateApi('call.ObjectMessage.encode');
+          const encodedMessage = mapCreateMsg.encode(client);
+          helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
+          // size should only account for mapCreate, not double-counted with mapCreateWithObjectId
+          expect(encodedMessage.getMessageSize()).to.equal(
+            Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
+          );
         });
       });
     });

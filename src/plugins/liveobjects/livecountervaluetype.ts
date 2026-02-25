@@ -78,6 +78,9 @@ export class LiveCounterValueType implements LiveCounter {
         operation: {
           action: ObjectOperationAction.COUNTER_CREATE,
           objectId,
+          // counterCreate is kept on the operation for local use: message size calculation and apply-on-ACK.
+          // it is stripped during wire serialization so that only counterCreateWithObjectId is sent.
+          counterCreate,
           counterCreateWithObjectId: {
             nonce,
             // initialValue is the JSON string representation of the encoded counterCreate operation that contains the initial value
