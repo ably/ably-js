@@ -8100,7 +8100,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
+                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
               },
             }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
@@ -8113,7 +8113,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 objectId: 'object-id',
                 map: {
                   semantics: 0,
-                  entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
+                  entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
                 },
               },
             }),
@@ -8128,8 +8128,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { value: true } },
-                    'key-2': { tombstone: false, data: { value: false } },
+                    'key-1': { tombstone: false, data: { boolean: true } },
+                    'key-2': { tombstone: false, data: { boolean: false } },
                   },
                 },
               },
@@ -8145,8 +8145,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { value: 123.456 } },
-                    'key-2': { tombstone: false, data: { value: 0 } },
+                    'key-1': { tombstone: false, data: { number: 123.456 } },
+                    'key-2': { tombstone: false, data: { number: 0 } },
                   },
                 },
               },
@@ -8161,7 +8161,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 objectId: 'object-id',
                 map: {
                   semantics: 0,
-                  entries: { 'key-1': { tombstone: false, data: { value: { foo: 'bar' } } } },
+                  entries: { 'key-1': { tombstone: false, data: { json: { foo: 'bar' } } } },
                 },
               },
             }),
@@ -8175,7 +8175,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 objectId: 'object-id',
                 map: {
                   semantics: 0,
-                  entries: { 'key-1': { tombstone: false, data: { value: ['foo', 'bar', 'baz'] } } },
+                  entries: { 'key-1': { tombstone: false, data: { json: ['foo', 'bar', 'baz'] } } },
                 },
               },
             }),
@@ -8202,7 +8202,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=string',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { string: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
@@ -8212,7 +8212,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
+                mapOp: { key: 'my-key', data: { bytes: BufferUtils.utf8Encode('my-value') } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
@@ -8220,28 +8220,28 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           {
             description: 'map set operation value=boolean true',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: true } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=boolean false',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: false } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: false } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 123.456 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
           {
             description: 'map set operation value=double 0',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 0 } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 0 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
@@ -8251,7 +8251,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: { foo: 'bar' } } },
+                mapOp: { key: 'my-key', data: { json: { foo: 'bar' } } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify({ foo: 'bar' }).length,
@@ -8262,7 +8262,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: ['foo', 'bar', 'baz'] } },
+                mapOp: { key: 'my-key', data: { json: ['foo', 'bar', 'baz'] } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + JSON.stringify(['foo', 'bar', 'baz']).length,
@@ -8275,14 +8275,14 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { value: 'a string' } },
-                    'key-2': { tombstone: true, data: { value: 'another string' } },
+                    'key-1': { tombstone: false, data: { string: 'a string' } },
+                    'key-2': { tombstone: true, data: { string: 'another string' } },
                   },
                 },
                 createOp: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
+                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { string: 'third string' } } } },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,

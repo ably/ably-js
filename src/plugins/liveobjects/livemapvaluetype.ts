@@ -1,7 +1,7 @@
 import { __livetype } from '../../../ably';
 import { Primitive, LiveMap as PublicLiveMap, Value } from '../../../liveobjects';
 import { LiveCounterValueType } from './livecountervaluetype';
-import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
+import { LiveMap, LiveMapObjectData, ObjectIdObjectData } from './livemap';
 import { ObjectId } from './objectid';
 import {
   createInitialValueJSONString,
@@ -11,6 +11,7 @@ import {
   ObjectOperationAction,
   ObjectsMapEntry,
   ObjectsMapSemantics,
+  primitiveToObjectData,
 } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
@@ -137,8 +138,7 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
         objectData = typedObjectData;
       } else {
         // Handle primitive values
-        const typedObjectData: ValueObjectData = { value: value as Primitive };
-        objectData = typedObjectData;
+        objectData = primitiveToObjectData(value as Primitive, realtimeObject.getClient());
       }
 
       mapEntries[key] = {
