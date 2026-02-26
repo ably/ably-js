@@ -15,7 +15,7 @@ const operationActions: ObjectsApi.ObjectOperationAction[] = [
 
 const mapSemantics: ObjectsApi.ObjectsMapSemantics[] = ['lww'];
 
-export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
+export type EncodeObjectDataFunction<TData = ObjectData | WireObjectData> = (data: TData) => WireObjectData;
 
 /** @spec OOP2 */
 export enum ObjectOperationAction {
@@ -33,14 +33,42 @@ export enum ObjectsMapSemantics {
 }
 
 /**
- * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
+ * An ObjectData represents a decoded value in an object on a channel decoded from {@link WireObjectData}.
  * @spec OD1
  */
 export interface ObjectData {
-  /** A reference to another object, used to support composable object structures. */
+  /** A reference to another object, used to support composable object structures. Only one value field can be set. */
   objectId?: string; // OD2a
-  /** A decoded leaf value from {@link WireObjectData}. */
-  value?: ObjectsApi.Primitive;
+  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
+  boolean?: boolean; // OD2c
+  /** A decoded primitive binary leaf value in the object graph. Only one value field can be set. */
+  bytes?: Buffer | ArrayBuffer; // OD2d
+  /** A primitive number leaf value in the object graph. Only one value field can be set. */
+  number?: number; // OD2e
+  /** A primitive string leaf value in the object graph. Only one value field can be set. */
+  string?: string; // OD2f
+  /** A decoded JSON object leaf value in the object graph. Only one value field can be set. */
+  json?: ObjectsApi.JsonObject | ObjectsApi.JsonArray; // OD2g
+}
+
+/**
+ * Extracts the primitive value from an {@link ObjectData}'s typed fields.
+ * Returns the first non-undefined typed field value, or `undefined` if none is set.
+ */
+export function getObjectDataPrimitive(data: ObjectData): ObjectsApi.Primitive | undefined {
+  return data.boolean ?? data.bytes ?? data.number ?? data.string ?? data.json;
+}
+
+/**
+ * Converts a {@link Primitive} value into an {@link ObjectData} with the appropriate typed field set.
+ */
+export function primitiveToObjectData(value: ObjectsApi.Primitive, client: BaseClient): ObjectData {
+  if (client.Platform.BufferUtils.isBuffer(value)) return { bytes: value };
+  if (typeof value === 'boolean') return { boolean: value };
+  if (typeof value === 'number') return { number: value };
+  if (typeof value === 'string') return { string: value };
+  if (typeof value === 'object' && value !== null) return { json: value };
+  return {};
 }
 
 /**
@@ -48,9 +76,8 @@ export interface ObjectData {
  * @spec OD1
  */
 export interface WireObjectData {
-  /** A reference to another object, used to support composable object structures. */
+  /** A reference to another object, used to support composable object structures. Only one value field can be set. */
   objectId?: string; // OD2a
-
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
   boolean?: boolean; // OD2c
   /** A primitive binary leaf value in the object graph. Only one value field can be set. Represented as a Base64-encoded string in JSON protocol */
@@ -194,10 +221,22 @@ export interface ObjectState<TData> {
 }
 
 function encode(
-  message: Utils.Properties<ObjectMessage> | Utils.Properties<WireObjectMessage>,
+  message: ObjectMessage,
   utils: typeof Utils,
   messageEncoding: typeof MessageEncoding,
-  encodeObjectDataFn: EncodeObjectDataFunction,
+  encodeObjectDataFn: EncodeObjectDataFunction<ObjectData>,
+): WireObjectMessage;
+function encode(
+  message: WireObjectMessage,
+  utils: typeof Utils,
+  messageEncoding: typeof MessageEncoding,
+  encodeObjectDataFn: EncodeObjectDataFunction<WireObjectData>,
+): WireObjectMessage;
+function encode(
+  message: ObjectMessage | WireObjectMessage,
+  utils: typeof Utils,
+  messageEncoding: typeof MessageEncoding,
+  encodeObjectDataFn: EncodeObjectDataFunction<any>,
 ): WireObjectMessage {
   // deep copy the message to avoid mutating the original one.
   // buffer values won't be correctly copied, so we will need to use the original message when encoding.
@@ -275,7 +314,7 @@ export function createInitialValueJSONString(
     client.Utils,
     client.MessageEncoding,
   );
-  const wireMsg = msg.encode(client);
+  const wireMsg = msg.encode();
 
   // get the encoded operation that is safe to be sent over the wire as a JSON string.
   const { operation: encodedOperation } = wireMsg.encodeForWire(client.Utils.Format.json);
@@ -336,16 +375,45 @@ function copyMsg(
   return result;
 }
 
-function stringifyOperation(operation: ObjectOperation<ObjectData>): ObjectsApi.ObjectOperation {
+function toUserFacingObjectData(data: ObjectData): ObjectsApi.ObjectData {
+  if (data.objectId != null) {
+    return { objectId: data.objectId };
+  }
+
+  return {
+    value: getObjectDataPrimitive(data),
+  };
+}
+
+function toUserFacingMapEntry(entry: ObjectsMapEntry<ObjectData>): ObjectsApi.ObjectsMapEntry {
+  return {
+    ...entry,
+    data: entry.data ? toUserFacingObjectData(entry.data) : undefined,
+  };
+}
+
+function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): ObjectsApi.ObjectOperation {
+  const { map: internalMap, mapOp: internalMapOp } = operation;
+
+  const map: ObjectsApi.ObjectsMap | undefined = internalMap
+    ? {
+        ...internalMap,
+        semantics: internalMap.semantics != null ? mapSemantics[internalMap.semantics] || 'unknown' : undefined,
+        entries: Object.fromEntries(
+          Object.entries(internalMap.entries ?? {}).map(([key, entry]) => [key, toUserFacingMapEntry(entry)]),
+        ),
+      }
+    : undefined;
+
+  const mapOp: ObjectsApi.ObjectsMapOp | undefined = internalMapOp
+    ? { ...internalMapOp, data: internalMapOp.data ? toUserFacingObjectData(internalMapOp.data) : undefined }
+    : undefined;
+
   return {
     ...operation,
     action: operationActions[operation.action] || 'unknown',
-    map: operation.map
-      ? {
-          ...operation.map,
-          semantics: operation.map.semantics != null ? mapSemantics[operation.map.semantics] || 'unknown' : undefined,
-        }
-      : undefined,
+    map,
+    mapOp,
   };
 }
 
@@ -407,23 +475,14 @@ export class ObjectMessage {
    *
    * @spec OM4
    */
-  encode(client: BaseClient): WireObjectMessage {
-    const encodeObjectDataFn: EncodeObjectDataFunction = (data: ObjectData) => {
-      const encodedObjectData: WireObjectData = { objectId: data.objectId };
-
-      if (client.Platform.BufferUtils.isBuffer(data.value)) {
-        // bytes encoding happens later when WireObjectMessage is encoded for wire transmission
-        encodedObjectData.bytes = data.value;
-      } else if (typeof data.value === 'string') {
-        encodedObjectData.string = data.value; // OD4c4, OD4d4
-      } else if (typeof data.value === 'boolean') {
-        encodedObjectData.boolean = data.value; // OD4c1, OD4d1
-      } else if (typeof data.value === 'number') {
-        encodedObjectData.number = data.value; // OD4c3, OD4d3
-      } else if (typeof data.value === 'object' && data.value !== null) {
-        // OD4c5, OD4d5
-        encodedObjectData.json = JSON.stringify(data.value);
-      }
+  encode(): WireObjectMessage {
+    const encodeObjectDataFn: EncodeObjectDataFunction<ObjectData> = (data) => {
+      const encodedObjectData: WireObjectData = {
+        // bytes encoding happens later when WireObjectMessage is encoded for wire transmission, so we just copy all fields except json for now.
+        // OD4c1, OD4d1, OD4c3, OD4d3, OD4c4, OD4d4
+        ...data,
+        json: data.json != null ? JSON.stringify(data.json) : undefined, // OD4c5, OD4d5
+      };
 
       return encodedObjectData;
     };
@@ -451,7 +510,7 @@ export class ObjectMessage {
       timestamp: this.timestamp!,
       channel: channel.name,
       // we expose only operation messages to users, so operation field is always present
-      operation: stringifyOperation(this.operation!),
+      operation: toUserFacingObjectOperation(this.operation!),
       serial: this.serial,
       serialTimestamp: this.serialTimestamp,
       siteCode: this.siteCode,
@@ -517,7 +576,7 @@ export class WireObjectMessage {
    * Uses encoding functions from regular `Message` processing.
    */
   encodeForWire(format: Utils.Format): WireObjectMessage {
-    const encodeObjectDataFn: EncodeObjectDataFunction = (data: WireObjectData) => {
+    const encodeObjectDataFn: EncodeObjectDataFunction<WireObjectData> = (data) => {
       if (data.bytes != null) {
         // OD4c2, OD4d2
         const result = this._messageEncoding.encodeDataForWire(data.bytes, null, format);
@@ -773,29 +832,36 @@ export class WireObjectMessage {
   ): ObjectData {
     try {
       if (objectData.objectId != null) {
-        return {
-          objectId: objectData.objectId,
-        };
+        return { objectId: objectData.objectId };
       }
 
-      let decodedBytes: Buffer | ArrayBuffer | undefined;
       if (objectData.bytes != null) {
-        decodedBytes =
+        const decodedBytes =
           format === 'msgpack'
             ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
               (objectData.bytes as Buffer | ArrayBuffer)
             : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
               client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
+        return { bytes: decodedBytes };
       }
 
-      let decodedJson: ObjectsApi.JsonObject | ObjectsApi.JsonArray | undefined;
       if (objectData.json != null) {
-        decodedJson = JSON.parse(objectData.json); // OD5a2, OD5b3
+        return { json: JSON.parse(objectData.json) }; // OD5a2, OD5b3
       }
 
-      return {
-        value: decodedBytes ?? decodedJson ?? objectData.boolean ?? objectData.number ?? objectData.string,
-      };
+      if (objectData.boolean != null) {
+        return { boolean: objectData.boolean };
+      }
+
+      if (objectData.number != null) {
+        return { number: objectData.number };
+      }
+
+      if (objectData.string != null) {
+        return { string: objectData.string };
+      }
+
+      return {};
     } catch (error) {
       client.Logger.logAction(
         client.logger,

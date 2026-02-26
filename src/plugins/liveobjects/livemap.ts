@@ -14,6 +14,7 @@ import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import {
+  getObjectDataPrimitive,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -21,6 +22,7 @@ import {
   ObjectsMapEntry,
   ObjectsMapOp,
   ObjectsMapSemantics,
+  primitiveToObjectData,
 } from './objectmessage';
 import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
@@ -29,12 +31,7 @@ export interface ObjectIdObjectData {
   objectId: string;
 }
 
-export interface ValueObjectData {
-  /** A decoded leaf value from {@link WireObjectData}. */
-  value: Primitive;
-}
-
-export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
+export type LiveMapObjectData = ObjectIdObjectData | Omit<ObjectData, 'objectId'>;
 
 export interface LiveMapEntry {
   tombstone: boolean;
@@ -121,8 +118,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
     } else {
-      const typedObjectData: ValueObjectData = { value: value as Primitive };
-      objectData = typedObjectData;
+      objectData = primitiveToObjectData(value as Primitive, client);
     }
 
     const mapSetMsg = ObjectMessage.fromValues(
@@ -742,7 +738,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    if (Utils.isNil(op.data) || (Utils.isNil(op.data.objectId) && Utils.isNil(op.data.value))) {
+    if (Utils.isNil(op.data) || (Utils.isNil(op.data.objectId) && Utils.isNil(getObjectDataPrimitive(op.data)))) {
       throw new ErrorInfo(
         `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key="${op.key}"`,
         92000,
@@ -760,7 +756,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       // so instead we create a zero-value object for that object id if it not exists.
       this._realtimeObject.getPool().createZeroValueObjectIfNotExists(op.data.objectId); // RTLM7c1
     } else {
-      liveData = { value: op.data.value } as ValueObjectData;
+      liveData = op.data;
     }
 
     if (existingEntry) {
@@ -920,7 +916,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         if (!this._client.Utils.isNil(entry.data.objectId)) {
           liveData = { objectId: entry.data.objectId } as ObjectIdObjectData;
         } else {
-          liveData = { value: entry.data.value } as ValueObjectData;
+          liveData = entry.data;
         }
       }
 
@@ -958,24 +954,27 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
    */
   private _getResolvedValueFromObjectData(data: LiveMapObjectData): Value | undefined {
     // if object data stores primitive value, just return it as is.
-    const primitiveValue = (data as ValueObjectData).value;
+    const primitiveValue = getObjectDataPrimitive(data);
     if (primitiveValue != null) {
       return primitiveValue; // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
     }
 
-    // RTLM5d2f - otherwise, it has an objectId reference, and we should get the actual object from the pool
-    const objectId = (data as ObjectIdObjectData).objectId;
-    const refObject: LiveObject | undefined = this._realtimeObject.getPool().get(objectId);
-    if (!refObject) {
-      return undefined; // RTLM5d2f1
+    // RTLM5d2f - if object data has an objectId reference, get the actual object from the pool
+    if ('objectId' in data) {
+      const refObject: LiveObject | undefined = this._realtimeObject.getPool().get(data.objectId);
+      if (!refObject) {
+        return undefined; // RTLM5d2f1
+      }
+
+      if (refObject.isTombstoned()) {
+        // tombstoned objects must not be surfaced to the end users
+        return undefined;
+      }
+
+      return refObject as unknown as PublicLiveObject; // RTLM5d2f2
     }
 
-    if (refObject.isTombstoned()) {
-      // tombstoned objects must not be surfaced to the end users
-      return undefined;
-    }
-
-    return refObject as unknown as PublicLiveObject; // RTLM5d2f2
+    return undefined; // RTLM5d2g
   }
 
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
