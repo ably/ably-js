@@ -9104,6 +9104,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             }
           }
 
+          // wait for next tick to ensure channel has processed the ATTACHED/object sync message and has emitted resulting sync events
+          await new Promise((res) => nextTick(res));
+
           // Verify the expected sequence of sync events
           expect(receivedSyncEvents).to.deep.equal(
             scenario.expectedSyncEvents,
