@@ -879,6 +879,194 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
+          description: 'OBJECT_SYNC sequence builds object tree across multiple sync messages',
+          action: async (ctx) => {
+            const { channel, objectsHelper, entryPathObject } = ctx;
+
+            const counterId = objectsHelper.fakeCounterObjectId();
+            const mapId = objectsHelper.fakeMapObjectId();
+
+            // send three separate OBJECT_SYNC messages: one for root, one for counter, one for map
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor1',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    stringKey: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'hello' } },
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                    map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
+                  },
+                }),
+              ],
+            });
+
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor2',
+              state: [
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialCount: 10,
+                  materialisedCount: 5,
+                }),
+              ],
+            });
+
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // end sync sequence
+              state: [
+                objectsHelper.mapObject({
+                  objectId: mapId,
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                  },
+                  materialisedEntries: {
+                    baz: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'qux' } },
+                  },
+                }),
+              ],
+            });
+
+            expect(entryPathObject.get('stringKey').value()).to.equal('hello', 'Check root has correct string value');
+            expect(entryPathObject.get('counter').value()).to.equal(15, 'Check counter has correct aggregated value');
+            expect(entryPathObject.get('map').get('foo').value()).to.equal('bar', 'Check map has initial entries');
+            expect(entryPathObject.get('map').get('baz').value()).to.equal('qux', 'Check map has materialised entries');
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC does not break when receiving an unknown object type',
+          action: async (ctx) => {
+            const { channel, objectsHelper } = ctx;
+
+            // first message: unknown object type (no counter or map field set)
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor',
+              state: [
+                {
+                  object: {
+                    objectId: 'unknown:object123',
+                    siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                    tombstone: false,
+                    // intentionally not setting counter or map fields
+                  },
+                },
+              ],
+            });
+
+            // second message: root with a key, ends sync sequence
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                  },
+                }),
+              ],
+            });
+
+            const root = await channel.object.get();
+
+            // verify root has the expected key - SDK should not break due to unknown object type
+            expect(root.get('foo').value()).to.equal(
+              'bar',
+              'Check root has correct value after unknown object type in sync',
+            );
+          },
+        },
+
+        {
+          description: 'partial OBJECT_SYNC merges map entries across multiple messages for the same objectId',
+          action: async (ctx) => {
+            const { channel, objectsHelper, entryPathObject } = ctx;
+
+            const mapId = objectsHelper.fakeMapObjectId();
+
+            // assign map object to root
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor1',
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
+                  },
+                }),
+              ],
+            });
+
+            // send partial sync messages for the same map object, each with different materialised entries.
+            // initialEntries are identical across all partial messages for the same object - a server guarantee.
+            const partialMessages = [
+              {
+                syncSerial: 'serial:cursor2',
+                materialisedEntries: {
+                  key1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { number: 1 } },
+                  key2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'two' } },
+                },
+              },
+              {
+                syncSerial: 'serial:cursor3',
+                materialisedEntries: {
+                  key3: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { number: 3 } },
+                  key4: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { boolean: true } },
+                },
+              },
+              {
+                syncSerial: 'serial:', // end sync sequence
+                materialisedEntries: {
+                  key5: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'five' } },
+                },
+              },
+            ];
+
+            for (const partial of partialMessages) {
+              await objectsHelper.processObjectStateMessageOnChannel({
+                channel,
+                syncSerial: partial.syncSerial,
+                state: [
+                  objectsHelper.mapObject({
+                    objectId: mapId,
+                    siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                    initialEntries: {
+                      initialKey: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'initial' } },
+                    },
+                    materialisedEntries: partial.materialisedEntries,
+                  }),
+                ],
+              });
+            }
+
+            const map = entryPathObject.get('map');
+
+            expect(map.get('initialKey').value()).to.equal(
+              'initial',
+              'Check keys from the create operation are present',
+            );
+
+            // check that materialised entries from all partial messages were merged
+            expect(map.get('key1').value()).to.equal(1, 'Check key1 from first partial sync');
+            expect(map.get('key2').value()).to.equal('two', 'Check key2 from first partial sync');
+            expect(map.get('key3').value()).to.equal(3, 'Check key3 from second partial sync');
+            expect(map.get('key4').value()).to.equal(true, 'Check key4 from second partial sync');
+            expect(map.get('key5').value()).to.equal('five', 'Check key5 from third partial sync');
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'LiveCounter is initialized with initial value from OBJECT_SYNC sequence',
           action: async (ctx) => {

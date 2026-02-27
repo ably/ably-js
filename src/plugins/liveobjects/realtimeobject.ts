@@ -12,7 +12,7 @@ import { ObjectMessage, ObjectOperationAction } from './objectmessage';
 import { ObjectsPool } from './objectspool';
 import { DefaultPathObject } from './pathobject';
 import { PathObjectSubscriptionRegister } from './pathobjectsubscriptionregister';
-import { SyncObjectsDataPool } from './syncobjectsdatapool';
+import { SyncObjectsPool } from './syncobjectspool';
 
 export enum ObjectsEvent {
   syncing = 'syncing',
@@ -51,7 +51,7 @@ export class RealtimeObject {
   // related to RTC10, should have a separate EventEmitter for users of the library
   private _eventEmitterPublic: EventEmitter;
   private _objectsPool: ObjectsPool; // RTO3
-  private _syncObjectsDataPool: SyncObjectsDataPool;
+  private _syncObjectsPool: SyncObjectsPool;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedObjectOperations: ObjectMessage[];
@@ -68,7 +68,7 @@ export class RealtimeObject {
     this._eventEmitterInternal = new this._client.EventEmitter(this._client.logger);
     this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
     this._objectsPool = new ObjectsPool(this);
-    this._syncObjectsDataPool = new SyncObjectsDataPool(this);
+    this._syncObjectsPool = new SyncObjectsPool(this);
     this._bufferedObjectOperations = [];
     this._appliedOnAckSerials = new Set(); // RTO7b1
     this._pathObjectSubscriptionRegister = new PathObjectSubscriptionRegister(this);
@@ -163,11 +163,11 @@ export class RealtimeObject {
     }
 
     // RTO5a3 - continue current sync sequence
-    this._syncObjectsDataPool.applyObjectSyncMessages(objectMessages); // RTO5b
+    this._syncObjectsPool.applyObjectSyncMessages(objectMessages); // RTO5f
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
-      this._endSync();
+      this._endSync(); // RTO5c
     }
   }
 
@@ -208,7 +208,7 @@ export class RealtimeObject {
       // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
       // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
       this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
-      this._syncObjectsDataPool.clear(); // RTO4b3
+      this._syncObjectsPool.clear(); // RTO4b3
       this._endSync(); // RTO4b4
     }
   }
@@ -226,7 +226,7 @@ export class RealtimeObject {
       case 'failed':
         // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
         this._objectsPool.clearObjectsData(false);
-        this._syncObjectsDataPool.clear();
+        this._syncObjectsPool.clear();
         break;
     }
   }
@@ -388,7 +388,7 @@ export class RealtimeObject {
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered object operation messages on new sync start
     this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.clear();
+    this._syncObjectsPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
     this._stateChange(ObjectsState.syncing);
@@ -402,7 +402,7 @@ export class RealtimeObject {
     this._applyObjectMessages(this._bufferedObjectOperations, ObjectsOperationSource.channel); // RTO5c6
 
     this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.clear(); // RTO5c4
+    this._syncObjectsPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
 
@@ -432,7 +432,7 @@ export class RealtimeObject {
   }
 
   private _applySync(): void {
-    if (this._syncObjectsDataPool.isEmpty()) {
+    if (this._syncObjectsPool.isEmpty()) {
       return;
     }
 
@@ -443,34 +443,34 @@ export class RealtimeObject {
     }[] = [];
 
     // RTO5c1
-    for (const [objectId, entry] of this._syncObjectsDataPool.entries()) {
+    for (const [objectId, objectMessage] of this._syncObjectsPool.entries()) {
       receivedObjectIds.add(objectId);
       const existingObject = this._objectsPool.get(objectId);
 
       // RTO5c1a
       if (existingObject) {
-        const update = existingObject.overrideWithObjectState(entry.objectMessage); // RTO5c1a1
+        const update = existingObject.overrideWithObjectState(objectMessage); // RTO5c1a1
         // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
 
-      // RTO5c1b,
+      // RTO5c1b
       let newObject: LiveObject;
-      // assign to a variable so TS doesn't complain about 'never' type in the default case
-      const objectType = entry.objectType;
-      switch (objectType) {
-        case 'LiveCounter':
-          newObject = LiveCounter.fromObjectState(this, entry.objectMessage); // RTO5c1b1a
-          break;
-
-        case 'LiveMap':
-          newObject = LiveMap.fromObjectState(this, entry.objectMessage); // RTO5c1b1b
-          break;
-
-        default:
-          throw new this._client.ErrorInfo(`Unknown LiveObject type: ${objectType}`, 50000, 500); // RTO5c1b1c
+      if (objectMessage.object?.counter) {
+        newObject = LiveCounter.fromObjectState(this, objectMessage); // RTO5c1b1a
+      } else if (objectMessage.object?.map) {
+        newObject = LiveMap.fromObjectState(this, objectMessage); // RTO5c1b1b
+      } else {
+        // RTO5c1b1c
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'RealtimeObject._applySync()',
+          `received unsupported object state message during OBJECT_SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
+        );
+        continue;
       }
 
       this._objectsPool.set(objectId, newObject); // RTO5c1b1
