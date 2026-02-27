@@ -164,9 +164,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   }
 
   /**
-   * Helper function to inject an ATTACHED protocol message with or without HAS_OBJECTS flag
+   * Helper function to inject an ATTACHED protocol message
    */
-  async function injectAttachedMessage(helper, channel, hasObjects) {
+  async function injectAttachedMessage(helper, channel, flags) {
     helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
     helper.recordPrivateApi('call.transport.onProtocolMessage');
     helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
@@ -174,7 +174,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
     const pm = createPM({
       action: 11, // ATTACHED
       channel: channel.name,
-      flags: hasObjects ? 1 << 7 : 0, // HAS_OBJECTS flag is bit 7
+      flags,
     });
     await transport.onProtocolMessage(pm);
   }
@@ -681,6 +681,23 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       ];
 
       const objectSyncSequenceScenarios = [
+        {
+          description: 'on ATTACHED without HAS_OBJECTS clears local state',
+          action: async (ctx) => {
+            const { entryInstance, channel, helper } = ctx;
+
+            // set a key on root so we can verify it gets cleared after ATTACHED
+            await entryInstance.set('foo', 'bar');
+            expect(entryInstance.get('foo').value()).to.equal('bar', 'Check root has key before ATTACHED');
+
+            // inject ATTACHED without HAS_OBJECTS flag
+            await injectAttachedMessage(helper, channel, 0); // no HAS_OBJECTS flag
+
+            // local state should be cleared — root should have no keys
+            expect(entryInstance.size()).to.equal(0, 'Check root has no keys after ATTACHED without HAS_OBJECTS');
+          },
+        },
+
         {
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree on channel attachment',
@@ -2754,9 +2771,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
-          description: 'buffered object operation messages are discarded when new OBJECT_SYNC sequence starts',
+          description: 'buffered object operation messages are discarded on ATTACHED',
           action: async (ctx) => {
-            const { entryInstance, objectsHelper, channel, client, helper } = ctx;
+            const { entryInstance, objectsHelper, channel, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2764,39 +2781,137 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               syncSerial: 'serial:cursor',
             });
 
-            // inject operations, expect them to be discarded when sync with new sequence id starts
-            await Promise.all(
-              primitiveKeyData.map(async (keyData, i) => {
-                // copy data object as library will modify it
-                const data = { ...keyData.data };
-                helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
-                if (data.bytes != null && client.options.useBinaryProtocol) {
-                  // decode base64 data to binary for binary protocol
-                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  data.bytes = BufferUtils.base64Decode(data.bytes);
-                }
+            // inject operation during sync sequence, expect it to be discarded when ATTACHED arrives
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
 
-                return objectsHelper.processObjectOperationMessageOnChannel({
-                  channel,
-                  serial: lexicoTimeserial('aaa', i, 0),
-                  siteCode: 'aaa',
-                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data })],
-                });
-              }),
+            // any ATTACHED message must clear buffered operations and start a new sync sequence
+            await injectAttachedMessage(helper, channel, 1 << 7); // HAS_OBJECTS flag is bit 7
+
+            // inject another operation that should be applied when sync ends
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'baz', data: { string: 'qux' } })],
+            });
+
+            // end sync
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+            });
+
+            // check root doesn't have data from operations received before ATTACHED
+            expect(
+              entryInstance.get('foo'),
+              'Check buffered ops before ATTACHED were discarded and not applied on root',
+            ).to.not.exist;
+
+            // check root has data from operations received after ATTACHED
+            expect(entryInstance.get('baz').value()).to.equal(
+              'qux',
+              'Check root has data from operations received after ATTACHED',
             );
+          },
+        },
 
-            // start new sync with new sequence id
+        {
+          // Regression test: an earlier implementation did not clear buffered operations when receiving
+          // an ATTACHED with RESUMED=true on an already-attached channel. The RESUMED flag is irrelevant
+          // - buffering is determined by HAS_OBJECTS, and any ATTACHED must clear buffered operations.
+          description:
+            'buffered object operation messages are discarded when already-attached channel receives ATTACHED with RESUMED flag',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel, helper } = ctx;
+
+            // channel is already attached from the test setup
+            expect(channel.state).to.equal('attached', 'Check channel is already attached before test begins');
+
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor',
+            });
+
+            // inject operation, expect it to be discarded when ATTACHED arrives (even with RESUMED)
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
+
+            // the RESUMED flag is irrelevant for LiveObjects buffering — any ATTACHED must clear
+            // buffered operations and start a new sync sequence
+            await injectAttachedMessage(helper, channel, (1 << 7) | (1 << 2)); // HAS_OBJECTS flag and RESUMED flag
+
+            // inject another operation after ATTACHED
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'baz', data: { string: 'qux' } })],
+            });
+
+            // end sync
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+            });
+
+            // check root doesn't have data from operations received before ATTACHED
+            expect(
+              entryInstance.get('foo'),
+              'Check buffered ops before RESUMED ATTACHED were discarded and not applied on root',
+            ).to.not.exist;
+
+            // check root has data from operations received after ATTACHED
+            expect(entryInstance.get('baz').value()).to.equal(
+              'qux',
+              'Check root has data from operations received after RESUMED ATTACHED',
+            );
+          },
+        },
+
+        {
+          // Regression test: an earlier implementation incorrectly cleared buffered operations when a new
+          // OBJECT_SYNC sequence started. Only an ATTACHED message should clear buffered operations, not
+          // a new OBJECT_SYNC sequence.
+          description: 'buffered object operation messages are NOT discarded on new OBJECT_SYNC sequence',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:cursor',
+            });
+
+            // inject operation during first sync sequence
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
+
+            // start new sync with new sequence id - buffered operations should NOT be discarded.
             await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'otherserial:cursor',
             });
 
-            // inject another operation that should be applied when latest sync ends
+            // inject another operation during second sync sequence
             await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
-              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'baz', data: { string: 'qux' } })],
             });
 
             // end sync
@@ -2805,18 +2920,62 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               syncSerial: 'otherserial:',
             });
 
-            // check root doesn't have data from operations received during first sync
-            primitiveKeyData.forEach((keyData) => {
-              expect(
-                entryInstance.get(keyData.key),
-                `Check "${keyData.key}" key doesn't exist on root when OBJECT_SYNC has ended`,
-              ).to.not.exist;
-            });
-
-            // check root has data from operations received during second sync
+            // check root has data from operations received during first sync sequences
             expect(entryInstance.get('foo').value()).to.equal(
               'bar',
+              'Check root has data from operations received during first OBJECT_SYNC sequence',
+            );
+
+            // check root has data from operations received during second sync
+            expect(entryInstance.get('baz').value()).to.equal(
+              'qux',
               'Check root has data from operations received during second OBJECT_SYNC sequence',
+            );
+          },
+        },
+
+        {
+          description:
+            'operations are buffered when OBJECT_SYNC is received after completed sync without expected preceding ATTACHED',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            // complete an initial sync sequence first
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+            });
+
+            // Simulate receiving OBJECT_SYNC without preceding ATTACHED.
+            // Normally, for server-initiated resync the server is expected to send ATTACHED with RESUMED=false first.
+            // However, if that doesn't happen, the client handles it as a best-effort case by starting to buffer from this point.
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'resync:cursor',
+            });
+
+            // inject operations during this server-initiated resync - they should be buffered
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
+
+            // check root doesn't have data yet - operations should be buffered during resync
+            expect(entryInstance.get('foo'), `Check "foo" key doesn't exist during server-initiated resync`).to.not
+              .exist;
+
+            // end the resync
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'resync:',
+            });
+
+            // check buffered operations are now applied
+            expect(entryInstance.get('foo').value()).to.equal(
+              'bar',
+              `Check root has correct value for "foo" key after server-initiated resync completed`,
             );
           },
         },
@@ -2945,7 +3104,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
         {
           description:
-            'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffers are applied',
+            'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffered operations are applied',
           action: async (ctx) => {
             const { objectsHelper, channel, channelName, helper, client, entryInstance } = ctx;
 
@@ -4985,7 +5144,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
-            // Wait for next tick to ensure both listeners had a change to process the event
+            // Wait for next tick to ensure both listeners had a chance to process the event
             await new Promise((res) => nextTick(res));
 
             expect(goodListenerCalled, 'Check good listener was called').to.be.true;
@@ -6223,7 +6382,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
-            // Wait for next tick to ensure both listeners had a change to process the event
+            // Wait for next tick to ensure both listeners had a chance to process the event
             await new Promise((res) => nextTick(res));
 
             expect(goodListenerCalled, 'Check good listener was called').to.be.true;
@@ -8654,7 +8813,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             // now simulate a new OBJECT_SYNC sequence starting
             // inject an ATTACHED with HAS_OBJECTS to trigger SYNCING state
-            await injectAttachedMessage(helper, channel, true);
+            await injectAttachedMessage(helper, channel, 1 << 7); // HAS_OBJECTS flag is bit 7
 
             // perform an increment while in SYNCING state
             // the ACK will be buffered until sync completes
@@ -8735,7 +8894,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             // this simulates a re-sync where the server state doesn't include our operation yet
             // the sync will reset the counter to 10 and clear appliedOnAckSerials
             // inject ATTACHED with HAS_OBJECTS to start sync
-            await injectAttachedMessage(helper, channel, true);
+            await injectAttachedMessage(helper, channel, 1 << 7); // HAS_OBJECTS flag is bit 7
 
             // complete sync with state that uses a fake siteCode
             // using a clearly fake siteCode ensures the echo (which has the real siteCode)
@@ -8796,7 +8955,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 const counter = root.get('counter');
 
                 // inject ATTACHED with HAS_OBJECTS to trigger SYNCING state
-                await injectAttachedMessage(helper, channel, true);
+                await injectAttachedMessage(helper, channel, 1 << 7); // HAS_OBJECTS flag is bit 7
 
                 // set up ACK interceptor so we can control when ACK is delivered
                 const interceptor = createAckInterceptor(helper, client);
@@ -9078,7 +9237,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           // Apply the sequence of channel events described by the scenario
           for (const channelEvent of scenario.channelEvents) {
             if (channelEvent.type === 'attached') {
-              await injectAttachedMessage(helper, channel, channelEvent.hasObjects);
+              const hasObjects = channelEvent.hasObjects ? 1 << 7 : 0; // HAS_OBJECTS flag is bit 7
+              await injectAttachedMessage(helper, channel, hasObjects);
             } else if (channelEvent.type === 'objectSync') {
               await objectsHelper.processObjectStateMessageOnChannel({
                 channel,
@@ -9086,6 +9246,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               });
             }
           }
+
+          // wait for next tick to ensure channel has processed the ATTACHED/object sync message and has emitted resulting sync events
+          await new Promise((res) => nextTick(res));
 
           // Verify the expected sequence of sync events
           expect(receivedSyncEvents).to.deep.equal(

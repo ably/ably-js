@@ -153,6 +153,13 @@ export class RealtimeObject {
   /**
    * @internal
    * @spec RTO5
+   *
+   * Note on server-initiated resync: if the realtime server needs to force a resync, it is expected
+   * to send an ATTACHED message before the new OBJECT_SYNC sequence. However, if an OBJECT_SYNC
+   * is received after a previously completed sync without a preceding ATTACHED,
+   * we handle it on a best-effort basis: enter the SYNCING state and start buffering OBJECT messages
+   * from that point. Since the buffer is cleared at the end of each completed sync sequence, receiving
+   * an OBJECT_SYNC while in the SYNCED state means we start with an empty buffer.
    */
   handleObjectSyncMessages(objectMessages: ObjectMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial); // RTO5a
@@ -200,13 +207,19 @@ export class RealtimeObject {
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
-    // RTO4a
+    // Regardless of whether HAS_OBJECTS is set, the client must drop any previously buffered object operations
+    // and start a new sync sequence. If HAS_OBJECTS is set, the realtime server will deliver a sync sequence
+    // following the ATTACHED, guaranteeing that the objects in that sequence include at least all operations
+    // up to the point of attachment.
+    // RTO4d
+    this._bufferedObjectOperations = [];
+    // RTO4c
     this._startNewSync();
 
     // RTO4b
     if (!hasObjects) {
-      // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
-      // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
+      // If no HAS_OBJECTS flag was received on attach, end the sync sequence immediately and treat it as no objects on the channel.
+      // Reset the objects pool to its initial state and emit update events so subscribers to the root object are notified of changes.
       this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
       this._syncObjectsDataPool.clear(); // RTO4b3
       this._endSync(); // RTO4b4
@@ -386,8 +399,6 @@ export class RealtimeObject {
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
-    // need to discard all buffered object operation messages on new sync start
-    this._bufferedObjectOperations = [];
     this._syncObjectsDataPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
@@ -397,11 +408,11 @@ export class RealtimeObject {
   /** @spec RTO5c */
   private _endSync(): void {
     this._applySync();
-    // should apply buffered object operations after we applied the sync.
-    // can use regular object messages application logic
+    // Apply buffered object operations after the sync has been applied.
+    // Uses the regular object message application logic.
     this._applyObjectMessages(this._bufferedObjectOperations, ObjectsOperationSource.channel); // RTO5c6
 
-    this._bufferedObjectOperations = [];
+    this._bufferedObjectOperations = []; // RTO5c5
     this._syncObjectsDataPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
