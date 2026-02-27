@@ -197,6 +197,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
   headers: ResponseHeaders;
   errorCode?: number | null;
   errorMessage?: string | null;
+  errorDetail?: Record<string, string>;
 
   constructor(
     resource: PaginatedResource,
@@ -212,6 +213,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
     this.headers = headers;
     this.errorCode = err && err.code;
     this.errorMessage = err && err.message;
+    this.errorDetail = err?.detail;
   }
 
   toJSON() {
@@ -222,6 +224,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
       headers: this.headers,
       errorCode: this.errorCode,
       errorMessage: this.errorMessage,
+      errorDetail: this.errorDetail,
     };
   }
 }

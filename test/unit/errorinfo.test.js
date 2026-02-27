@@ -61,6 +61,33 @@ define(['chai', 'ably'], function (chai, Ably) {
 
         expect(str).to.not.contain('detail=');
       });
+
+      it('should accept detail as a constructor parameter', function () {
+        const detail = { reason: 'content policy violation', category: 'moderation' };
+        const errorInfo = new ErrorInfo('Rejected', 42211, 400, undefined, detail);
+
+        expect(errorInfo).to.be.instanceOf(ErrorInfo);
+        expect(errorInfo.message).to.equal('Rejected');
+        expect(errorInfo.code).to.equal(42211);
+        expect(errorInfo.statusCode).to.equal(400);
+        expect(errorInfo.cause).to.be.undefined;
+        expect(errorInfo.detail).to.deep.equal({ reason: 'content policy violation', category: 'moderation' });
+      });
+
+      it('should accept both cause and detail as constructor parameters', function () {
+        const cause = new ErrorInfo('Root cause', 50000, 500);
+        const detail = { reason: 'spam' };
+        const errorInfo = new ErrorInfo('Rejected', 42211, 400, cause, detail);
+
+        expect(errorInfo.cause).to.equal(cause);
+        expect(errorInfo.detail).to.deep.equal({ reason: 'spam' });
+      });
+
+      it('should leave detail undefined when not passed to constructor', function () {
+        const errorInfo = new ErrorInfo('Some error', 50000, 500);
+
+        expect(errorInfo.detail).to.be.undefined;
+      });
     });
   });
 });
