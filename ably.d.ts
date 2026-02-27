@@ -3385,6 +3385,10 @@ export declare interface HttpPaginatedResponse<T = any> extends PaginatedResult<
    */
   errorMessage: string;
   /**
+   * Optional map of string key-value pairs containing structured error metadata, extracted from the response body when present.
+   */
+  errorDetail?: Record<string, string>;
+  /**
    * The headers of the response.
    */
   headers: any;
@@ -3706,6 +3710,7 @@ export declare class ErrorInfo extends Error {
    * @param code - Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
    * @param statusCode - HTTP Status Code corresponding to this error.
    * @param cause - The underlying cause of the error.
+   * @param detail - Optional map of string key-value pairs containing structured metadata associated with the error.
    */
-  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo);
+  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo, detail?: Record<string, string>);
 }
