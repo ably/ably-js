@@ -238,7 +238,7 @@ export class RealtimeObject {
   async publish(objectMessages: ObjectMessage[]): Promise<API.PublishResult> {
     this._channel.throwIfUnpublishableState();
 
-    const encodedMsgs = objectMessages.map((x) => x.encode(this._client));
+    const encodedMsgs = objectMessages.map((x) => x.encode());
     const maxMessageSize = this._client.options.maxMessageSize;
     const size = encodedMsgs.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
