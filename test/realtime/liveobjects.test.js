@@ -682,6 +682,23 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
       const objectSyncSequenceScenarios = [
         {
+          description: 'on ATTACHED without HAS_OBJECTS clears local state',
+          action: async (ctx) => {
+            const { entryInstance, channel, helper } = ctx;
+
+            // set a key on root so we can verify it gets cleared after ATTACHED
+            await entryInstance.set('foo', 'bar');
+            expect(entryInstance.get('foo').value()).to.equal('bar', 'Check root has key before ATTACHED');
+
+            // inject ATTACHED without HAS_OBJECTS flag
+            await injectAttachedMessage(helper, channel, 0); // no HAS_OBJECTS flag
+
+            // local state should be cleared — root should have no keys
+            expect(entryInstance.size()).to.equal(0, 'Check root has no keys after ATTACHED without HAS_OBJECTS');
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree on channel attachment',
           action: async (ctx) => {
