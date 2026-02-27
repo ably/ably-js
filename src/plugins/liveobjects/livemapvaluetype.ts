@@ -1,16 +1,18 @@
 import { __livetype } from '../../../ably';
-import { Primitive, LiveMap as PublicLiveMap, Value } from '../../../liveobjects';
+import { LiveMap as PublicLiveMap, Primitive, Value } from '../../../liveobjects';
 import { LiveCounterValueType } from './livecountervaluetype';
-import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
+import { LiveMap, LiveMapObjectData, ObjectIdObjectData } from './livemap';
 import { ObjectId } from './objectid';
 import {
-  createInitialValueJSONString,
+  encodePartialObjectOperationForWire,
+  MapCreate,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
   ObjectOperationAction,
   ObjectsMapEntry,
   ObjectsMapSemantics,
+  primitiveToObjectData,
 } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
@@ -75,14 +77,13 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
 
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(realtimeObject, key, value));
 
-    const { initialValueOperation, nestedObjectsCreateMsgs } = await LiveMapValueType._createInitialValueOperation(
-      realtimeObject,
-      entries,
-    );
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
+    const { mapCreate, nestedObjectsCreateMsgs } = await LiveMapValueType._getMapCreate(realtimeObject, entries); // RTO11f14
+    const { mapCreate: encodedMapCreate } = encodePartialObjectOperationForWire({ mapCreate }, client); // RTO11f15a
+    const initialValueJSONString = JSON.stringify(encodedMapCreate); // RTO11f15b
+    const nonce = client.Utils.cheapRandStr(); // RTO11f6
+    const msTimestamp = await client.getTimestamp(true); // RTO11f7
 
+    // RTO11f8
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'map',
@@ -94,11 +95,14 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     const mapCreateMsg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.MAP_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          action: ObjectOperationAction.MAP_CREATE, // RTO11f9
+          objectId, // RTO11f10
+          mapCreateWithObjectId: {
+            nonce, // RTO11f16
+            initialValue: initialValueJSONString, // RTO11f17
+            // RTO11f18 - retain the source MapCreate for local use (size calculation and apply-on-ACK)
+            _derivedFrom: mapCreate,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -111,16 +115,17 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     };
   }
 
-  private static async _createInitialValueOperation(
+  private static async _getMapCreate(
     realtimeObject: RealtimeObject,
     entries?: Record<string, Value>,
   ): Promise<{
-    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
+    mapCreate: MapCreate<ObjectData>;
     nestedObjectsCreateMsgs: ObjectMessage[];
   }> {
-    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
+    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {}; // RTO11f14b - empty map by default
     const nestedObjectsCreateMsgs: ObjectMessage[] = [];
 
+    // RTO11f14c
     for (const [key, value] of Object.entries(entries ?? {})) {
       let objectData: LiveMapObjectData;
 
@@ -136,25 +141,23 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
         const typedObjectData: ObjectIdObjectData = { objectId: counterCreateMsg.operation?.objectId! };
         objectData = typedObjectData;
       } else {
-        // Handle primitive values
-        const typedObjectData: ValueObjectData = { value: value as Primitive };
-        objectData = typedObjectData;
+        // RTO11f14c1b, RTO11f14c1c, RTO11f14c1d, RTO11f14c1e, RTO11f14c1f - Handle primitive values
+        objectData = primitiveToObjectData(value as Primitive, realtimeObject.getClient());
       }
 
+      // RTO11f14c1, RTO11f14c2
       mapEntries[key] = {
         data: objectData,
       };
     }
 
-    const initialValueOperation = {
-      map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
-      },
+    const mapCreate: MapCreate<ObjectData> = {
+      semantics: ObjectsMapSemantics.LWW, // RTO11f14a
+      entries: mapEntries, // RTO11f14b, RTO11f14c
     };
 
     return {
-      initialValueOperation,
+      mapCreate,
       nestedObjectsCreateMsgs,
     };
   }
