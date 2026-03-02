@@ -7,6 +7,7 @@ export interface IPartialErrorInfo extends Error {
   statusCode?: number;
   cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
+  detail?: Record<string, string>;
 }
 
 function toString(err: ErrorInfo | PartialErrorInfo) {
@@ -15,6 +16,7 @@ function toString(err: ErrorInfo | PartialErrorInfo) {
   if (err.statusCode) result += '; statusCode=' + err.statusCode;
   if (err.code) result += '; code=' + err.code;
   if (err.cause) result += '; cause=' + Utils.inspectError(err.cause);
+  if (err.detail && Object.keys(err.detail).length > 0) result += '; detail=' + JSON.stringify(err.detail);
   if (err.href && !(err.message && err.message.indexOf('help.ably.io') > -1)) result += '; see ' + err.href + ' ';
   result += ']';
   return result;
@@ -24,12 +26,14 @@ export interface IConvertibleToErrorInfo {
   message: string;
   code: number;
   statusCode: number;
+  detail?: Record<string, string>;
 }
 
 export interface IConvertibleToPartialErrorInfo {
   message: string;
   code: number | null;
   statusCode?: number;
+  detail?: Record<string, string>;
 }
 
 export default class ErrorInfo extends Error implements IPartialErrorInfo, API.ErrorInfo {
@@ -37,8 +41,9 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   statusCode: number;
   cause?: ErrorInfo;
   href?: string;
+  detail?: Record<string, string>;
 
-  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo) {
+  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo, detail?: Record<string, string>) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, ErrorInfo.prototype);
@@ -46,6 +51,7 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
     this.code = code;
     this.statusCode = statusCode;
     this.cause = cause;
+    this.detail = detail;
   }
 
   toString(): string {
@@ -53,11 +59,16 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   }
 
   static fromValues(values: IConvertibleToErrorInfo): ErrorInfo {
-    const { message, code, statusCode } = values;
-    if (typeof message !== 'string' || typeof code !== 'number' || typeof statusCode !== 'number') {
+    const { message, code, statusCode, detail } = values;
+    if (
+      typeof message !== 'string' ||
+      typeof code !== 'number' ||
+      typeof statusCode !== 'number' ||
+      (!Utils.isNil(detail) && (typeof detail !== 'object' || Array.isArray(detail)))
+    ) {
       throw new Error('ErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
     }
-    const result = Object.assign(new ErrorInfo(message, code, statusCode), values);
+    const result = Object.assign(new ErrorInfo(message, code, statusCode, undefined, detail), values);
     if (result.code && !result.href) {
       result.href = 'https://help.ably.io/error/' + result.code;
     }
@@ -70,8 +81,15 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   statusCode?: number;
   cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
+  detail?: Record<string, string>;
 
-  constructor(message: string, code: number | null, statusCode?: number, cause?: ErrorInfo | PartialErrorInfo) {
+  constructor(
+    message: string,
+    code: number | null,
+    statusCode?: number,
+    cause?: ErrorInfo | PartialErrorInfo,
+    detail?: Record<string, string>,
+  ) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, PartialErrorInfo.prototype);
@@ -79,6 +97,7 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
     this.code = code;
     this.statusCode = statusCode;
     this.cause = cause;
+    this.detail = detail;
   }
 
   toString(): string {
@@ -86,15 +105,16 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   }
 
   static fromValues(values: IConvertibleToPartialErrorInfo): PartialErrorInfo {
-    const { message, code, statusCode } = values;
+    const { message, code, statusCode, detail } = values;
     if (
       typeof message !== 'string' ||
       (!Utils.isNil(code) && typeof code !== 'number') ||
-      (!Utils.isNil(statusCode) && typeof statusCode !== 'number')
+      (!Utils.isNil(statusCode) && typeof statusCode !== 'number') ||
+      (!Utils.isNil(detail) && (typeof detail !== 'object' || Array.isArray(detail)))
     ) {
       throw new Error('PartialErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
     }
-    const result = Object.assign(new PartialErrorInfo(message, code, statusCode), values);
+    const result = Object.assign(new PartialErrorInfo(message, code, statusCode, undefined, detail), values);
     if (result.code && !result.href) {
       result.href = 'https://help.ably.io/error/' + result.code;
     }
