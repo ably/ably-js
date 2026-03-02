@@ -2,6 +2,16 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.19.0](https://github.com/ably/ably-js/tree/2.19.0) (2026-03-02)
+
+### New features
+
+- Add optional `detail` field support to `ErrorInfo` [\#2171](https://github.com/ably/ably-js/pull/2171)
+
+### Bug fixes
+
+- Fix clearing buffered object operations during sync sequence [\#2150](https://github.com/ably/ably-js/pull/2150)
+
 ## [2.18.0](https://github.com/ably/ably-js/tree/2.18.0) (2026-02-23)
 
 ### New features
