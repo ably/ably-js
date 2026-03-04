@@ -8815,9 +8815,23 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             // inject an ATTACHED with HAS_OBJECTS to trigger SYNCING state
             await injectAttachedMessage(helper, channel, 1 << 7); // HAS_OBJECTS flag is bit 7
 
+            // set up ACK interceptor so we can control when the ACK is delivered
+            const interceptor = createAckInterceptor(helper, client);
+
             // perform an increment while in SYNCING state
-            // the ACK will be buffered until sync completes
             const incrementPromise = counter.increment(5);
+
+            // wait for the ACK to be intercepted, then release it.
+            // this lets publishAndApply proceed past publish into the sync-wait.
+            await interceptor.waitForAck();
+            interceptor.releaseAll();
+
+            // yield to the event loop so publishAndApply reaches the sync wait.
+            // (we use the same mechanism as the 'publishAndApply rejects when channel
+            // state changes during sync wait' test, which validates this yield is
+            // sufficient — if publishAndApply had not yet entered the sync-wait, the
+            // channel state change would not cause it to reject.)
+            await new Promise((resolve) => setTimeout(resolve, 0));
 
             // complete the sync sequence
             await objectsHelper.processObjectStateMessageOnChannel({
