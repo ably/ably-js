@@ -11,6 +11,7 @@ const operationActions: ObjectsApi.ObjectOperationAction[] = [
   'counter.create',
   'counter.inc',
   'object.delete',
+  'map.clear',
 ];
 
 const mapSemantics: ObjectsApi.ObjectsMapSemantics[] = ['lww'];
@@ -25,6 +26,7 @@ export enum ObjectOperationAction {
   COUNTER_CREATE = 3,
   COUNTER_INC = 4,
   OBJECT_DELETE = 5,
+  MAP_CLEAR = 6,
 }
 
 /** @spec OMP2 */
@@ -119,6 +121,8 @@ export interface ObjectsMap<TData> {
   semantics?: ObjectsMapSemantics; // OMP3a
   /** The map entries, indexed by key. */
   entries?: Record<string, ObjectsMapEntry<TData>>; // OMP3b
+  /** The {@link ObjectMessage.serial} value of the last `MAP_CLEAR` operation applied to the map. If no `MAP_CLEAR` has been applied, this field is omitted */
+  clearTimeserial?: string; // OMP3c
 }
 
 /**
@@ -228,6 +232,14 @@ export interface CounterCreateWithObjectId {
 }
 
 /**
+ * A MapClear describes the payload for a MAP_CLEAR operation
+ * @spec MCL1
+ */
+export interface MapClear {
+  // MCL2 - Empty message, MAP_CLEAR requires no operation-specific data
+}
+
+/**
  * An ObjectOperation describes an operation to be applied to an object on a channel.
  * @spec OOP1
  */
@@ -273,6 +285,10 @@ export interface ObjectOperation<TData> {
    * Contains the nonce and JSON-encoded initial value from {@link CounterCreate} for object ID verification.
    */
   counterCreateWithObjectId?: CounterCreateWithObjectId; // OOP3q
+  /**
+   * The payload for MAP_CLEAR operation.
+   */
+  mapClear?: MapClear; // OOP3r
 }
 
 /**
@@ -487,7 +503,7 @@ function toUserFacingMapEntry(entry: ObjectsMapEntry<ObjectData>): ObjectsApi.Ob
 }
 
 function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): ObjectsApi.ObjectOperation {
-  const { mapSet: internalMapSet, mapRemove, counterInc, objectDelete } = operation;
+  const { mapSet: internalMapSet, mapRemove, counterInc, objectDelete, mapClear } = operation;
 
   // resolve *Create from direct property or from *CreateWithObjectId._derivedFrom
   const internalMapCreate = operation.mapCreate ?? operation.mapCreateWithObjectId?._derivedFrom;
@@ -537,6 +553,7 @@ function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): Ob
     counterCreate,
     counterInc,
     objectDelete,
+    mapClear,
     // deprecated fields
     mapOp,
     counterOp,

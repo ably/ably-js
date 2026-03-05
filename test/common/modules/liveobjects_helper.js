@@ -13,6 +13,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     COUNTER_CREATE: 3,
     COUNTER_INC: 4,
     OBJECT_DELETE: 5,
+    MAP_CLEAR: 6,
   };
   const ACTION_STRINGS = {
     MAP_CREATE: 'MAP_CREATE',
@@ -21,6 +22,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     COUNTER_CREATE: 'COUNTER_CREATE',
     COUNTER_INC: 'COUNTER_INC',
     OBJECT_DELETE: 'OBJECT_DELETE',
+    MAP_CLEAR: 'MAP_CLEAR',
   };
 
   class LiveObjectsHelper {
@@ -95,7 +97,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       });
     }
 
-    // #region Wire Object Messages
+    // #region Channel Operations
 
     mapCreateOp(opts) {
       const { objectId, entries } = opts ?? {};
@@ -187,8 +189,21 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       return op;
     }
 
+    mapClearOp(opts) {
+      const { objectId } = opts ?? {};
+      const op = {
+        operation: {
+          action: ACTIONS.MAP_CLEAR,
+          objectId,
+          mapClear: {},
+        },
+      };
+
+      return op;
+    }
+
     mapObject(opts) {
-      const { objectId, siteTimeserials, initialEntries, materialisedEntries, tombstone } = opts;
+      const { objectId, siteTimeserials, initialEntries, materialisedEntries, tombstone, clearTimeserial } = opts;
       const obj = {
         object: {
           objectId,
@@ -197,6 +212,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
           map: {
             semantics: 0,
             entries: materialisedEntries,
+            ...(clearTimeserial != null ? { clearTimeserial } : {}),
           },
         },
       };
@@ -290,6 +306,25 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
           }),
         ),
       );
+    }
+
+    /**
+     * Sends a MAP_CLEAR operation to the server via `channel.sendState`.
+     *
+     * MAP_CLEAR is server-initiated and has no production client-side API,
+     * but it is enabled over realtime connections on non-prod clusters for testing.
+     */
+    async sendMapClearOnChannel(channel, objectId) {
+      this._helper.recordPrivateApi('call.channel.sendState');
+      await channel.sendState([
+        {
+          operation: {
+            action: ACTIONS.MAP_CLEAR,
+            objectId,
+            mapClear: {},
+          },
+        },
+      ]);
     }
 
     // #endregion
