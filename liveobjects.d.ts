@@ -1489,6 +1489,10 @@ declare namespace ObjectOperationActions {
    * Object operation action for deleting an object.
    */
   type OBJECT_DELETE = 'object.delete';
+  /**
+   * Object operation action for clearing a map object.
+   */
+  type MAP_CLEAR = 'map.clear';
 }
 
 /**
@@ -1500,7 +1504,8 @@ export type ObjectOperationAction =
   | ObjectOperationActions.MAP_REMOVE
   | ObjectOperationActions.COUNTER_CREATE
   | ObjectOperationActions.COUNTER_INC
-  | ObjectOperationActions.OBJECT_DELETE;
+  | ObjectOperationActions.OBJECT_DELETE
+  | ObjectOperationActions.MAP_CLEAR;
 
 /**
  * The namespace containing the different types of map object semantics.
@@ -1607,6 +1612,10 @@ export interface ObjectOperation {
    * The payload for the operation if the action is {@link ObjectOperationActions.OBJECT_DELETE}.
    */
   objectDelete?: ObjectDelete;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_CLEAR}.
+   */
+  mapClear?: MapClear;
 
   /**
    * The payload for the operation if it is a mutation operation on a map object.
@@ -1734,6 +1743,11 @@ export interface CounterInc {
  * Describes the payload for an OBJECT_DELETE operation.
  */
 export interface ObjectDelete {}
+
+/**
+ * Describes the payload for a MAP_CLEAR operation.
+ */
+export interface MapClear {}
 
 /**
  * Represents a value in an object on a channel.

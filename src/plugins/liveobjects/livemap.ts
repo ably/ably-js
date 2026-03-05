@@ -56,6 +56,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   implements PublicLiveMap<T>
 {
   declare readonly [__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+  private _clearTimeserial?: string; // RTLM25
 
   constructor(
     realtimeObject: RealtimeObject,
@@ -358,6 +359,11 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         update = this._applyObjectDelete(msg);
         break;
 
+      case ObjectOperationAction.MAP_CLEAR:
+        // RTLM15d8
+        update = this._applyMapClear(msg);
+        break;
+
       default:
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
@@ -366,8 +372,8 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         );
     }
 
-    this.notifyUpdated(update); // RTLM15d1a, RTLM15d6a, RTLM15d7a, RTLM15d5a
-    return true; // RTLM15d1b, RTLM15d6b, RTLM15d7b, RTLM15d5b
+    this.notifyUpdated(update); // RTLM15d1a, RTLM15d6a, RTLM15d7a, RTLM15d5a, RTLM15d8a
+    return true; // RTLM15d1b, RTLM15d6b, RTLM15d7b, RTLM15d5b, RTLM15d8b
   }
 
   /**
@@ -440,6 +446,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     } else {
       // otherwise override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLM6b
+      this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
       // RTLM6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
@@ -737,9 +744,20 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const { ErrorInfo, Utils } = this._client;
 
+    // RTLM7h - Check operation's serial against clearTimeserial first
+    if (this._clearTimeserial && (!opSerial || this._clearTimeserial >= opSerial)) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap._applyMapSet()',
+        `skipping update for key="${op.key}": op serial ${opSerial} <= clear serial ${this._clearTimeserial}; objectId=${this.getObjectId()}`,
+      );
+      return { noop: true };
+    }
+
     const existingEntry = this._dataRef.data.get(op.key);
     // RTLM7a
-    if (existingEntry && !this._canApplyMapOperation(existingEntry.timeserial, opSerial)) {
+    if (existingEntry && !this._canApplyMapEntryOperation(existingEntry.timeserial, opSerial)) {
       // RTLM7a1 - the operation's serial <= the entry's serial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
@@ -823,9 +841,11 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     opTimestamp: number | undefined,
     msg: ObjectMessage,
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
+    // No need to check against clearTimeserial - a remove after a clear is valid
+
     const existingEntry = this._dataRef.data.get(op.key);
     // RTLM8a
-    if (existingEntry && !this._canApplyMapOperation(existingEntry.timeserial, opSerial)) {
+    if (existingEntry && !this._canApplyMapEntryOperation(existingEntry.timeserial, opSerial)) {
       // RTLM8a1 - the operation's serial <= the entry's serial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
@@ -881,12 +901,87 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return update;
   }
 
+  /** @spec RTLM24 */
+  private _applyMapClear(objectMessage: ObjectMessage): LiveMapUpdate<T> | LiveObjectUpdateNoop {
+    const opSerial = objectMessage.serial!;
+
+    if (this._clearTimeserial == null || opSerial > this._clearTimeserial) {
+      // RTLM24d
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap._applyMapClear()',
+        `updating clearTimeserial; previous=${this._clearTimeserial}, new=${opSerial}; objectId=${this.getObjectId()}`,
+      );
+      this._clearTimeserial = opSerial;
+    } else {
+      // RTLM24c
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap._applyMapClear()',
+        `skipping MAP_CLEAR: op serial ${opSerial} <= current clear serial ${this._clearTimeserial}; objectId=${this.getObjectId()}`,
+      );
+      return { noop: true };
+    }
+
+    const update: LiveMapUpdate<T> = {
+      update: {},
+      objectMessage,
+      _type: 'LiveMapUpdate',
+    };
+
+    // RTLM24e
+    for (const [key, entry] of this._dataRef.data.entries()) {
+      const entrySerial = entry.timeserial;
+      // RTLM24e1
+      if (entrySerial == null || this._clearTimeserial >= entrySerial) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'LiveMap._applyMapClear()',
+          `clearing entry; key="${key}", entry serial=${entrySerial}, clear serial=${this._clearTimeserial}, objectId=${this.getObjectId()}`,
+        );
+
+        // Handle parent reference removal for object references
+        if (entry.data && 'objectId' in entry.data) {
+          // Remove parent reference from the object that was being referenced
+          const referencedObject = this._realtimeObject.getPool().get(entry.data.objectId);
+          if (referencedObject) {
+            referencedObject.removeParentReference(this, key);
+          }
+        }
+
+        entry.tombstone = true; // RTLM24e1c
+        entry.tombstonedAt = this._calculateTombstonedAt(
+          objectMessage.serialTimestamp,
+          'LiveMap._applyMapClear()',
+          `objectId=${this.getObjectId()}`,
+        ); // RTLM24e1d
+        entry.timeserial = this._clearTimeserial; // RTLM24e1b
+        entry.data = undefined; // RTLM24e1a
+
+        const typedKey: keyof T & string = key;
+        update.update[typedKey] = 'removed'; // RTLM24e1e
+      } else {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'LiveMap._applyMapClear()',
+          `skipping clearing entry; key="${key}", entry serial=${entrySerial}, clear serial=${this._clearTimeserial}, objectId=${this.getObjectId()}`,
+        );
+      }
+    }
+
+    return update; // RTLM24f
+  }
+
   /**
    * Returns true if the serials of the given operation and entry indicate that
    * the operation should be applied to the entry, following the CRDT semantics of this LiveMap.
    * @spec RTLM9
    */
-  private _canApplyMapOperation(mapEntrySerial: string | undefined, opSerial: string | undefined): boolean {
+  private _canApplyMapEntryOperation(mapEntrySerial: string | undefined, opSerial: string | undefined): boolean {
     // for LWW CRDT semantics (the only supported LiveMap semantic) an operation
     // should only be applied if its serial is strictly greater ("after") than an entry's serial.
 
