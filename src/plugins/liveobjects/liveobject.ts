@@ -112,19 +112,13 @@ export abstract class LiveObject<
    * @internal
    */
   tombstone(objectMessage: ObjectMessage): TUpdate {
-    this._tombstone = true;
-    if (objectMessage.serialTimestamp != null) {
-      this._tombstonedAt = objectMessage.serialTimestamp;
-    } else {
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MINOR,
-        'LiveObject.tombstone()',
-        `object has been tombstoned but no "serialTimestamp" found in the message, using local clock instead; objectId=${this.getObjectId()}`,
-      );
-      this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
-    }
-    const update = this.clearData();
+    this._tombstone = true; // RTLO4e2
+    this._tombstonedAt = this._calculateTombstonedAt(
+      objectMessage.serialTimestamp,
+      'LiveObject.tombstone()',
+      `objectId=${this.getObjectId()}`,
+    ); // RTLO4e3
+    const update = this.clearData(); // RTLO4e4
     update.objectMessage = objectMessage;
     update.tombstone = true;
 
@@ -271,6 +265,27 @@ export abstract class LiveObject<
 
   protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
     return this.tombstone(objectMessage);
+  }
+
+  /**
+   * Calculate a tombstonedAt timestamp from the provided serialTimestamp,
+   * falling back to the local clock if not available.
+   *
+   * @spec RTLO6
+   */
+  protected _calculateTombstonedAt(serialTimestamp: number | undefined, action: string, details?: string): number {
+    if (serialTimestamp != null) {
+      return serialTimestamp; // RTLO6a
+    }
+
+    // RTLO6b1
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MINOR,
+      action,
+      `no "serialTimestamp" found for an operation, using local clock instead; ${details}`,
+    );
+    return Date.now(); // RTLO6b
   }
 
   private _notifyInstanceSubscriptions(update: TUpdate): void {
