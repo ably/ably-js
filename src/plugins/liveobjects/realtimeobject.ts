@@ -522,7 +522,8 @@ export class RealtimeObject {
         case ObjectOperationAction.MAP_SET:
         case ObjectOperationAction.MAP_REMOVE:
         case ObjectOperationAction.COUNTER_INC:
-        case ObjectOperationAction.OBJECT_DELETE: {
+        case ObjectOperationAction.OBJECT_DELETE:
+        case ObjectOperationAction.MAP_CLEAR: {
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
           // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
           // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
