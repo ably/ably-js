@@ -836,19 +836,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    let tombstonedAt: number;
-    if (opTimestamp != null) {
-      tombstonedAt = opTimestamp;
-    } else {
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MINOR,
-        'LiveMap._applyMapRemove()',
-        `map key has been removed but no "serialTimestamp" found in the message, using local clock instead; key="${op.key}", objectId=${this.getObjectId()}`,
-      );
-      tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
-    }
-
     if (existingEntry) {
       // Handle parent reference removal for object references
       if (existingEntry.data && 'objectId' in existingEntry.data) {
@@ -861,14 +848,22 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
       // RTLM8a2
       existingEntry.tombstone = true; // RTLM8a2c
-      existingEntry.tombstonedAt = tombstonedAt;
+      existingEntry.tombstonedAt = this._calculateTombstonedAt(
+        opTimestamp,
+        'LiveMap._applyMapRemove()',
+        `key="${op.key}", objectId=${this.getObjectId()}`,
+      ); // RTLM8a2d
       existingEntry.timeserial = opSerial; // RTLM8a2b
       existingEntry.data = undefined; // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
       const newEntry: LiveMapEntry = {
         tombstone: true, // RTLM8b2
-        tombstonedAt: tombstonedAt,
+        tombstonedAt: this._calculateTombstonedAt(
+          opTimestamp,
+          'LiveMap._applyMapRemove()',
+          `key="${op.key}", objectId=${this.getObjectId()}`,
+        ), // RTLM8b3
         timeserial: opSerial,
         data: undefined,
       };
@@ -932,27 +927,19 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         }
       }
 
-      let tombstonedAt: number | undefined;
-      if (entry.tombstone === true) {
-        if (entry.serialTimestamp != null) {
-          tombstonedAt = entry.serialTimestamp;
-        } else {
-          this._client.Logger.logAction(
-            this._client.logger,
-            this._client.Logger.LOG_MINOR,
-            'LiveMap._liveMapDataFromMapEntries()',
-            `map key is removed but no "serialTimestamp" found, using local clock instead; key="${key}", objectId=${this.getObjectId()}`,
-          );
-          tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
-        }
-      }
-
       const liveDataEntry: LiveMapEntry = {
         timeserial: entry.timeserial,
         data: liveData,
         // consider object as tombstoned only if we received an explicit flag stating that. otherwise it exists
         tombstone: entry.tombstone === true,
-        tombstonedAt,
+        tombstonedAt:
+          entry.tombstone === true
+            ? this._calculateTombstonedAt(
+                entry.serialTimestamp,
+                'LiveMap._liveMapDataFromMapEntries()',
+                `key="${key}", objectId=${this.getObjectId()}`,
+              )
+            : undefined, // RTLM6c1
       };
 
       liveMapData.data.set(key, liveDataEntry);
