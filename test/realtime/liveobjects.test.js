@@ -1408,7 +1408,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(
-              tsBeforeMsg <= obj.tombstonedAt() <= tsAfterMsg,
+              tsBeforeMsg <= obj.tombstonedAt() && obj.tombstonedAt() <= tsAfterMsg,
               `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -1489,7 +1489,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
             ).to.exist;
             expect(
-              tsBeforeMsg <= mapEntry.tombstonedAt <= tsAfterMsg,
+              tsBeforeMsg <= mapEntry.tombstonedAt && mapEntry.tombstonedAt <= tsAfterMsg,
               `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -2156,7 +2156,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
               .exist;
             expect(
-              tsBeforeMsg <= mapEntry.tombstonedAt <= tsAfterMsg,
+              tsBeforeMsg <= mapEntry.tombstonedAt && mapEntry.tombstonedAt <= tsAfterMsg,
               `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -2740,7 +2740,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(
-              tsBeforeMsg <= obj.tombstonedAt() <= tsAfterMsg,
+              tsBeforeMsg <= obj.tombstonedAt() && obj.tombstonedAt() <= tsAfterMsg,
               `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
