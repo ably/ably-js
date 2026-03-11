@@ -481,7 +481,14 @@ export function decodeWireObjectData(
       return { string: wireData.string };
     }
 
-    return {};
+    // unrecognized ObjectData shape - pass through as-is so we don't lose any data
+    client.Logger.logAction(
+      client.logger,
+      client.Logger.LOG_MINOR,
+      'decodeWireObjectData()',
+      'Unrecognized wire ObjectData shape, keys: ' + Object.keys(wireData).join(', '),
+    );
+    return { ...wireData } as ObjectData;
   } catch (error) {
     client.Logger.logAction(
       client.logger,
