@@ -25,6 +25,48 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     MAP_CLEAR: 'MAP_CLEAR',
   };
 
+  /**
+   * Fixture data for all primitive value types that can be stored in a map entry.
+   * Each entry describes a key, its JSON-protocol ObjectData representation (`jsonData`),
+   * and expected values when read back in compact and expanded formats via REST API.
+   */
+  const primitiveKeyData = [
+    { key: 'stringKey', jsonData: { string: 'stringValue' }, compactValue: 'stringValue' },
+    { key: 'emptyStringKey', jsonData: { string: '' }, compactValue: '' },
+    {
+      key: 'bytesKey',
+      jsonData: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
+      compactValue: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9',
+    },
+    {
+      key: 'emptyBytesKey',
+      jsonData: { bytes: '' },
+      compactValue: '',
+    },
+    { key: 'maxSafeIntegerKey', jsonData: { number: Number.MAX_SAFE_INTEGER }, compactValue: Number.MAX_SAFE_INTEGER },
+    {
+      key: 'negativeMaxSafeIntegerKey',
+      jsonData: { number: -Number.MAX_SAFE_INTEGER },
+      compactValue: -Number.MAX_SAFE_INTEGER,
+    },
+    { key: 'numberKey', jsonData: { number: 1 }, compactValue: 1 },
+    { key: 'zeroKey', jsonData: { number: 0 }, compactValue: 0 },
+    { key: 'trueKey', jsonData: { boolean: true }, compactValue: true },
+    { key: 'falseKey', jsonData: { boolean: false }, compactValue: false },
+    {
+      key: 'objectKey',
+      jsonData: { json: JSON.stringify({ foo: 'bar' }) },
+      compactValue: '{"foo":"bar"}',
+      expandedJson: { foo: 'bar' },
+    },
+    {
+      key: 'arrayKey',
+      jsonData: { json: JSON.stringify(['foo', 'bar', 'baz']) },
+      compactValue: '["foo","bar","baz"]',
+      expandedJson: ['foo', 'bar', 'baz'],
+    },
+  ];
+
   class LiveObjectsHelper {
     constructor(helper) {
       this._helper = helper;
@@ -32,6 +74,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     }
 
     static ACTIONS = ACTIONS;
+    static primitiveKeyData = primitiveKeyData;
 
     static fixtureRootKeys() {
       return ['emptyCounter', 'initialValueCounter', 'referencedCounter', 'emptyMap', 'referencedMap', 'valuesMap'];
@@ -74,26 +117,17 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         key: 'referencedMap',
         createOp: this.mapCreateRestOp({ data: { counterKey: { objectId: referencedCounter.objectId } } }),
       });
+
+      const valuesMapData = primitiveKeyData.reduce((acc, v) => {
+        acc[v.key] = v.jsonData;
+        return acc;
+      }, {});
+      valuesMapData.mapKey = { objectId: referencedMap.objectId };
+
       const valuesMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'valuesMap',
-        createOp: this.mapCreateRestOp({
-          data: {
-            stringKey: { string: 'stringValue' },
-            emptyStringKey: { string: '' },
-            bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
-            emptyBytesKey: { bytes: '' },
-            maxSafeIntegerKey: { number: Number.MAX_SAFE_INTEGER },
-            negativeMaxSafeIntegerKey: { number: -Number.MAX_SAFE_INTEGER },
-            numberKey: { number: 1 },
-            zeroKey: { number: 0 },
-            trueKey: { boolean: true },
-            falseKey: { boolean: false },
-            objectKey: { json: JSON.stringify({ foo: 'bar' }) },
-            arrayKey: { json: JSON.stringify(['foo', 'bar', 'baz']) },
-            mapKey: { objectId: referencedMap.objectId },
-          },
-        }),
+        createOp: this.mapCreateRestOp({ data: valuesMapData }),
       });
     }
 
