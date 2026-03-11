@@ -94,39 +94,34 @@ export class RestObject implements PublicRestObject {
   async get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetResult> {
     const client = this._channel.client;
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
-    const envelope = client.http.supportsLinkHeaders ? null : format;
     const headers = client.Defaults.defaultGetHeaders(client.options);
 
     client.Utils.mixin(headers, client.options.headers);
 
-    const response = await client.rest.Resource.get<RestObjectGetCompactResult | WireRestObjectGetResult>(
+    const { unpacked, body } = await client.rest.Resource.get<RestObjectGetCompactResult | WireRestObjectGetResult>(
       client,
       this._basePath(params?.objectId),
       headers,
       params ?? {},
-      envelope,
+      null,
       true,
     );
 
-    const body = format
-      ? client.Utils.decodeBody<RestObjectGetCompactResult | WireRestObjectGetResult>(
-          response.body,
-          client._MsgPack,
-          format,
-        )
-      : response.body!;
+    const decoded = unpacked
+      ? body!
+      : client.Utils.decodeBody<RestObjectGetCompactResult | WireRestObjectGetResult>(body, client._MsgPack, format);
 
     const compact = params?.compact ?? true;
     if (compact) {
       // Compact mode: return as-is. Values are JSON-like; bytes appear as base64 strings
       // (JSON protocol) or Buffer/ArrayBuffer (binary protocol). We cannot deterministically
       // decode values since we can't tell string vs JSON-encoded string.
-      return body as RestObjectGetCompactResult;
+      return decoded as RestObjectGetCompactResult;
     }
 
     // Non-compact mode: response is a live object (map/counter) or a typed leaf ObjectData.
     // Decode wire values using objectmessage decoding.
-    return this._decodeNonCompactResult(body as WireRestObjectGetResult, format);
+    return this._decodeNonCompactResult(decoded as WireRestObjectGetResult, format);
   }
 
   async publish(op: RestObjectOperation | RestObjectOperation[]): Promise<RestObjectPublishResult> {
@@ -142,7 +137,7 @@ export class RestObject implements PublicRestObject {
 
     const requestBody = client.Utils.encodeBody(wireOps, client._MsgPack, format);
 
-    const response = await client.rest.Resource.post<RestObjectPublishResult>(
+    const { unpacked, body } = await client.rest.Resource.post<RestObjectPublishResult>(
       client,
       this._basePath(),
       requestBody,
@@ -152,11 +147,7 @@ export class RestObject implements PublicRestObject {
       true,
     );
 
-    if (format) {
-      return client.Utils.decodeBody(response.body, client._MsgPack, format);
-    }
-
-    return response.body!;
+    return unpacked ? body! : client.Utils.decodeBody(body, client._MsgPack, format);
   }
 
   private _basePath(objectId?: string): string {
