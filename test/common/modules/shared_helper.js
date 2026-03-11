@@ -393,6 +393,34 @@ define([
       itFn(testName + ' with text protocol', createTest({ useBinaryProtocol: false }, `${testName} text`));
     }
 
+    /**
+     * Asserts that an object is an instance of the given class name.
+     * Accounts for esbuild renaming classes with static methods (e.g. LiveMap → _LiveMap).
+     */
+    static expectInstanceOf(object, className, msg) {
+      expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
+    }
+
+    /**
+     * Asserts that an async function throws an error with the given message substring and optional error code/statusCode.
+     */
+    static async expectToThrowAsync(fn, errorStr, conditions) {
+      const { withCode, withStatusCode } = conditions ?? {};
+
+      let savedError;
+      try {
+        await fn();
+      } catch (error) {
+        expect(error.message).to.have.string(errorStr);
+        if (withCode != null) expect(error.code).to.equal(withCode);
+        if (withStatusCode != null) expect(error.statusCode).to.equal(withStatusCode);
+        savedError = error;
+      }
+      expect(savedError, 'Expected async function to throw an error').to.exist;
+
+      return savedError;
+    }
+
     clearTransportPreference() {
       if (isBrowser && window.localStorage) {
         window.localStorage.removeItem('ably-transport-preference');
