@@ -4,7 +4,7 @@ import fs from 'fs';
 import { glob } from 'glob';
 import { exit } from 'process';
 
-const ABLY_FEATURES_SPEC_URL = 'https://raw.githubusercontent.com/ably/specification/main/textile/features.textile';
+const ABLY_FEATURES_SPEC_URL = 'https://raw.githubusercontent.com/ably/specification/main/specifications/features.md';
 const PATHS_TO_LOOK_FOR_TESTS = ['./test', './src/platform/react-hooks'];
 const PATHS_TO_IGNORE_FOR_TESTS = ['./test/common/ably-common'];
 
@@ -208,7 +208,7 @@ class SpecItemNodesCollection {
   }
 }
 
-async function loadSpecTextile(): Promise<string> {
+async function loadSpecMarkdown(): Promise<string> {
   const response = await fetch(ABLY_FEATURES_SPEC_URL);
   if (!response.ok) {
     throw new Error(
@@ -217,17 +217,17 @@ async function loadSpecTextile(): Promise<string> {
   }
 
   const spec = await response.text();
-  console.log(`Successfully loaded Ably features spec textile from url: ${ABLY_FEATURES_SPEC_URL}`);
+  console.log(`Successfully loaded Ably features spec markdown from url: ${ABLY_FEATURES_SPEC_URL}`);
 
   return spec;
 }
 
-function specTextileToOrderedSpecItems(specTextile: string): SpecItem[] {
+function specMarkdownToOrderedSpecItems(specMarkdown: string): SpecItem[] {
   // regexp below matches any lines that look like this:
-  // * @(TB2)@ Some description
-  // this is how all spec items are formatted in the spec textile file
-  const specItemRegexp = /^(\*+)\s*@\((\w+)\)@\s*(.*)/;
-  const specLines = specTextile.split('\n');
+  // - `(TB2)` Some description
+  // this is how all spec items are formatted in the spec markdown file
+  const specItemRegexp = /^(\s*)- `\((\w+)\)`\s*(.*)/;
+  const specLines = specMarkdown.split('\n');
   const specItems: SpecItem[] = [];
 
   specLines.forEach((x) => {
@@ -236,10 +236,10 @@ function specTextileToOrderedSpecItems(specTextile: string): SpecItem[] {
       return;
     }
 
-    const [_, levelAsAsterisks, key, description] = regexpResult;
-    // spec item level in the textile is formatted as the sequence of asterisks "*"
-    // we use the number of asterisks as the spec item level, which then can be used to build a spec hierarchy
-    const parsedLevel = levelAsAsterisks.length;
+    const [_, leadingSpaces, key, description] = regexpResult;
+    // spec item level in the markdown is formatted as indentation with 2 spaces per level
+    // we use the number of leading spaces divided by 2, plus 1, as the spec item level
+    const parsedLevel = Math.floor(leadingSpaces.length / 2) + 1;
 
     specItems.push({
       level: parsedLevel,
@@ -248,7 +248,7 @@ function specTextileToOrderedSpecItems(specTextile: string): SpecItem[] {
     });
   });
 
-  console.log(`Parsed ${specItems.length} spec items from the Ably features specification textile file`);
+  console.log(`Parsed ${specItems.length} spec items from the Ably features specification markdown file`);
 
   return specItems;
 }
@@ -453,8 +453,8 @@ function printCoverageTableForAllSpecItems(collection: SpecItemNodesCollection):
     return getSpecCoveragesFromDocstrings(docstrings);
   });
 
-  const specTextile = await loadSpecTextile();
-  const specItems = specTextileToOrderedSpecItems(specTextile);
+  const specMarkdown = await loadSpecMarkdown();
+  const specItems = specMarkdownToOrderedSpecItems(specMarkdown);
   const collection = new SpecItemNodesCollection(specItems);
   applySpecCoveragesToSpecItemsCollection(collection, specCoverages);
 
