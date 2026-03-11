@@ -78,7 +78,11 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(realtimeObject, key, value));
 
     const { mapCreate, nestedObjectsCreateMsgs } = await LiveMapValueType._getMapCreate(realtimeObject, entries); // RTO11f14
-    const { mapCreate: encodedMapCreate } = encodePartialObjectOperationForWire({ mapCreate }, client); // RTO11f15a
+    const { mapCreate: encodedMapCreate } = encodePartialObjectOperationForWire(
+      { mapCreate },
+      client,
+      client.Utils.Format.json,
+    ); // RTO11f15a
     const initialValueJSONString = JSON.stringify(encodedMapCreate); // RTO11f15b
     const nonce = client.Utils.cheapRandStr(); // RTO11f6
     const msTimestamp = await client.getTimestamp(true); // RTO11f7
