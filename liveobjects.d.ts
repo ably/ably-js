@@ -1515,12 +1515,16 @@ declare namespace ObjectsMapSemanticsNamespace {
    * Last-write-wins conflict-resolution semantics.
    */
   type LWW = 'lww';
+  /**
+   * Unrecognized semantics value received from the server.
+   */
+  type UNKNOWN = 'unknown';
 }
 
 /**
  * The possible values of the `semantics` field of an {@link ObjectsMap}.
  */
-export type ObjectsMapSemantics = ObjectsMapSemanticsNamespace.LWW;
+export type ObjectsMapSemantics = ObjectsMapSemanticsNamespace.LWW | ObjectsMapSemanticsNamespace.UNKNOWN;
 
 /**
  * An object message that carried an operation.
