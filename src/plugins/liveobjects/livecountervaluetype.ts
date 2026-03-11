@@ -60,7 +60,11 @@ export class LiveCounterValueType implements LiveCounter {
     }
 
     const counterCreate = LiveCounterValueType._getCounterCreate(count); // RTO12f12
-    const { counterCreate: encodedCounterCreate } = encodePartialObjectOperationForWire({ counterCreate }, client);
+    const { counterCreate: encodedCounterCreate } = encodePartialObjectOperationForWire(
+      { counterCreate },
+      client,
+      client.Utils.Format.json,
+    );
     const initialValueJSONString = JSON.stringify(encodedCounterCreate); // RTO12f13
     const nonce = client.Utils.cheapRandStr(); // RTO12f4
     const msTimestamp = await client.getTimestamp(true); // RTO12f5
