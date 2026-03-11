@@ -2188,13 +2188,13 @@ export class LiveCounter {
  * const realtime = new Realtime({ ...options, plugins: { LiveObjects } });
  * ```
  *
- * The LiveObjects plugin can also be used with a {@link BaseRest} or {@link BaseRealtime} client,
- * with the additional requirement that you must also use the {@link Rest} plugin
+ * The LiveObjects plugin can also be used with a {@link BaseRest} or {@link BaseRealtime} client.
  *
  * ```javascript
- * import { BaseRealtime, Rest, WebSocketTransport, FetchRequest } from 'ably/modular';
+ * import { BaseRealtime, BaseRest, WebSocketTransport, FetchRequest } from 'ably/modular';
  * import { LiveObjects } from 'ably/liveobjects';
- * const realtime = new BaseRealtime({ ...options, plugins: { Rest, WebSocketTransport, FetchRequest, LiveObjects } });
+ * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, LiveObjects } });
+ * const rest = new BaseRest({ ...options, plugins: { FetchRequest, LiveObjects } });
  * ```
  *
  * You can also import individual utilities alongside the plugin:
@@ -2220,12 +2220,12 @@ declare module 'ably' {
 }
 
 /**
- * Module augmentation to add the `object` property to `RestChannel` when
+ * Module augmentation to add the `object` property to `Channel` (REST) when
  * importing from 'ably/liveobjects'. This ensures all LiveObjects types come from
  * the same module (CJS or ESM), avoiding type incompatibility issues.
  */
 declare module 'ably' {
-  interface RestChannel {
+  interface Channel {
     /**
      * A {@link RestObject} object.
      */
