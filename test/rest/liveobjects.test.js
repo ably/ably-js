@@ -8,48 +8,134 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   LiveObjectsHelper,
 ) {
   const expect = chai.expect;
-  const BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  const objectsFixturesChannel = 'objects_fixtures';
+  const Platform = Ably.Realtime.Platform;
+  const BufferUtils = Platform.BufferUtils;
+  const liveobjectsFixturesChannel = 'rest_liveobjects_fixtures';
   const waitFixtureChannelIsReady = LiveObjectsHelper.waitFixtureChannelIsReady;
+  const primitiveKeyData = LiveObjectsHelper.primitiveKeyData;
 
-  function RealtimeWithObjects(helper, options) {
+  function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
   }
 
-  function RestWithObjects(helper, options) {
+  function RestWithLiveObjects(helper, options) {
     return helper.AblyRest({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
   }
 
-  function expectInstanceOf(object, className, msg) {
-    // esbuild changes the name for classes with static method to include an underscore as prefix.
-    // so LiveMap becomes _LiveMap. we account for it here.
-    expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
-  }
+  /**
+   * Runs scenarios with optionally using {@link Helper.testOnJsonMsgpack}.
+   * Each scenario receives a context object with common setup already done.
+   */
+  function forScenarios(scenarios, testFn) {
+    for (const scenario of scenarios) {
+      if (scenario.jsonMsgpack) {
+        /** @nospec */
+        Helper.testOnJsonMsgpack(
+          scenario.description,
+          async function (options, channelName, helper) {
+            await testFn(helper, scenario, options, channelName);
+          },
+          scenario.skip,
+          scenario.only,
+        );
+      } else {
+        const itFn = scenario.skip ? it.skip : scenario.only ? it.only : it;
 
-  function checkKeyDataOnExpandedObject({ helper, keyData, obj, msg }) {
-    const { key, data } = keyData;
-    if (data.bytes != null) {
-      helper.recordPrivateApi('call.BufferUtils.base64Decode');
-      helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-      expect(BufferUtils.areBuffersEqual(obj.map.entries[key].data.bytes, BufferUtils.base64Decode(data.bytes)), msg).to
-        .be.true;
-    } else if (data.json != null) {
-      const expectedObject = JSON.parse(data.json);
-      expect(obj.map.entries[key].data.json).to.deep.equal(expectedObject, msg);
-    } else if (data.string != null) {
-      expect(obj.map.entries[key].data.string).to.deep.equal(data.string, msg);
-    } else if (data.number != null) {
-      expect(obj.map.entries[key].data.number).to.deep.equal(data.number, msg);
-    } else if (data.boolean != null) {
-      expect(obj.map.entries[key].data.boolean).to.deep.equal(data.boolean, msg);
+        /** @nospec */
+        itFn(scenario.description, async function () {
+          const helper = this.test.helper;
+          await testFn(helper, scenario, {}, scenario.description);
+        });
+      }
     }
   }
 
-  describe('rest/objects', function () {
+  /**
+   * Checks that the expanded (compact: false) object data entry for a key matches the expected jsonData.
+   */
+  function checkExpandedKeyData({ helper, keyData, obj, msg }) {
+    const { key, jsonData } = keyData;
+    const entryData = obj.map.entries[key].data;
+    const label = msg || `expanded data for "${key}"`;
+
+    if (jsonData.bytes != null) {
+      helper.recordPrivateApi('call.BufferUtils.base64Decode');
+      helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+      expect(BufferUtils.areBuffersEqual(entryData.bytes, BufferUtils.base64Decode(jsonData.bytes)), label).to.be.true;
+    } else if (jsonData.json != null) {
+      const expectedObject = keyData.expandedJson ?? JSON.parse(jsonData.json);
+      expect(entryData.json, label).to.deep.equal(expectedObject);
+    } else if (jsonData.string != null) {
+      expect(entryData.string, label).to.equal(jsonData.string);
+    } else if (jsonData.number != null) {
+      expect(entryData.number, label).to.equal(jsonData.number);
+    } else if (jsonData.boolean != null) {
+      expect(entryData.boolean, label).to.equal(jsonData.boolean);
+    }
+  }
+
+  /**
+   * Checks that the compact (compact: true) value for a key matches the expected value,
+   * accounting for protocol-dependent bytes handling.
+   */
+  function checkCompactKeyData({ helper, keyData, value, msg }) {
+    const { key } = keyData;
+    const label = msg || `compact data for "${key}"`;
+
+    if (keyData.jsonData.bytes != null) {
+      // bytes values appear as base64 strings (JSON protocol) or buffers (binary protocol)
+      if (BufferUtils.isBuffer(value)) {
+        helper.recordPrivateApi('call.BufferUtils.base64Decode');
+        helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+        expect(BufferUtils.areBuffersEqual(value, BufferUtils.base64Decode(keyData.compactValue)), label).to.be.true;
+      } else {
+        expect(value, label).to.equal(keyData.compactValue);
+      }
+    } else {
+      expect(value, label).to.equal(keyData.compactValue);
+    }
+  }
+
+  /**
+   * Checks that expanded entry data matches a publish fixture's expectedData.
+   * For bytes entries, compares as buffers; otherwise deep-equals the entire data object.
+   */
+  function checkPublishFixtureData(helper, entryData, fixture) {
+    if (entryData.bytes != null) {
+      helper.recordPrivateApi('call.BufferUtils.base64Decode');
+      helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+      expect(
+        BufferUtils.areBuffersEqual(entryData.bytes, BufferUtils.base64Decode(fixture.expectedData.bytes)),
+        `published data for "${fixture.key}"`,
+      ).to.be.true;
+    } else {
+      expect(entryData, `published data for "${fixture.key}"`).to.deep.equal(fixture.expectedData);
+    }
+  }
+
+  /**
+   * Data fixtures for publish tests — all supported PublishObjectData types.
+   */
+  function getPublishDataFixtures(helper) {
+    helper.recordPrivateApi('call.BufferUtils.base64Decode');
+    const bytesBuffer = BufferUtils.base64Decode('AQID');
+
+    return [
+      { key: 'pubString', publishData: { string: 'hello' }, expectedData: { string: 'hello' } },
+      { key: 'pubNumber', publishData: { number: 42 }, expectedData: { number: 42 } },
+      { key: 'pubBoolean', publishData: { boolean: true }, expectedData: { boolean: true } },
+      { key: 'pubBytes', publishData: { bytes: bytesBuffer }, expectedData: { bytes: 'AQID' } },
+      { key: 'pubJsonObject', publishData: { json: { nested: 'value' } }, expectedData: { json: { nested: 'value' } } },
+      { key: 'pubJsonArray', publishData: { json: ['a', 'b', 'c'] }, expectedData: { json: ['a', 'b', 'c'] } },
+    ];
+  }
+
+  describe('rest/liveobjects', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
       const helper = Helper.forHook(this);
+
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -57,676 +143,749 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         }
 
         new LiveObjectsHelper(helper)
-          .initForChannel(objectsFixturesChannel)
+          .initForChannel(liveobjectsFixturesChannel)
           .then(done)
           .catch((err) => done(err));
       });
     });
 
-    describe('Rest without Objects plugin', () => {
+    describe('Rest without LiveObjects plugin', () => {
       /** @nospec */
-      Helper.testOnJsonMsgpack(
-        "throws an error when attempting to access the channel's `object` property",
-        async function (options, channelName, helper) {
-          const client = helper.AblyRest(options);
-          const channel = client.channels.get(channelName);
-          expect(() => channel.object).to.throw('Objects plugin not provided');
-        },
-      );
+      it("throws an error when attempting to access the channel's `object` property", async function () {
+        const helper = this.test.helper;
+        const client = helper.AblyRest();
+        const channel = client.channels.get('channel');
+        expect(() => channel.object).to.throw('LiveObjects plugin not provided');
+      });
     });
 
-    describe('Rest with Objects plugin', () => {
+    describe('Rest with LiveObjects plugin', () => {
       /** @nospec */
-      Helper.testOnJsonMsgpack(
-        "returns RestObject class instance when accessing channel's `object` property",
-        async function (options, channelName, helper) {
-          const client = RestWithObjects(helper, options);
-          const channel = client.channels.get(channelName);
-          expectInstanceOf(channel.object, 'RestObject');
-        },
-      );
+      it("returns RestObject class instance when accessing channel's `object` property", async function () {
+        const helper = this.test.helper;
+        const client = RestWithLiveObjects(helper);
+        const channel = client.channels.get('channel');
+        Helper.expectInstanceOf(channel.object, 'RestObject');
+      });
 
       describe('RestObject.get()', () => {
         /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should return undefined for non-existent object ID or path',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
-            const obj = await channel.object.get({ objectId: 'non-existent-id' });
-            expect(obj).to.be.undefined;
-            const obj2 = await channel.object.get({ path: 'non-existent-path' });
-            expect(obj2).to.be.undefined;
+        const getScenarios = [
+          {
+            jsonMsgpack: true,
+            description: 'returns root object by default (no params)',
+            action: async ({ channel }) => {
+              const root = await channel.object.get();
+              expect(root).to.exist;
+              expect(root.initialValueCounter).to.equal(10);
+              expect(root.emptyCounter).to.equal(0);
+              expect(root.emptyMap).to.deep.equal({});
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack('should get root object by default', async function (options, channelName, helper) {
-          const client = RestWithObjects(helper, options);
-          const channel = client.channels.get(objectsFixturesChannel);
-
-          await waitFixtureChannelIsReady(RealtimeWithObjects(helper, options), objectsFixturesChannel);
-
-          const root = await channel.object.get();
-          expect(root).to.exist;
-          expect(root.initialValueCounter).to.equal(10);
-        });
-
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should get object with compact=true by default',
-          async function (options, channelName, helper) {
-            const objectsHelper = new LiveObjectsHelper(helper);
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
-
-            await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'foo',
-              createOp: objectsHelper.counterCreateRestOp({ number: 5 }),
-            });
-
-            const root = await channel.object.get();
-            expect(root).to.exist;
-            expect(root.foo).to.equal(5);
+          {
+            jsonMsgpack: true,
+            description: 'defaults to compact format',
+            action: async ({ channel }) => {
+              const root = await channel.object.get();
+              // counters appear as numbers in compact view
+              expect(root.initialValueCounter).to.equal(10);
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should get object with compact=false returning expanded structure',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(objectsFixturesChannel);
-
-            await waitFixtureChannelIsReady(RealtimeWithObjects(helper, options), objectsFixturesChannel);
-
-            const root = await channel.object.get({ compact: false });
-
-            expect(root).to.exist;
-            expect(root.objectId).to.equal('root');
-            expect(root.map?.semantics).to.equal('lww');
-            expect(root.map?.entries?.initialValueCounter?.data?.objectId).to.exist;
-            expect(root.map?.entries?.initialValueCounter?.data?.counter?.data?.number).to.equal(10);
+          {
+            jsonMsgpack: true,
+            description: 'with path parameter',
+            action: async ({ channel }) => {
+              const valuesMap = await channel.object.get({ path: 'valuesMap' });
+              expect(valuesMap).to.exist;
+              expect(valuesMap.stringKey).to.equal('stringValue');
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should get object by specific objectId',
-          async function (options, channelName, helper) {
-            const objectsHelper = new LiveObjectsHelper(helper);
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'with objectId parameter',
+            action: async ({ channel }) => {
+              // get initialValueCounter by fetching expanded root and then using its objectId
+              const root = await channel.object.get({ compact: false });
+              const counterObjectId = root.map.entries.initialValueCounter.data.objectId;
 
-            const { objectId } = await objectsHelper.operationRequest(
-              channelName,
-              objectsHelper.counterCreateRestOp({ number: 5 }),
-            );
-
-            const result = await channel.object.get({ objectId, compact: false });
-            expect(result).to.exist;
-            expect(result.objectId).to.equal(objectId);
-            expect(result.counter).to.exist;
-            expect(result.counter.data.number).to.equal(5);
+              const result = await channel.object.get({ objectId: counterObjectId, compact: false });
+              expect(result.objectId).to.equal(counterObjectId);
+              expect(result.counter.data.number).to.equal(10);
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should get object with path parameter',
-          async function (options, channelName, helper) {
-            const objectsHelper = new LiveObjectsHelper(helper);
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'with objectId and path combined',
+            action: async ({ channel }) => {
+              // get referencedMap's objectId from the expanded root
+              const root = await channel.object.get({ compact: false });
+              const referencedMapId = root.map.entries.referencedMap.data.objectId;
 
-            const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'some-path',
-              createOp: objectsHelper.mapCreateRestOp({
-                data: {
-                  foo: { string: 'bar' },
-                },
-              }),
-            });
-
-            const result = await channel.object.get({ path: 'some-path', compact: false });
-            expect(result).to.exist;
-            expect(result.objectId).to.equal(objectId);
-            expect(result.map.semantics).to.equal('lww');
-            expect(result.map.entries.foo.data.string).to.equal('bar');
-          },
-        );
-
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should handle different data types for compact objects',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(objectsFixturesChannel);
-
-            await waitFixtureChannelIsReady(RealtimeWithObjects(helper, options), objectsFixturesChannel);
-
-            const obj = await channel.object.get();
-
-            expect(obj.emptyCounter).to.equal(0);
-            expect(obj.initialValueCounter).to.equal(10);
-            expect(obj.emptyMap).to.deep.equal({});
-            expect(obj.valuesMap).to.deep.include({
-              stringKey: 'stringValue',
-              emptyStringKey: '',
-              maxSafeIntegerKey: 9007199254740991,
-              negativeMaxSafeIntegerKey: -9007199254740991,
-              numberKey: 1,
-              zeroKey: 0,
-              trueKey: true,
-              falseKey: false,
-              objectKey: '{"foo":"bar"}',
-              arrayKey: '["foo","bar","baz"]',
-            });
-
-            if (options.useBinaryProtocol === false) {
-              // bytes are represented as base64-encoded strings in text protocol
-              expect(obj.valuesMap.emptyBytesKey).to.equal('');
-              expect(obj.valuesMap.bytesKey).to.equal('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9');
-            } else {
-              // bytes are parsed as buffers when using binary protocol
-              helper.recordPrivateApi('call.BufferUtils.base64Decode');
-              helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-              expect(BufferUtils.areBuffersEqual(obj.valuesMap.emptyBytesKey, BufferUtils.base64Decode(''))).to.be.true;
-
-              helper.recordPrivateApi('call.BufferUtils.base64Decode');
-              helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-              expect(
-                BufferUtils.areBuffersEqual(
-                  obj.valuesMap.bytesKey,
-                  BufferUtils.base64Decode('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9'),
-                ),
-              ).to.be.true;
-            }
-          },
-        );
-
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should handle different data types for expanded objects',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(objectsFixturesChannel);
-
-            await waitFixtureChannelIsReady(RealtimeWithObjects(helper, options), objectsFixturesChannel);
-
-            const obj = await channel.object.get({ compact: false });
-
-            // check primitive data types
-            for (const keyData of primitiveKeyData) {
-              checkKeyDataOnExpandedObject({
-                helper,
-                keyData,
-                obj: obj.map.entries.valuesMap.data,
-                msg: `Check data for key "${keyData.key}" is retrieved correctly in expanded object`,
+              // use referencedMap's objectId + path to counterKey to get the counter
+              const result = await channel.object.get({
+                objectId: referencedMapId,
+                path: 'counterKey',
+                compact: false,
               });
-            }
-
-            // check referenced objects
-            expect(obj.map.entries.emptyCounter.data.counter.data.number).to.equal(0);
-            expect(obj.map.entries.initialValueCounter.data.counter.data.number).to.equal(10);
-            expect(obj.map.entries.emptyMap.data.map.entries).to.deep.equal({});
+              expect(result.counter).to.exist;
+              expect(result.counter.data.number).to.equal(20);
+            },
           },
-        );
-      });
 
-      const primitiveKeyData = [
-        { key: 'stringKey', data: { string: 'stringValue' } },
-        { key: 'emptyStringKey', data: { string: '' } },
-        { key: 'bytesKey', data: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' } },
-        { key: 'emptyBytesKey', data: { bytes: '' } },
-        { key: 'maxSafeIntegerKey', data: { number: Number.MAX_SAFE_INTEGER } },
-        { key: 'negativeMaxSafeIntegerKey', data: { number: -Number.MAX_SAFE_INTEGER } },
-        { key: 'numberKey', data: { number: 1 } },
-        { key: 'zeroKey', data: { number: 0 } },
-        { key: 'trueKey', data: { boolean: true } },
-        { key: 'falseKey', data: { boolean: false } },
-        { key: 'objectKey', data: { json: JSON.stringify({ foo: 'bar' }) } },
-        { key: 'arrayKey', data: { json: JSON.stringify(['foo', 'bar', 'baz']) } },
-      ];
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns all data types correctly',
+            action: async ({ helper, channel }) => {
+              const obj = await channel.object.get();
+              const valuesMap = obj.valuesMap;
+
+              for (const keyData of primitiveKeyData) {
+                checkCompactKeyData({
+                  helper,
+                  keyData,
+                  value: valuesMap[keyData.key],
+                  msg: `compact value for "${keyData.key}"`,
+                });
+              }
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns number for counter path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'initialValueCounter' });
+              expect(result).to.be.a('number');
+              expect(result).to.equal(10);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns string for string path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.stringKey' });
+              expect(result).to.be.a('string');
+              expect(result).to.equal('stringValue');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns boolean for boolean path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.trueKey' });
+              expect(result).to.be.a('boolean');
+              expect(result).to.equal(true);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns JSON string for json object path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.objectKey' });
+              expect(result).to.be.a('string');
+              expect(result).to.equal('{"foo":"bar"}');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns JSON string for json array path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.arrayKey' });
+              expect(result).to.be.a('string');
+              expect(result).to.equal('["foo","bar","baz"]');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns string or buffer for bytes path depending on protocol',
+            action: async ({ channel, options }) => {
+              const result = await channel.object.get({ path: 'valuesMap.bytesKey' });
+              if (options.useBinaryProtocol) {
+                expect(BufferUtils.isBuffer(result), 'bytes should be a buffer in binary protocol').to.be.true;
+              } else {
+                expect(result).to.be.a('string');
+                expect(result).to.equal('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9');
+              }
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: true" returns object for map path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'emptyMap' });
+              expect(result).to.be.an('object');
+              expect(result).to.deep.equal({});
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns expanded map object with metadata for map path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'emptyMap', compact: false });
+              expect(result.objectId).to.be.a('string');
+              expect(result.map).to.exist;
+              expect(result.map.semantics).to.equal('lww');
+              expect(result.map.entries).to.deep.equal({});
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns expanded counter object with metadata for counter path',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'initialValueCounter', compact: false });
+              expect(result.objectId).to.be.a('string');
+              expect(result.counter).to.exist;
+              expect(result.counter.data.number).to.equal(10);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns all data types correctly',
+            action: async ({ helper, channel }) => {
+              const obj = await channel.object.get({ compact: false });
+
+              expect(obj.objectId).to.equal('root');
+              expect(obj.map.semantics).to.equal('lww');
+
+              const valuesMapObj = obj.map.entries.valuesMap.data;
+              expect(valuesMapObj.map.semantics).to.equal('lww');
+
+              for (const keyData of primitiveKeyData) {
+                checkExpandedKeyData({
+                  helper,
+                  keyData,
+                  obj: valuesMapObj,
+                  msg: `expanded data for "${keyData.key}"`,
+                });
+              }
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data for string leaf',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.stringKey', compact: false });
+              expect(result.string).to.equal('stringValue');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data for number leaf',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.numberKey', compact: false });
+              expect(result.number).to.equal(1);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data for boolean leaf',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.trueKey', compact: false });
+              expect(result.boolean).to.equal(true);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data with buffer for bytes leaf',
+            action: async ({ helper, channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.bytesKey', compact: false });
+              helper.recordPrivateApi('call.BufferUtils.base64Decode');
+              helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+              const expected = BufferUtils.base64Decode('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9');
+              expect(BufferUtils.areBuffersEqual(result.bytes, expected), 'bytes should match expected value').to.be
+                .true;
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data with parsed object for json leaf',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.objectKey', compact: false });
+              expect(result.json).to.deep.equal({ foo: 'bar' });
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: '"compact: false" returns decoded object data with parsed array for json array leaf',
+            action: async ({ channel }) => {
+              const result = await channel.object.get({ path: 'valuesMap.arrayKey', compact: false });
+              expect(result.json).to.deep.equal(['foo', 'bar', 'baz']);
+            },
+          },
+
+          {
+            description: 'throws an error for non-existent objectId',
+            action: async ({ channel }) => {
+              await Helper.expectToThrowAsync(() => channel.object.get({ objectId: 'non-existent-id' }), '');
+            },
+          },
+
+          {
+            description: 'throws an error for non-existent path',
+            action: async ({ channel }) => {
+              await Helper.expectToThrowAsync(() => channel.object.get({ path: 'non-existent-path' }), '');
+            },
+          },
+        ];
+
+        forScenarios(getScenarios, async (helper, scenario, options) => {
+          const client = RestWithLiveObjects(helper, options);
+          const channel = client.channels.get(liveobjectsFixturesChannel);
+          await waitFixtureChannelIsReady(RealtimeWithLiveObjects(helper, options), liveobjectsFixturesChannel);
+
+          await scenario.action({ helper, options, channel });
+        });
+      });
 
       describe('RestObject.publish()', () => {
         /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should publish single MAP_SET operation',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+        const publishScenarios = [
+          {
+            jsonMsgpack: true,
+            description: 'mapSet via objectId with all data types',
+            action: async ({ helper, channel, channelName }) => {
+              const fixtures = getPublishDataFixtures(helper);
 
-            const operation = {
-              operation: 'map.set',
-              path: '',
-              key: 'testKey',
-              value: 'testValue',
-            };
+              for (const fixture of fixtures) {
+                const result = await channel.object.publish({
+                  objectId: 'root',
+                  mapSet: { key: fixture.key, value: fixture.publishData },
+                });
 
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
-
-            const obj = await channel.object.get();
-            expect(obj).to.exist;
-            expect(obj.testKey).to.equal('testValue');
-          },
-        );
-
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should handle different data types in MAP_SET operation',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
-
-            // first test primitive data types
-            for (const keyData of primitiveKeyData) {
-              const { key, data } = keyData;
-              let value;
-              if (data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                value = BufferUtils.base64Decode(data.bytes);
-              } else if (data.json != null) {
-                value = JSON.parse(data.json);
-              } else {
-                value = data.number ?? data.string ?? data.boolean;
+                expect(result.messageId).to.exist;
+                expect(result.channel).to.equal(channelName);
+                expect(result.objectIds).to.be.an('array');
               }
 
-              const operation = {
-                operation: 'map.set',
-                path: '',
-                key,
-                value: value,
-              };
+              const obj = await channel.object.get({ compact: false });
+              for (const fixture of fixtures) {
+                checkPublishFixtureData(helper, obj.map.entries[fixture.key].data, fixture);
+              }
+            },
+          },
 
-              const result = await channel.object.publish(operation);
-              expect(result).to.exist;
+          {
+            jsonMsgpack: true,
+            description: 'mapSet with objectId reference',
+            action: async ({ channel }) => {
+              // create a counter
+              await channel.object.publish({ path: 'key1', counterCreate: { count: 5 } });
+
+              // get its objectId
+              const counter = await channel.object.get({ path: 'key1', compact: false });
+              const counterObjectId = counter.objectId;
+
+              // set the same objectId on another key
+              await channel.object.publish({
+                objectId: 'root',
+                mapSet: { key: 'key2', value: { objectId: counterObjectId } },
+              });
+
+              // both keys should reference the same object
+              const updated = await channel.object.get({ compact: false });
+              expect(updated.map.entries.key1.data.objectId).to.equal(counterObjectId);
+              expect(updated.map.entries.key2.data.objectId).to.equal(counterObjectId);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapSet via path',
+            action: async ({ channel }) => {
+              // create root.outer
+              await channel.object.publish({
+                path: 'outer',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+
+              // create root.outer.inner
+              await channel.object.publish({
+                path: 'outer.inner',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+
+              // set a key on root.outer
+              await channel.object.publish({
+                path: 'outer',
+                mapSet: { key: 'shallow', value: { number: 1 } },
+              });
+
+              // set a key in root.outer.inner using dot path
+              await channel.object.publish({
+                path: 'outer.inner',
+                mapSet: { key: 'deep', value: { string: 'value' } },
+              });
+
+              const obj = await channel.object.get();
+              expect(obj.outer.shallow).to.equal(1);
+              expect(obj.outer.inner.deep).to.equal('value');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapSet via wildcard path',
+            action: async ({ channel }) => {
+              // create two maps under root
+              await channel.object.publish({
+                path: 'map1',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+              await channel.object.publish({
+                path: 'map2',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+
+              // set a key on both maps using wildcard
+              await channel.object.publish({
+                path: '*',
+                mapSet: { key: 'foo', value: { string: 'bar' } },
+              });
+
+              const obj = await channel.object.get();
+              expect(obj.map1.foo).to.equal('bar');
+              expect(obj.map2.foo).to.equal('bar');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapRemove via objectId',
+            action: async ({ channel }) => {
+              await channel.object.publish({
+                objectId: 'root',
+                mapSet: { key: 'foo', value: { string: 'bar' } },
+              });
+
+              const result = await channel.object.publish({
+                objectId: 'root',
+                mapRemove: { key: 'foo' },
+              });
+
               expect(result.messageId).to.exist;
-              expect(result.channel).to.equal(channelName);
               expect(result.objectIds).to.be.an('array');
 
-              // verify value was set correctly
-              const obj = await channel.object.get({ compact: false });
-              checkKeyDataOnExpandedObject({
-                helper,
-                keyData,
-                obj,
-                msg: `Check data was set for a key "${key}" via MAP_SET`,
+              const obj = await channel.object.get();
+              expect(obj.foo).to.be.undefined;
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapRemove via path',
+            action: async ({ channel }) => {
+              await channel.object.publish({
+                path: 'map',
+                mapCreate: { semantics: 'lww', entries: { foo: { data: { string: 'bar' } } } },
               });
-            }
 
-            // test setting reference to another object
-            const counterCreateOperation = {
-              operation: 'counter.create',
-              path: 'counterRef1',
-              count: 1,
-            };
-            const counterCreateResult = await channel.object.publish(counterCreateOperation);
-            const counterObjectId = counterCreateResult.objectIds[0];
+              await channel.object.publish({
+                path: 'map',
+                mapRemove: { key: 'foo' },
+              });
 
-            const mapSetCounterRefOperation = {
-              operation: 'map.set',
-              path: '',
-              key: 'counterRef2',
-              value: { objectId: counterObjectId },
-            };
-
-            await channel.object.publish(mapSetCounterRefOperation);
-
-            const obj = await channel.object.get({ compact: false });
-
-            expect(obj.map.entries.counterRef1.data.objectId).to.equal(
-              counterObjectId,
-              'Check first counter reference has correct objectId',
-            );
-            expect(obj.map.entries.counterRef1.data.counter.data.number).to.equal(
-              1,
-              'Check first counter reference has correct value',
-            );
-
-            expect(obj.map.entries.counterRef2.data.objectId).to.equal(
-              counterObjectId,
-              'Check second counter reference has correct objectId',
-            );
-            expect(obj.map.entries.counterRef2.data.counter.data.number).to.equal(
-              1,
-              'Check second counter reference has correct value',
-            );
-
-            const compactObj = await channel.object.get();
-            expect(compactObj.counterRef1).to.equal(1, 'Check first counter reference value in compact form');
-            expect(compactObj.counterRef2).to.equal(1, 'Check second counter reference value in compact form');
+              const obj = await channel.object.get({ path: 'map' });
+              expect(obj.foo).to.be.undefined;
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should publish single MAP_CREATE operation',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'mapRemove via wildcard path',
+            action: async ({ channel }) => {
+              await channel.object.publish({
+                path: 'parent',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+              await channel.object.publish({
+                path: 'parent.map1',
+                mapCreate: { semantics: 'lww', entries: { foo: { data: { string: 'bar1' } } } },
+              });
+              await channel.object.publish({
+                path: 'parent.map2',
+                mapCreate: { semantics: 'lww', entries: { foo: { data: { string: 'bar2' } } } },
+              });
 
-            const operation = {
-              operation: 'map.create',
-              path: 'newMap',
-              entries: {
-                key1: 'value1',
-                key2: 42,
-                key3: true,
-              },
-            };
+              // remove 'foo' from both children using wildcard
+              await channel.object.publish({
+                path: 'parent.*',
+                mapRemove: { key: 'foo' },
+              });
 
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
-            expect(result.objectIds.length).to.be.greaterThan(0);
+              const obj = await channel.object.get({ path: 'parent' });
+              expect(obj.map1.foo).to.be.undefined;
+              expect(obj.map2.foo).to.be.undefined;
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should handle different data types in MAP_CREATE operation',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'counterInc via objectId',
+            action: async ({ channel }) => {
+              await channel.object.publish({ path: 'counter', counterCreate: { count: 10 } });
 
-            // first test primitive data types
-            const entries = primitiveKeyData.reduce((acc, keyData) => {
-              const { key, data } = keyData;
-              let value;
-              if (data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                value = BufferUtils.base64Decode(data.bytes);
-              } else if (data.json != null) {
-                value = JSON.parse(data.json);
-              } else {
-                value = data.number ?? data.string ?? data.boolean;
+              const counter = await channel.object.get({ path: 'counter', compact: false });
+              const objectId = counter.objectId;
+
+              await channel.object.publish({ objectId, counterInc: { number: 5 } });
+
+              const result = await channel.object.get({ objectId, compact: false });
+              expect(result.counter.data.number).to.equal(15);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'counterInc via path',
+            action: async ({ channel }) => {
+              await channel.object.publish({ path: 'counter', counterCreate: { count: 1 } });
+              await channel.object.publish({ path: 'counter', counterInc: { number: 10 } });
+
+              const obj = await channel.object.get();
+              expect(obj.counter).to.equal(11);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'counterInc via wildcard path',
+            action: async ({ channel }) => {
+              await channel.object.publish({
+                path: 'map',
+                mapCreate: { semantics: 'lww', entries: {} },
+              });
+              await channel.object.publish({ path: 'map.counter1', counterCreate: { count: 10 } });
+              await channel.object.publish({ path: 'map.counter2', counterCreate: { count: 20 } });
+
+              await channel.object.publish({
+                path: 'map.*',
+                counterInc: { number: 5 },
+              });
+
+              const obj = await channel.object.get();
+              expect(obj.map.counter1).to.equal(15);
+              expect(obj.map.counter2).to.equal(25);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapCreate without path creates standalone object',
+            action: async ({ channel }) => {
+              const result = await channel.object.publish({
+                mapCreate: { semantics: 'lww', entries: { foo: { data: { string: 'bar' } } } },
+              });
+              expect(result.objectIds.length).to.be.greaterThan(0);
+
+              const obj = await channel.object.get({ objectId: result.objectIds[0], compact: false });
+              expect(obj.objectId).to.equal(result.objectIds[0]);
+              expect(obj.map.entries.foo.data.string).to.equal('bar');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapCreate with path sets key on parent map with ref to a new map',
+            action: async ({ channel }) => {
+              const result = await channel.object.publish({
+                path: 'map',
+                mapCreate: { semantics: 'lww', entries: { foo: { data: { string: 'bar' } } } },
+              });
+              expect(result.objectIds.length).to.be.greaterThan(0);
+
+              const obj = await channel.object.get();
+              expect(obj.map.foo).to.equal('bar');
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapCreate with all data types',
+            action: async ({ helper, channel }) => {
+              const fixtures = getPublishDataFixtures(helper);
+              const entries = {};
+              for (const fixture of fixtures) {
+                entries[fixture.key] = { data: fixture.publishData };
               }
 
-              acc[key] = value;
-              return acc;
-            }, {});
-
-            const operation = {
-              operation: 'map.create',
-              path: 'map',
-              entries,
-            };
-
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
-
-            // verify values were set correctly
-            for (const keyData of primitiveKeyData) {
-              const obj = await channel.object.get({ objectId: result.objectIds[0], compact: false });
-              checkKeyDataOnExpandedObject({
-                helper,
-                keyData,
-                obj,
-                msg: `Check data was set for a key "${keyData.key}" via MAP_CREATE`,
+              const result = await channel.object.publish({
+                path: 'map',
+                mapCreate: { semantics: 'lww', entries },
               });
-            }
 
-            // test setting reference to another object
-            const counterCreateOperation = {
-              operation: 'counter.create',
-              path: 'counter',
-              count: 1,
-            };
-            const counterCreateResult = await channel.object.publish(counterCreateOperation);
-            const counterObjectId = counterCreateResult.objectIds[0];
-
-            const mapCreateCounterRefOperation = {
-              operation: 'map.create',
-              path: 'mapRef',
-              entries: {
-                counterRef: { objectId: counterObjectId },
-              },
-            };
-            const mapCreateResult = await channel.object.publish(mapCreateCounterRefOperation);
-
-            const obj = await channel.object.get({ objectId: mapCreateResult.objectIds[0], compact: false });
-
-            expect(obj.map.entries.counterRef.data.objectId).to.equal(
-              counterObjectId,
-              'Check counter reference has correct objectId',
-            );
-            expect(obj.map.entries.counterRef.data.counter.data.number).to.equal(
-              1,
-              'Check counter reference has correct value',
-            );
+              const obj = await channel.object.get({ objectId: result.objectIds[0], compact: false });
+              for (const fixture of fixtures) {
+                checkPublishFixtureData(helper, obj.map.entries[fixture.key].data, fixture);
+              }
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should publish single MAP_REMOVE operation',
-          async function (options, channelName, helper) {
-            const objectsHelper = new LiveObjectsHelper(helper);
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'mapCreate with objectId reference entry',
+            action: async ({ channel }) => {
+              // create a counter to reference
+              await channel.object.publish({ path: 'counter', counterCreate: { count: 5 } });
 
-            // First create a key to remove
-            await objectsHelper.operationRequest(
-              channelName,
-              objectsHelper.mapSetRestOp({
+              // get its objectId
+              const counter = await channel.object.get({ path: 'counter', compact: false });
+              const counterObjectId = counter.objectId;
+
+              const result = await channel.object.publish({
+                path: 'map',
+                mapCreate: {
+                  semantics: 'lww',
+                  entries: { foo: { data: { objectId: counterObjectId } } },
+                },
+              });
+
+              const obj = await channel.object.get({ objectId: result.objectIds[0], compact: false });
+              expect(obj.map.entries.foo.data.objectId).to.equal(counterObjectId);
+              expect(obj.map.entries.foo.data.counter.data.number).to.equal(5);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'counterCreate without path creates standalone counter',
+            action: async ({ channel }) => {
+              const result = await channel.object.publish({ counterCreate: { count: 42 } });
+              expect(result.objectIds.length).to.be.greaterThan(0);
+
+              const obj = await channel.object.get({ objectId: result.objectIds[0], compact: false });
+              expect(obj.counter.data.number).to.equal(42);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'counterCreate with path sets key on parent map with ref to a new counter',
+            action: async ({ channel }) => {
+              await channel.object.publish({ path: 'counter', counterCreate: { count: 7 } });
+
+              const compact = await channel.object.get();
+              expect(compact.counter).to.equal(7);
+            },
+          },
+
+          {
+            jsonMsgpack: true,
+            description: 'mapCreateWithObjectId creates map with pre-computed ID',
+            action: async ({ helper, channel }) => {
+              const nonce = 'test-nonce-map-' + Math.random().toString(36).slice(2);
+              const initialValue = JSON.stringify({
+                semantics: 0,
+                entries: { name: { data: { string: 'Alice' } } },
+              });
+              helper.recordPrivateApi('call.ObjectId.fromInitialValue');
+              const objectId = LiveObjectsPlugin.ObjectId.fromInitialValue(
+                Platform,
+                'map',
+                initialValue,
+                nonce,
+                Date.now(),
+              ).toString();
+
+              const result = await channel.object.publish({
+                objectId,
+                mapCreateWithObjectId: { initialValue, nonce },
+              });
+
+              expect(result.objectIds[0]).to.equal(objectId);
+
+              // link to root and verify
+              await channel.object.publish({
                 objectId: 'root',
-                key: 'keyToRemove',
-                value: { string: 'willBeRemoved' },
-              }),
-            );
+                mapSet: { key: 'precomputedMap', value: { objectId } },
+              });
 
-            const operation = {
-              operation: 'map.remove',
-              objectId: 'root',
-              key: 'keyToRemove',
-            };
-
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
+              const compact = await channel.object.get();
+              expect(compact.precomputedMap.name).to.equal('Alice');
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should publish single COUNTER_CREATE operation',
-          async function (options, channelName, helper) {
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'counterCreateWithObjectId creates counter with pre-computed ID',
+            action: async ({ helper, channel }) => {
+              const nonce = 'test-nonce-counter-' + Math.random().toString(36).slice(2);
+              const initialValue = JSON.stringify({ count: 100 });
+              helper.recordPrivateApi('call.ObjectId.fromInitialValue');
+              const objectId = LiveObjectsPlugin.ObjectId.fromInitialValue(
+                Platform,
+                'counter',
+                initialValue,
+                nonce,
+                Date.now(),
+              ).toString();
 
-            const operation = {
-              operation: 'counter.create',
-              path: 'newCounter',
-              count: 10,
-            };
+              const result = await channel.object.publish({
+                objectId,
+                counterCreateWithObjectId: { initialValue, nonce },
+              });
 
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
-            expect(result.objectIds.length).to.be.greaterThan(0);
+              expect(result.objectIds[0]).to.equal(objectId);
+
+              // link to root and verify
+              await channel.object.publish({
+                objectId: 'root',
+                mapSet: { key: 'precomputedCounter', value: { objectId } },
+              });
+
+              const compact = await channel.object.get();
+              expect(compact.precomputedCounter).to.equal(100);
+            },
           },
-        );
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack(
-          'should publish single COUNTER_INC operation',
-          async function (options, channelName, helper) {
-            const objectsHelper = new LiveObjectsHelper(helper);
-            const client = RestWithObjects(helper, options);
-            const channel = client.channels.get(channelName);
+          {
+            jsonMsgpack: true,
+            description: 'idempotent publish - duplicate counterInc with same id applied once',
+            action: async ({ channel }) => {
+              // create a counter
+              await channel.object.publish({ path: 'idempotentCounter', counterCreate: { count: 0 } });
 
-            const { objectId } = await objectsHelper.operationRequest(
-              channelName,
-              objectsHelper.counterCreateRestOp({ number: 5 }),
-            );
+              // get its objectId
+              const counter = await channel.object.get({ path: 'idempotentCounter', compact: false });
+              const objectId = counter.objectId;
 
-            const operation = {
-              operation: 'counter.inc',
-              objectId: objectId,
-              amount: 3,
-            };
+              const idempotencyKey = 'unique-op-id-' + Math.random().toString(36).slice(2);
 
-            const result = await channel.object.publish(operation);
-            expect(result).to.exist;
-            expect(result.messageId).to.exist;
-            expect(result.channel).to.equal(channelName);
-            expect(result.objectIds).to.be.an('array');
+              await channel.object.publish({ id: idempotencyKey, objectId, counterInc: { number: 10 } });
+              await channel.object.publish({ id: idempotencyKey, objectId, counterInc: { number: 10 } });
+
+              const result = await channel.object.get({ objectId, compact: false });
+              expect(result.counter.data.number).to.equal(10, 'counter should only be incremented once');
+            },
           },
-        );
+        ];
 
-        /** @nospec */
-        Helper.testOnJsonMsgpack('should publish array of operations', async function (options, channelName, helper) {
-          const client = RestWithObjects(helper, options);
+        forScenarios(publishScenarios, async (helper, scenario, options, channelName) => {
+          const objectsHelper = new LiveObjectsHelper(helper);
+          const client = RestWithLiveObjects(helper, options);
           const channel = client.channels.get(channelName);
 
-          const operations = [
-            {
-              operation: 'map.set',
-              path: '',
-              key: 'key1',
-              value: 'value1',
-            },
-            {
-              operation: 'map.set',
-              path: '',
-              key: 'key2',
-              value: 42,
-            },
-            {
-              operation: 'counter.create',
-              path: 'counter1',
-              count: 99,
-            },
-          ];
-
-          const result = await channel.object.publish(operations);
-          expect(result).to.exist;
-          expect(result.messageId).to.exist;
-          expect(result.channel).to.equal(channelName);
-          expect(result.objectIds).to.be.an('array');
-
-          const obj = await channel.object.get();
-          expect(obj).to.exist;
-          expect(obj.key1).to.equal('value1');
-          expect(obj.key2).to.equal(42);
-          expect(obj.counter1).to.equal(99);
+          await scenario.action({ helper, options, client, channel, channelName, objectsHelper });
         });
       });
-
-      /** @nospec */
-      Helper.testOnJsonMsgpack(
-        'should handle complex object operations workflow',
-        async function (options, channelName, helper) {
-          const client = RestWithObjects(helper, options);
-          const channel = client.channels.get(channelName);
-
-          // Create a map with initial data
-          const mapCreateOperation = {
-            operation: 'map.create',
-            path: 'complexMap',
-            entries: {
-              name: 'Test Map',
-              version: 1,
-              active: true,
-            },
-          };
-
-          const mapResult = await channel.object.publish(mapCreateOperation);
-          const mapObjectId = mapResult.objectIds[0];
-
-          // Add more data to the map
-          const mapSetOperation = {
-            operation: 'map.set',
-            objectId: mapObjectId,
-            key: 'description',
-            value: 'A test map for complex operations',
-          };
-
-          await channel.object.publish(mapSetOperation);
-
-          // Create a counter and reference it in the map
-          const counterCreateOperation = {
-            operation: 'counter.create',
-            path: 'counter',
-            count: 1,
-          };
-
-          const counterResult = await channel.object.publish(counterCreateOperation);
-          const counterObjectId = counterResult.objectIds[0];
-
-          const counterIncOperation = {
-            operation: 'counter.inc',
-            objectId: counterObjectId,
-            amount: 10,
-          };
-
-          await channel.object.publish(counterIncOperation);
-
-          const mapSetCounterRefOperation = {
-            operation: 'map.set',
-            objectId: mapObjectId,
-            key: 'innerCounter',
-            value: { objectId: counterObjectId },
-          };
-
-          await channel.object.publish(mapSetCounterRefOperation);
-
-          // Verify the complex structure
-          const finalResult = await channel.object.get();
-          expect(finalResult).to.exist;
-          expect(finalResult).to.deep.include({
-            complexMap: {
-              name: 'Test Map',
-              version: 1,
-              active: true,
-              description: 'A test map for complex operations',
-              innerCounter: 11,
-            },
-            counter: 11,
-          });
-
-          const mapObj = await channel.object.get({
-            objectId: mapObjectId,
-            compact: false,
-          });
-          expect(mapObj.map.semantics).to.equal('lww', 'Check map semantics value');
-          expect(mapObj.map.entries.name.data.string).to.equal('Test Map', 'Check "name" property has correct value');
-          expect(mapObj.map.entries.description.data.string).to.equal(
-            'A test map for complex operations',
-            'Check "description" property has correct value',
-          );
-          expect(mapObj.map.entries.innerCounter.data.objectId).to.equal(
-            counterObjectId,
-            'Check counter reference has correct objectId',
-          );
-          expect(mapObj.map.entries.innerCounter.data.counter.data.number).to.equal(
-            11,
-            'Check counter reference has correct value',
-          );
-
-          const counterObj = await channel.object.get({
-            objectId: counterObjectId,
-            compact: false,
-          });
-          expect(counterObj.counter.data.number).to.equal(11, 'Check counter has correct value');
-        },
-      );
     });
   });
 });

@@ -1,24 +1,43 @@
 import type RestChannel from 'common/lib/client/restchannel';
 import type * as Utils from 'common/lib/util/utils';
+import type { FlattenUnion } from 'common/types/utils';
 import type {
-  GetObjectParams,
   ObjectsMapSemantics,
-  PrimitiveOrObjectReference,
-  RestCompactObjectData,
-  RestLiveObject,
-  RestObjectData,
-  RestObjectMapEntry,
+  RestLiveMap,
+  RestObject as PublicRestObject,
+  RestObjectGetCompactResult,
+  RestObjectGetParams,
+  RestObjectGetResult,
   RestObjectOperation,
   RestObjectPublishResult,
 } from '../../../liveobjects';
+import {
+  CounterCreate,
+  CounterCreateWithObjectId,
+  CounterInc,
+  decodeWireObjectData,
+  encodeMapSemantics,
+  encodePartialObjectOperationForWire,
+  MapCreate,
+  MapCreateWithObjectId,
+  MapRemove,
+  MapSet,
+  ObjectData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ObjectOperation,
+  WireObjectData,
+} from './objectmessage';
 
 enum WireObjectsMapSemantics {
   LWW = 'LWW',
 }
 
-const mapSemantics: Record<WireObjectsMapSemantics, ObjectsMapSemantics> = {
+const mapSemanticsWireToPublic: Record<WireObjectsMapSemantics, ObjectsMapSemantics> = {
   [WireObjectsMapSemantics.LWW]: 'lww',
 };
+
+/** Wire format for a non-compact GET response: either a live object or a typed leaf value. */
+type WireRestObjectGetResult = WireRestLiveObject | WireObjectData;
 
 type WireRestLiveObject = WireRestLiveMap | WireRestLiveCounter | WireAnyRestLiveObject;
 
@@ -26,24 +45,11 @@ interface WireRestLiveMap {
   objectId: string;
   map: {
     semantics: WireObjectsMapSemantics;
-    entries: Record<string, WireRestObjectMapEntry>;
+    entries: Record<string, { data: WireObjectData | WireRestLiveObject }>;
   };
 }
 
-export interface WireRestObjectMapEntry {
-  data: WireRestLiveObject | WireRestObjectData;
-}
-
-export interface WireRestObjectData {
-  objectId?: string;
-  number?: number;
-  boolean?: boolean;
-  string?: string;
-  bytes?: string | Buffer | ArrayBuffer;
-  json?: string;
-}
-
-export interface WireRestLiveCounter {
+interface WireRestLiveCounter {
   objectId: string;
   counter: {
     data: {
@@ -52,20 +58,40 @@ export interface WireRestLiveCounter {
   };
 }
 
-export type WireAnyRestLiveObject = {
+type WireAnyRestLiveObject = {
   objectId: string;
 };
 
-export class RestObject {
+/**
+ * Wire format for a REST publish operation, based on {@link ObjectOperation} from the realtime protocol.
+ * The `action` field is omitted as the server infers it from the operation-specific field.
+ * Includes additional REST-specific fields such as `id` and `path`.
+ */
+interface WireRestObjectOperation {
+  id?: string;
+  path?: string;
+  objectId?: string;
+  mapCreate?: MapCreate<WireObjectData>;
+  mapSet?: MapSet<WireObjectData>;
+  mapRemove?: MapRemove;
+  counterCreate?: CounterCreate;
+  counterInc?: CounterInc;
+  mapCreateWithObjectId?: Omit<MapCreateWithObjectId<WireObjectData>, '_derivedFrom'>;
+  counterCreateWithObjectId?: Omit<CounterCreateWithObjectId, '_derivedFrom'>;
+}
+
+/**
+ * Flattened view of {@link RestObjectOperation} with all possible fields as optional.
+ * Derived from the public union type so it stays in sync automatically.
+ */
+type AnyRestObjectOperation = FlattenUnion<RestObjectOperation>;
+
+export class RestObject implements PublicRestObject {
   constructor(private _channel: RestChannel) {}
 
-  /**
-   * Read object data. Defaults to { compact: true } and entrypoint=root when no id is provided.
-   * Returns undefined if provided objectId/path does not resolve to an object.
-   */
-  async get(params?: Omit<GetObjectParams, 'compact'> & { compact?: true }): Promise<RestCompactObjectData | undefined>;
-  async get(params: Omit<GetObjectParams, 'compact'> & { compact: false }): Promise<RestLiveObject | undefined>;
-  async get(params?: GetObjectParams): Promise<RestCompactObjectData | RestLiveObject | undefined> {
+  async get(params?: Omit<RestObjectGetParams, 'compact'> & { compact?: true }): Promise<RestObjectGetCompactResult>;
+  async get(params: Omit<RestObjectGetParams, 'compact'> & { compact: false }): Promise<RestObjectGetResult>;
+  async get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetResult> {
     const client = this._channel.client;
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
     const envelope = client.http.supportsLinkHeaders ? null : format;
@@ -73,60 +99,44 @@ export class RestObject {
 
     client.Utils.mixin(headers, client.options.headers);
 
-    try {
-      const response = await client.rest.Resource.get<RestCompactObjectData | WireRestLiveObject>(
-        client,
-        this._basePath(params?.objectId ?? 'root'),
-        headers,
-        params ?? {},
-        envelope,
-        true,
-      );
+    const response = await client.rest.Resource.get<RestObjectGetCompactResult | WireRestObjectGetResult>(
+      client,
+      this._basePath(params?.objectId),
+      headers,
+      params ?? {},
+      envelope,
+      true,
+    );
 
-      let decodedBody: RestCompactObjectData | WireRestLiveObject | undefined;
-      if (format) {
-        decodedBody = client.Utils.decodeBody(response.body, client._MsgPack, format);
-      } else {
-        decodedBody = response.body;
-      }
+    const body = format
+      ? client.Utils.decodeBody<RestObjectGetCompactResult | WireRestObjectGetResult>(
+          response.body,
+          client._MsgPack,
+          format,
+        )
+      : response.body!;
 
-      if (decodedBody == undefined) {
-        return undefined;
-      }
-
-      // non-object primitive values
-      if (typeof decodedBody !== 'object') {
-        return decodedBody;
-      }
-
-      // live counter or JSON object
-      if (!this._isWireLiveMap(decodedBody)) {
-        return decodedBody;
-      }
-
-      return this._decodeWireLiveObject(decodedBody, format);
-    } catch (error) {
-      if (this._channel.client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 40400) {
-        // ignore object resolution errors and return undefined
-        return undefined;
-      }
-      // rethrow everything else
-      throw error;
+    const compact = params?.compact ?? true;
+    if (compact) {
+      // Compact mode: return as-is. Values are JSON-like; bytes appear as base64 strings
+      // (JSON protocol) or Buffer/ArrayBuffer (binary protocol). We cannot deterministically
+      // decode values since we can't tell string vs JSON-encoded string.
+      return body as RestObjectGetCompactResult;
     }
+
+    // Non-compact mode: response is a live object (map/counter) or a typed leaf ObjectData.
+    // Decode wire values using objectmessage decoding.
+    return this._decodeNonCompactResult(body as WireRestObjectGetResult, format);
   }
 
-  /**
-   * Publish one or more operations.
-   */
   async publish(op: RestObjectOperation | RestObjectOperation[]): Promise<RestObjectPublishResult> {
     const client = this._channel.client;
-    const options = client.options;
-    const format = options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
+    const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
     const headers = client.Defaults.defaultPostHeaders(client.options, { format });
 
     const wireOps = Array.isArray(op)
-      ? op.map((o) => this._constructPublishBody(o, format))
-      : [this._constructPublishBody(op, format)];
+      ? op.map((o) => this._constructWireOperations(o, format))
+      : [this._constructWireOperations(op, format)];
 
     client.Utils.mixin(headers, client.options.headers);
 
@@ -157,196 +167,68 @@ export class RestObject {
     );
   }
 
-  private _constructPublishBody(op: RestObjectOperation, format: Utils.Format): any {
-    const operation = op.operation;
-    switch (operation) {
-      case 'map.create':
-        if (op.path == null) {
-          throw new this._channel.client.ErrorInfo('Path must be provided for "map.create" operation', 40003, 400);
-        }
-
-        return {
-          id: op.id,
-          extras: op.extras,
-          objectId: op.objectId,
-          path: op.path,
-          mapCreate: {
-            semantics: 0, // LWW
-            entries: Object.entries(op.entries).reduce(
-              (acc, [key, value]) => {
-                acc[key] = { data: this._encodePrimitive(value, format) };
-                return acc;
-              },
-              {} as Record<string, any>,
-            ),
-          },
-        };
-
-      case 'map.set':
-        return {
-          id: op.id,
-          extras: op.extras,
-          objectId: op.objectId,
-          path: op.path,
-          mapSet: {
-            key: op.key,
-            value: {
-              ...this._encodePrimitive(op.value, format),
-              ...(op.encoding ? { encoding: op.encoding } : {}),
-            },
-          },
-        };
-
-      case 'map.remove':
-        return {
-          id: op.id,
-          extras: op.extras,
-          objectId: op.objectId,
-          path: op.path,
-          mapRemove: { key: op.key },
-        };
-
-      case 'counter.create':
-        if (op.path == null) {
-          throw new this._channel.client.ErrorInfo('Path must be provided for "counter.create" operation', 40003, 400);
-        }
-
-        return {
-          id: op.id,
-          extras: op.extras,
-          objectId: op.objectId,
-          path: op.path,
-          counterCreate: { count: op.count },
-        };
-
-      case 'counter.inc':
-        return {
-          id: op.id,
-          extras: op.extras,
-          objectId: op.objectId,
-          path: op.path,
-          counterInc: { number: op.amount },
-        };
-
-      default:
-        throw new this._channel.client.ErrorInfo('Unsupported publish operation action: ' + operation, 40003, 400);
+  /**
+   * Decodes a non-compact GET response.
+   * The wire response is either a live object (map/counter) or a typed leaf value {@link WireObjectData}.
+   *
+   * Known object types are decoded based on the current contract (maps have entries decoded,
+   * ObjectData has bytes/json decoded). Unrecognized object types or fields are passed through as-is.
+   */
+  private _decodeNonCompactResult(wire: WireRestObjectGetResult, format: Utils.Format): RestObjectGetResult {
+    if ('map' in wire) {
+      return this._decodeWireRestLiveMap(wire, format);
     }
+
+    if ('counter' in wire) {
+      // live counter - no decoding needed
+      return wire;
+    }
+
+    // typed leaf ObjectData (string, number, boolean, bytes, json, objectId) or unknown live object type.
+    // decodeWireObjectData handles all ObjectData fields and passes through unrecognized shapes.
+    return decodeWireObjectData(wire, this._channel.client, format);
   }
 
-  private _encodePrimitive(value: PrimitiveOrObjectReference, format: Utils.Format): any {
-    const client = this._channel.client;
-    if (client.Platform.BufferUtils.isBuffer(value)) {
-      return {
-        bytes: client.MessageEncoding.encodeDataForWire(value, null, format).data,
+  private _decodeWireRestLiveMap(wire: WireRestLiveMap, format: Utils.Format): RestLiveMap {
+    const entries: RestLiveMap['map']['entries'] = {};
+
+    for (const [key, entry] of Object.entries(wire.map.entries ?? {})) {
+      entries[key] = {
+        data: this._decodeNonCompactResult(entry.data, format),
       };
-    } else if (typeof value === 'string') {
-      return { string: value };
-    } else if (typeof value === 'boolean') {
-      return { boolean: value };
-    } else if (typeof value === 'number') {
-      return { number: value };
-    } else if (typeof value === 'object' && value !== null) {
-      if (Object.keys(value).length === 1 && 'objectId' in value) {
-        return value;
-      } else {
-        return { json: JSON.stringify(value) };
-      }
     }
 
-    return value;
-  }
-
-  private _decodeWireLiveObject(obj: WireRestLiveObject, format: Utils.Format): RestLiveObject {
-    // expanded live map object which needs decoding
-    if (this._isWireLiveMap(obj)) {
-      return this._decodeWireRestLiveMap(obj, format);
-    }
-
-    // live counter or JSON object
-    return obj;
-  }
-
-  private _decodeWireRestLiveMap(obj: WireRestLiveMap, format: Utils.Format): RestLiveObject {
-    return {
-      objectId: obj.objectId,
+    // construct the public RestLiveMap object, and include any unrecognized fields as-is
+    const liveMap: RestLiveMap = {
+      ...wire,
+      objectId: wire.objectId,
       map: {
-        semantics: (mapSemantics[obj.map.semantics] ?? 'unknown') as ObjectsMapSemantics,
-        entries:
-          typeof obj.map.entries === 'object'
-            ? Object.entries(obj.map.entries).reduce(
-                (acc, entry) => {
-                  const [key, value] = entry;
-                  const entryData = value.data;
-                  acc[key] = {
-                    data: this._isWireObjectData(entryData)
-                      ? this._decodeWireObjectData(entryData, format)
-                      : this._decodeWireLiveObject(entryData, format),
-                  };
-                  return acc;
-                },
-                {} as Record<string, RestObjectMapEntry>,
-              )
-            : obj.map.entries,
+        ...wire.map,
+        semantics: mapSemanticsWireToPublic[wire.map.semantics] ?? 'unknown',
+        entries: entries,
       },
     };
+    return liveMap;
   }
 
-  private _decodeWireObjectData(obj: WireRestObjectData, format: Utils.Format): RestObjectData {
-    const client = this._channel.client;
+  private _constructWireOperations(op: AnyRestObjectOperation, format: Utils.Format): WireRestObjectOperation {
+    const { id, path, mapCreate, ...rest } = op;
 
-    if (obj.objectId != null) {
-      return { objectId: obj.objectId };
-    }
-    if (obj.number != null) {
-      return { number: obj.number };
-    }
-    if (obj.boolean != null) {
-      return { boolean: obj.boolean };
-    }
-    if (obj.string != null) {
-      return { string: obj.string };
-    }
-    if (obj.bytes != null) {
-      const decodedBytes =
-        format === 'msgpack'
-          ? // connection is using msgpack protocol, bytes are already a buffer
-            (obj.bytes as Buffer | ArrayBuffer)
-          : // connection is using JSON protocol, Base64-decode bytes value
-            client.Platform.BufferUtils.base64Decode(String(obj.bytes));
-      return { bytes: decodedBytes };
-    }
-    if (obj.json != null) {
-      return { json: JSON.parse(obj.json) };
-    }
+    // Build the operation fields for encoding. If mapCreate is present, convert semantics
+    // from public string to internal enum before passing to the encoding pipeline.
+    const operationFields: Partial<ObjectOperation<ObjectData>> = mapCreate
+      ? {
+          ...rest,
+          mapCreate: { ...mapCreate, semantics: encodeMapSemantics(mapCreate.semantics, this._channel.client) },
+        }
+      : rest;
 
-    client.Logger.logAction(
-      client.logger,
-      client.Logger.LOG_ERROR,
-      'RestObject._decodeWireObjectData: Unknown object data format, returning empty object; object data: ' +
-        client.Platform.Config.inspect(obj),
-    );
-    return {};
-  }
+    // Encode ObjectData values (json stringification, bytes encoding) via ObjectMessage pipeline.
+    const encoded = encodePartialObjectOperationForWire(operationFields, this._channel.client, format);
 
-  private _isWireLiveMap(obj: unknown): obj is WireRestLiveMap {
-    return (
-      typeof obj === 'object' &&
-      obj != undefined &&
-      'objectId' in obj &&
-      'map' in obj &&
-      typeof obj.map === 'object' &&
-      obj.map != undefined &&
-      'semantics' in obj.map &&
-      'entries' in obj.map
-    );
-  }
-
-  private _isWireObjectData(obj: unknown): obj is WireRestObjectData {
-    return (
-      typeof obj === 'object' &&
-      obj != undefined &&
-      Object.keys(obj).length === 1 &&
-      ['objectId', 'number', 'boolean', 'string', 'bytes', 'json'].includes(Object.keys(obj)[0])
-    );
+    const result: WireRestObjectOperation = { ...encoded };
+    if (id != null) result.id = id;
+    if (path != null) result.path = path;
+    return result;
   }
 }
