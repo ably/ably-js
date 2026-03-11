@@ -573,18 +573,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
       const primitiveKeyData = LiveObjectsHelper.primitiveKeyData;
       const primitiveMapsFixtures = [
-        { name: 'emptyMap' },
-        {
-          name: 'valuesMap',
-          entries: primitiveKeyData.reduce((acc, v) => {
-            acc[v.key] = { data: v.jsonData };
-            return acc;
-          }, {}),
-          restData: primitiveKeyData.reduce((acc, v) => {
-            acc[v.key] = v.jsonData;
-            return acc;
-          }, {}),
-        },
+        { name: 'emptyMap', entries: [] },
+        { name: 'valuesMap', entries: primitiveKeyData },
       ];
       const countersFixtures = [
         { name: 'emptyCounter' },
@@ -1580,7 +1570,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: objectsHelper.mapCreateRestOp({ data: fixture.restData }),
+                  createOp: objectsHelper.mapCreateRestOp({
+                    data: Object.fromEntries(fixture.entries.map((v) => [v.key, v.jsonData])),
+                  }),
                 }),
               ),
             );
@@ -1597,18 +1589,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               expectInstanceOf(map._value, 'LiveMap', `Check map at "${mapKey}" key in root is of type LiveMap`);
 
               // check primitive maps have correct values
-              expect(map.size()).to.equal(
-                Object.keys(fixture.entries ?? {}).length,
-                `Check map "${mapKey}" has correct number of keys`,
-              );
+              expect(map.size()).to.equal(fixture.entries.length, `Check map "${mapKey}" has correct number of keys`);
 
-              Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
+              fixture.entries.forEach((keyData) => {
                 checkKeyDataOnInstance({
                   helper,
-                  key,
+                  key: keyData.key,
                   keyData,
                   instance: map,
-                  msg: `Check map "${mapKey}" has correct value for "${key}" key`,
+                  msg: `Check map "${mapKey}" has correct value for "${keyData.key}" key`,
                 });
               });
             });
@@ -4292,22 +4281,20 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
-                const entries = mapFixture.entries
-                  ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
-                      let value;
-                      if (keyData.jsonData.bytes != null) {
-                        helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                        value = BufferUtils.base64Decode(keyData.jsonData.bytes);
-                      } else if (keyData.jsonData.json != null) {
-                        value = JSON.parse(keyData.jsonData.json);
-                      } else {
-                        value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
-                      }
-
-                      acc[key] = value;
-                      return acc;
-                    }, {})
-                  : undefined;
+                const entries = Object.fromEntries(
+                  mapFixture.entries.map((keyData) => {
+                    let value;
+                    if (keyData.jsonData.bytes != null) {
+                      helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                      value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                    } else if (keyData.jsonData.json != null) {
+                      value = JSON.parse(keyData.jsonData.json);
+                    } else {
+                      value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
+                    }
+                    return [keyData.key, value];
+                  }),
+                );
 
                 return entryInstance.set(mapFixture.name, LiveMap.create(entries));
               }),
@@ -4321,18 +4308,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('read.DefaultInstance._value');
               expectInstanceOf(map._value, 'LiveMap', `Check map instance #${i + 1} is of an expected class`);
 
-              expect(map.size()).to.equal(
-                Object.keys(fixture.entries ?? {}).length,
-                `Check map #${i + 1} has correct number of keys`,
-              );
+              expect(map.size()).to.equal(fixture.entries.length, `Check map #${i + 1} has correct number of keys`);
 
-              Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
+              fixture.entries.forEach((keyData) => {
                 checkKeyDataOnInstance({
                   helper,
-                  key,
+                  key: keyData.key,
                   keyData,
                   instance: map,
-                  msg: `Check map #${i + 1} has correct value for "${key}" key`,
+                  msg: `Check map #${i + 1} has correct value for "${keyData.key}" key`,
                 });
               });
             }
