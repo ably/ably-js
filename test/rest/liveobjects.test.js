@@ -71,6 +71,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       expect(entryData.number, label).to.equal(jsonData.number);
     } else if (jsonData.boolean != null) {
       expect(entryData.boolean, label).to.equal(jsonData.boolean);
+    } else {
+      throw new Error(
+        `checkExpandedKeyData: unrecognized jsonData shape for key "${key}": ${JSON.stringify(jsonData)}`,
+      );
     }
   }
 
