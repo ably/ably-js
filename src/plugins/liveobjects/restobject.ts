@@ -5,7 +5,9 @@ import type {
   ObjectsMapSemantics,
   RestLiveMap,
   RestObject as PublicRestObject,
+  RestObjectGetCompactParams,
   RestObjectGetCompactResult,
+  RestObjectGetFullParams,
   RestObjectGetParams,
   RestObjectGetResult,
   RestObjectOperation,
@@ -89,8 +91,8 @@ type AnyRestObjectOperation = FlattenUnion<RestObjectOperation>;
 export class RestObject implements PublicRestObject {
   constructor(private _channel: RestChannel) {}
 
-  async get(params?: Omit<RestObjectGetParams, 'compact'> & { compact?: true }): Promise<RestObjectGetCompactResult>;
-  async get(params: Omit<RestObjectGetParams, 'compact'> & { compact: false }): Promise<RestObjectGetResult>;
+  async get(params?: RestObjectGetCompactParams): Promise<RestObjectGetCompactResult>;
+  async get(params: RestObjectGetFullParams): Promise<RestObjectGetResult>;
   async get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetResult> {
     const client = this._channel.client;
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;

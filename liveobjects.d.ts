@@ -71,14 +71,43 @@ export type BatchFunction<T extends LiveObject> = (ctx: BatchContext<T>) => void
  * Enables REST-based operations on Objects on a channel.
  */
 export declare interface RestObject {
-  get(params?: Omit<RestObjectGetParams, 'compact'> & { compact?: true }): Promise<RestObjectGetCompactResult>;
-  get(params: Omit<RestObjectGetParams, 'compact'> & { compact: false }): Promise<RestObjectGetResult>;
+  /**
+   * Reads object data from the channel in compact object response format.
+   * Uses the channel's root object as the entrypoint when no objectId is provided.
+   *
+   * Returns a {@link RestObjectGetCompactResult} representing the logical structure of your data as a JSON-like value.
+   * {@link LiveMap} instances appear as JSON objects with their entries, and {@link LiveCounter} instances appear
+   * as numbers. Binary values appear as base64 strings (JSON protocol) or `Buffer`/`ArrayBuffer` (binary protocol).
+   * JSON-typed values remain as their JSON-encoded string representation.
+   *
+   * Cyclic references are included as `{ objectId: string }` rather than including the same object instance
+   * in the result more than once.
+   *
+   * @param params - Optional parameters to specify the object to fetch.
+   * @returns A promise that resolves to the object data in compact format.
+   */
+  get(params?: RestObjectGetCompactParams): Promise<RestObjectGetCompactResult>;
+  /**
+   * Reads object data from the channel in full object response format.
+   * Uses the channel's root object as the entrypoint when no objectId is provided.
+   *
+   * Returns a {@link RestObjectGetResult} with full object metadata and decoded object data values
+   * (`bytes` decoded to `Buffer`/`ArrayBuffer`, `json` decoded to native objects/arrays).
+   * If the path resolves to a leaf value in a map, returns the decoded {@link RestObjectData | ObjectData} directly.
+   *
+   * Cyclic references are included as `{ objectId: string }` rather than including the same object instance
+   * in the result more than once.
+   *
+   * @param params - Parameters specifying the object to fetch with `compact: false`.
+   * @returns A promise that resolves to the object data in full format.
+   */
+  get(params: RestObjectGetFullParams): Promise<RestObjectGetResult>;
   /**
    * Reads object data from the channel.
    * Uses the channel's root object as the entrypoint when no objectId is provided.
    *
    * When `compact` is `true` (the default), returns a {@link RestObjectGetCompactResult} representing the logical
-   * structure of your data as a JSON value. {@link LiveMap} instances appear as JSON objects with their entries,
+   * structure of your data as a JSON-like value. {@link LiveMap} instances appear as JSON objects with their entries,
    * and {@link LiveCounter} instances appear as numbers. Binary values appear as base64 strings (JSON protocol) or
    * `Buffer`/`ArrayBuffer` (binary protocol). JSON-typed values remain as their JSON-encoded string representation.
    *
@@ -136,6 +165,7 @@ export interface RestObjectOperationBase {
 type TargetByObjectId = {
   /** The unique identifier of the object instance to target. */
   objectId: string;
+  /** Not applicable when targeting by object ID. */
   path?: never;
 };
 
@@ -152,6 +182,7 @@ type TargetByPath = {
    * If a key contains a dot, escape it with a backslash (for example `posts.post\\.123.votes.up`).
    */
   path: string;
+  /** Not applicable when targeting by path. */
   objectId?: never;
 };
 
@@ -169,56 +200,56 @@ export type PublishObjectData =
   | {
       /** A string value. */
       string: string;
-      number?: never;
-      boolean?: never;
-      bytes?: never;
-      json?: never;
-      objectId?: never;
+      /** Not applicable. */ number?: never;
+      /** Not applicable. */ boolean?: never;
+      /** Not applicable. */ bytes?: never;
+      /** Not applicable. */ json?: never;
+      /** Not applicable. */ objectId?: never;
     }
   | {
       /** A numeric value. */
       number: number;
-      string?: never;
-      boolean?: never;
-      bytes?: never;
-      json?: never;
-      objectId?: never;
+      /** Not applicable. */ string?: never;
+      /** Not applicable. */ boolean?: never;
+      /** Not applicable. */ bytes?: never;
+      /** Not applicable. */ json?: never;
+      /** Not applicable. */ objectId?: never;
     }
   | {
       /** A boolean value. */
       boolean: boolean;
-      string?: never;
-      number?: never;
-      bytes?: never;
-      json?: never;
-      objectId?: never;
+      /** Not applicable. */ string?: never;
+      /** Not applicable. */ number?: never;
+      /** Not applicable. */ bytes?: never;
+      /** Not applicable. */ json?: never;
+      /** Not applicable. */ objectId?: never;
     }
   | {
       /** A binary value. */
       bytes: Buffer | ArrayBuffer;
-      string?: never;
-      number?: never;
-      boolean?: never;
-      json?: never;
-      objectId?: never;
+      /** Not applicable. */ string?: never;
+      /** Not applicable. */ number?: never;
+      /** Not applicable. */ boolean?: never;
+      /** Not applicable. */ json?: never;
+      /** Not applicable. */ objectId?: never;
     }
   | {
       /** A JSON value (array or object). */
       json: JsonArray | JsonObject;
-      string?: never;
-      number?: never;
-      boolean?: never;
-      bytes?: never;
-      objectId?: never;
+      /** Not applicable. */ string?: never;
+      /** Not applicable. */ number?: never;
+      /** Not applicable. */ boolean?: never;
+      /** Not applicable. */ bytes?: never;
+      /** Not applicable. */ objectId?: never;
     }
   | {
       /** A reference to another object by its ID. */
       objectId: string;
-      string?: never;
-      number?: never;
-      boolean?: never;
-      bytes?: never;
-      json?: never;
+      /** Not applicable. */ string?: never;
+      /** Not applicable. */ number?: never;
+      /** Not applicable. */ boolean?: never;
+      /** Not applicable. */ bytes?: never;
+      /** Not applicable. */ json?: never;
     };
 
 /**
@@ -226,8 +257,11 @@ export type PublishObjectData =
  */
 export type RestObjectOperationMapCreate = RestObjectOperationBase &
   Partial<TargetByPath> & {
+    /** The map creation parameters. */
     mapCreate: {
+      /** The conflict-resolution semantics for the map. */
       semantics: Exclude<ObjectsMapSemantics, ObjectsMapSemanticsNamespace.UNKNOWN>;
+      /** Initial key-value pairs for the map. */
       entries: Record<
         string,
         {
@@ -245,6 +279,7 @@ export type RestObjectOperationMapCreate = RestObjectOperationBase &
  */
 export type RestObjectOperationMapCreateWithObjectId = RestObjectOperationBase &
   TargetByObjectId & {
+    /** The map creation parameters for a pre-computed object ID. */
     mapCreateWithObjectId: {
       /**
        * JSON-encoded string representation of the {@link RestObjectOperationMapCreate.mapCreate} object.
@@ -261,8 +296,11 @@ export type RestObjectOperationMapCreateWithObjectId = RestObjectOperationBase &
  * Can target the map by either object ID or path.
  */
 export type RestObjectOperationMapSet = AnyTargetRestObjectOperationBase & {
+  /** The map set parameters. */
   mapSet: {
+    /** The key to set. */
     key: string;
+    /** The value to assign to the key. */
     value: PublishObjectData;
   };
 };
@@ -272,7 +310,9 @@ export type RestObjectOperationMapSet = AnyTargetRestObjectOperationBase & {
  * Can target the map by either object ID or path.
  */
 export type RestObjectOperationMapRemove = AnyTargetRestObjectOperationBase & {
+  /** The map remove parameters. */
   mapRemove: {
+    /** The key to remove. */
     key: string;
   };
 };
@@ -282,7 +322,9 @@ export type RestObjectOperationMapRemove = AnyTargetRestObjectOperationBase & {
  */
 export type RestObjectOperationCounterCreate = RestObjectOperationBase &
   Partial<TargetByPath> & {
+    /** The counter creation parameters. */
     counterCreate: {
+      /** The initial value of the counter. */
       count: number;
     };
   };
@@ -292,6 +334,7 @@ export type RestObjectOperationCounterCreate = RestObjectOperationBase &
  */
 export type RestObjectOperationCounterCreateWithObjectId = RestObjectOperationBase &
   TargetByObjectId & {
+    /** The counter creation parameters for a pre-computed object ID. */
     counterCreateWithObjectId: {
       /**
        * JSON-encoded string representation of the {@link RestObjectOperationCounterCreate.counterCreate} object.
@@ -308,7 +351,9 @@ export type RestObjectOperationCounterCreateWithObjectId = RestObjectOperationBa
  * Can target the counter by either object ID or path.
  */
 export type RestObjectOperationCounterInc = AnyTargetRestObjectOperationBase & {
+  /** The counter increment parameters. */
   counterInc: {
+    /** The amount to increment by. Use a negative value to decrement. */
     number: number;
   };
 };
@@ -345,13 +390,29 @@ export interface RestObjectPublishResult {
  * Request parameters for {@link RestObject.get}.
  */
 export interface RestObjectGetParams {
-  /** The unique identifier of the object instance to fetch. If omitted, fetches from the channel's root object */
+  /** The unique identifier of the object instance to fetch. If omitted, fetches from the channel's root object. */
   objectId?: string;
-  /** A dot-separated path to return a subset of the object. Evaluated relative to the root or the specified objectId */
+  /** A dot-separated path to return a subset of the object. Evaluated relative to the root or the specified objectId. */
   path?: string;
-  /** When true (default), returns a values-only representation. When false, includes object IDs and type metadata */
+  /** When true (default), returns a values-only representation. When false, includes object IDs and type metadata. */
   compact?: boolean;
 }
+
+/**
+ * Parameters for {@link RestObject.get} when requesting compact format (default).
+ */
+export type RestObjectGetCompactParams = Omit<RestObjectGetParams, 'compact'> & {
+  /** Must be `true` or omitted for compact format. */
+  compact?: true;
+};
+
+/**
+ * Parameters for {@link RestObject.get} when requesting full object response format.
+ */
+export type RestObjectGetFullParams = Omit<RestObjectGetParams, 'compact'> & {
+  /** Must be `false` for full object response format. */
+  compact: false;
+};
 
 // Note: this type does not include arrays as no LiveObject type currently compacts
 // into one, and json-typed values remain as JSON-encoded strings rather than being parsed.
@@ -384,7 +445,7 @@ export type RestObjectGetResult = RestLiveObject | RestObjectData;
 export type RestLiveObject = RestLiveMap | RestLiveCounter | AnyRestLiveObject;
 
 /**
- * Expanded representation of a map object with metadata.
+ * Full object structure of a map object with metadata.
  */
 export interface RestLiveMap {
   /** The ID of the map object. */
@@ -398,16 +459,24 @@ export interface RestLiveMap {
   };
 }
 
+/**
+ * A map entry containing a primitive leaf value.
+ */
 export interface RestObjectDataMapEntry {
+  /** The decoded object data for this entry. */
   data: RestObjectData;
 }
 
+/**
+ * A map entry containing a nested LiveObject.
+ */
 export interface RestLiveObjectMapEntry {
+  /** The nested LiveObject at this entry. */
   data: RestLiveObject;
 }
 
 /**
- * Expanded representation of a counter object with metadata.
+ * Full object structure of a counter object with metadata.
  */
 export interface RestLiveCounter {
   /** The ID of the counter object. */
@@ -430,7 +499,9 @@ export type AnyRestLiveObject = {
   objectId: string;
 };
 
-// to be used in jsdoc links
+/**
+ * A decoded leaf data value in the non-compact {@link RestObject.get} responses.
+ */
 type RestObjectData = Omit<ObjectData, 'value'>;
 
 /**

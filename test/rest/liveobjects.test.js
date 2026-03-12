@@ -51,19 +51,19 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   }
 
   /**
-   * Checks that the expanded (compact: false) object data entry for a key matches the expected jsonData.
+   * Checks that the full (from "compact: false" responses) object data entry for a key matches the expected value.
    */
-  function checkExpandedKeyData({ helper, keyData, obj, msg }) {
+  function checkFullObjectKeyData({ helper, keyData, obj, msg }) {
     const { key, jsonData } = keyData;
     const entryData = obj.map.entries[key].data;
-    const label = msg || `expanded data for "${key}"`;
+    const label = msg || `full object data for "${key}"`;
 
     if (jsonData.bytes != null) {
       helper.recordPrivateApi('call.BufferUtils.base64Decode');
       helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
       expect(BufferUtils.areBuffersEqual(entryData.bytes, BufferUtils.base64Decode(jsonData.bytes)), label).to.be.true;
     } else if (jsonData.json != null) {
-      const expectedObject = keyData.expandedJson ?? JSON.parse(jsonData.json);
+      const expectedObject = JSON.parse(jsonData.json);
       expect(entryData.json, label).to.deep.equal(expectedObject);
     } else if (jsonData.string != null) {
       expect(entryData.string, label).to.equal(jsonData.string);
@@ -73,18 +73,17 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       expect(entryData.boolean, label).to.equal(jsonData.boolean);
     } else {
       throw new Error(
-        `checkExpandedKeyData: unrecognized jsonData shape for key "${key}": ${JSON.stringify(jsonData)}`,
+        `checkFullObjectKeyData: unrecognized jsonData shape for key "${key}": ${JSON.stringify(jsonData)}`,
       );
     }
   }
 
   /**
-   * Checks that the compact (compact: true) value for a key matches the expected value,
+   * Checks that the compact (from "compact: false" responses) value for a key matches the expected value,
    * accounting for protocol-dependent bytes handling.
    */
   function checkCompactKeyData({ helper, keyData, value, msg }) {
-    const { key } = keyData;
-    const label = msg || `compact data for "${key}"`;
+    const label = msg || `compact value for "${keyData.key}"`;
 
     if (keyData.jsonData.bytes != null) {
       // bytes values appear as base64 strings (JSON protocol) or buffers (binary protocol)
@@ -101,7 +100,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   }
 
   /**
-   * Checks that expanded entry data matches a publish fixture's expectedData.
+   * Checks that full object data matches a publish fixture's expectedData.
    * For bytes entries, compares as buffers; otherwise deep-equals the entire data object.
    */
   function checkPublishFixtureData(helper, entryData, fixture) {
@@ -211,7 +210,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             jsonMsgpack: true,
             description: 'with objectId parameter',
             action: async ({ channel }) => {
-              // get initialValueCounter by fetching expanded root and then using its objectId
+              // get initialValueCounter by fetching full root structure and then using its objectId
               const root = await channel.object.get({ compact: false });
               const counterObjectId = root.map.entries.initialValueCounter.data.objectId;
 
@@ -225,7 +224,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             jsonMsgpack: true,
             description: 'with objectId and path combined',
             action: async ({ channel }) => {
-              // get referencedMap's objectId from the expanded root
+              // get referencedMap's objectId from the full root structure
               const root = await channel.object.get({ compact: false });
               const referencedMapId = root.map.entries.referencedMap.data.objectId;
 
@@ -252,7 +251,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                   helper,
                   keyData,
                   value: valuesMap[keyData.key],
-                  msg: `compact value for "${keyData.key}"`,
                 });
               }
             },
@@ -334,7 +332,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
           {
             jsonMsgpack: true,
-            description: '"compact: false" returns expanded map object with metadata for map path',
+            description: '"compact: false" returns full map object with metadata for map path',
             action: async ({ channel }) => {
               const result = await channel.object.get({ path: 'emptyMap', compact: false });
               expect(result.objectId).to.be.a('string');
@@ -346,7 +344,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
           {
             jsonMsgpack: true,
-            description: '"compact: false" returns expanded counter object with metadata for counter path',
+            description: '"compact: false" returns full counter object with metadata for counter path',
             action: async ({ channel }) => {
               const result = await channel.object.get({ path: 'initialValueCounter', compact: false });
               expect(result.objectId).to.be.a('string');
@@ -368,11 +366,10 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               expect(valuesMapObj.map.semantics).to.equal('lww');
 
               for (const keyData of primitiveKeyData) {
-                checkExpandedKeyData({
+                checkFullObjectKeyData({
                   helper,
                   keyData,
                   obj: valuesMapObj,
-                  msg: `expanded data for "${keyData.key}"`,
                 });
               }
             },

@@ -28,7 +28,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
   /**
    * Fixture data for all primitive value types that can be stored in a map entry.
    * Each entry describes a key, its JSON-protocol ObjectData representation (`jsonData`),
-   * and expected values when read back in compact and expanded formats via REST API.
+   * and expected values when read back in compact format via REST API.
    */
   const primitiveKeyData = [
     { key: 'stringKey', jsonData: { string: 'stringValue' }, compactValue: 'stringValue' },
@@ -57,13 +57,11 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       key: 'objectKey',
       jsonData: { json: JSON.stringify({ foo: 'bar' }) },
       compactValue: '{"foo":"bar"}',
-      expandedJson: { foo: 'bar' },
     },
     {
       key: 'arrayKey',
       jsonData: { json: JSON.stringify(['foo', 'bar', 'baz']) },
       compactValue: '["foo","bar","baz"]',
-      expandedJson: ['foo', 'bar', 'baz'],
     },
   ];
 
