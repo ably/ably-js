@@ -9,7 +9,7 @@ import type {
   RestObjectGetCompactResult,
   RestObjectGetFullParams,
   RestObjectGetParams,
-  RestObjectGetResult,
+  RestObjectGetFullResult,
   RestObjectOperation,
   RestObjectPublishResult,
 } from '../../../liveobjects';
@@ -39,7 +39,7 @@ const mapSemanticsWireToPublic: Record<WireObjectsMapSemantics, ObjectsMapSemant
 };
 
 /** Wire format for a non-compact GET response: either a live object or a typed leaf value. */
-type WireRestObjectGetResult = WireRestLiveObject | WireObjectData;
+type WireRestObjectGetFullResult = WireRestLiveObject | WireObjectData;
 
 type WireRestLiveObject = WireRestLiveMap | WireRestLiveCounter | WireAnyRestLiveObject;
 
@@ -92,15 +92,15 @@ export class RestObject implements PublicRestObject {
   constructor(private _channel: RestChannel) {}
 
   async get(params?: RestObjectGetCompactParams): Promise<RestObjectGetCompactResult>;
-  async get(params: RestObjectGetFullParams): Promise<RestObjectGetResult>;
-  async get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetResult> {
+  async get(params: RestObjectGetFullParams): Promise<RestObjectGetFullResult>;
+  async get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetFullResult> {
     const client = this._channel.client;
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
     const headers = client.Defaults.defaultGetHeaders(client.options);
 
     client.Utils.mixin(headers, client.options.headers);
 
-    const { unpacked, body } = await client.rest.Resource.get<RestObjectGetCompactResult | WireRestObjectGetResult>(
+    const { unpacked, body } = await client.rest.Resource.get<RestObjectGetCompactResult | WireRestObjectGetFullResult>(
       client,
       this._basePath(params?.objectId),
       headers,
@@ -111,7 +111,11 @@ export class RestObject implements PublicRestObject {
 
     const decoded = unpacked
       ? body!
-      : client.Utils.decodeBody<RestObjectGetCompactResult | WireRestObjectGetResult>(body, client._MsgPack, format);
+      : client.Utils.decodeBody<RestObjectGetCompactResult | WireRestObjectGetFullResult>(
+          body,
+          client._MsgPack,
+          format,
+        );
 
     const compact = params?.compact ?? true;
     if (compact) {
@@ -123,7 +127,7 @@ export class RestObject implements PublicRestObject {
 
     // Non-compact mode: response is a live object (map/counter) or a typed leaf ObjectData.
     // Decode wire values using objectmessage decoding.
-    return this._decodeNonCompactResult(decoded as WireRestObjectGetResult, format);
+    return this._decodeNonCompactResult(decoded as WireRestObjectGetFullResult, format);
   }
 
   async publish(op: RestObjectOperation | RestObjectOperation[]): Promise<RestObjectPublishResult> {
@@ -167,7 +171,7 @@ export class RestObject implements PublicRestObject {
    * Known object types are decoded based on the current contract (maps have entries decoded,
    * ObjectData has bytes/json decoded). Unrecognized object types or fields are passed through as-is.
    */
-  private _decodeNonCompactResult(wire: WireRestObjectGetResult, format: Utils.Format): RestObjectGetResult {
+  private _decodeNonCompactResult(wire: WireRestObjectGetFullResult, format: Utils.Format): RestObjectGetFullResult {
     if ('map' in wire) {
       return this._decodeWireRestLiveMap(wire, format);
     }

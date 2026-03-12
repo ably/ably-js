@@ -84,14 +84,14 @@ export declare interface RestObject {
    * in the result more than once.
    *
    * @param params - Optional parameters to specify the object to fetch.
-   * @returns A promise that resolves to the object data in compact format.
+   * @returns A promise which, upon success, will be fulfilled with the object data in compact format. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   get(params?: RestObjectGetCompactParams): Promise<RestObjectGetCompactResult>;
   /**
    * Reads object data from the channel in full object response format.
    * Uses the channel's root object as the entrypoint when no objectId is provided.
    *
-   * Returns a {@link RestObjectGetResult} with full object metadata and decoded object data values
+   * Returns a {@link RestObjectGetFullResult} with full object metadata and decoded object data values
    * (`bytes` decoded to `Buffer`/`ArrayBuffer`, `json` decoded to native objects/arrays).
    * If the path resolves to a leaf value in a map, returns the decoded {@link RestObjectData | ObjectData} directly.
    *
@@ -99,9 +99,9 @@ export declare interface RestObject {
    * in the result more than once.
    *
    * @param params - Parameters specifying the object to fetch with `compact: false`.
-   * @returns A promise that resolves to the object data in full format.
+   * @returns A promise which, upon success, will be fulfilled with the object data in full format. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  get(params: RestObjectGetFullParams): Promise<RestObjectGetResult>;
+  get(params: RestObjectGetFullParams): Promise<RestObjectGetFullResult>;
   /**
    * Reads object data from the channel.
    * Uses the channel's root object as the entrypoint when no objectId is provided.
@@ -111,7 +111,7 @@ export declare interface RestObject {
    * and {@link LiveCounter} instances appear as numbers. Binary values appear as base64 strings (JSON protocol) or
    * `Buffer`/`ArrayBuffer` (binary protocol). JSON-typed values remain as their JSON-encoded string representation.
    *
-   * When `compact` is `false`, returns a {@link RestObjectGetResult} with full object metadata
+   * When `compact` is `false`, returns a {@link RestObjectGetFullResult} with full object metadata
    * and decoded object data values (`bytes` decoded to `Buffer`/`ArrayBuffer`, `json` decoded to native objects/arrays).
    * If the path resolves to a leaf value in a map, returns the decoded {@link RestObjectData | ObjectData} directly.
    *
@@ -119,9 +119,9 @@ export declare interface RestObject {
    * rather than including the same object instance in the result more than once.
    *
    * @param params - Optional parameters to specify the object to fetch and the format of the returned data.
-   * @returns A promise that resolves to the object data in the requested format.
+   * @returns A promise which, upon success, will be fulfilled with the object data in the requested format. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetResult>;
+  get(params?: RestObjectGetParams): Promise<RestObjectGetCompactResult | RestObjectGetFullResult>;
 
   /**
    * Publishes one or more operations to modify objects on the channel.
@@ -142,7 +142,7 @@ export declare interface RestObject {
    * the operation, the operation is not applied to the new object instances.
    *
    * @param op - A single operation or array of operations to publish.
-   * @returns A promise that resolves to a {@link RestObjectPublishResult} containing information about the published operations.
+   * @returns A promise which, upon success, will be fulfilled with a {@link RestObjectPublishResult} containing information about the published operations. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   publish(op: RestObjectOperation | RestObjectOperation[]): Promise<RestObjectPublishResult>;
 }
@@ -437,10 +437,10 @@ export type RestObjectGetCompactResult =
  * In all cases, `bytes` values are decoded to `Buffer`/`ArrayBuffer` and `json` values are decoded
  * to native objects/arrays.
  */
-export type RestObjectGetResult = RestLiveObject | RestObjectData;
+export type RestObjectGetFullResult = RestLiveObject | RestObjectData;
 
 /**
- * A full object structure including object IDs and type metadata, returned as part of {@link RestObjectGetResult}.
+ * A full object structure including object IDs and type metadata, returned as part of {@link RestObjectGetFullResult}.
  */
 export type RestLiveObject = RestLiveMap | RestLiveCounter | AnyRestLiveObject;
 

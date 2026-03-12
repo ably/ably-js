@@ -11,7 +11,7 @@ import {
   ObjectMessage,
   PathObject,
   RestObjectGetCompactResult,
-  RestObjectGetResult,
+  RestObjectGetFullResult,
   RestObject,
   RestObjectPublishResult,
 } from 'ably/liveobjects';
@@ -134,7 +134,7 @@ globalThis.testAblyPackage = async function () {
   // check get() returns correct types for compact and non-compact
   const compactResult: RestObjectGetCompactResult = await restObject.get();
   const compactWithParam: RestObjectGetCompactResult = await restObject.get({ compact: true });
-  const nonCompactResult: RestObjectGetResult = await restObject.get({ compact: false });
+  const nonCompactResult: RestObjectGetFullResult = await restObject.get({ compact: false });
 
   // check publish() returns correct type
   const publishResult: RestObjectPublishResult = await restObject.publish({
