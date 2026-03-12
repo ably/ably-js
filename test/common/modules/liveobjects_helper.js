@@ -13,6 +13,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     COUNTER_CREATE: 3,
     COUNTER_INC: 4,
     OBJECT_DELETE: 5,
+    MAP_CLEAR: 6,
   };
   const ACTION_STRINGS = {
     MAP_CREATE: 'MAP_CREATE',
@@ -21,11 +22,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     COUNTER_CREATE: 'COUNTER_CREATE',
     COUNTER_INC: 'COUNTER_INC',
     OBJECT_DELETE: 'OBJECT_DELETE',
+    MAP_CLEAR: 'MAP_CLEAR',
   };
-
-  function nonce() {
-    return Helper.randomString();
-  }
 
   class LiveObjectsHelper {
     constructor(helper) {
@@ -99,27 +97,20 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       });
     }
 
-    // #region Wire Object Messages
+    // #region Channel Operations
 
     mapCreateOp(opts) {
       const { objectId, entries } = opts ?? {};
       const op = {
         operation: {
           action: ACTIONS.MAP_CREATE,
-          nonce: nonce(),
           objectId,
-          map: {
+          mapCreate: {
             semantics: 0,
+            entries: entries ?? {},
           },
         },
       };
-
-      if (entries) {
-        op.operation.map = {
-          ...op.operation.map,
-          entries,
-        };
-      }
 
       return op;
     }
@@ -130,9 +121,9 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.MAP_SET,
           objectId,
-          mapOp: {
+          mapSet: {
             key,
-            data,
+            value: data,
           },
         },
       };
@@ -146,7 +137,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.MAP_REMOVE,
           objectId,
-          mapOp: {
+          mapRemove: {
             key,
           },
         },
@@ -160,14 +151,12 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       const op = {
         operation: {
           action: ACTIONS.COUNTER_CREATE,
-          nonce: nonce(),
           objectId,
+          counterCreate: {
+            count: count ?? 0,
+          },
         },
       };
-
-      if (count != null) {
-        op.operation.counter = { count };
-      }
 
       return op;
     }
@@ -178,8 +167,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.COUNTER_INC,
           objectId,
-          counterOp: {
-            amount,
+          counterInc: {
+            number: amount,
           },
         },
       };
@@ -193,6 +182,20 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         operation: {
           action: ACTIONS.OBJECT_DELETE,
           objectId,
+          objectDelete: {},
+        },
+      };
+
+      return op;
+    }
+
+    mapClearOp(opts) {
+      const { objectId } = opts ?? {};
+      const op = {
+        operation: {
+          action: ACTIONS.MAP_CLEAR,
+          objectId,
+          mapClear: {},
         },
       };
 
@@ -200,7 +203,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     }
 
     mapObject(opts) {
-      const { objectId, siteTimeserials, initialEntries, materialisedEntries, tombstone } = opts;
+      const { objectId, siteTimeserials, initialEntries, materialisedEntries, tombstone, clearTimeserial } = opts;
       const obj = {
         object: {
           objectId,
@@ -209,6 +212,7 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
           map: {
             semantics: 0,
             entries: materialisedEntries,
+            ...(clearTimeserial != null ? { clearTimeserial } : {}),
           },
         },
       };
@@ -304,6 +308,25 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
       );
     }
 
+    /**
+     * Sends a MAP_CLEAR operation to the server via `channel.sendState`.
+     *
+     * MAP_CLEAR is server-initiated and has no production client-side API,
+     * but it is enabled over realtime connections on non-prod clusters for testing.
+     */
+    async sendMapClearOnChannel(channel, objectId) {
+      this._helper.recordPrivateApi('call.channel.sendState');
+      await channel.sendState([
+        {
+          operation: {
+            action: ACTIONS.MAP_CLEAR,
+            objectId,
+            mapClear: {},
+          },
+        },
+      ]);
+    }
+
     // #endregion
 
     // #region REST API Operations
@@ -321,11 +344,18 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapCreateRestOp(opts) {
       const { objectId, nonce, data } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_CREATE,
+        mapCreate: {
+          semantics: 0,
+        },
       };
 
       if (data) {
-        opBody.data = data;
+        // Convert data format: { key: { string: 'value' } } -> { key: { data: { string: 'value' } } }
+        const entries = {};
+        for (const [key, value] of Object.entries(data)) {
+          entries[key] = { data: value };
+        }
+        opBody.mapCreate.entries = entries;
       }
 
       if (objectId != null) {
@@ -339,9 +369,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapSetRestOp(opts) {
       const { objectId, key, value } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_SET,
         objectId,
-        data: {
+        mapSet: {
           key,
           value,
         },
@@ -353,9 +382,8 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     mapRemoveRestOp(opts) {
       const { objectId, key } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.MAP_REMOVE,
         objectId,
-        data: {
+        mapRemove: {
           key,
         },
       };
@@ -366,11 +394,11 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     counterCreateRestOp(opts) {
       const { objectId, nonce, number } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.COUNTER_CREATE,
+        counterCreate: {},
       };
 
       if (number != null) {
-        opBody.data = { number };
+        opBody.counterCreate.count = number;
       }
 
       if (objectId != null) {
@@ -384,9 +412,10 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     counterIncRestOp(opts) {
       const { objectId, number } = opts ?? {};
       const opBody = {
-        operation: ACTION_STRINGS.COUNTER_INC,
         objectId,
-        data: { number },
+        counterInc: {
+          number,
+        },
       };
 
       return opBody;

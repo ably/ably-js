@@ -2,7 +2,8 @@ import { __livetype } from '../../../ably';
 import { LiveCounter } from '../../../liveobjects';
 import { ObjectId } from './objectid';
 import {
-  createInitialValueJSONString,
+  CounterCreate,
+  encodePartialObjectOperationForWire,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -58,11 +59,13 @@ export class LiveCounterValueType implements LiveCounter {
       throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
     }
 
-    const initialValueOperation = LiveCounterValueType.createInitialValueOperation(count);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
+    const counterCreate = LiveCounterValueType._getCounterCreate(count); // RTO12f12
+    const { counterCreate: encodedCounterCreate } = encodePartialObjectOperationForWire({ counterCreate }, client);
+    const initialValueJSONString = JSON.stringify(encodedCounterCreate); // RTO12f13
+    const nonce = client.Utils.cheapRandStr(); // RTO12f4
+    const msTimestamp = await client.getTimestamp(true); // RTO12f5
 
+    // RTO12f6
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'counter',
@@ -74,11 +77,14 @@ export class LiveCounterValueType implements LiveCounter {
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.COUNTER_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          action: ObjectOperationAction.COUNTER_CREATE, // RTO12f7
+          objectId, // RTO12f8
+          counterCreateWithObjectId: {
+            nonce, // RTO12f14
+            initialValue: initialValueJSONString, // RTO12f15
+            // RTO12f16 - retain the source CounterCreate for local use (size calculation and apply-on-ACK)
+            _derivedFrom: counterCreate,
+          },
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -88,11 +94,9 @@ export class LiveCounterValueType implements LiveCounter {
     return msg;
   }
 
-  private static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
+  private static _getCounterCreate(count?: number): CounterCreate {
     return {
-      counter: {
-        count: count ?? 0,
-      },
+      count: count ?? 0, // RTO12f12a, RTO12f12b
     };
   }
 }
