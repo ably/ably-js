@@ -131,6 +131,17 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
     });
   }
 
+  async function waitForMapClear(mapInstance) {
+    return new Promise((resolve) => {
+      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
+        if (message?.operation?.action === 'map.clear') {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+  }
+
   async function waitForCounterUpdate(counterInstance) {
     return new Promise((resolve) => {
       const { unsubscribe } = counterInstance.subscribe(() => {
@@ -1425,7 +1436,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(
-              tsBeforeMsg <= obj.tombstonedAt() <= tsAfterMsg,
+              tsBeforeMsg <= obj.tombstonedAt() && obj.tombstonedAt() <= tsAfterMsg,
               `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -1506,9 +1517,151 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
             ).to.exist;
             expect(
-              tsBeforeMsg <= mapEntry.tombstonedAt <= tsAfterMsg,
+              tsBeforeMsg <= mapEntry.tombstonedAt && mapEntry.tombstonedAt <= tsAfterMsg,
               `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC sequence with clearTimeserial records the clearTimeserial',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            const clearTimeserial = lexicoTimeserial('aaa', 5, 0);
+
+            // send OBJECT_SYNC with a map that has clearTimeserial and no entries
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty cursor so sync completes immediately
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 5, 0) },
+                  clearTimeserial,
+                }),
+              ],
+            });
+
+            expect(entryInstance.size(), 'Check root is empty after sync').to.equal(0);
+
+            // verify subsequent MAP_SETs are filtered based on clearTimeserial.
+            // use different sites so operations pass siteTimeserials check
+            const ops = [
+              { serial: lexicoTimeserial('bbb', 4, 0), siteCode: 'bbb', key: 'earlyKey', applied: false }, // < clearTimeserial
+              { serial: lexicoTimeserial('ccc', 6, 0), siteCode: 'ccc', key: 'laterKey', applied: true }, // > clearTimeserial
+            ];
+
+            for (const { serial, siteCode, key, applied } of ops) {
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [objectsHelper.mapSetOp({ objectId: 'root', key, data: { string: 'value' } })],
+              });
+
+              if (applied) {
+                expect(entryInstance.get(key)?.value(), `Check MAP_SET for "${key}" is applied`).to.equal('value');
+              } else {
+                expect(entryInstance.get(key), `Check MAP_SET for "${key}" is rejected`).to.not.exist;
+              }
+            }
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC sequence with clearTimeserial does not surface initial entries from createOp',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            const clearTimeserial = lexicoTimeserial('aaa', 5, 0);
+
+            // send OBJECT_SYNC with a map that has clearTimeserial and initial entries via createOp.
+            // initial entries do not have timeserials set, so they should all be considered
+            // as predating the clear and not be surfaced to the end user.
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty cursor so sync completes immediately
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 5, 0) },
+                  clearTimeserial,
+                  initialEntries: {
+                    foo: { data: { string: 'bar' } },
+                    baz: { data: { number: 123 } },
+                  },
+                }),
+              ],
+            });
+
+            expect(entryInstance.get('foo'), 'Check "foo" from initialEntries is not visible').to.not.exist;
+            expect(entryInstance.get('baz'), 'Check "baz" from initialEntries is not visible').to.not.exist;
+            expect(entryInstance.size(), 'Check root has no visible keys').to.equal(0);
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC sequence with clearTimeserial and materialised entries processes entries correctly',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            const clearTimeserial = lexicoTimeserial('aaa', 5, 0);
+
+            // check that even with clearTimeserial set, the entries from materialised entries are
+            // processed correctly.
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty cursor so sync completes immediately
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 8, 0) },
+                  clearTimeserial,
+                  materialisedEntries: {
+                    // entry set after the clear - should be visible
+                    lateKey: {
+                      timeserial: lexicoTimeserial('aaa', 8, 0),
+                      data: { string: 'late' },
+                    },
+                  },
+                }),
+              ],
+            });
+
+            expect(entryInstance.get('lateKey').value(), 'Check lateKey is visible (postdates clear)').to.equal('late');
+            expect(entryInstance.size(), 'Check root has 1 visible key').to.equal(1);
+          },
+        },
+
+        {
+          description: 'reattach with HAS_OBJECTS=false resets clearTimeserial to null on root map',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance, helper } = ctx;
+
+            // apply MAP_CLEAR to set clearTimeserial on root
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 10, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapClearOp({ objectId: 'root' })],
+            });
+
+            // verify clearTimeserial is set
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            helper.recordPrivateApi('read.LiveMap._clearTimeserial');
+            expect(entryInstance._value._clearTimeserial, 'Check clearTimeserial is set after MAP_CLEAR').to.equal(
+              lexicoTimeserial('aaa', 10, 0),
+            );
+
+            // simulate reattach with HAS_OBJECTS=false, which resets root to a zero-value
+            await injectAttachedMessage(helper, channel, false);
+
+            // clearTimeserial should be now set to null for root
+            expect(
+              entryInstance._value._clearTimeserial,
+              'Check clearTimeserial is null after reattach with HAS_OBJECTS=false',
+            ).to.not.exist;
           },
         },
       ];
@@ -2173,7 +2326,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
               .exist;
             expect(
-              tsBeforeMsg <= mapEntry.tombstonedAt <= tsAfterMsg,
+              tsBeforeMsg <= mapEntry.tombstonedAt && mapEntry.tombstonedAt <= tsAfterMsg,
               `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -2757,7 +2910,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(
-              tsBeforeMsg <= obj.tombstonedAt() <= tsAfterMsg,
+              tsBeforeMsg <= obj.tombstonedAt() && obj.tombstonedAt() <= tsAfterMsg,
               `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
             ).to.be.true;
           },
@@ -2885,6 +3038,390 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               entryInstance.get('counter1'),
               'Check counter1 does not exist on root after OBJECT_DELETE and another object op',
             ).to.not.exist;
+          },
+        },
+
+        {
+          description: 'can apply MAP_CLEAR object operation messages on root',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            // set some keys on root
+            await entryInstance.set('foo', 'bar');
+            await entryInstance.set('baz', 42);
+
+            // verify keys exist before clear
+            expect(entryInstance.get('foo').value(), 'Check foo exists before MAP_CLEAR').to.equal('bar');
+            expect(entryInstance.get('baz').value(), 'Check baz exists before MAP_CLEAR').to.equal(42);
+            expect(entryInstance.size(), 'Check root has 2 keys before MAP_CLEAR').to.equal(2);
+
+            // send MAP_CLEAR
+            const clearAppliedPromise = waitForMapClear(entryInstance);
+            await objectsHelper.sendMapClearOnChannel(channel, 'root');
+            await clearAppliedPromise;
+
+            // verify all keys are cleared
+            expect(entryInstance.size(), 'Check root has 0 keys after MAP_CLEAR').to.equal(0);
+            expect(entryInstance.get('foo'), 'Check foo does not exist after MAP_CLEAR').to.not.exist;
+            expect(entryInstance.get('baz'), 'Check baz does not exist after MAP_CLEAR').to.not.exist;
+          },
+        },
+
+        {
+          // MAP_CLEAR is currently server-initiated and only emitted for root objects,
+          // but the client must be future-proof and support it for any map object.
+          description: 'can apply MAP_CLEAR object operation messages on non-root map objects',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            // create a non-root map with entries
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar', baz: 42 }));
+
+            const map = entryInstance.get('map');
+            expect(map, 'Check map exists on root').to.exist;
+            expect(map.size(), 'Check map has 2 keys before MAP_CLEAR').to.equal(2);
+            expect(map.get('foo').value(), 'Check "foo" key has correct value').to.equal('bar');
+            expect(map.get('baz').value(), 'Check "baz" key has correct value').to.equal(42);
+
+            // apply MAP_CLEAR on non-root map via internal API call,
+            // as the server won't accept MAP_CLEAR for non-root object ids.
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('zzz', 99999999999999, 0),
+              siteCode: 'zzz',
+              state: [objectsHelper.mapClearOp({ objectId: map.id })],
+            });
+
+            // verify all keys are cleared
+            expect(map.size(), 'Check map has 0 keys after MAP_CLEAR').to.equal(0);
+            expect(map.get('foo'), 'Check "foo" key does not exist after MAP_CLEAR').to.not.exist;
+            expect(map.get('baz'), 'Check "baz" key does not exist after MAP_CLEAR').to.not.exist;
+          },
+        },
+
+        {
+          description: 'MAP_CLEAR with older serial than current clearTimeserial is a noop',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
+
+            // apply a sequence of operations and check expected state after each
+            const steps = [
+              {
+                op: objectsHelper.mapClearOp({ objectId: 'root' }),
+                serial: lexicoTimeserial('aaa', 10, 0),
+                siteCode: 'aaa',
+                description: 'first MAP_CLEAR',
+                expectedSize: 0,
+              },
+              {
+                op: objectsHelper.mapSetOp({ objectId: 'root', key: 'key1', data: { string: 'value' } }),
+                serial: lexicoTimeserial('aaa', 11, 0),
+                siteCode: 'aaa',
+                description: 'MAP_SET #1 after clear',
+                expectedSize: 1,
+                expectedKeys: { key1: 'value' },
+              },
+              {
+                op: objectsHelper.mapClearOp({ objectId: 'root' }),
+                serial: lexicoTimeserial('bbb', 0, 0), // different site so siteTimeserials check passes, older than first clear - noop
+                siteCode: 'bbb',
+                description: 'second MAP_CLEAR with older serial (noop)',
+                expectedSize: 1,
+                expectedKeys: { key1: 'value' },
+              },
+            ];
+
+            for (const step of steps) {
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial: step.serial,
+                siteCode: step.siteCode,
+                state: [step.op],
+              });
+
+              expect(entryInstance.size(), `Check map size after ${step.description}`).to.equal(step.expectedSize);
+              for (const [key, value] of Object.entries(step.expectedKeys ?? {})) {
+                expect(entryInstance.get(key)?.value(), `Check "${key}" after ${step.description}`).to.equal(value);
+              }
+            }
+          },
+        },
+
+        {
+          description: 'MAP_CLEAR does not remove entries with serial greater than clearTimeserial',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            // set keys with different timeserials;
+            const keys = [
+              { key: 'key1', serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa', survivesClear: false }, // different site, earlier CGO, cleared
+              { key: 'key2', serial: lexicoTimeserial('aaa', 999, 0), siteCode: 'aaa', survivesClear: true }, // different site, later CGO, survives
+              { key: 'key3', serial: lexicoTimeserial('bbb', 5, 0), siteCode: 'bbb', survivesClear: false }, // same site, earlier CGO, cleared
+              { key: 'key4', serial: lexicoTimeserial('ccc', 0, 0), siteCode: 'ccc', survivesClear: false }, // different site, earlier CGO, cleared
+              { key: 'key5', serial: lexicoTimeserial('ccc', 999, 0), siteCode: 'ccc', survivesClear: true }, // different site, later CGO, survives
+            ];
+
+            for (const { key, serial, siteCode } of keys) {
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [objectsHelper.mapSetOp({ objectId: 'root', key, data: { string: key } })],
+              });
+            }
+
+            expect(entryInstance.size(), 'Check map has correct number of keys before MAP_CLEAR').to.equal(keys.length);
+
+            // apply MAP_CLEAR with serial between existing keys
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 6, 0),
+              siteCode: 'bbb',
+              state: [objectsHelper.mapClearOp({ objectId: 'root' })],
+            });
+
+            let expectedToSurviveCount = 0;
+            for (const { key, survivesClear } of keys) {
+              expectedToSurviveCount += survivesClear ? 1 : 0;
+              if (survivesClear) {
+                expect(entryInstance.get(key)?.value(), `Check ${key} survives MAP_CLEAR`).to.equal(key);
+              } else {
+                expect(entryInstance.get(key), `Check ${key} is cleared`).to.not.exist;
+              }
+            }
+            expect(entryInstance.size(), `Check map has ${expectedToSurviveCount} keys after MAP_CLEAR`).to.equal(
+              expectedToSurviveCount,
+            );
+          },
+        },
+
+        {
+          description:
+            'MAP_CLEAR object operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { entryInstance, objectsHelper, channel } = ctx;
+
+            const mapIds = [
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+            ];
+
+            await Promise.all(
+              mapIds.map(async (mapId, i) => {
+                // for each map, send two operations:
+                // 1. create a map with visible data that can be verified after MAP_CLEAR.
+                // use earliest possible timeserial to ensure entries can be cleared by MAP_CLEAR ops
+                await objectsHelper.processObjectOperationMessageOnChannel({
+                  channel,
+                  serial: lexicoTimeserial('aaa', 0, 0),
+                  siteCode: 'aaa',
+                  state: [
+                    objectsHelper.mapCreateOp({
+                      objectId: mapId,
+                      entries: { foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } } },
+                    }),
+                  ],
+                });
+                // 2. send a no-op remove to establish site 'ccc' in the map's siteTimeserials at a known serial,
+                // which the MAP_CLEAR ops below will be compared against
+                await objectsHelper.processObjectOperationMessageOnChannel({
+                  channel,
+                  serial: lexicoTimeserial('ccc', 5, 0),
+                  siteCode: 'ccc',
+                  state: [objectsHelper.mapRemoveOp({ objectId: mapId, key: 'baz' })],
+                });
+
+                // set map on root
+                await objectsHelper.processObjectOperationMessageOnChannel({
+                  channel,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
+                });
+              }),
+            );
+
+            // inject MAP_CLEAR operations with various timeserial values
+            // relative to the lexicoTimeserial('ccc', 5, 0) from the remove op above
+            const ops = [
+              { serial: lexicoTimeserial('ccc', 4, 0), siteCode: 'ccc', cleared: false }, // existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('ccc', 5, 0), siteCode: 'ccc', cleared: false }, // existing site, same CGO, not applied
+              { serial: lexicoTimeserial('ccc', 6, 0), siteCode: 'ccc', cleared: true }, // existing site, later CGO, applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb', cleared: true }, // different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ddd', 9, 0), siteCode: 'ddd', cleared: true }, // different site, later CGO, applied
+            ];
+
+            for (const [i, { serial, siteCode, cleared }] of ops.entries()) {
+              const mapId = mapIds[i];
+
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [objectsHelper.mapClearOp({ objectId: mapId })],
+              });
+
+              const map = entryInstance.get(mapId);
+              if (cleared) {
+                expect(map.size(), `Check map #${i + 1} is cleared`).to.equal(0);
+              } else {
+                expect(map.size(), `Check map #${i + 1} is not cleared`).to.equal(1);
+                expect(map.get('foo').value(), `Check map #${i + 1} retains "foo" key`).to.equal('bar');
+              }
+            }
+          },
+        },
+
+        {
+          description: 'MAP_SET with serial <= clearTimeserial is ignored after MAP_CLEAR',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            // apply MAP_CLEAR, stores clearTimeserial on a map
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 10, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapClearOp({ objectId: 'root' })],
+            });
+
+            // inject MAP_SET operations with various serials relative to clearTimeserial.
+            // use different site codes to pass siteTimeserials check
+            const ops = [
+              { serial: lexicoTimeserial('bbb', 5, 0), siteCode: 'bbb', key: 'early', applied: false }, // earlier than clear, ignored
+              { serial: lexicoTimeserial('aaa', 10, 0), siteCode: 'aaa', key: 'equal', applied: false }, // equal to clear, ignored
+              { serial: lexicoTimeserial('bbb', 999, 0), siteCode: 'bbb', key: 'later', applied: true }, // later than clear, applied
+            ];
+
+            for (const { serial, siteCode, key, applied } of ops) {
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [objectsHelper.mapSetOp({ objectId: 'root', key, data: { string: 'value' } })],
+              });
+
+              if (applied) {
+                expect(entryInstance.get(key)?.value(), `Check MAP_SET for "${key}" is applied`).to.equal('value');
+              } else {
+                expect(entryInstance.get(key), `Check MAP_SET for "${key}" is ignored`).to.not.exist;
+              }
+            }
+          },
+        },
+
+        {
+          description: 'MAP_REMOVE with serial <= clearTimeserial is ignored after MAP_CLEAR',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance, helper } = ctx;
+
+            // apply MAP_CLEAR, stores clearTimeserial on a map
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 10, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapClearOp({ objectId: 'root' })],
+            });
+
+            // inject MAP_REMOVE operations with various serials relative to clearTimeserial.
+            // use different site codes to pass siteTimeserials check
+            const ops = [
+              { serial: lexicoTimeserial('bbb', 5, 0), siteCode: 'bbb', key: 'early', applied: false }, // earlier than clear, ignored
+              { serial: lexicoTimeserial('aaa', 10, 0), siteCode: 'aaa', key: 'equal', applied: false }, // equal to clear, ignored
+              { serial: lexicoTimeserial('bbb', 999, 0), siteCode: 'bbb', key: 'later', applied: true }, // later than clear, applied
+            ];
+
+            for (const { serial, siteCode, key, applied } of ops) {
+              await objectsHelper.processObjectOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [objectsHelper.mapRemoveOp({ objectId: 'root', key })],
+              });
+
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              helper.recordPrivateApi('read.LiveMap._dataRef.data');
+              if (applied) {
+                const mapEntry = entryInstance._value._dataRef.data.get(key);
+                expect(mapEntry, `Check MAP_REMOVE for "${key}" created an entry in internal data`).to.exist;
+                expect(mapEntry.tombstone, `Check MAP_REMOVE for "${key}" is tombstoned`).to.be.true;
+              } else {
+                expect(entryInstance._value._dataRef.data.has(key), `Check MAP_REMOVE for "${key}" is ignored`).to.be
+                  .false;
+              }
+            }
+          },
+        },
+
+        {
+          description: 'MAP_CLEAR removes entries from internal data map',
+          action: async (ctx) => {
+            const { helper, channel, entryInstance, objectsHelper } = ctx;
+
+            // set a key on root so the clear has something to remove
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
+            });
+            expect(entryInstance.get('foo'), 'Check "foo" exists before clear').to.exist;
+
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 5, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapClearOp({ objectId: 'root' })],
+            });
+
+            // entry should be fully removed from internal data
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            expect(entryInstance._value._dataRef.data.has('foo'), 'Check "foo" is removed from internal data').to.be
+              .false;
+          },
+        },
+
+        {
+          description: 'MAP_CLEAR removes parent references for object reference entries',
+          action: async (ctx) => {
+            const { objectsHelper, channelName, channel, entryInstance, helper, realtimeObject } = ctx;
+
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: objectsHelper.counterCreateRestOp(),
+            });
+            await counterCreatedPromise;
+
+            // verify counter has parent reference before clear
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            const counterObj = realtimeObject._objectsPool.get(counterId);
+            helper.recordPrivateApi('read.LiveObject._parentReferences');
+            expect(counterObj._parentReferences.size, 'Check counter has parent references before MAP_CLEAR').to.equal(
+              1,
+            );
+
+            // apply MAP_CLEAR on root
+            await objectsHelper.sendMapClearOnChannel(channel, 'root');
+
+            // verify counter no longer has parent reference
+            helper.recordPrivateApi('read.LiveObject._parentReferences');
+            expect(
+              counterObj._parentReferences.size,
+              'Check counter has no parent references after MAP_CLEAR',
+            ).to.equal(0);
           },
         },
       ];
@@ -5083,13 +5620,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
-          description: 'PathObject.subscribe() on LiveMap path receives set/remove events',
+          description: 'PathObject.subscribe() on LiveMap path receives set/remove/clear events',
           action: async (ctx) => {
-            const { entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance, objectsHelper, channel } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await entryPathObject.set('map', LiveMap.create());
-            await keyUpdatedPromise;
 
             let eventCount = 0;
             const subscriptionPromise = new Promise((resolve, reject) => {
@@ -5104,6 +5639,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                     expect(event.message.operation.action).to.equal('map.set', 'Check first event is MAP_SET');
                   } else if (eventCount === 2) {
                     expect(event.message.operation.action).to.equal('map.remove', 'Check second event is MAP_REMOVE');
+                  } else if (eventCount === 3) {
+                    expect(event.message.operation.action).to.equal('map.clear', 'Check third event is MAP_CLEAR');
                     resolve();
                   }
                 } catch (error) {
@@ -5112,13 +5649,68 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               });
             });
 
-            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').set('foo', 'bar');
-            await keyUpdatedPromise;
-
-            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').remove('foo');
-            await keyUpdatedPromise;
+
+            const mapInstance = entryInstance.get('map');
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('zzz', 99999999999999, 0),
+              siteCode: 'zzz',
+              state: [objectsHelper.mapClearOp({ objectId: mapInstance.id })],
+            });
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() on child paths receives events for each key cleared by MAP_CLEAR',
+          action: async (ctx) => {
+            const { entryPathObject, objectsHelper, channel } = ctx;
+
+            // set two keys on a child map
+            await entryPathObject.set('map', LiveMap.create());
+            const map = entryPathObject.get('map');
+            await map.set('key1', 'value1');
+            await map.set('key2', 'value2');
+
+            // subscribe to each child key path individually
+            const receivedPaths = new Set();
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              const checkDone = () => {
+                if (receivedPaths.size === 2) resolve();
+              };
+
+              map.get('key1').subscribe((event) => {
+                try {
+                  expect(event.message.operation.action).to.equal('map.clear', 'Check MAP_CLEAR event for key1');
+                  receivedPaths.add('key1');
+                  checkDone();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+
+              map.get('key2').subscribe((event) => {
+                try {
+                  expect(event.message.operation.action).to.equal('map.clear', 'Check MAP_CLEAR event for key2');
+                  receivedPaths.add('key2');
+                  checkDone();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            // inject MAP_CLEAR on the child map
+            const mapObjectId = map.instance().id;
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('zzz', 99999999999999, 0),
+              siteCode: 'zzz',
+              state: [objectsHelper.mapClearOp({ objectId: mapObjectId })],
+            });
 
             await subscriptionPromise;
           },
@@ -6367,15 +6959,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
-          description: 'DefaultInstance.subscribe() receives events for LiveMap set/remove operations',
+          description: 'DefaultInstance.subscribe() receives events for LiveMap set/remove/clear operations',
           action: async (ctx) => {
-            const { entryPathObject, entryInstance } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
-            await entryPathObject.set('map', LiveMap.create());
-            await keyUpdatedPromise;
-
-            const mapInstance = entryPathObject.get('map').instance();
+            await entryInstance.set('map', LiveMap.create());
+            const mapInstance = entryInstance.get('map');
             let eventCount = 0;
 
             const subscriptionPromise = new Promise((resolve, reject) => {
@@ -6390,6 +6979,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                     expect(event.message.operation.action).to.equal('map.set', 'Check first event is MAP_SET');
                   } else if (eventCount === 2) {
                     expect(event.message.operation.action).to.equal('map.remove', 'Check second event is MAP_REMOVE');
+                  } else if (eventCount === 3) {
+                    expect(event.message.operation.action).to.equal('map.clear', 'Check third event is MAP_CLEAR');
                     resolve();
                   }
                 } catch (error) {
@@ -6398,13 +6989,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               });
             });
 
-            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
-            await entryPathObject.get('map').set('foo', 'bar');
-            await keyUpdatedPromise;
+            await entryInstance.get('map').set('foo', 'bar');
+            await entryInstance.get('map').remove('foo');
 
-            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
-            await entryPathObject.get('map').remove('foo');
-            await keyUpdatedPromise;
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('zzz', 99999999999999, 0),
+              siteCode: 'zzz',
+              state: [objectsHelper.mapClearOp({ objectId: mapInstance.id })],
+            });
 
             await subscriptionPromise;
           },
@@ -6600,15 +7193,18 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
-          description: 'DefaultInstance.subscribeIterator() yields events for LiveMap set/remove operations',
+          description: 'DefaultInstance.subscribeIterator() yields events for LiveMap set/remove/clear operations',
           action: async (ctx) => {
-            const { entryInstance, entryPathObject } = ctx;
+            const { channel, entryInstance, objectsHelper } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
-            await entryPathObject.set('map', LiveMap.create({}));
-            await keyUpdatedPromise;
-
+            await entryInstance.set('map', LiveMap.create());
             const map = entryInstance.get('map');
+
+            const expectedEventOperations = [
+              { action: 'map.set', objectId: map.id, mapSet: { key: 'foo', value: { string: 'bar' } } },
+              { action: 'map.remove', objectId: map.id, mapRemove: { key: 'foo' } },
+              { action: 'map.clear', objectId: map.id, mapClear: {} },
+            ];
 
             const iteratorPromise = (async () => {
               const events = [];
@@ -6618,27 +7214,28 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 expect(event.message, 'Check event message exists').to.exist;
                 expectDeepSubset(
                   event.message.operation,
-                  events.length === 0
-                    ? { action: 'map.set', objectId: map.id, mapSet: { key: 'foo', value: { string: 'bar' } } }
-                    : { action: 'map.remove', objectId: map.id, mapRemove: { key: 'foo' } },
+                  expectedEventOperations[events.length],
                   'Check event message operation',
                 );
+
                 events.push(event);
-                if (events.length >= 2) break;
+                if (events.length >= 3) break;
               }
               return events;
             })();
 
-            keyUpdatedPromise = waitForMapKeyUpdate(map, 'foo');
             await map.set('foo', 'bar');
-            await keyUpdatedPromise;
-
-            keyUpdatedPromise = waitForMapKeyUpdate(map, 'foo');
             await map.remove('foo');
-            await keyUpdatedPromise;
+
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('zzz', 99999999999999, 0),
+              siteCode: 'zzz',
+              state: [objectsHelper.mapClearOp({ objectId: map.id })],
+            });
 
             const events = await iteratorPromise;
-            expect(events).to.have.lengthOf(2, 'Check received expected number of events');
+            expect(events).to.have.lengthOf(3, 'Check received expected number of events');
           },
         },
 
@@ -7451,6 +8048,31 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
+          description: 'can subscribe to the incoming MAP_CLEAR operation on a LiveMap',
+          action: async (ctx) => {
+            const { objectsHelper, channel, entryInstance } = ctx;
+
+            const subscriptionPromise = new Promise((resolve, reject) =>
+              entryInstance.subscribe((event) => {
+                try {
+                  expect(event?.message?.operation).to.deep.include(
+                    { action: 'map.clear', objectId: entryInstance.id, mapClear: {} },
+                    'Check root subscription callback is called with an expected event message for MAP_CLEAR operation',
+                  );
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }),
+            );
+
+            await objectsHelper.sendMapClearOnChannel(channel, 'root');
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveMap',
           action: async (ctx) => {
@@ -7536,7 +8158,16 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         {
           description: 'subscription event message contains the metadata of the update',
           action: async (ctx) => {
-            const { channelName, sampleMapKey, sampleCounterKey, helper, entryPathObject, entryInstance } = ctx;
+            const {
+              channelName,
+              channel,
+              sampleMapKey,
+              sampleCounterKey,
+              helper,
+              objectsHelper,
+              entryPathObject,
+              entryInstance,
+            } = ctx;
             const publishClientId = 'publish-clientId';
             const publishClient = RealtimeWithLiveObjects(helper, { clientId: publishClientId });
 
@@ -7568,8 +8199,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               );
             };
 
-            // check message metadata is surfaced for mutation ops
-            const mutationOpsPromises = Promise.all([
+            // check message metadata is surfaced for object operations
+            const checkPromises = Promise.all([
               // path object
               createCheckMessageMetadataPromise(
                 (cb) => entryPathObject.get(sampleCounterKey).subscribe(cb),
@@ -7592,6 +8223,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                     }
                   }),
                 'Check event message metadata for MAP_REMOVE PathObject subscriptions: ',
+              ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryPathObject.subscribe((event) => {
+                    if (event.message.operation.action === 'map.clear') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_CLEAR PathObject subscriptions: ',
               ),
 
               // instance
@@ -7617,6 +8257,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                   }),
                 'Check event message metadata for MAP_REMOVE DefaultInstance subscriptions: ',
               ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryInstance.subscribe((event) => {
+                    if (event.message.operation.action === 'map.clear') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_CLEAR DefaultInstance subscriptions: ',
+              ),
             ]);
 
             await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
@@ -7630,9 +8279,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               await publishRoot.get(sampleCounterKey).increment(1);
               await publishRoot.get(sampleMapKey).set('foo', 'bar');
               await publishRoot.get(sampleMapKey).remove('foo');
+
+              await objectsHelper.sendMapClearOnChannel(publishChannel, 'root');
             }, publishClient);
 
-            await mutationOpsPromises;
+            await checkPromises;
           },
         },
 
@@ -8747,6 +9398,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             }),
             expected: 8 + 8,
           },
+          {
+            description: 'map clear op',
+            message: objectMessageFromValues({
+              operation: { action: 6, objectId: 'object-id', mapClear: {} },
+            }),
+            expected: 0,
+          },
         ];
 
         /** @nospec */
@@ -8855,6 +9513,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             description: 'OBJECT_DELETE',
             operation: { action: 5, objectId: 'obj-3', objectDelete: {} },
             expectedCurrentFields: { objectDelete: {} },
+          },
+          {
+            description: 'MAP_CLEAR',
+            operation: { action: 6, objectId: 'obj-4', mapClear: {} },
+            expectedCurrentFields: { mapClear: {} },
           },
         ];
 
