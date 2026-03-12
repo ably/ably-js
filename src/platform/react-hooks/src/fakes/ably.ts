@@ -164,6 +164,17 @@ export class ClientSingleChannelConnection extends EventEmitter {
     // do nothing
   }
 
+  public async history(_params?: any) {
+    return {
+      items: this.channel.publishedMessages.map((m: any) => m.messageEnvelope),
+      hasNext: () => false,
+      isLast: () => true,
+      first: () => Promise.resolve(this.history()),
+      current: () => Promise.resolve(this.history()),
+      next: () => Promise.resolve(null),
+    };
+  }
+
   public async attach() {
     // do nothing
   }
@@ -202,6 +213,17 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public async publish() {
     throw Error('no publish for derived channel');
+  }
+
+  public async history(_params?: any) {
+    return {
+      items: this.channel.publishedMessages.map((m: any) => m.messageEnvelope),
+      hasNext: () => false,
+      isLast: () => true,
+      first: () => Promise.resolve(this.history()),
+      current: () => Promise.resolve(this.history()),
+      next: () => Promise.resolve(null),
+    };
   }
 
   public async attach() {

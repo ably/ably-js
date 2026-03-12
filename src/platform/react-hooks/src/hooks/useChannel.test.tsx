@@ -134,6 +134,80 @@ describe('useChannel', () => {
   });
 
   /** @nospec */
+  it('history function is returned and callable', async () => {
+    const { result } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah">{children}</ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const { history } = result.current;
+    expect(typeof history).toBe('function');
+
+    const paginatedResult = await history();
+    expect(paginatedResult).toBeDefined();
+    expect(paginatedResult.items).toBeDefined();
+    expect(Array.isArray(paginatedResult.items)).toBe(true);
+  });
+
+  /** @nospec */
+  it('history returns previously published messages', async () => {
+    const { result } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah">{children}</ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    await act(async () => {
+      await otherClient.channels.get('blah').publish({ text: 'hello' });
+      await otherClient.channels.get('blah').publish({ text: 'world' });
+    });
+
+    const paginatedResult = await result.current.history();
+    expect(paginatedResult.items.length).toBe(2);
+  });
+
+  /** @nospec */
+  it('history with params delegates to channel.history', async () => {
+    const { result } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah">{children}</ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const channel = result.current.channel;
+    const historySpy = vi.spyOn(channel, 'history');
+
+    const params = { limit: 10, direction: 'forwards' as const };
+    await result.current.history(params);
+
+    expect(historySpy).toHaveBeenCalledWith(params);
+  });
+
+  /** @nospec */
+  it('history has referential stability across re-renders', async () => {
+    const { result, rerender } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah">{children}</ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const firstHistory = result.current.history;
+    rerender();
+    const secondHistory = result.current.history;
+
+    expect(firstHistory).toBe(secondHistory);
+  });
+
+  /** @nospec */
   it('skip param', async () => {
     renderInCtxProvider(ablyClient, <UseChannelComponent skip={true}></UseChannelComponent>);
 
@@ -500,6 +574,36 @@ describe('useChannel with deriveOptions', () => {
 
     expect(callbackCount).toBe(4);
     expect(screen.getByRole('counter').innerHTML).toEqual(`${callbackCount}`);
+  });
+
+  /** @nospec */
+  it('history function works with derived channels', async () => {
+    const { result } = renderHook(() => useChannel(Channels.tasks), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider
+            channelName={Channels.tasks}
+            deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
+          >
+            {children}
+          </ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const { history } = result.current;
+    expect(typeof history).toBe('function');
+
+    await act(async () => {
+      await anotherClient.channels
+        .get(Channels.tasks)
+        .publish({ text: 'A task', extras: { headers: { user: 'robert.pike@domain.io' } } });
+    });
+
+    const paginatedResult = await history();
+    expect(paginatedResult).toBeDefined();
+    expect(paginatedResult.items).toBeDefined();
+    expect(paginatedResult.items.length).toBe(1);
   });
 
   /** @nospec */

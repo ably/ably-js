@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
@@ -11,6 +11,7 @@ export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 export interface ChannelResult {
   channel: Ably.RealtimeChannel;
   publish: Ably.RealtimeChannel['publish'];
+  history: Ably.RealtimeChannel['history'];
   ably: Ably.RealtimeClient;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
@@ -55,6 +56,11 @@ export function useChannel(
 
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 
+  const history: Ably.RealtimeChannel['history'] = useCallback(
+    (params?: Ably.RealtimeHistoryParams) => channel.history(params),
+    [channel],
+  );
+
   const { connectionError, channelError } = useStateErrors(channelHookOptions);
 
   useEffect(() => {
@@ -85,7 +91,7 @@ export function useChannel(
 
   useChannelAttach(channel, channelHookOptions.ablyId, skip);
 
-  return { channel, publish, ably, connectionError, channelError };
+  return { channel, publish, history, ably, connectionError, channelError };
 }
 
 async function handleChannelMount(channel: Ably.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
