@@ -27,6 +27,10 @@ const operationActions: ObjectsApi.ObjectOperationAction[] = [
   'map.clear',
 ];
 
+export function decodeObjectOperationAction(action: ObjectOperationAction): ObjectsApi.ObjectOperationAction {
+  return operationActions[action] || 'unknown';
+}
+
 /** @spec OMP2 */
 export enum ObjectsMapSemantics {
   LWW = 0,
@@ -617,7 +621,7 @@ function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): Ob
   }
 
   return {
-    action: operationActions[operation.action] || 'unknown',
+    action: decodeObjectOperationAction(operation.action),
     objectId: operation.objectId,
     mapCreate,
     mapSet,
