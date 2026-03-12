@@ -1493,6 +1493,10 @@ declare namespace ObjectOperationActions {
    * Object operation action for clearing a map object.
    */
   type MAP_CLEAR = 'map.clear';
+  /**
+   * Unrecognized object operation action received from the server.
+   */
+  type UNKNOWN = 'unknown';
 }
 
 /**
@@ -1505,7 +1509,8 @@ export type ObjectOperationAction =
   | ObjectOperationActions.COUNTER_CREATE
   | ObjectOperationActions.COUNTER_INC
   | ObjectOperationActions.OBJECT_DELETE
-  | ObjectOperationActions.MAP_CLEAR;
+  | ObjectOperationActions.MAP_CLEAR
+  | ObjectOperationActions.UNKNOWN;
 
 /**
  * The namespace containing the different types of map object semantics.
