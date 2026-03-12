@@ -577,6 +577,36 @@ describe('useChannel with deriveOptions', () => {
   });
 
   /** @nospec */
+  it('history function works with derived channels', async () => {
+    const { result } = renderHook(() => useChannel(Channels.tasks), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider
+            channelName={Channels.tasks}
+            deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
+          >
+            {children}
+          </ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const { history } = result.current;
+    expect(typeof history).toBe('function');
+
+    await act(async () => {
+      await anotherClient.channels
+        .get(Channels.tasks)
+        .publish({ text: 'A task', extras: { headers: { user: 'robert.pike@domain.io' } } });
+    });
+
+    const paginatedResult = await history();
+    expect(paginatedResult).toBeDefined();
+    expect(paginatedResult.items).toBeDefined();
+    expect(paginatedResult.items.length).toBe(1);
+  });
+
+  /** @nospec */
   it('should re-subscribe if event name has changed', async () => {
     const channel = ablyClient.channels.get(Channels.alerts);
     channel.subscribe = vi.fn();
