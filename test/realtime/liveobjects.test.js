@@ -12,11 +12,19 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   const Utils = Ably.Realtime.Utils;
   const MessageEncoding = Ably.Realtime._MessageEncoding;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
-  const liveobjectsFixturesChannel = 'liveobjects_fixtures';
+  const liveobjectsFixturesChannel = 'realtime_liveobjects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
   const gcIntervalOriginal = LiveObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval;
   const LiveMap = LiveObjectsPlugin.LiveMap;
   const LiveCounter = LiveObjectsPlugin.LiveCounter;
+  const expectInstanceOf = Helper.expectInstanceOf;
+  const expectToThrowAsync = Helper.expectToThrowAsync;
+  const waitFixtureChannelIsReady = LiveObjectsHelper.waitFixtureChannelIsReady;
+  const waitForMapKeyUpdate = LiveObjectsHelper.waitForMapKeyUpdate;
+  const waitForMapClear = LiveObjectsHelper.waitForMapClear;
+  const waitForCounterUpdate = LiveObjectsHelper.waitForCounterUpdate;
+  const waitForObjectOperation = LiveObjectsHelper.waitForObjectOperation;
+  const waitForObjectSync = LiveObjectsHelper.waitForObjectSync;
 
   function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
@@ -27,12 +35,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       ...options,
       modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'],
     };
-  }
-
-  function expectInstanceOf(object, className, msg) {
-    // esbuild changes the name for classes with static method to include an underscore as prefix.
-    // so LiveMap becomes _LiveMap. we account for it here.
-    expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
   }
 
   /**
@@ -100,103 +102,8 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
     return `${paddedTimestamp}-${paddedCounter}@${seriesId}` + (paddedIndex ? `:${paddedIndex}` : '');
   }
 
-  async function expectToThrowAsync(fn, errorStr, conditions) {
-    const { withCode } = conditions ?? {};
-
-    let savedError;
-    try {
-      await fn();
-    } catch (error) {
-      expect(error.message).to.have.string(errorStr);
-      if (withCode != null) expect(error.code).to.equal(withCode);
-      savedError = error;
-    }
-    expect(savedError, 'Expected async function to throw an error').to.exist;
-
-    return savedError;
-  }
-
   function objectMessageFromValues(values) {
     return LiveObjectsPlugin.ObjectMessage.fromValues(values, Utils, MessageEncoding);
-  }
-
-  async function waitForMapKeyUpdate(mapInstance, key) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if ((message?.operation?.mapSet?.key ?? message?.operation?.mapRemove?.key) === key) {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  async function waitForMapClear(mapInstance) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
-        if (message?.operation?.action === 'map.clear') {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  async function waitForCounterUpdate(counterInstance) {
-    return new Promise((resolve) => {
-      const { unsubscribe } = counterInstance.subscribe(() => {
-        unsubscribe();
-        resolve();
-      });
-    });
-  }
-
-  async function waitForObjectOperation(helper, client, waitForAction) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 19 && message.state[0]?.operation?.action === waitForAction) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
-  }
-
-  async function waitForObjectSync(helper, client) {
-    return new Promise((resolve, reject) => {
-      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-      const transport = client.connection.connectionManager.activeProtocol.getTransport();
-      const onProtocolMessageOriginal = transport.onProtocolMessage;
-
-      helper.recordPrivateApi('replace.transport.onProtocolMessage');
-      transport.onProtocolMessage = function (message) {
-        try {
-          helper.recordPrivateApi('call.transport.onProtocolMessage');
-          onProtocolMessageOriginal.call(transport, message);
-
-          if (message.action === 20) {
-            helper.recordPrivateApi('replace.transport.onProtocolMessage');
-            transport.onProtocolMessage = onProtocolMessageOriginal;
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-        }
-      };
-    });
   }
 
   /**
@@ -346,23 +253,6 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         transport.onProtocolMessage = originalOnProtocolMessage;
       },
     };
-  }
-
-  /**
-   * The channel with fixture data may not yet be populated by REST API requests made by LiveObjectsHelper.
-   * This function waits for a channel to have all keys set.
-   */
-  async function waitFixtureChannelIsReady(client) {
-    const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
-    const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
-
-    await channel.attach();
-    const entryPathObject = await channel.object.get();
-    const entryInstance = entryPathObject.instance();
-
-    await Promise.all(
-      expectedKeys.map((key) => (entryInstance.get(key) ? undefined : waitForMapKeyUpdate(entryInstance, key))),
-    );
   }
 
   describe('realtime/liveobjects', function () {
@@ -643,18 +533,18 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
       });
 
       function checkKeyDataOnPathObject({ helper, key, keyData, pathObject, msg }) {
-        if (keyData.data.bytes != null) {
+        if (keyData.jsonData.bytes != null) {
           helper.recordPrivateApi('call.BufferUtils.base64Decode');
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(
-            BufferUtils.areBuffersEqual(pathObject.get(key).value(), BufferUtils.base64Decode(keyData.data.bytes)),
+            BufferUtils.areBuffersEqual(pathObject.get(key).value(), BufferUtils.base64Decode(keyData.jsonData.bytes)),
             msg,
           ).to.be.true;
-        } else if (keyData.data.json != null) {
-          const expectedObject = JSON.parse(keyData.data.json);
+        } else if (keyData.jsonData.json != null) {
+          const expectedObject = JSON.parse(keyData.jsonData.json);
           expect(pathObject.get(key).value()).to.deep.equal(expectedObject, msg);
         } else {
-          const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
+          const expectedValue = keyData.jsonData.string ?? keyData.jsonData.number ?? keyData.jsonData.boolean;
           expect(pathObject.get(key).value()).to.equal(expectedValue, msg);
         }
       }
@@ -665,47 +555,26 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         expect(entryInstance, `Check instance exists for "${keyData.key}"`).to.exist;
         expectInstanceOf(entryInstance, 'DefaultInstance', `Check instance for "${keyData.key}" is DefaultInstance`);
 
-        if (keyData.data.bytes != null) {
+        if (keyData.jsonData.bytes != null) {
           helper.recordPrivateApi('call.BufferUtils.base64Decode');
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-          expect(BufferUtils.areBuffersEqual(entryInstance.value(), BufferUtils.base64Decode(keyData.data.bytes)), msg)
-            .to.be.true;
-        } else if (keyData.data.json != null) {
-          const expectedObject = JSON.parse(keyData.data.json);
+          expect(
+            BufferUtils.areBuffersEqual(entryInstance.value(), BufferUtils.base64Decode(keyData.jsonData.bytes)),
+            msg,
+          ).to.be.true;
+        } else if (keyData.jsonData.json != null) {
+          const expectedObject = JSON.parse(keyData.jsonData.json);
           expect(entryInstance.value()).to.deep.equal(expectedObject, msg);
         } else {
-          const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
+          const expectedValue = keyData.jsonData.string ?? keyData.jsonData.number ?? keyData.jsonData.boolean;
           expect(entryInstance.value()).to.equal(expectedValue, msg);
         }
       }
 
-      const primitiveKeyData = [
-        { key: 'stringKey', data: { string: 'stringValue' } },
-        { key: 'emptyStringKey', data: { string: '' } },
-        { key: 'bytesKey', data: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' } },
-        { key: 'emptyBytesKey', data: { bytes: '' } },
-        { key: 'maxSafeIntegerKey', data: { number: Number.MAX_SAFE_INTEGER } },
-        { key: 'negativeMaxSafeIntegerKey', data: { number: -Number.MAX_SAFE_INTEGER } },
-        { key: 'numberKey', data: { number: 1 } },
-        { key: 'zeroKey', data: { number: 0 } },
-        { key: 'trueKey', data: { boolean: true } },
-        { key: 'falseKey', data: { boolean: false } },
-        { key: 'objectKey', data: { json: JSON.stringify({ foo: 'bar' }) } },
-        { key: 'arrayKey', data: { json: JSON.stringify(['foo', 'bar', 'baz']) } },
-      ];
+      const primitiveKeyData = LiveObjectsHelper.primitiveKeyData;
       const primitiveMapsFixtures = [
-        { name: 'emptyMap' },
-        {
-          name: 'valuesMap',
-          entries: primitiveKeyData.reduce((acc, v) => {
-            acc[v.key] = { data: v.data };
-            return acc;
-          }, {}),
-          restData: primitiveKeyData.reduce((acc, v) => {
-            acc[v.key] = v.data;
-            return acc;
-          }, {}),
-        },
+        { name: 'emptyMap', entries: [] },
+        { name: 'valuesMap', entries: primitiveKeyData },
       ];
       const countersFixtures = [
         { name: 'emptyCounter' },
@@ -740,7 +609,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { client, helper } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
@@ -1100,7 +969,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
@@ -1126,7 +995,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
           action: async (ctx) => {
             const { helper, client } = ctx;
 
-            await waitFixtureChannelIsReady(client);
+            await waitFixtureChannelIsReady(client, liveobjectsFixturesChannel);
 
             const channel = client.channels.get(liveobjectsFixturesChannel, channelOptionsWithObjectModes());
 
@@ -1701,7 +1570,9 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                 objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: objectsHelper.mapCreateRestOp({ data: fixture.restData }),
+                  createOp: objectsHelper.mapCreateRestOp({
+                    data: Object.fromEntries(fixture.entries.map((v) => [v.key, v.jsonData])),
+                  }),
                 }),
               ),
             );
@@ -1718,18 +1589,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               expectInstanceOf(map._value, 'LiveMap', `Check map at "${mapKey}" key in root is of type LiveMap`);
 
               // check primitive maps have correct values
-              expect(map.size()).to.equal(
-                Object.keys(fixture.entries ?? {}).length,
-                `Check map "${mapKey}" has correct number of keys`,
-              );
+              expect(map.size()).to.equal(fixture.entries.length, `Check map "${mapKey}" has correct number of keys`);
 
-              Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
+              fixture.entries.forEach((keyData) => {
                 checkKeyDataOnInstance({
                   helper,
-                  key,
+                  key: keyData.key,
                   keyData,
                   instance: map,
-                  msg: `Check map "${mapKey}" has correct value for "${key}" key`,
+                  msg: `Check map "${mapKey}" has correct value for "${keyData.key}" key`,
                 });
               });
             });
@@ -1991,7 +1859,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
                   objectsHelper.mapSetRestOp({
                     objectId: 'root',
                     key: keyData.key,
-                    value: keyData.data,
+                    value: keyData.jsonData,
                   }),
                 ),
               ),
@@ -3442,7 +3310,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 // copy data object as library will modify it
-                const data = { ...keyData.data };
+                const data = { ...keyData.jsonData };
                 helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
                 if (data.bytes != null && client.options.useBinaryProtocol) {
                   // decode base64 data to binary for binary protocol
@@ -3484,7 +3352,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData, i) => {
                 // copy data object as library will modify it
-                const data = { ...keyData.data };
+                const data = { ...keyData.jsonData };
                 helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
                 if (data.bytes != null && client.options.useBinaryProtocol) {
                   // decode base64 data to binary for binary protocol
@@ -3868,7 +3736,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData, i) => {
                 // copy data object as library will modify it
-                const data = { ...keyData.data };
+                const data = { ...keyData.jsonData };
                 helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
                 if (data.bytes != null && client.options.useBinaryProtocol) {
                   // decode base64 data to binary for binary protocol
@@ -4131,13 +3999,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryInstance.set(keyData.key, value);
@@ -4413,22 +4281,20 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
 
             await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
-                const entries = mapFixture.entries
-                  ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
-                      let value;
-                      if (keyData.data.bytes != null) {
-                        helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                        value = BufferUtils.base64Decode(keyData.data.bytes);
-                      } else if (keyData.data.json != null) {
-                        value = JSON.parse(keyData.data.json);
-                      } else {
-                        value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
-                      }
-
-                      acc[key] = value;
-                      return acc;
-                    }, {})
-                  : undefined;
+                const entries = Object.fromEntries(
+                  mapFixture.entries.map((keyData) => {
+                    let value;
+                    if (keyData.jsonData.bytes != null) {
+                      helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                      value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                    } else if (keyData.jsonData.json != null) {
+                      value = JSON.parse(keyData.jsonData.json);
+                    } else {
+                      value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
+                    }
+                    return [keyData.key, value];
+                  }),
+                );
 
                 return entryInstance.set(mapFixture.name, LiveMap.create(entries));
               }),
@@ -4442,18 +4308,15 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
               helper.recordPrivateApi('read.DefaultInstance._value');
               expectInstanceOf(map._value, 'LiveMap', `Check map instance #${i + 1} is of an expected class`);
 
-              expect(map.size()).to.equal(
-                Object.keys(fixture.entries ?? {}).length,
-                `Check map #${i + 1} has correct number of keys`,
-              );
+              expect(map.size()).to.equal(fixture.entries.length, `Check map #${i + 1} has correct number of keys`);
 
-              Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
+              fixture.entries.forEach((keyData) => {
                 checkKeyDataOnInstance({
                   helper,
-                  key,
+                  key: keyData.key,
                   keyData,
                   instance: map,
-                  msg: `Check map #${i + 1} has correct value for "${key}" key`,
+                  msg: `Check map #${i + 1} has correct value for "${keyData.key}" key`,
                 });
               });
             }
@@ -4967,13 +4830,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -5071,13 +4934,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -6152,13 +6015,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -6348,13 +6211,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -6623,13 +6486,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -6726,13 +6589,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await rootInstance.set(keyData.key, value);
@@ -7380,13 +7243,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);
@@ -7607,13 +7470,13 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
-                if (keyData.data.bytes != null) {
+                if (keyData.jsonData.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
+                  value = BufferUtils.base64Decode(keyData.jsonData.bytes);
+                } else if (keyData.jsonData.json != null) {
+                  value = JSON.parse(keyData.jsonData.json);
                 } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                  value = keyData.jsonData.number ?? keyData.jsonData.string ?? keyData.jsonData.boolean;
                 }
 
                 await entryPathObject.set(keyData.key, value);

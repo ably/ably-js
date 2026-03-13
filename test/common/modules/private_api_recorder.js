@@ -23,6 +23,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'call.ObjectMessage.fromValues',
     'call.ObjectMessage.getMessageSize',
     'call.ObjectMessage.toUserFacingMessage',
+    'call.ObjectId.fromInitialValue',
     'call.Platform.Config.push.storage.clear',
     'call.Platform.nextTick',
     'call.PresenceMessage.fromValues',
