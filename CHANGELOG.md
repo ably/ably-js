@@ -2,6 +2,17 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.20.0](https://github.com/ably/ably-js/tree/2.20.0) (2026-03-13)
+
+With this release, the ably-js LiveObjects API is no longer in Public Preview and is now generally available.
+
+Key changes:
+
+- Introduce version 6 of the Ably protocol; add operation-specific payload fields to `ObjectOperation` and typed value fields to `ObjectData` exposed in LiveObjects subscription callbacks; deprecate `map`, `counter`, `mapOp`, `counterOp` on `ObjectOperation` and `value` on `ObjectData` [#2159](https://github.com/ably/ably-js/pull/2159)
+- Add support for partial sync of LiveObjects state [#2152](https://github.com/ably/ably-js/pull/2152)
+- Add support for server-initiated `MAP_CLEAR` object operation [#2176](https://github.com/ably/ably-js/pull/2176)
+- Return `history` function from `useChannel` hook [#2177](https://github.com/ably/ably-js/pull/2177)
+
 ## [2.19.0](https://github.com/ably/ably-js/tree/2.19.0) (2026-03-02)
 
 ### New features
