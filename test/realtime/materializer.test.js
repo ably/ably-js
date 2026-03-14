@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'chai', 'materializer'], function (Ably, Helper
   const expect = chai.expect;
   const MessageMaterializer = Materializer.MessageMaterializer;
   const parsePartialJSON = Materializer.parsePartialJSON;
+  const Allow = Materializer.Allow;
 
   describe('realtime/materializer', function () {
     this.timeout(60 * 1000);
@@ -92,6 +93,129 @@ define(['ably', 'shared_helper', 'chai', 'materializer'], function (Ably, Helper
       it('handles unicode escapes', function () {
         const result = parsePartialJSON('{"emoji": "\\u0041"}');
         expect(result).to.deep.equal({ emoji: 'A' });
+      });
+
+      // Upstream tests from promplate/partial-json-parser-js
+      describe('Allow flags (upstream parity)', function () {
+        it('partial string with STR flag', function () {
+          expect(parsePartialJSON('"', Allow.STR)).to.equal('');
+          expect(parsePartialJSON('"hello', Allow.STR)).to.equal('hello');
+        });
+
+        it('partial string throws without STR flag', function () {
+          expect(function () { parsePartialJSON('"', ~Allow.STR); }).to.throw();
+        });
+
+        it('partial array with ARR flag', function () {
+          expect(parsePartialJSON('["', Allow.ARR)).to.deep.equal([]);
+          expect(parsePartialJSON('["', Allow.ARR | Allow.STR)).to.deep.equal(['']);
+        });
+
+        it('partial array throws without ARR flag', function () {
+          expect(function () { parsePartialJSON('[', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('["', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('[""', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('["",', Allow.STR); }).to.throw();
+        });
+
+        it('partial object with OBJ flag', function () {
+          expect(parsePartialJSON('{"": "', Allow.OBJ)).to.deep.equal({});
+          expect(parsePartialJSON('{"": "', Allow.OBJ | Allow.STR)).to.deep.equal({ '': '' });
+        });
+
+        it('partial object throws without OBJ flag', function () {
+          expect(function () { parsePartialJSON('{', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('{"', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('{""', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('{"":', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('{"":"', Allow.STR); }).to.throw();
+          expect(function () { parsePartialJSON('{"":""', Allow.STR); }).to.throw();
+        });
+
+        it('partial singletons with flags', function () {
+          expect(parsePartialJSON('n', Allow.NULL)).to.equal(null);
+          expect(function () { parsePartialJSON('n', ~Allow.NULL); }).to.throw();
+
+          expect(parsePartialJSON('t', Allow.BOOL)).to.equal(true);
+          expect(function () { parsePartialJSON('t', ~Allow.BOOL); }).to.throw();
+
+          expect(parsePartialJSON('f', Allow.BOOL)).to.equal(false);
+          expect(function () { parsePartialJSON('f', ~Allow.BOOL); }).to.throw();
+
+          expect(parsePartialJSON('I', Allow.INFINITY)).to.equal(Infinity);
+          expect(function () { parsePartialJSON('I', ~Allow.INFINITY); }).to.throw();
+
+          expect(parsePartialJSON('-I', Allow._INFINITY)).to.equal(-Infinity);
+          expect(function () { parsePartialJSON('-I', ~Allow._INFINITY); }).to.throw();
+
+          expect(Number.isNaN(parsePartialJSON('N', Allow.NAN))).to.equal(true);
+          expect(function () { parsePartialJSON('N', ~Allow.NAN); }).to.throw();
+        });
+
+        it('number parsing with and without NUM flag', function () {
+          expect(parsePartialJSON('0', ~Allow.NUM)).to.equal(0);
+          expect(parsePartialJSON('-1.25e+4', ~Allow.NUM)).to.equal(-1.25e4);
+          expect(parsePartialJSON('-1.25e+', Allow.NUM)).to.equal(-1.25);
+          expect(parsePartialJSON('-1.25e', Allow.NUM)).to.equal(-1.25);
+        });
+      });
+
+      describe('edge cases', function () {
+        it('handles incomplete escape at end of string', function () {
+          expect(parsePartialJSON('"hello\\', Allow.STR)).to.equal('hello');
+        });
+
+        it('handles incomplete unicode escape', function () {
+          expect(parsePartialJSON('"hello\\u00', Allow.STR)).to.equal('hello');
+        });
+
+        it('handles all escape sequences', function () {
+          expect(parsePartialJSON('"\\"\\\\\\/\\b\\f\\n\\r\\t"')).to.equal('"\\/\b\f\n\r\t');
+        });
+
+        it('handles whitespace around values', function () {
+          expect(parsePartialJSON('  { "a" : 1 , "b" : 2 }  ')).to.deep.equal({ a: 1, b: 2 });
+        });
+
+        it('handles deeply nested partial structures', function () {
+          var result = parsePartialJSON('{"a": {"b": {"c": {"d": "deep');
+          expect(result).to.deep.equal({ a: { b: { c: { d: 'deep' } } } });
+        });
+
+        it('handles array with trailing comma', function () {
+          expect(parsePartialJSON('[1, 2,', Allow.ARR)).to.deep.equal([1, 2]);
+        });
+
+        it('handles object with trailing comma', function () {
+          expect(parsePartialJSON('{"a": 1,', Allow.OBJ)).to.deep.equal({ a: 1 });
+        });
+
+        it('handles negative numbers', function () {
+          expect(parsePartialJSON('-', Allow.NUM)).to.equal(0);
+          expect(parsePartialJSON('-42')).to.equal(-42);
+        });
+
+        it('handles scientific notation variants', function () {
+          expect(parsePartialJSON('1E10')).to.equal(1e10);
+          expect(parsePartialJSON('1e+10')).to.equal(1e10);
+          expect(parsePartialJSON('1e-10')).to.equal(1e-10);
+        });
+
+        it('handles mixed nested arrays and objects', function () {
+          var result = parsePartialJSON('[{"a": [1, 2]}, {"b": [3');
+          expect(result).to.deep.equal([{ a: [1, 2] }, { b: [3] }]);
+        });
+
+        it('rejects invalid input types', function () {
+          expect(function () { parsePartialJSON(123); }).to.throw(TypeError);
+          expect(function () { parsePartialJSON(null); }).to.throw(TypeError);
+        });
+
+        it('handles complete Infinity and NaN', function () {
+          expect(parsePartialJSON('Infinity')).to.equal(Infinity);
+          expect(parsePartialJSON('-Infinity')).to.equal(-Infinity);
+          expect(Number.isNaN(parsePartialJSON('NaN'))).to.equal(true);
+        });
       });
     });
 
