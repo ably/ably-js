@@ -74,6 +74,7 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.6",
+    "@ampproject/remapping": "^2.3.0",
     "@arethetypeswrong/cli": "^0.13.1",
     "@babel/generator": "^7.23.6",
     "@babel/parser": "^7.23.6",
