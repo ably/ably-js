@@ -9,16 +9,19 @@ export type Bufferlike = BufferSource;
 export type Output = ArrayBuffer;
 export type ToBufferOutput = Uint8Array;
 
+const U8 = Uint8Array,
+  AB = ArrayBuffer;
+
 function toAB(buffer: Bufferlike): ArrayBuffer {
-  if (buffer instanceof ArrayBuffer) return buffer;
-  if (ArrayBuffer.isView(buffer))
+  if (buffer instanceof AB) return buffer;
+  if (AB.isView(buffer))
     return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
   throw new Error('BufferUtils.toArrayBuffer expected an ArrayBuffer or a view onto one');
 }
 
 function toBuf(buffer: Bufferlike): Uint8Array {
-  if (buffer instanceof ArrayBuffer) return new Uint8Array(buffer);
-  if (ArrayBuffer.isView(buffer)) return new Uint8Array(toAB(buffer));
+  if (buffer instanceof AB) return new U8(buffer);
+  if (AB.isView(buffer)) return new U8(toAB(buffer));
   throw new Error('BufferUtils.toBuffer expected an ArrayBuffer or a view onto one');
 }
 
@@ -27,7 +30,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   hexCharSet = '0123456789abcdef';
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
+    return buffer instanceof AB || AB.isView(buffer);
   }
 
   toBuffer = toBuf;
@@ -46,9 +49,9 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   base64Decode(str: string): Output {
     const s = atob(str);
-    const bytes = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
-    return toAB(bytes);
+    const b = new U8(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return toAB(b);
   }
 
   hexEncode(buffer: Bufferlike): string {
@@ -57,7 +60,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   hexDecode(hex: string): Output {
     if (hex.length % 2 !== 0) throw new Error("Can't create a byte array from a hex string of odd length");
-    const a = new Uint8Array(hex.length / 2);
+    const a = new U8(hex.length / 2);
     for (let i = 0; i < a.length; i++) a[i] = parseInt(hex.slice(2 * i, 2 * i + 2), 16);
     return toAB(a);
   }
@@ -77,15 +80,15 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike): boolean {
     if (!buffer1 || !buffer2) return false;
-    const a = new Uint8Array(toAB(buffer1));
-    const b = new Uint8Array(toAB(buffer2));
+    const a = new U8(toAB(buffer1)),
+      b = new U8(toAB(buffer2));
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
     return true;
   }
 
   byteLength(buffer: Bufferlike): number {
-    if (buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer)) return buffer.byteLength;
+    if (buffer instanceof AB || AB.isView(buffer)) return buffer.byteLength;
     return -1;
   }
 
@@ -94,7 +97,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   }
 
   concat(buffers: Bufferlike[]): Output {
-    const result = new Uint8Array(buffers.reduce((a, v) => a + v.byteLength, 0));
+    const result = new U8(buffers.reduce((a, v) => a + v.byteLength, 0));
     let offset = 0;
     for (const buffer of buffers) {
       const u = toBuf(buffer);

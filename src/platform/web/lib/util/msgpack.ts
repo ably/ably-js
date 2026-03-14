@@ -1,16 +1,13 @@
 const SH_L_32 = (1 << 16) * (1 << 16),
-  SH_R_32 = 1 / SH_L_32;
+  SH_R_32 = 1 / SH_L_32,
+  U8 = Uint8Array,
+  AB = ArrayBuffer;
 
 const enc = /*#__PURE__*/ new TextEncoder();
 const dec = /*#__PURE__*/ new TextDecoder();
 
-function utf8Len(s: string): number {
-  return enc.encode(s).length;
-}
-
-function utf8W(v: DataView, o: number, s: string) {
-  const b = enc.encode(s);
-  for (let i = 0; i < b.length; i++) v.setUint8(o + i, b[i]);
+function utf8B(s: string): Uint8Array {
+  return enc.encode(s);
 }
 
 function utf8R(v: DataView, o: number, n: number) {
@@ -25,23 +22,13 @@ function getUint64(v: DataView, o: number) {
   return v.getUint32(o) * SH_L_32 + v.getUint32(o + 4);
 }
 
-function setInt64(v: DataView, o: number, val: number) {
-  if (val < 0x8000000000000000) {
-    v.setInt32(o, Math.floor(val * SH_R_32));
-    v.setInt32(o + 4, val & -1);
-  } else {
-    v.setUint32(o, 0x7fffffff);
-    v.setUint32(o + 4, 0x7fffffff);
-  }
-}
-
-function setUint64(v: DataView, o: number, val: number) {
-  if (val < 0x10000000000000000) {
+function set64(v: DataView, o: number, val: number, limit: number, hi: number, lo: number) {
+  if (val < limit) {
     v.setUint32(o, Math.floor(val * SH_R_32));
     v.setInt32(o + 4, val & -1);
   } else {
-    v.setUint32(o, 0xffffffff);
-    v.setUint32(o + 4, 0xffffffff);
+    v.setUint32(o, hi);
+    v.setUint32(o + 4, lo);
   }
 }
 
@@ -53,122 +40,98 @@ function encodeableKeys(value: { [key: string]: unknown }, sparse?: boolean) {
   });
 }
 
-// Combined sizeof + encode: when view is null, returns size only; when view is provided, writes and returns bytes written
+// Write tag + length header. Returns header byte count.
+function wHdr(v: DataView | null, o: number, tag: number, len: number, sz: 1 | 2 | 4): number {
+  if (v) {
+    v.setUint8(o, tag);
+    if (sz === 1) v.setUint8(o + 1, len);
+    else if (sz === 2) v.setUint16(o + 1, len);
+    else v.setUint32(o + 1, len);
+  }
+  return 1 + sz;
+}
+
+// Pick header for length-prefixed types (3 tags for 8/16/32-bit length)
+function pickHdr(v: DataView | null, o: number, len: number, t8: number, t16: number, t32: number): number {
+  if (len < 0x100) return wHdr(v, o, t8, len, 1);
+  if (len < 0x10000) return wHdr(v, o, t16, len, 2);
+  if (len < 0x100000000) return wHdr(v, o, t32, len, 4);
+  return 0;
+}
+
+// Write tag + typed value
+function wNum(v: DataView, o: number, tag: number, setter: 'setUint8' | 'setUint16' | 'setUint32' | 'setInt8' | 'setInt16' | 'setInt32' | 'setFloat64', val: number) {
+  v.setUint8(o, tag);
+  v[setter](o + 1, val);
+}
+
 function sizeOrEncode(value: unknown, view: DataView | null, offset: number, sparse?: boolean): number {
   const type = typeof value;
 
-  // Strings
   if (type === 'string') {
-    const length = utf8Len(value as string);
+    const b = utf8B(value as string), length = b.length;
     if (length < 0x20) {
-      if (view) { view.setUint8(offset, length | 0xa0); utf8W(view, offset + 1, value as string); }
+      if (view) { view.setUint8(offset, length | 0xa0); new U8(view.buffer).set(b, offset + 1); }
       return 1 + length;
     }
-    if (length < 0x100) {
-      if (view) { view.setUint8(offset, 0xd9); view.setUint8(offset + 1, length); utf8W(view, offset + 2, value as string); }
-      return 2 + length;
-    }
-    if (length < 0x10000) {
-      if (view) { view.setUint8(offset, 0xda); view.setUint16(offset + 1, length); utf8W(view, offset + 3, value as string); }
-      return 3 + length;
-    }
-    if (length < 0x100000000) {
-      if (view) { view.setUint8(offset, 0xdb); view.setUint32(offset + 1, length); utf8W(view, offset + 5, value as string); }
-      return 5 + length;
-    }
+    const hdr = pickHdr(view, offset, length, 0xd9, 0xda, 0xdb);
+    if (!hdr) return 0;
+    if (view) new U8(view.buffer).set(b, offset + hdr);
+    return hdr + length;
   }
 
-  if (ArrayBuffer.isView && ArrayBuffer.isView(value)) {
-    value = value.buffer;
+  if (AB.isView && AB.isView(value)) {
+    value = (value as ArrayBufferView).buffer;
   }
 
-  // Binary
-  if (value instanceof ArrayBuffer) {
+  if (value instanceof AB) {
     const length = value.byteLength;
-    if (length < 0x100) {
-      if (view) { view.setUint8(offset, 0xc4); view.setUint8(offset + 1, length); new Uint8Array(view.buffer).set(new Uint8Array(value), offset + 2); }
-      return 2 + length;
-    }
-    if (length < 0x10000) {
-      if (view) { view.setUint8(offset, 0xc5); view.setUint16(offset + 1, length); new Uint8Array(view.buffer).set(new Uint8Array(value), offset + 3); }
-      return 3 + length;
-    }
-    if (length < 0x100000000) {
-      if (view) { view.setUint8(offset, 0xc6); view.setUint32(offset + 1, length); new Uint8Array(view.buffer).set(new Uint8Array(value), offset + 5); }
-      return 5 + length;
-    }
+    const hdr = pickHdr(view, offset, length, 0xc4, 0xc5, 0xc6);
+    if (!hdr) return 0;
+    if (view) new U8(view.buffer).set(new U8(value), offset + hdr);
+    return hdr + length;
   }
 
   if (type === 'number') {
     const num = value as number;
-    // Floating point
     if (Math.floor(num) !== num) {
-      if (view) { view.setUint8(offset, 0xcb); view.setFloat64(offset + 1, num); }
+      if (view) wNum(view, offset, 0xcb, 'setFloat64', num);
       return 9;
     }
-    // Positive integers
     if (num >= 0) {
-      if (num < 0x80) {
-        if (view) view.setUint8(offset, num);
-        return 1;
-      }
-      if (num < 0x100) {
-        if (view) { view.setUint8(offset, 0xcc); view.setUint8(offset + 1, num); }
-        return 2;
-      }
-      if (num < 0x10000) {
-        if (view) { view.setUint8(offset, 0xcd); view.setUint16(offset + 1, num); }
-        return 3;
-      }
-      if (num < 0x100000000) {
-        if (view) { view.setUint8(offset, 0xce); view.setUint32(offset + 1, num); }
-        return 5;
-      }
+      if (num < 0x80) { if (view) view.setUint8(offset, num); return 1; }
+      if (num < 0x100) { if (view) wNum(view, offset, 0xcc, 'setUint8', num); return 2; }
+      if (num < 0x10000) { if (view) wNum(view, offset, 0xcd, 'setUint16', num); return 3; }
+      if (num < 0x100000000) { if (view) wNum(view, offset, 0xce, 'setUint32', num); return 5; }
       if (num < 0x10000000000000000) {
-        if (view) { view.setUint8(offset, 0xcf); setUint64(view, offset + 1, num); }
+        if (view) { view.setUint8(offset, 0xcf); set64(view, offset + 1, num, 0x10000000000000000, 0xffffffff, 0xffffffff); }
         return 9;
       }
       throw new Error('Number too big 0x' + num.toString(16));
     }
-    // Negative integers
-    if (num >= -0x20) {
-      if (view) view.setInt8(offset, num);
-      return 1;
-    }
-    if (num >= -0x80) {
-      if (view) { view.setUint8(offset, 0xd0); view.setInt8(offset + 1, num); }
-      return 2;
-    }
-    if (num >= -0x8000) {
-      if (view) { view.setUint8(offset, 0xd1); view.setInt16(offset + 1, num); }
-      return 3;
-    }
-    if (num >= -0x80000000) {
-      if (view) { view.setUint8(offset, 0xd2); view.setInt32(offset + 1, num); }
-      return 5;
-    }
+    if (num >= -0x20) { if (view) view.setInt8(offset, num); return 1; }
+    if (num >= -0x80) { if (view) wNum(view, offset, 0xd0, 'setInt8', num); return 2; }
+    if (num >= -0x8000) { if (view) wNum(view, offset, 0xd1, 'setInt16', num); return 3; }
+    if (num >= -0x80000000) { if (view) wNum(view, offset, 0xd2, 'setInt32', num); return 5; }
     if (num >= -0x8000000000000000) {
-      if (view) { view.setUint8(offset, 0xd3); setInt64(view, offset + 1, num); }
+      if (view) { view.setUint8(offset, 0xd3); set64(view, offset + 1, num, 0x8000000000000000, 0x7fffffff, 0x7fffffff); }
       return 9;
     }
     throw new Error('Number too small -0x' + (-num).toString(16).substr(1));
   }
 
-  // undefined - use d4 (NON-STANDARD)
   if (type === 'undefined') {
     if (sparse) return 0;
     if (view) { view.setUint8(offset, 0xd4); view.setUint8(offset + 1, 0x00); view.setUint8(offset + 2, 0x00); }
     return 3;
   }
 
-  // null
   if (value === null) {
     if (sparse) return 0;
     if (view) view.setUint8(offset, 0xc0);
     return 1;
   }
 
-  // Boolean
   if (type === 'boolean') {
     if (view) view.setUint8(offset, value ? 0xc3 : 0xc2);
     return 1;
@@ -176,7 +139,6 @@ function sizeOrEncode(value: unknown, view: DataView | null, offset: number, spa
 
   if ('function' === typeof (value as Date).toJSON) return sizeOrEncode((value as Date).toJSON(), view, offset, sparse);
 
-  // Container Types
   if (type === 'object') {
     let length: number,
       size = 0;
@@ -194,11 +156,9 @@ function sizeOrEncode(value: unknown, view: DataView | null, offset: number, spa
       if (view) view.setUint8(offset, length | (isArray ? 0x90 : 0x80));
       size = 1;
     } else if (length < 0x10000) {
-      if (view) { view.setUint8(offset, isArray ? 0xdc : 0xde); view.setUint16(offset + 1, length); }
-      size = 3;
+      size = wHdr(view, offset, isArray ? 0xdc : 0xde, length, 2);
     } else if (length < 0x100000000) {
-      if (view) { view.setUint8(offset, isArray ? 0xdd : 0xdf); view.setUint32(offset + 1, length); }
-      size = 5;
+      size = wHdr(view, offset, isArray ? 0xdd : 0xdf, length, 4);
     }
 
     if (isArray) {
@@ -223,27 +183,24 @@ function sizeOrEncode(value: unknown, view: DataView | null, offset: number, spa
 function encode(value: unknown, sparse?: boolean) {
   const size = sizeOrEncode(value, null, 0, sparse);
   if (size === 0) return undefined;
-  const buffer = new ArrayBuffer(size);
+  const buffer = new AB(size);
   const view = new DataView(buffer);
   sizeOrEncode(value, view, 0, sparse);
   return buffer;
 }
 
-// https://gist.github.com/frsyuki/5432559 - v5 spec
-//
-// I've used one extension point from `fixext 1` to store `undefined`. On the wire this
-// should translate to exactly 0xd40000
-//
-// +--------+--------+--------+
-// |  0xd4  |  0x00  |  0x00  |
-// +--------+--------+--------+
-//    ^ fixext |        ^ value part unused (fixed to be 0)
-//             ^ indicates undefined value
-//
+const fixextSz = [1, 2, 4, 8, 16];
 
 function decode(buffer: ArrayBuffer) {
   let o = 0;
   const v = new DataView(buffer);
+
+  type Getter = 'getUint8' | 'getUint16' | 'getUint32' | 'getInt8' | 'getInt16' | 'getInt32';
+  function rd(getter: Getter, adv: number): number {
+    const val = v[getter](o + 1);
+    o += adv;
+    return val;
+  }
 
   function map(length: number) {
     const value: { [key: string]: unknown } = {};
@@ -255,8 +212,8 @@ function decode(buffer: ArrayBuffer) {
   }
 
   function bin(length: number) {
-    const value = new ArrayBuffer(length);
-    new Uint8Array(value).set(new Uint8Array(v.buffer, o, length), 0);
+    const value = new AB(length);
+    new U8(value).set(new U8(v.buffer, o, length), 0);
     o += length;
     return value;
   }
@@ -281,64 +238,47 @@ function decode(buffer: ArrayBuffer) {
   }
 
   function parse(): unknown {
-    const type = v.getUint8(o);
-    let value, length;
+    const t = v.getUint8(o);
+    let val;
 
-    // Positive FixInt
-    if ((type & 0x80) === 0x00) { o++; return type; }
-    // FixMap
-    if ((type & 0xf0) === 0x80) { length = type & 0x0f; o++; return map(length); }
-    // FixArray
-    if ((type & 0xf0) === 0x90) { length = type & 0x0f; o++; return array(length); }
-    // FixStr
-    if ((type & 0xe0) === 0xa0) { length = type & 0x1f; o++; return str(length); }
-    // Negative FixInt
-    if ((type & 0xe0) === 0xe0) { value = v.getInt8(o); o++; return value; }
+    if (!(t & 0x80)) { o++; return t; }
+    if ((t & 0xf0) === 0x80) { o++; return map(t & 0x0f); }
+    if ((t & 0xf0) === 0x90) { o++; return array(t & 0x0f); }
+    if ((t & 0xe0) === 0xa0) { o++; return str(t & 0x1f); }
+    if ((t & 0xe0) === 0xe0) { val = v.getInt8(o); o++; return val; }
 
-    switch (type) {
+    if (t >= 0xd4 && t <= 0xd8) { o++; return ext(fixextSz[t - 0xd4]); }
+
+    switch (t) {
       case 0xc0: o++; return null;
       case 0xc1: o++; return undefined;
       case 0xc2: o++; return false;
       case 0xc3: o++; return true;
-      // bin 8/16/32
-      case 0xc4: length = v.getUint8(o + 1); o += 2; return bin(length);
-      case 0xc5: length = v.getUint16(o + 1); o += 3; return bin(length);
-      case 0xc6: length = v.getUint32(o + 1); o += 5; return bin(length);
-      // ext 8/16/32
-      case 0xc7: length = v.getUint8(o + 1); o += 2; return ext(length);
-      case 0xc8: length = v.getUint16(o + 1); o += 3; return ext(length);
-      case 0xc9: length = v.getUint32(o + 1); o += 5; return ext(length);
-      // float 32/64
-      case 0xca: value = v.getFloat32(o + 1); o += 5; return value;
-      case 0xcb: value = v.getFloat64(o + 1); o += 9; return value;
-      // uint 8/16/32/64
-      case 0xcc: value = v.getUint8(o + 1); o += 2; return value;
-      case 0xcd: value = v.getUint16(o + 1); o += 3; return value;
-      case 0xce: value = v.getUint32(o + 1); o += 5; return value;
-      case 0xcf: value = getUint64(v, o + 1); o += 9; return value;
-      // int 8/16/32/64
-      case 0xd0: value = v.getInt8(o + 1); o += 2; return value;
-      case 0xd1: value = v.getInt16(o + 1); o += 3; return value;
-      case 0xd2: value = v.getInt32(o + 1); o += 5; return value;
-      case 0xd3: value = getInt64(v, o + 1); o += 9; return value;
-      // fixext 1/2/4/8/16
-      case 0xd4: o++; return ext(1);
-      case 0xd5: o++; return ext(2);
-      case 0xd6: o++; return ext(4);
-      case 0xd7: o++; return ext(8);
-      case 0xd8: o++; return ext(16);
-      // str 8/16/32
-      case 0xd9: length = v.getUint8(o + 1); o += 2; return str(length);
-      case 0xda: length = v.getUint16(o + 1); o += 3; return str(length);
-      case 0xdb: length = v.getUint32(o + 1); o += 5; return str(length);
-      // array 16/32
-      case 0xdc: length = v.getUint16(o + 1); o += 3; return array(length);
-      case 0xdd: length = v.getUint32(o + 1); o += 5; return array(length);
-      // map 16/32
-      case 0xde: length = v.getUint16(o + 1); o += 3; return map(length);
-      case 0xdf: length = v.getUint32(o + 1); o += 5; return map(length);
+      case 0xc4: return bin(rd('getUint8', 2));
+      case 0xc5: return bin(rd('getUint16', 3));
+      case 0xc6: return bin(rd('getUint32', 5));
+      case 0xc7: return ext(rd('getUint8', 2));
+      case 0xc8: return ext(rd('getUint16', 3));
+      case 0xc9: return ext(rd('getUint32', 5));
+      case 0xca: val = v.getFloat32(o + 1); o += 5; return val;
+      case 0xcb: val = v.getFloat64(o + 1); o += 9; return val;
+      case 0xcc: return rd('getUint8', 2);
+      case 0xcd: return rd('getUint16', 3);
+      case 0xce: return rd('getUint32', 5);
+      case 0xcf: val = getUint64(v, o + 1); o += 9; return val;
+      case 0xd0: return rd('getInt8', 2);
+      case 0xd1: return rd('getInt16', 3);
+      case 0xd2: return rd('getInt32', 5);
+      case 0xd3: val = getInt64(v, o + 1); o += 9; return val;
+      case 0xd9: return str(rd('getUint8', 2));
+      case 0xda: return str(rd('getUint16', 3));
+      case 0xdb: return str(rd('getUint32', 5));
+      case 0xdc: return array(rd('getUint16', 3));
+      case 0xdd: return array(rd('getUint32', 5));
+      case 0xde: return map(rd('getUint16', 3));
+      case 0xdf: return map(rd('getUint32', 5));
     }
-    throw new Error('Unknown type 0x' + type.toString(16));
+    throw new Error('Unknown type 0x' + t.toString(16));
   }
 
   const value = parse();
