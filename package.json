@@ -7,6 +7,7 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
+  "sideEffects": false,
   "main": "./build/ably-node.js",
   "browser": "./build/ably.js",
   "react-native": "./build/ably-reactnative.js",
