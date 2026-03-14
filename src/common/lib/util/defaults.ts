@@ -334,6 +334,16 @@ export function normaliseOptions(
       options.useBinaryProtocol = Platform.Config.preferBinary;
     }
   } else {
+    if (options.useBinaryProtocol) {
+      Logger.logAction(
+        loggerToUse,
+        Logger.LOG_ERROR,
+        'Defaults.normaliseOptions',
+        'useBinaryProtocol was enabled, but no MsgPack plugin is available. Falling back to JSON encoding. ' +
+          'To use binary protocol, provide the MsgPack plugin via `import { MsgPack } from "ably/modular"` ' +
+          'and pass it as `new Ably.Realtime({ plugins: { MsgPack } })`.',
+      );
+    }
     options.useBinaryProtocol = false;
   }
 
