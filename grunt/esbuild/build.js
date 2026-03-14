@@ -28,6 +28,7 @@ const minifiedWebConfig = {
   entryPoints: ['src/platform/web/index.ts'],
   outfile: 'build/ably.min.js',
   minify: true,
+  plugins: [stripLogsPlugin, umdWrapper.default({ libraryName: 'Ably', amdNamedModule: false })],
 };
 
 const modularConfig = {
