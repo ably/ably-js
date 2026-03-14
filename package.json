@@ -7,6 +7,7 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
+  "sideEffects": false,
   "main": "./build/ably-node.js",
   "browser": "./build/ably.js",
   "react-native": "./build/ably-reactnative.js",
@@ -74,10 +75,12 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.6",
+    "@ampproject/remapping": "^2.3.0",
     "@arethetypeswrong/cli": "^0.13.1",
     "@babel/generator": "^7.23.6",
     "@babel/parser": "^7.23.6",
     "@babel/traverse": "^7.23.7",
+    "@swc/core": "^1.15.18",
     "@testing-library/react": "^13.3.0",
     "@types/cli-table": "^0.3.4",
     "@types/jmespath": "^0.15.2",
@@ -126,6 +129,7 @@
     "source-map-explorer": "^2.5.2",
     "source-map-support": "^0.5.21",
     "stream-browserify": "^3.0.0",
+    "terser": "^5.46.0",
     "ts-loader": "^9.4.2",
     "tsconfig-paths-webpack-plugin": "^4.0.1",
     "tslib": "^2.3.1",
