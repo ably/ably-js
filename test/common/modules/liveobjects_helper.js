@@ -25,6 +25,46 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     MAP_CLEAR: 'MAP_CLEAR',
   };
 
+  /**
+   * Fixture data for all primitive value types that can be stored in a map entry.
+   * Each entry describes a key, its JSON-protocol ObjectData representation (`jsonData`),
+   * and expected values when read back in compact JSON format.
+   */
+  const primitiveKeyData = [
+    { key: 'stringKey', jsonData: { string: 'stringValue' }, compactValue: 'stringValue' },
+    { key: 'emptyStringKey', jsonData: { string: '' }, compactValue: '' },
+    {
+      key: 'bytesKey',
+      jsonData: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
+      compactValue: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9',
+    },
+    {
+      key: 'emptyBytesKey',
+      jsonData: { bytes: '' },
+      compactValue: '',
+    },
+    { key: 'maxSafeIntegerKey', jsonData: { number: Number.MAX_SAFE_INTEGER }, compactValue: Number.MAX_SAFE_INTEGER },
+    {
+      key: 'negativeMaxSafeIntegerKey',
+      jsonData: { number: -Number.MAX_SAFE_INTEGER },
+      compactValue: -Number.MAX_SAFE_INTEGER,
+    },
+    { key: 'numberKey', jsonData: { number: 1 }, compactValue: 1 },
+    { key: 'zeroKey', jsonData: { number: 0 }, compactValue: 0 },
+    { key: 'trueKey', jsonData: { boolean: true }, compactValue: true },
+    { key: 'falseKey', jsonData: { boolean: false }, compactValue: false },
+    {
+      key: 'objectKey',
+      jsonData: { json: JSON.stringify({ foo: 'bar' }) },
+      compactValue: '{"foo":"bar"}',
+    },
+    {
+      key: 'arrayKey',
+      jsonData: { json: JSON.stringify(['foo', 'bar', 'baz']) },
+      compactValue: '["foo","bar","baz"]',
+    },
+  ];
+
   class LiveObjectsHelper {
     constructor(helper) {
       this._helper = helper;
@@ -32,9 +72,108 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
     }
 
     static ACTIONS = ACTIONS;
+    static primitiveKeyData = primitiveKeyData;
 
     static fixtureRootKeys() {
       return ['emptyCounter', 'initialValueCounter', 'referencedCounter', 'emptyMap', 'referencedMap', 'valuesMap'];
+    }
+
+    /**
+     * It could take some time for all keys to be set on a fixture channel.
+     * This function waits for a channel to have all keys set.
+     */
+    static async waitFixtureChannelIsReady(client, channelName) {
+      const channel = client.channels.get(channelName, { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+      const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
+
+      await channel.attach();
+      const entryPathObject = await channel.object.get();
+      const entryInstance = entryPathObject.instance();
+
+      await Promise.all(
+        expectedKeys.map((key) =>
+          entryInstance.get(key) ? undefined : LiveObjectsHelper.waitForMapKeyUpdate(entryInstance, key),
+        ),
+      );
+    }
+
+    static async waitForMapKeyUpdate(mapInstance, key) {
+      return new Promise((resolve) => {
+        const { unsubscribe } = mapInstance.subscribe(({ message }) => {
+          if ((message?.operation?.mapSet?.key ?? message?.operation?.mapRemove?.key) === key) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    }
+
+    static async waitForMapClear(mapInstance) {
+      return new Promise((resolve) => {
+        const { unsubscribe } = mapInstance.subscribe(({ message }) => {
+          if (message?.operation?.action === 'map.clear') {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    }
+
+    static async waitForCounterUpdate(counterInstance) {
+      return new Promise((resolve) => {
+        const { unsubscribe } = counterInstance.subscribe(() => {
+          unsubscribe();
+          resolve();
+        });
+      });
+    }
+
+    static async waitForObjectOperation(helper, client, waitForAction) {
+      return new Promise((resolve, reject) => {
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = client.connection.connectionManager.activeProtocol.getTransport();
+        const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = function (message) {
+          try {
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(transport, message);
+
+            if (message.action === 19 && message.state[0]?.operation?.action === waitForAction) {
+              helper.recordPrivateApi('replace.transport.onProtocolMessage');
+              transport.onProtocolMessage = onProtocolMessageOriginal;
+              resolve();
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+      });
+    }
+
+    static async waitForObjectSync(helper, client) {
+      return new Promise((resolve, reject) => {
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = client.connection.connectionManager.activeProtocol.getTransport();
+        const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        transport.onProtocolMessage = function (message) {
+          try {
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(transport, message);
+
+            if (message.action === 20) {
+              helper.recordPrivateApi('replace.transport.onProtocolMessage');
+              transport.onProtocolMessage = onProtocolMessageOriginal;
+              resolve();
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+      });
     }
 
     /**
@@ -74,26 +213,17 @@ define(['ably', 'shared_helper', 'liveobjects'], function (Ably, Helper, LiveObj
         key: 'referencedMap',
         createOp: this.mapCreateRestOp({ data: { counterKey: { objectId: referencedCounter.objectId } } }),
       });
+
+      const valuesMapData = primitiveKeyData.reduce((acc, v) => {
+        acc[v.key] = v.jsonData;
+        return acc;
+      }, {});
+      valuesMapData.mapKey = { objectId: referencedMap.objectId };
+
       const valuesMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'valuesMap',
-        createOp: this.mapCreateRestOp({
-          data: {
-            stringKey: { string: 'stringValue' },
-            emptyStringKey: { string: '' },
-            bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
-            emptyBytesKey: { bytes: '' },
-            maxSafeIntegerKey: { number: Number.MAX_SAFE_INTEGER },
-            negativeMaxSafeIntegerKey: { number: -Number.MAX_SAFE_INTEGER },
-            numberKey: { number: 1 },
-            zeroKey: { number: 0 },
-            trueKey: { boolean: true },
-            falseKey: { boolean: false },
-            objectKey: { json: JSON.stringify({ foo: 'bar' }) },
-            arrayKey: { json: JSON.stringify(['foo', 'bar', 'baz']) },
-            mapKey: { objectId: referencedMap.objectId },
-          },
-        }),
+        createOp: this.mapCreateRestOp({ data: valuesMapData }),
       });
     }
 

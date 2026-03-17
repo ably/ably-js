@@ -4,18 +4,6 @@ import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type * as ObjectsApi from '../../../liveobjects';
 
-const operationActions: ObjectsApi.ObjectOperationAction[] = [
-  'map.create',
-  'map.set',
-  'map.remove',
-  'counter.create',
-  'counter.inc',
-  'object.delete',
-  'map.clear',
-];
-
-const mapSemantics: ObjectsApi.ObjectsMapSemantics[] = ['lww'];
-
 export type EncodeObjectDataFunction<TData = ObjectData | WireObjectData> = (data: TData) => WireObjectData;
 
 /** @spec OOP2 */
@@ -29,9 +17,37 @@ export enum ObjectOperationAction {
   MAP_CLEAR = 6,
 }
 
+const operationActions: ObjectsApi.ObjectOperationAction[] = [
+  'map.create',
+  'map.set',
+  'map.remove',
+  'counter.create',
+  'counter.inc',
+  'object.delete',
+  'map.clear',
+];
+
+export function decodeObjectOperationAction(action: ObjectOperationAction): ObjectsApi.ObjectOperationAction {
+  return operationActions[action] || 'unknown';
+}
+
 /** @spec OMP2 */
 export enum ObjectsMapSemantics {
   LWW = 0,
+}
+
+const mapSemantics: ObjectsApi.ObjectsMapSemantics[] = ['lww'];
+
+export function encodeMapSemantics(semantics: ObjectsApi.ObjectsMapSemantics, client: BaseClient): ObjectsMapSemantics {
+  const index = mapSemantics.indexOf(semantics);
+  if (index === -1) {
+    throw new client.ErrorInfo(`Unrecognized map semantics: ${semantics}`, 40003, 400);
+  }
+  return index;
+}
+
+export function decodeMapSemantics(semantics: ObjectsMapSemantics): ObjectsApi.ObjectsMapSemantics {
+  return mapSemantics[semantics] ?? 'unknown';
 }
 
 /**
@@ -402,9 +418,13 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
 /**
  * Encodes a partial {@link ObjectOperation} for wire transmission.
  *
- * This is used during CREATE operations to produce the wire-safe representation of the operation
- * that will be JSON-stringified and set as the `initialValue` field in
- * {@link MapCreateWithObjectId} or {@link CounterCreateWithObjectId}.
+ * This is used in multiple contexts:
+ * - During realtime *_CREATE operations to produce the wire-safe representation that will be
+ *   JSON-stringified and set as the `initialValue` field in
+ *   {@link MapCreateWithObjectId} or {@link CounterCreateWithObjectId}.
+ * - In the REST SDK to get an encoded initial value for an object to generate
+ *   a client-side object ID.
+ * - In the REST SDK publish path to encode user-provided operation data for transmission.
  *
  * The provided operation may contain user-provided data that requires encoding
  * (e.g. buffers must be encoded for JSON wire format).
@@ -412,6 +432,7 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
 export function encodePartialObjectOperationForWire(
   operation: Partial<ObjectOperation<ObjectData>>,
   client: BaseClient,
+  format: Utils.Format,
 ): Partial<ObjectOperation<WireObjectData>> {
   const msg = ObjectMessage.fromValues(
     // cast to ObjectOperation here, even though provided operation may lack some properties
@@ -426,9 +447,68 @@ export function encodePartialObjectOperationForWire(
   );
   const wireMsg = msg.encode();
 
-  // get the encoded operation that is safe to be sent over the wire as a JSON string.
-  const { operation: encodedOperation } = wireMsg.encodeForWire(client.Utils.Format.json);
+  // get the encoded operation that is safe to be sent over the wire.
+  const { operation: encodedOperation } = wireMsg.encodeForWire(format);
   return encodedOperation!;
+}
+
+/** @spec OD5 */
+export function decodeWireObjectData(
+  wireData: WireObjectData,
+  client: BaseClient,
+  format: Utils.Format | undefined,
+): ObjectData {
+  try {
+    if (wireData.objectId != null) {
+      return { objectId: wireData.objectId };
+    }
+
+    if (wireData.bytes != null) {
+      const decodedBytes =
+        format === 'msgpack'
+          ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
+            (wireData.bytes as Buffer | ArrayBuffer)
+          : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
+            client.Platform.BufferUtils.base64Decode(String(wireData.bytes));
+      return { bytes: decodedBytes };
+    }
+
+    if (wireData.json != null) {
+      return { json: JSON.parse(wireData.json) }; // OD5a2, OD5b3
+    }
+
+    if (wireData.boolean != null) {
+      return { boolean: wireData.boolean };
+    }
+
+    if (wireData.number != null) {
+      return { number: wireData.number };
+    }
+
+    if (wireData.string != null) {
+      return { string: wireData.string };
+    }
+
+    // unrecognized ObjectData shape - pass through as-is so we don't lose any data
+    client.Logger.logAction(
+      client.logger,
+      client.Logger.LOG_MINOR,
+      'decodeWireObjectData()',
+      'Unrecognized wire ObjectData shape, keys: ' + Object.keys(wireData).join(', '),
+    );
+    return { ...wireData } as ObjectData;
+  } catch (error) {
+    client.Logger.logAction(
+      client.logger,
+      client.Logger.LOG_ERROR,
+      'decodeWireObjectData()',
+      client.Utils.inspectError(error),
+    );
+    // object data decoding has failed, return the data as is.
+    return {
+      ...wireData,
+    } as ObjectData;
+  }
 }
 
 function strMsg(msg: any, className: string) {
@@ -513,7 +593,7 @@ function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): Ob
   if (internalMapCreate) {
     mapCreate = {
       ...internalMapCreate,
-      semantics: mapSemantics[internalMapCreate.semantics] ?? 'unknown',
+      semantics: decodeMapSemantics(internalMapCreate.semantics),
       entries: Object.fromEntries(
         Object.entries(internalMapCreate.entries).map(([key, entry]) => [key, toUserFacingMapEntry(entry)]),
       ),
@@ -545,7 +625,7 @@ function toUserFacingObjectOperation(operation: ObjectOperation<ObjectData>): Ob
   }
 
   return {
-    action: operationActions[operation.action] || 'unknown',
+    action: decodeObjectOperationAction(operation.action),
     objectId: operation.objectId,
     mapCreate,
     mapSet,
@@ -779,7 +859,7 @@ export class WireObjectMessage {
       }
 
       if (this.operation?.mapSet?.value) {
-        result.operation!.mapSet!.value = this._decodeObjectData(this.operation.mapSet.value, client, format);
+        result.operation!.mapSet!.value = decodeWireObjectData(this.operation.mapSet.value, client, format);
       }
     } catch (error) {
       client.Logger.logAction(
@@ -996,7 +1076,7 @@ export class WireObjectMessage {
     return Object.entries(mapEntries).reduce(
       (acc, v) => {
         const [key, entry] = v;
-        const decodedData = entry.data ? this._decodeObjectData(entry.data, client, format) : undefined;
+        const decodedData = entry.data ? decodeWireObjectData(entry.data, client, format) : undefined;
         acc[key] = {
           ...entry,
           data: decodedData,
@@ -1005,57 +1085,5 @@ export class WireObjectMessage {
       },
       {} as Record<string, ObjectsMapEntry<ObjectData>>,
     );
-  }
-
-  /** @spec OD5 */
-  private _decodeObjectData(
-    objectData: WireObjectData,
-    client: BaseClient,
-    format: Utils.Format | undefined,
-  ): ObjectData {
-    try {
-      if (objectData.objectId != null) {
-        return { objectId: objectData.objectId };
-      }
-
-      if (objectData.bytes != null) {
-        const decodedBytes =
-          format === 'msgpack'
-            ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
-              (objectData.bytes as Buffer | ArrayBuffer)
-            : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
-              client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
-        return { bytes: decodedBytes };
-      }
-
-      if (objectData.json != null) {
-        return { json: JSON.parse(objectData.json) }; // OD5a2, OD5b3
-      }
-
-      if (objectData.boolean != null) {
-        return { boolean: objectData.boolean };
-      }
-
-      if (objectData.number != null) {
-        return { number: objectData.number };
-      }
-
-      if (objectData.string != null) {
-        return { string: objectData.string };
-      }
-
-      return {};
-    } catch (error) {
-      client.Logger.logAction(
-        client.logger,
-        client.Logger.LOG_ERROR,
-        'WireObjectMessage._decodeObjectData()',
-        this._utils.inspectError(error),
-      );
-      // object data decoding has failed, return the data as is.
-      return {
-        ...objectData,
-      } as ObjectData;
-    }
   }
 }

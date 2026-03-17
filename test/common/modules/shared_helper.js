@@ -382,16 +382,43 @@ define([
     static testOnJsonMsgpack(testName, testFn, skip, only) {
       const itFn = skip ? it.skip : only ? it.only : it;
 
-      itFn(testName + ' with binary protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(testName);
-        const channelName = testName + ' binary';
-        await testFn({ useBinaryProtocol: true }, channelName, helper);
-      });
-      itFn(testName + ' with text protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(testName);
-        const channelName = testName + ' text';
-        await testFn({ useBinaryProtocol: false }, channelName, helper);
-      });
+      function createTest(options, channelName) {
+        return async function () {
+          this.test.helper = this.test.helper.withParameterisedTestTitle(testName);
+          return testFn.apply(this, [options, channelName, this.test.helper]);
+        };
+      }
+
+      itFn(testName + ' with binary protocol', createTest({ useBinaryProtocol: true }, `${testName} binary`));
+      itFn(testName + ' with text protocol', createTest({ useBinaryProtocol: false }, `${testName} text`));
+    }
+
+    /**
+     * Asserts that an object is an instance of the given class name.
+     * Accounts for esbuild renaming classes with static methods (e.g. LiveMap → _LiveMap).
+     */
+    static expectInstanceOf(object, className, msg) {
+      expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
+    }
+
+    /**
+     * Asserts that an async function throws an error with the given message substring and optional error code/statusCode.
+     */
+    static async expectToThrowAsync(fn, errorStr, conditions) {
+      const { withCode, withStatusCode } = conditions ?? {};
+
+      let savedError;
+      try {
+        await fn();
+      } catch (error) {
+        expect(error.message).to.have.string(errorStr);
+        if (withCode != null) expect(error.code).to.equal(withCode);
+        if (withStatusCode != null) expect(error.statusCode).to.equal(withStatusCode);
+        savedError = error;
+      }
+      expect(savedError, 'Expected async function to throw an error').to.exist;
+
+      return savedError;
     }
 
     clearTransportPreference() {
