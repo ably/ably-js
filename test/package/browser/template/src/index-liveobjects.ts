@@ -1,4 +1,4 @@
-import { Realtime } from 'ably';
+import { Realtime, Rest } from 'ably';
 import {
   AnyPathObject,
   CompactedJsonValue,
@@ -10,6 +10,10 @@ import {
   LiveObjects,
   ObjectMessage,
   PathObject,
+  RestObjectGetCompactResult,
+  RestObjectGetFullResult,
+  RestObject,
+  RestObjectPublishResult,
 } from 'ably/liveobjects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
@@ -119,4 +123,22 @@ globalThis.testAblyPackage = async function () {
       }
     | { objectId: string }
     | undefined = compactJson;
+
+  // REST client LiveObjects type checks
+  const rest = new Rest({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
+  const restChannel = rest.channels.get('channel');
+
+  // check RestObject is accessible on a REST channel
+  const restObject: RestObject = restChannel.object;
+
+  // check get() returns correct types for compact and full responses
+  const compactResult: RestObjectGetCompactResult = await restObject.get();
+  const compactWithParam: RestObjectGetCompactResult = await restObject.get({ compact: true });
+  const fullResult: RestObjectGetFullResult = await restObject.get({ compact: false });
+
+  // check publish() returns correct type
+  const publishResult: RestObjectPublishResult = await restObject.publish({
+    path: '',
+    mapSet: { key: 'test', value: { string: 'value' } },
+  });
 };

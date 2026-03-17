@@ -418,9 +418,13 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
 /**
  * Encodes a partial {@link ObjectOperation} for wire transmission.
  *
- * This is used during CREATE operations to produce the wire-safe representation of the operation
- * that will be JSON-stringified and set as the `initialValue` field in
- * {@link MapCreateWithObjectId} or {@link CounterCreateWithObjectId}.
+ * This is used in multiple contexts:
+ * - During realtime *_CREATE operations to produce the wire-safe representation that will be
+ *   JSON-stringified and set as the `initialValue` field in
+ *   {@link MapCreateWithObjectId} or {@link CounterCreateWithObjectId}.
+ * - In the REST SDK to get an encoded initial value for an object to generate
+ *   a client-side object ID.
+ * - In the REST SDK publish path to encode user-provided operation data for transmission.
  *
  * The provided operation may contain user-provided data that requires encoding
  * (e.g. buffers must be encoded for JSON wire format).
