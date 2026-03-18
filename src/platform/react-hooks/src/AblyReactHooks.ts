@@ -12,7 +12,7 @@ export type ChannelNameAndOptions = {
 export type ChannelNameAndAblyId = Pick<ChannelNameAndOptions, 'channelName' | 'ablyId'>;
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '2.20.0';
+export const version = '2.21.0';
 
 /**
  * channel options for react-hooks
