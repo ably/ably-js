@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.21.0](https://github.com/ably/ably-js/tree/2.21.0) (2026-03-19)
+
+### New features
+
+- Add LiveObjects REST client: `channel.object` is now available on REST channel instances, exposing `get()` to read object state, `publish()` to send object operations, and `generateObjectId()` to create object IDs on the client side for atomic batch operations with cross-references between newly created objects [#2109](https://github.com/ably/ably-js/pull/2109)
+
 ## [2.20.0](https://github.com/ably/ably-js/tree/2.20.0) (2026-03-13)
 
 With this release, the ably-js LiveObjects API is no longer in Public Preview and is now generally available.
