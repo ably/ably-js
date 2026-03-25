@@ -224,6 +224,33 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
     });
 
+    /**
+     * Test that PUT requests with msgpack-encoded bodies work correctly against
+     * the Chat API. This verifies that the full request path (client → infrastructure
+     * → server) preserves Content-Type and body encoding for PUT methods.
+     *
+     * POST (send) is tested as a control to confirm msgpack works for that method,
+     * then PUT (update) is tested to verify it also works.
+     */
+    Helper.testOnJsonMsgpack('request_chat_put_msgpack', async function (options, _, helper) {
+      const rest = helper.AblyRest(options);
+      const roomName = 'ably-js-msgpack-test-' + helper.randomString();
+
+      // Send a chat message via POST (control — known to work with msgpack)
+      var sendRes = await rest.request('post', '/chat/v4/rooms/' + roomName + '/messages', 4, null, { text: 'hello' }, null);
+      expect(sendRes.statusCode).to.equal(201, 'Check send statusCode is 201');
+      expect(sendRes.success).to.equal(true, 'Check send was a success');
+
+      var serial = sendRes.items[0].serial;
+      expect(serial, 'Check serial is present').to.be.ok;
+
+      // Update the message via PUT (the method under test)
+      var updateRes = await rest.request('put', '/chat/v4/rooms/' + roomName + '/messages/' + encodeURIComponent(serial), 4, null, { message: { text: 'updated' } }, null);
+      expect(updateRes.statusCode).to.equal(200, 'Check update statusCode is 200');
+      expect(updateRes.success).to.equal(true, 'Check update was a success');
+      expect(updateRes.items[0].text).to.equal('updated', 'Check updated text is returned');
+    });
+
     ['put', 'patch', 'delete'].forEach(function (method) {
       /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
