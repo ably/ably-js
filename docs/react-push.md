@@ -56,16 +56,19 @@ The `usePushActivation` hook provides functions to activate and deactivate the c
 import { usePushActivation } from 'ably/react';
 
 const PushActivationComponent = () => {
-  const { activate, deactivate } = usePushActivation();
+  const { activate, deactivate, localDevice } = usePushActivation();
 
   return (
     <div>
+      <p>Status: {localDevice ? `Activated (${localDevice.id})` : 'Not activated'}</p>
       <button onClick={() => activate()}>Enable push notifications</button>
       <button onClick={() => deactivate()}>Disable push notifications</button>
     </div>
   );
 };
 ```
+
+The `localDevice` property is reactive — it updates when `activate()` or `deactivate()` is called. It is also initialised from `localStorage` on mount, so if the device was activated in a prior session, `localDevice` will be populated immediately.
 
 #### Activation lifecycle
 
@@ -79,19 +82,17 @@ A typical pattern is to call `activate()` once in response to a user action (e.g
 
 ```jsx
 const NotificationBanner = () => {
-  const { activate } = usePushActivation();
-  const [enabled, setEnabled] = useState(false);
+  const { activate, localDevice } = usePushActivation();
 
   const handleEnable = async () => {
     try {
       await activate();
-      setEnabled(true);
     } catch (err) {
       console.error('Push activation failed:', err);
     }
   };
 
-  if (enabled) return null;
+  if (localDevice) return null;
 
   return (
     <div className="banner">
@@ -120,19 +121,28 @@ The `usePush` hook provides functions to manage push notification subscriptions 
 import { usePush } from 'ably/react';
 
 const PushSubscriptionComponent = () => {
-  const { subscribeDevice, unsubscribeDevice } = usePush('your-channel-name');
+  const { subscribeDevice, unsubscribeDevice, isActivated } = usePush('your-channel-name');
 
   return (
     <div>
-      <button onClick={() => subscribeDevice()}>Subscribe to channel</button>
-      <button onClick={() => unsubscribeDevice()}>Unsubscribe from channel</button>
+      <button onClick={() => subscribeDevice()} disabled={!isActivated}>
+        Subscribe to channel
+      </button>
+      <button onClick={() => unsubscribeDevice()} disabled={!isActivated}>
+        Unsubscribe from channel
+      </button>
+      {!isActivated && <p>Push must be activated before subscribing.</p>}
     </div>
   );
 };
 ```
 
+#### Activation awareness
+
+`usePush` is aware of whether push has been activated via `usePushActivation`. The `isActivated` property is reactive — when `usePushActivation` calls `activate()` or `deactivate()`, all `usePush` instances update automatically, even if they are in different components. This works via a shared store without requiring any additional providers.
+
 > [!IMPORTANT]
-> The device must be activated (via `usePushActivation`) before calling `subscribeDevice()` or `unsubscribeDevice()`. See [Error Handling](#error-handling) for details on what happens if activation hasn't been completed.
+> The device must be activated (via `usePushActivation`) before calling `subscribeDevice()` or `unsubscribeDevice()`. Use `isActivated` to guard your UI or check before calling. See [Error Handling](#error-handling) for details on what happens if activation hasn't been completed.
 
 #### Subscribe by device or by client
 
@@ -202,7 +212,18 @@ If you call `subscribeDevice()` or `unsubscribeDevice()` before the device has b
 Error: Cannot subscribe from client without deviceIdentityToken (code: 50000)
 ```
 
-Ensure `activate()` has completed successfully before subscribing:
+The recommended way to prevent this is to use the `isActivated` flag from `usePush` to guard your UI:
+
+```jsx
+const { subscribeDevice, isActivated } = usePush('alerts');
+
+// Disable the button until push is activated
+<button onClick={() => subscribeDevice()} disabled={!isActivated}>
+  Subscribe
+</button>
+```
+
+Alternatively, you can sequence activation and subscription imperatively:
 
 ```jsx
 const { activate } = usePushActivation();
@@ -266,18 +287,16 @@ const App = () => (
 );
 
 const PushActivation = () => {
-  const { activate, deactivate } = usePushActivation();
-  const [active, setActive] = useState(false);
+  const { activate, deactivate, localDevice } = usePushActivation();
   const [error, setError] = useState(null);
 
   const handleToggle = async () => {
     try {
-      if (active) {
+      if (localDevice) {
         await deactivate();
       } else {
         await activate();
       }
-      setActive(!active);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -287,15 +306,19 @@ const PushActivation = () => {
   return (
     <div>
       <button onClick={handleToggle}>
-        {active ? 'Disable' : 'Enable'} push notifications
+        {localDevice ? 'Disable' : 'Enable'} push notifications
       </button>
+      {localDevice && <p>Device ID: {localDevice.id}</p>}
       {error && <p className="error">{error}</p>}
     </div>
   );
 };
 
 const AlertSubscription = () => {
-  const { subscribeDevice, unsubscribeDevice, connectionError, channelError } = usePush('alerts');
+  const {
+    subscribeDevice, unsubscribeDevice,
+    isActivated, connectionError, channelError,
+  } = usePush('alerts');
   const [subscribed, setSubscribed] = useState(false);
 
   if (connectionError) return <p>Connection error: {connectionError.message}</p>;
@@ -315,9 +338,12 @@ const AlertSubscription = () => {
   };
 
   return (
-    <button onClick={handleToggle}>
-      {subscribed ? 'Unsubscribe from' : 'Subscribe to'} alerts
-    </button>
+    <div>
+      <button onClick={handleToggle} disabled={!isActivated}>
+        {subscribed ? 'Unsubscribe from' : 'Subscribe to'} alerts
+      </button>
+      {!isActivated && <p>Activate push notifications first.</p>}
+    </div>
   );
 };
 ```
@@ -334,13 +360,15 @@ function usePushActivation(ablyId?: string): PushActivationResult;
 interface PushActivationResult {
   activate: () => Promise<void>;
   deactivate: () => Promise<void>;
+  localDevice: Ably.LocalDevice | null;
 }
 ```
 
-| Property     | Type                  | Description                                                                 |
-| ------------ | --------------------- | --------------------------------------------------------------------------- |
-| `activate`   | `() => Promise<void>` | Activates the device for push notifications. Persists to `localStorage`.    |
-| `deactivate` | `() => Promise<void>` | Deactivates the device and removes the registration from Ably's servers.    |
+| Property      | Type                     | Description                                                                                              |
+| ------------- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `activate`    | `() => Promise<void>`    | Activates the device for push notifications. Persists to `localStorage`.                                 |
+| `deactivate`  | `() => Promise<void>`    | Deactivates the device and removes the registration from Ably's servers.                                 |
+| `localDevice` | `Ably.LocalDevice\|null` | The current device if activated, `null` otherwise. Reactive — updates on activate/deactivate and is initialised from persisted state. |
 
 ### `usePush`
 
@@ -354,6 +382,7 @@ interface PushResult {
   subscribeClient: () => Promise<void>;
   unsubscribeClient: () => Promise<void>;
   listSubscriptions: (params?: Record<string, string>) => Promise<PaginatedResult<PushChannelSubscription>>;
+  isActivated: boolean;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }
@@ -367,5 +396,6 @@ interface PushResult {
 | `subscribeClient`    | `() => Promise<void>`                              | Subscribes all devices for the current `clientId` to push on this channel.     |
 | `unsubscribeClient`  | `() => Promise<void>`                              | Unsubscribes all devices for the current `clientId` from push on this channel. |
 | `listSubscriptions`  | `(params?) => Promise<PaginatedResult<...>>`       | Lists active push subscriptions for this channel.                              |
+| `isActivated`        | `boolean`                                          | Whether push is currently activated. Reactive — updates across components.     |
 | `connectionError`    | `Ably.ErrorInfo \| null`                           | Current connection error, if any.                                              |
 | `channelError`       | `Ably.ErrorInfo \| null`                           | Current channel error, if any.                                                 |

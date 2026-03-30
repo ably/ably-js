@@ -1,11 +1,12 @@
 import React from 'react';
 import type * as Ably from 'ably';
-import { it, beforeEach, describe, expect, vi } from 'vitest';
+import { it, beforeEach, afterEach, describe, expect, vi } from 'vitest';
 import { usePush } from './usePush.js';
 import { renderHook, act } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
 import { ChannelProvider } from '../ChannelProvider.js';
+import { setActivatedDevice } from '../PushActivationState.js';
 
 const testChannelName = 'testChannel';
 
@@ -28,8 +29,12 @@ describe('usePush', () => {
     ablyClient = new FakeAblySdk().connectTo(channels);
   });
 
+  afterEach(() => {
+    setActivatedDevice('default', null);
+  });
+
   /** @nospec */
-  it('returns the channel and push methods', () => {
+  it('returns the channel, push methods, and isActivated', () => {
     const { result } = renderInCtxProvider(ablyClient);
 
     expect(result.current.channel).toBeDefined();
@@ -38,6 +43,52 @@ describe('usePush', () => {
     expect(result.current.subscribeClient).toBeTypeOf('function');
     expect(result.current.unsubscribeClient).toBeTypeOf('function');
     expect(result.current.listSubscriptions).toBeTypeOf('function');
+    expect(result.current).toHaveProperty('isActivated');
+  });
+
+  /** @nospec */
+  it('isActivated is false when no device is activated', () => {
+    const { result } = renderInCtxProvider(ablyClient);
+
+    expect(result.current.isActivated).toBe(false);
+  });
+
+  /** @nospec */
+  it('isActivated becomes true when device is activated via store', () => {
+    const { result } = renderInCtxProvider(ablyClient);
+
+    expect(result.current.isActivated).toBe(false);
+
+    act(() => {
+      setActivatedDevice('default', {
+        id: 'device-123',
+        deviceSecret: 'secret-456',
+        deviceIdentityToken: 'token-789',
+        listSubscriptions: vi.fn() as any,
+      });
+    });
+
+    expect(result.current.isActivated).toBe(true);
+  });
+
+  /** @nospec */
+  it('isActivated reverts to false when device is deactivated via store', () => {
+    setActivatedDevice('default', {
+      id: 'device-123',
+      deviceSecret: 'secret-456',
+      deviceIdentityToken: 'token-789',
+      listSubscriptions: vi.fn() as any,
+    });
+
+    const { result } = renderInCtxProvider(ablyClient);
+
+    expect(result.current.isActivated).toBe(true);
+
+    act(() => {
+      setActivatedDevice('default', null);
+    });
+
+    expect(result.current.isActivated).toBe(false);
   });
 
   /** @nospec */
