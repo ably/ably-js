@@ -231,7 +231,18 @@ class MockHttpClient {
         // Phase 1: Connection attempt
         let parsedUrl: URL;
         try {
-          parsedUrl = new URL(uri);
+          // Append params to URL (mirrors real HTTP behavior)
+          let fullUri = uri;
+          if (params && typeof params === 'object') {
+            const qs = Object.entries(params)
+              .filter(([, v]) => v !== undefined && v !== null)
+              .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
+              .join('&');
+            if (qs) {
+              fullUri += (uri.includes('?') ? '&' : '?') + qs;
+            }
+          }
+          parsedUrl = new URL(fullUri);
         } catch (e) {
           return { error: { message: 'Invalid URI: ' + uri, statusCode: 400, code: 40000 }, body: null, headers: {}, unpacked: false, statusCode: 400 };
         }
@@ -258,8 +269,8 @@ class MockHttpClient {
           return { error: connResult.error as any, body: null, headers: {}, unpacked: false, statusCode: 0 };
         }
 
-        // Phase 2: HTTP request
-        const req = new PendingRequest(method, uri, headers, body, params);
+        // Phase 2: HTTP request (use parsedUrl which includes params)
+        const req = new PendingRequest(method, parsedUrl.href, headers, body, params);
         mock.captured_requests.push(req);
 
         // Notify handler or waiter

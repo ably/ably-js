@@ -1,0 +1,296 @@
+/**
+ * UTS: Auth Scheme Selection Tests
+ *
+ * Spec points: RSA1, RSA2, RSA3, RSA4, RSA11, RSC18
+ * Source: specification/uts/rest/unit/auth/auth_scheme.md
+ */
+
+import { expect } from 'chai';
+import { MockHttpClient } from '../../mock_http';
+import { Ably, installMockHttp, restoreAll } from '../../helpers';
+
+/** Standard mock that auto-succeeds and returns 200 */
+function simpleMock(captured) {
+  return new MockHttpClient({
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
+      captured.push(req);
+      req.respond_with(200, []);
+    },
+  });
+}
+
+/** Mock that routes requestToken vs API requests */
+function tokenRoutingMock(captured, tokenValue) {
+  return new MockHttpClient({
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
+      captured.push(req);
+      if (req.path.match(/\/keys\/.*\/requestToken/)) {
+        req.respond_with(200, {
+          token: tokenValue || 'obtained-token',
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          capability: JSON.stringify({ '*': ['*'] }),
+        });
+      } else {
+        req.respond_with(200, []);
+      }
+    },
+  });
+}
+
+describe('uts/rest/auth/auth_scheme', function () {
+  afterEach(function () {
+    restoreAll();
+  });
+
+  /**
+   * RSA4 - Basic auth with API key only
+   */
+  it('RSA4 - Basic auth with API key only', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(captured).to.have.length(1);
+    const expectedAuth = 'Basic ' + Buffer.from('appId.keyId:keySecret').toString('base64');
+    expect(captured[0].headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA3 - Token auth with explicit token string
+   */
+  it('RSA3 - Token auth with explicit token string', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({ token: 'explicit-token-string' });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(captured).to.have.length(1);
+    const expectedAuth = 'Bearer ' + Buffer.from('explicit-token-string').toString('base64');
+    expect(captured[0].headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA3 - Token auth with TokenDetails
+   */
+  it('RSA3 - Token auth with TokenDetails', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      tokenDetails: {
+        token: 'token-from-details',
+        expires: Date.now() + 3600000,
+      },
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(captured).to.have.length(1);
+    const expectedAuth = 'Bearer ' + Buffer.from('token-from-details').toString('base64');
+    expect(captured[0].headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA4 - useTokenAuth forces token auth
+   */
+  it('RSA4 - useTokenAuth forces token auth', async function () {
+    const captured = [];
+    installMockHttp(tokenRoutingMock(captured, 'obtained-token'));
+
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      useTokenAuth: true,
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    // API request should use Bearer, not Basic
+    const apiRequest = captured[captured.length - 1];
+    const expectedAuth = 'Bearer ' + Buffer.from('obtained-token').toString('base64');
+    expect(apiRequest.headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA4 - authCallback triggers token auth
+   */
+  it('RSA4 - authCallback triggers token auth', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        callback(null, 'callback-token');
+      },
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(captured).to.have.length(1);
+    const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
+    expect(captured[0].headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA4 - authUrl triggers token auth
+   */
+  it('RSA4 - authUrl triggers token auth', async function () {
+    const captured = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        if (req.url.host === 'auth.example.com') {
+          req.respond_with(200, 'authurl-token', { 'content-type': 'text/plain' });
+        } else {
+          req.respond_with(200, []);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authUrl: 'https://auth.example.com/token',
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(captured.length).to.be.at.least(2);
+    const apiRequest = captured[captured.length - 1];
+    const expectedAuth = 'Bearer ' + Buffer.from('authurl-token').toString('base64');
+    expect(apiRequest.headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA4 - Error when no auth method available
+   */
+  it('RSA4 - Error when no auth method available', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    try {
+      new Ably.Rest({});
+      expect.fail('Should have thrown');
+    } catch (error) {
+      expect(error.code).to.equal(40160);
+    }
+
+    expect(captured).to.have.length(0);
+  });
+
+  /**
+   * RSA4a2 - Error when token expired and no renewal method
+   *
+   * Per RSA4a2: if the server responds with a token error (40142) and
+   * there's no way to renew, the library should error with 40171.
+   * Note: RSA4b1 (local expiry detection) is optional.
+   */
+  it('RSA4a2 - Error when token expired and no renewal method', async function () {
+    const captured = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        // Server rejects expired token
+        req.respond_with(401, {
+          error: { message: 'Token expired', code: 40142, statusCode: 401 },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      tokenDetails: {
+        token: 'expired-token',
+        expires: Date.now() - 1000,
+      },
+    });
+
+    try {
+      await client.stats();
+      expect.fail('Expected request to throw');
+    } catch (error) {
+      expect(error.code).to.equal(40171);
+    }
+  });
+
+  /**
+   * RSA1 - Auth method priority (authCallback over key)
+   */
+  it('RSA1 - Auth method priority (authCallback over key)', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      authCallback: function (params, callback) {
+        callback(null, 'callback-token');
+      },
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    const request = captured[0];
+    const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
+    expect(request.headers.authorization).to.equal(expectedAuth);
+  });
+
+  /**
+   * RSA2, RSA11 - Basic auth header format
+   */
+  it('RSA2, RSA11 - Basic auth header format', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({ key: 'app123.key456:secretXYZ' });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    const request = captured[0];
+    const expected = 'Basic ' + Buffer.from('app123.key456:secretXYZ').toString('base64');
+    expect(request.headers.authorization).to.equal(expected);
+  });
+
+  /**
+   * RSC18 - Basic auth requires TLS
+   *
+   * Per spec: basic auth over non-TLS should error with code 40103.
+   * See deviations.md for known ably-js non-compliance.
+   */
+  it('RSC18 - Basic auth requires TLS', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    try {
+      new Ably.Rest({
+        key: 'appId.keyId:keySecret',
+        tls: false,
+      });
+      expect.fail('Should have thrown error 40103');
+    } catch (error) {
+      expect(error.code).to.equal(40103);
+    }
+
+    expect(captured).to.have.length(0);
+  });
+
+  /**
+   * RSC18 - Token auth allowed over non-TLS
+   */
+  it('RSC18 - Token auth allowed over non-TLS', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      token: 'explicit-token',
+      tls: false,
+    });
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    const request = captured[0];
+    const expectedAuth = 'Bearer ' + Buffer.from('explicit-token').toString('base64');
+    expect(request.headers.authorization).to.equal(expectedAuth);
+    expect(request.url.protocol).to.equal('http:');
+  });
+});

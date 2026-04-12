@@ -1,0 +1,304 @@
+/**
+ * UTS: Client ID Tests
+ *
+ * Spec points: RSA7, RSA7a, RSA7b, RSA7c, RSA12, RSA12a, RSA12b, RSA15, RSA15a, RSA15b, RSA15c
+ * Source: specification/uts/rest/unit/auth/client_id.md
+ */
+
+import { expect } from 'chai';
+import { MockHttpClient } from '../../mock_http';
+import { Ably, installMockHttp, restoreAll } from '../../helpers';
+
+function simpleMock(captured) {
+  return new MockHttpClient({
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
+      captured.push(req);
+      req.respond_with(200, []);
+    },
+  });
+}
+
+describe('uts/rest/auth/client_id', function () {
+  afterEach(function () {
+    restoreAll();
+  });
+
+  /**
+   * RSA7a - clientId from ClientOptions
+   */
+  it('RSA7a - clientId from ClientOptions', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      clientId: 'my-client-id',
+    });
+
+    expect(client.auth.clientId).to.equal('my-client-id');
+  });
+
+  /**
+   * RSA7b - clientId from TokenDetails
+   *
+   * Per spec, clientId from TokenDetails passed at construction should be
+   * accessible via auth.clientId.
+   */
+  it('RSA7b - clientId from TokenDetails', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      tokenDetails: {
+        token: 'token-with-clientId',
+        expires: Date.now() + 3600000,
+        clientId: 'token-client-id',
+      },
+    });
+
+    expect(client.auth.clientId).to.equal('token-client-id');
+  });
+
+  /**
+   * RSA7b - clientId from authCallback TokenDetails
+   *
+   * Per spec, clientId from TokenDetails returned by authCallback should
+   * update auth.clientId after the first auth request.
+   */
+  it('RSA7b - clientId from authCallback TokenDetails', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        callback(null, {
+          token: 'callback-token',
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          clientId: 'callback-client-id',
+        });
+      },
+    });
+
+    // Trigger auth by making a request
+    try { await client.stats(); } catch (e) { /* ok */ }
+
+    expect(client.auth.clientId).to.equal('callback-client-id');
+  });
+
+  /**
+   * RSA7c - clientId null when unidentified
+   */
+  it('RSA7c - clientId null when unidentified', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+
+    expect(client.auth.clientId).to.satisfy((v) => v === null || v === undefined);
+  });
+
+  /**
+   * RSA7c - clientId null with unidentified token
+   */
+  it('RSA7c - clientId null with unidentified token', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      tokenDetails: {
+        token: 'token-without-clientId',
+        expires: Date.now() + 3600000,
+      },
+    });
+
+    expect(client.auth.clientId).to.satisfy((v) => v === null || v === undefined);
+  });
+
+  /**
+   * RSA12a - clientId passed to authCallback in TokenParams
+   */
+  it('RSA12a - clientId passed to authCallback in TokenParams', async function () {
+    let receivedParams = null;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, []),
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        receivedParams = params;
+        callback(null, 'test-token');
+      },
+      clientId: 'library-client-id',
+    });
+
+    try { await client.stats(); } catch (e) { /* ok */ }
+
+    expect(receivedParams).to.not.be.null;
+    expect(receivedParams.clientId).to.equal('library-client-id');
+  });
+
+  /**
+   * RSA12b - clientId sent to authUrl as query param
+   */
+  it('RSA12b - clientId sent to authUrl', async function () {
+    const captured = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        if (req.url.host === 'auth.example.com') {
+          req.respond_with(200, 'url-token', { 'content-type': 'text/plain' });
+        } else {
+          req.respond_with(200, []);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authUrl: 'https://auth.example.com/token',
+      clientId: 'url-client-id',
+    });
+
+    try { await client.stats(); } catch (e) { /* ok */ }
+
+    const authReq = captured[0];
+    expect(authReq.url.host).to.equal('auth.example.com');
+    // clientId should be in query params (GET is default)
+    expect(authReq.url.searchParams.get('clientId')).to.equal('url-client-id');
+  });
+
+  /**
+   * RSA7 - clientId updated after authorize()
+   *
+   * Per spec, auth.clientId should be updated when authorize() returns
+   * a new token with a different clientId.
+   */
+  it('RSA7 - clientId updated after authorize()', async function () {
+    let tokenCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, []),
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        tokenCount++;
+        callback(null, {
+          token: 'token-' + tokenCount,
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          clientId: 'client-' + tokenCount,
+        });
+      },
+    });
+
+    // First auth
+    try { await client.stats(); } catch (e) { /* ok */ }
+    expect(client.auth.clientId).to.equal('client-1');
+
+    // Second auth with explicit authorize
+    await client.auth.authorize();
+    expect(client.auth.clientId).to.equal('client-2');
+  });
+
+  /**
+   * RSA12 - Wildcard clientId
+   *
+   * Per spec, wildcard '*' clientId in TokenDetails should be preserved
+   * and accessible via auth.clientId.
+   */
+  it('RSA12 - Wildcard clientId', function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      tokenDetails: {
+        token: 'wildcard-token',
+        expires: Date.now() + 3600000,
+        clientId: '*',
+      },
+    });
+
+    expect(client.auth.clientId).to.equal('*');
+  });
+
+  /**
+   * RSA15a - Matching clientId succeeds
+   */
+  it('RSA15a - Matching clientId succeeds', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      clientId: 'my-client',
+      tokenDetails: {
+        token: 'matching-token',
+        expires: Date.now() + 3600000,
+        clientId: 'my-client',
+      },
+    });
+
+    // Should not throw when using the token
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(client.auth.clientId).to.equal('my-client');
+  });
+
+  /**
+   * RSA15b - Mismatched clientId error (40102)
+   *
+   * Per spec, if ClientOptions.clientId and TokenDetails.clientId are both
+   * non-wildcard and don't match, an error with code 40102 must be raised.
+   */
+  it('RSA15b - Mismatched clientId error (40102)', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      clientId: 'client-a',
+      tokenDetails: {
+        token: 'mismatched-token',
+        expires: Date.now() + 3600000,
+        clientId: 'client-b',
+      },
+    });
+
+    try {
+      await client.stats();
+      expect.fail('Expected request to throw');
+    } catch (error) {
+      expect(error.code).to.equal(40102);
+    }
+  });
+
+  /**
+   * RSA15c - Wildcard token clientId permits any ClientOptions clientId
+   */
+  it('RSA15c - Wildcard token clientId permits any ClientOptions clientId', async function () {
+    const captured = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      clientId: 'any-client',
+      tokenDetails: {
+        token: 'wildcard-token',
+        expires: Date.now() + 3600000,
+        clientId: '*',
+      },
+    });
+
+    // Should not throw — wildcard allows any clientId
+    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+
+    expect(client.auth.clientId).to.equal('any-client');
+  });
+});
