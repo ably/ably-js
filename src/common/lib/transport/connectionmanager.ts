@@ -870,7 +870,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    const sinceLast = Date.now() - this.lastActivity;
+    const sinceLast = Platform.Config.now() - this.lastActivity;
     if (sinceLast > this.connectionStateTtl + (this.maxIdleInterval as number)) {
       Logger.logAction(
         this.logger,
@@ -893,7 +893,7 @@ class ConnectionManager extends EventEmitter {
       if (recoveryKey) {
         this.setSessionRecoverData({
           recoveryKey: recoveryKey,
-          disconnectedAt: Date.now(),
+          disconnectedAt: Platform.Config.now(),
           location: globalObject.location,
           clientId: this.realtime.auth.clientId,
         });
@@ -988,10 +988,10 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.startTransitionTimer()',
         'clearing already-running timer',
       );
-      clearTimeout(this.transitionTimer as number);
+      Platform.Config.clearTimeout(this.transitionTimer as number);
     }
 
-    this.transitionTimer = setTimeout(() => {
+    this.transitionTimer = Platform.Config.setTimeout(() => {
       if (this.transitionTimer) {
         this.transitionTimer = null;
         Logger.logAction(
@@ -1008,14 +1008,14 @@ class ConnectionManager extends EventEmitter {
   cancelTransitionTimer(): void {
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
     if (this.transitionTimer) {
-      clearTimeout(this.transitionTimer as number);
+      Platform.Config.clearTimeout(this.transitionTimer as number);
       this.transitionTimer = null;
     }
   }
 
   startSuspendTimer(): void {
     if (this.suspendTimer) return;
-    this.suspendTimer = setTimeout(() => {
+    this.suspendTimer = Platform.Config.setTimeout(() => {
       if (this.suspendTimer) {
         this.suspendTimer = null;
         Logger.logAction(
@@ -1037,13 +1037,13 @@ class ConnectionManager extends EventEmitter {
   cancelSuspendTimer(): void {
     this.states.connecting.failState = 'disconnected';
     if (this.suspendTimer) {
-      clearTimeout(this.suspendTimer as number);
+      Platform.Config.clearTimeout(this.suspendTimer as number);
       this.suspendTimer = null;
     }
   }
 
   startRetryTimer(interval: number): void {
-    this.retryTimer = setTimeout(() => {
+    this.retryTimer = Platform.Config.setTimeout(() => {
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
       this.retryTimer = null;
       this.requestState({ state: 'connecting' });
@@ -1052,13 +1052,13 @@ class ConnectionManager extends EventEmitter {
 
   cancelRetryTimer(): void {
     if (this.retryTimer) {
-      clearTimeout(this.retryTimer as NodeJS.Timeout);
+      Platform.Config.clearTimeout(this.retryTimer as NodeJS.Timeout);
       this.retryTimer = null;
     }
   }
 
   startWebSocketSlowTimer() {
-    this.webSocketSlowTimer = setTimeout(() => {
+    this.webSocketSlowTimer = Platform.Config.setTimeout(() => {
       Logger.logAction(
         this.logger,
         Logger.LOG_MINOR,
@@ -1113,13 +1113,13 @@ class ConnectionManager extends EventEmitter {
 
   cancelWebSocketSlowTimer() {
     if (this.webSocketSlowTimer) {
-      clearTimeout(this.webSocketSlowTimer);
+      Platform.Config.clearTimeout(this.webSocketSlowTimer);
       this.webSocketSlowTimer = null;
     }
   }
 
   startWebSocketGiveUpTimer(transportParams: TransportParams) {
-    this.webSocketGiveUpTimer = setTimeout(() => {
+    this.webSocketGiveUpTimer = Platform.Config.setTimeout(() => {
       if (!this.wsCheckResult) {
         Logger.logAction(
           this.logger,
@@ -1147,7 +1147,7 @@ class ConnectionManager extends EventEmitter {
 
   cancelWebSocketGiveUpTimer() {
     if (this.webSocketGiveUpTimer) {
-      clearTimeout(this.webSocketGiveUpTimer);
+      Platform.Config.clearTimeout(this.webSocketGiveUpTimer);
       this.webSocketGiveUpTimer = null;
     }
   }
@@ -1215,11 +1215,11 @@ class ConnectionManager extends EventEmitter {
     if (retryImmediately) {
       const autoReconnect = () => {
         if (this.state === this.states.disconnected) {
-          this.lastAutoReconnectAttempt = Date.now();
+          this.lastAutoReconnectAttempt = Platform.Config.now();
           this.requestState({ state: 'connecting' });
         }
       };
-      const sinceLast = this.lastAutoReconnectAttempt && Date.now() - this.lastAutoReconnectAttempt + 1;
+      const sinceLast = this.lastAutoReconnectAttempt && Platform.Config.now() - this.lastAutoReconnectAttempt + 1;
       if (sinceLast && sinceLast < 1000) {
         Logger.logAction(
           this.logger,
@@ -1231,7 +1231,7 @@ class ConnectionManager extends EventEmitter {
             (1000 - sinceLast) +
             'ms before trying again',
         );
-        setTimeout(autoReconnect, 1000 - sinceLast);
+        Platform.Config.setTimeout(autoReconnect, 1000 - sinceLast);
       } else {
         Platform.Config.nextTick(autoReconnect);
       }
@@ -1891,7 +1891,7 @@ class ConnectionManager extends EventEmitter {
 
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
-    const pingStart = Date.now();
+    const pingStart = Platform.Config.now();
     const id = Utils.cheapRandStr();
 
     return Utils.withTimeoutAsync<number>(
@@ -1899,7 +1899,7 @@ class ConnectionManager extends EventEmitter {
         const onHeartbeat = (responseId: string) => {
           if (responseId === id) {
             transport.off('heartbeat', onHeartbeat);
-            resolve(Date.now() - pingStart);
+            resolve(Platform.Config.now() - pingStart);
           }
         };
         transport.on('heartbeat', onHeartbeat);

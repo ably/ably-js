@@ -9,6 +9,7 @@ import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
+import Platform from '../../platform';
 import { StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
@@ -950,7 +951,7 @@ class RealtimeChannel extends EventEmitter {
 
   startStateTimerIfNotRunning(): void {
     if (!this.stateTimer) {
-      this.stateTimer = setTimeout(() => {
+      this.stateTimer = Platform.Config.setTimeout(() => {
         Logger.logAction(this.logger, Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
         this.stateTimer = null;
         this.timeoutPendingState();
@@ -961,7 +962,7 @@ class RealtimeChannel extends EventEmitter {
   clearStateTimer(): void {
     const stateTimer = this.stateTimer;
     if (stateTimer) {
-      clearTimeout(stateTimer);
+      Platform.Config.clearTimeout(stateTimer);
       this.stateTimer = null;
     }
   }
@@ -972,7 +973,7 @@ class RealtimeChannel extends EventEmitter {
     this.retryCount++;
     const retryDelay = Utils.getRetryTime(this.client.options.timeouts.channelRetryTimeout, this.retryCount);
 
-    this.retryTimer = setTimeout(() => {
+    this.retryTimer = Platform.Config.setTimeout(() => {
       /* If connection is not connected, just leave in suspended, a reattach
        * will be triggered once it connects again */
       if (this.state === 'suspended' && this.connectionManager.state.sendEvents) {
@@ -990,7 +991,7 @@ class RealtimeChannel extends EventEmitter {
 
   cancelRetryTimer(): void {
     if (this.retryTimer) {
-      clearTimeout(this.retryTimer as NodeJS.Timeout);
+      Platform.Config.clearTimeout(this.retryTimer as NodeJS.Timeout);
       this.retryTimer = null;
     }
   }

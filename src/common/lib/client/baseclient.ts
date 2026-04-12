@@ -193,7 +193,7 @@ class BaseClient {
   }
 
   getTimestampUsingOffset(): number {
-    return Date.now() + (this.serverTimeOffset || 0);
+    return Platform.Config.now() + (this.serverTimeOffset || 0);
   }
 
   isTimeOffsetSet(): boolean {
