@@ -1,0 +1,121 @@
+/**
+ * UTS: Connection Auto Connect Tests
+ *
+ * Spec points: RTN3
+ * Source: uts/test/realtime/unit/connection/auto_connect_test.md
+ */
+
+import { expect } from 'chai';
+import { MockWebSocket } from '../../mock_websocket';
+import { Ably, installMockWebSocket, restoreAll } from '../../helpers';
+
+describe('uts/realtime/connection/auto_connect', function () {
+  afterEach(function () {
+    restoreAll();
+  });
+
+  /**
+   * RTN3 - autoConnect true initiates connection immediately
+   */
+  it('RTN3 - autoConnect true initiates connection immediately', function (done) {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        conn.respond_with_connected({
+          connectionId: 'connection-id',
+          connectionDetails: {
+            connectionKey: 'connection-key',
+            maxIdleInterval: 15000,
+            connectionStateTtl: 120000,
+          },
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    // Create client with default autoConnect (true) — do NOT call connect()
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      useBinaryProtocol: false,
+    });
+
+    client.connection.once('connected', () => {
+      expect(client.connection.state).to.equal('connected');
+      expect(client.connection.id).to.equal('connection-id');
+      client.close();
+      done();
+    });
+  });
+
+  /**
+   * RTN3 - autoConnect false does not initiate connection
+   */
+  it('RTN3 - autoConnect false does not initiate connection', function (done) {
+    let connectionAttempted = false;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionAttempted = true;
+        conn.respond_with_connected();
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+
+    expect(client.connection.state).to.equal('initialized');
+
+    // Brief delay to confirm no connection attempt is made (proving a negative)
+    setTimeout(() => {
+      expect(connectionAttempted).to.be.false;
+      expect(client.connection.state).to.equal('initialized');
+      expect(mock.connect_attempts).to.have.length(0);
+      done();
+    }, 100);
+  });
+
+  /**
+   * RTN3 - explicit connect after autoConnect false
+   */
+  it('RTN3 - explicit connect after autoConnect false', function (done) {
+    let connectionAttempted = false;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionAttempted = true;
+        conn.respond_with_connected({
+          connectionId: 'connection-id',
+          connectionDetails: {
+            connectionKey: 'connection-key',
+            maxIdleInterval: 15000,
+            connectionStateTtl: 120000,
+          },
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+
+    // Verify no connection yet
+    expect(client.connection.state).to.equal('initialized');
+    expect(connectionAttempted).to.be.false;
+
+    client.connection.once('connected', () => {
+      expect(connectionAttempted).to.be.true;
+      expect(client.connection.state).to.equal('connected');
+      client.close();
+      done();
+    });
+
+    // Explicitly connect
+    client.connect();
+  });
+});
