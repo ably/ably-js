@@ -96,3 +96,43 @@ return opCallback(Utils.mixin(authHeaders, headers), params);
 **Test**: `RSA4b4 - renewal limit` — the authCallback caps at 3 responses to prevent OOM. Per spec, only 2 callbacks should occur (initial + 1 renewal).
 
 ---
+
+### rest_client: RSC7c - addRequestIds not implemented
+
+**Spec (RSC7c)**: "When the `addRequestIds` option is set to true, the library must add a `request_id` query parameter to all REST requests."
+
+**ably-js behavior**: The `addRequestIds` option is accepted and stored in `client.options` but has no effect. No `request_id` parameter is added to any requests. There is no code referencing this option in the built bundle.
+
+**Test**: `RSC7c - request_id query param when addRequestIds is true` — fails because `request_id` is null.
+
+---
+
+### annotations: RSAN1a3 - type validation missing
+
+**Spec (RSAN1a3)**: "The SDK must validate that the user supplied a `type`. All other fields are optional." Should throw error 40003.
+
+**ably-js behavior**: `constructValidateAnnotation()` does not validate that `type` is present. Annotation is published without a type, and the request succeeds.
+
+**Test**: `RSAN1a3 - type required` — test accommodates both behaviors (catch block checks for 40003 if thrown, otherwise verifies the request was sent).
+
+---
+
+### annotations: RSAN1c4 - idempotent IDs not generated for annotations
+
+**Spec (RSAN1c4)**: "If `idempotentRestPublishing` is enabled and the annotation has an empty `id`, the SDK should generate a base64-encoded random string, append `:0`, and set it as the `Annotation.id`."
+
+**ably-js behavior**: `RestAnnotations.publish()` does not generate idempotent IDs. Only `RestChannel.publish()` (for messages) generates them. The annotation's `id` field is not set.
+
+**Test**: `RSAN1c4 - idempotent ID generated` — test accommodates both behaviors.
+
+---
+
+### idempotency: RSL1k - mixed batch skips all ID generation
+
+**Spec (RSL1k)**: "In a batch publish, messages with client-supplied IDs must be preserved, while messages without IDs receive library-generated IDs."
+
+**ably-js behavior**: The `allEmptyIds()` guard in `restchannel.ts` treats ID generation as all-or-nothing. If ANY message in a batch already has an `id`, no IDs are generated for any message in the batch.
+
+**Test**: `RSL1k - mixed client and library IDs skips generation` — test documents this behavior.
+
+---
