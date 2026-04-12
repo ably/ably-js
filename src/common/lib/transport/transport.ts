@@ -113,7 +113,7 @@ abstract class Transport extends EventEmitter {
     this.isFinished = true;
     this.isConnected = false;
     this.maxIdleInterval = null;
-    clearTimeout(this.idleTimer ?? undefined);
+    Platform.Config.clearTimeout(this.idleTimer ?? undefined);
     this.idleTimer = null;
     this.emit(event, err);
     this.dispose();
@@ -270,13 +270,13 @@ abstract class Transport extends EventEmitter {
     if (!this.maxIdleInterval) {
       return;
     }
-    this.lastActivity = this.connectionManager.lastActivity = Date.now();
+    this.lastActivity = this.connectionManager.lastActivity = Platform.Config.now();
     this.setIdleTimer(this.maxIdleInterval + 100);
   }
 
   setIdleTimer(timeout: number): void {
     if (!this.idleTimer) {
-      this.idleTimer = setTimeout(() => {
+      this.idleTimer = Platform.Config.setTimeout(() => {
         this.onIdleTimerExpire();
       }, timeout);
     }
@@ -287,7 +287,7 @@ abstract class Transport extends EventEmitter {
       throw new Error('Transport.onIdleTimerExpire(): lastActivity/maxIdleInterval not set');
     }
     this.idleTimer = null;
-    const sinceLast = Date.now() - this.lastActivity;
+    const sinceLast = Platform.Config.now() - this.lastActivity;
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
       const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
@@ -310,12 +310,12 @@ abstract class Transport extends EventEmitter {
     let transportAttemptTimer: NodeJS.Timeout | number;
 
     const errorCb = function (this: { event: string }, err: ErrorInfo) {
-      clearTimeout(transportAttemptTimer);
+      Platform.Config.clearTimeout(transportAttemptTimer);
       callback({ event: this.event, error: err });
     };
 
     const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
-    transportAttemptTimer = setTimeout(() => {
+    transportAttemptTimer = Platform.Config.setTimeout(() => {
       transport.off(['preconnect', 'disconnected', 'failed']);
       transport.dispose();
       errorCb.call(
@@ -332,7 +332,7 @@ abstract class Transport extends EventEmitter {
         'Transport.tryConnect()',
         'viable transport ' + transport,
       );
-      clearTimeout(transportAttemptTimer);
+      Platform.Config.clearTimeout(transportAttemptTimer);
       transport.off(['failed', 'disconnected'], errorCb);
       callback(null, transport);
     });

@@ -25,7 +25,7 @@ function pad(timeSegment: number, three?: number) {
 function getHandler(logger: Function): Function {
   return Platform.Config.logTimestamps
     ? function (msg: unknown) {
-        const time = new Date();
+        const time = new Date(Platform.Config.now());
         logger(
           pad(time.getHours()) +
             ':' +
