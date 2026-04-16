@@ -195,16 +195,35 @@ If you're hitting a "connection limit exceeded" error and see rising connection 
 
 Even for `use client` components, Next.js may execute them on the server during pre-rendering. This can create unintended `Ably.Realtime` connections from Node.js that remain open until you restart the development server.
 
-Prevent server-side connections using `autoConnect` and a window check:
+To prevent server-side connections, create the Ably client inside a `useEffect` hook so it only runs in the browser:
 
-```typescript
-const client = new Ably.Realtime({
-  key: 'your-ably-api-key',
-  autoConnect: typeof window !== 'undefined',
-});
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react';
+import * as Ably from 'ably';
+import { AblyProvider } from 'ably/react';
+
+export default function AblyClientProvider({ children }) {
+  const [client, setClient] = useState(null);
+
+  useEffect(() => {
+    const ably = new Ably.Realtime({ authUrl: '/token', authMethod: 'POST', clientId: 'demo' });
+    setClient(ably);
+    return () => { ably.close(); };
+  }, []);
+
+  if (!client) return <>{children}</>;
+
+  return (
+    <AblyProvider client={client}>
+      {children}
+    </AblyProvider>
+  );
+}
 ```
 
-Creating the client inside [React](https://github.com/ably/ably-js/blob/main/docs/react.md#Usage) components can lead to a new connection on every render. To prevent this, move the new `Ably.Realtime()` call outside of component functions.
+Avoid creating the client inside [React](https://github.com/ably/ably-js/blob/main/docs/react.md#Usage) component bodies, as this leads to a new connection on every render. Use the `useEffect` + `useState` pattern shown above, or move the client to a shared provider at the layout level.
 
 In development environments that use Hot Module Replacement (HMR), such as React, Vite, or Next.js, saving a file can recreate the Ably.Realtime client, while previous instances remain connected. Over time, this leads to a growing number of active connections with each code edit. To fix: Move the client to a separate file (e.g., `ably-client.js`) and import it. This ensures the client is recreated only when that file changes.
 
@@ -246,15 +265,32 @@ If you encounter an error such as `connection limit exceeded` during development
 
 #### Server-side rendering (SSR)
 
-Use the `autoConnect` option to prevent the client from connecting when rendered on the server:
+Create the Ably client inside a `useEffect` hook to prevent it from connecting when rendered on the server:
 
-```typescript
-const client = new Ably.Realtime({ key: 'your-ably-api-key', autoConnect: typeof window !== 'undefined' });
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react';
+import * as Ably from 'ably';
+
+export default function MyComponent() {
+  const [client, setClient] = useState(null);
+
+  useEffect(() => {
+    const ably = new Ably.Realtime({ authUrl: '/token', authMethod: 'POST', clientId: 'demo' });
+    setClient(ably);
+    return () => { ably.close(); };
+  }, []);
+
+  if (!client) return <div>Loading...</div>;
+
+  // Use client here
+}
 ```
 
 #### Component re-renders
 
-Avoid creating the client inside React components. Instead, move the client instantiation outside of the component to prevent it from being recreated on every render.
+Avoid creating the client inside React component bodies, as this creates a new connection on every render. Use the `useEffect` + `useState` pattern shown above to ensure the client is created once.
 
 #### Hot module replacement (HMR)
 
