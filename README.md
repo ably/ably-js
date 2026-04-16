@@ -256,7 +256,7 @@ This is a common problem in App Router for a number of packages (for example, se
 
 </details>
 
-### Genral errors during development
+### General errors during development
 
 If you encounter an error such as `connection limit exceeded` during development, it may be caused by several issues.
 
