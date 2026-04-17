@@ -223,15 +223,29 @@ class Channels extends EventEmitter {
    * Please do not use this unless you know what you're doing */
   release(name: string) {
     name = String(name);
+    Logger.logAction(this.logger, Logger.LOG_MAJOR, 'Channels.release()', 'Releasing references to channel ' + name);
     const channel = this.all[name];
     if (!channel) {
       return;
     }
-    const releaseErr = channel.getReleaseErr();
-    if (releaseErr) {
-      throw releaseErr;
+    const s = channel.state;
+    if (s === 'initialized' || s === 'detached' || s === 'failed') {
+      delete this.all[name];
+      return;
     }
-    delete this.all[name];
+    channel
+      .detach()
+      .catch((err) => {
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_ERROR,
+          'Channels.release()',
+          'Error detaching channel ' + name + ' prior to release: ' + Utils.inspectError(err),
+        );
+      })
+      .then(() => {
+        delete this.all[name];
+      });
   }
 }
 
