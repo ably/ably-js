@@ -2718,7 +2718,7 @@ export declare interface Channels<T> {
    */
   getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
   /**
-   * Releases a {@link Channel} or {@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+   * Releases all SDK-held references to a {@link Channel} or {@link RealtimeChannel} object, enabling it to be garbage collected. Warning: this method has no guardrails; using a channel reference after it has been released is undefined behaviour. It can be useful for applications that work with a continually changing set of channels on a single client and need to avoid unbounded memory growth; if this does not describe you, don't call it. Realtime channels not already in the `INITIALIZED`, `DETACHED`, or `FAILED` state are detached before release.
    *
    * @param name - The channel name.
    */
