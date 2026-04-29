@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/server_initiated_reauth', function () {
   afterEach(function () {
@@ -60,6 +60,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       const stateChanges: any[] = [];
@@ -135,6 +136,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       const stateChanges: any[] = [];
@@ -191,6 +193,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('disconnected', (stateChange: any) => {

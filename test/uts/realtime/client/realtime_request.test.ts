@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/realtime/client/realtime_request', function () {
   afterEach(function () {
@@ -32,6 +32,7 @@ describe('uts/realtime/client/realtime_request', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     const result = await client.request('get', '/test', 2);
 
     expect(captured).to.have.length(1);
@@ -39,6 +40,7 @@ describe('uts/realtime/client/realtime_request', function () {
     expect(captured[0].path).to.equal('/test');
     expect(result.statusCode).to.equal(200);
     expect(result.success).to.be.true;
+    client.close();
   });
 
   /**
@@ -60,11 +62,13 @@ describe('uts/realtime/client/realtime_request', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
     const result = await client.request('post', '/items', 2, null, { name: 'test' });
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('post');
     expect(result.statusCode).to.equal(201);
+    client.close();
   });
 
   /**
@@ -82,11 +86,13 @@ describe('uts/realtime/client/realtime_request', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     const result = await client.request('get', '/test', 2, { limit: '5', direction: 'forwards' });
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('limit')).to.equal('5');
     expect(captured[0].url.searchParams.get('direction')).to.equal('forwards');
+    client.close();
   });
 
   /**
@@ -102,12 +108,14 @@ describe('uts/realtime/client/realtime_request', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     const result = await client.request('get', '/items', 2);
 
     expect(result.statusCode).to.equal(200);
     expect(result.success).to.be.true;
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(2);
+    client.close();
   });
 
   /**
@@ -123,10 +131,12 @@ describe('uts/realtime/client/realtime_request', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     const result = await client.request('get', '/missing', 2);
 
     expect(result.statusCode).to.equal(404);
     expect(result.success).to.be.false;
     expect(result.errorCode).to.equal(40400);
+    client.close();
   });
 });

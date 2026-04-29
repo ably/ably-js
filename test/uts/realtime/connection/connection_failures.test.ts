@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -56,6 +56,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     let sawDisconnected = false;
     client.connection.on('disconnected', () => {
@@ -127,6 +128,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(client.connection.id).to.equal('connection-1');
@@ -199,6 +201,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       const originalId = client.connection.id;
@@ -274,6 +277,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
@@ -304,6 +308,7 @@ describe('uts/realtime/connection/connection_failures', function () {
     // Final connection attempt did NOT include resume param
     const lastConn = mock.connect_attempts[mock.connect_attempts.length - 1];
     expect(lastConn.url.searchParams.has('resume')).to.be.false;
+    client.close();
   });
 
   /**
@@ -330,6 +335,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('failed', () => {
@@ -396,6 +402,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       const firstId = client.connection.id;
@@ -472,6 +479,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       disconnectedRetryTimeout: 100,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -496,6 +504,7 @@ describe('uts/realtime/connection/connection_failures', function () {
     expect(client.connection.state).to.equal('connected');
     expect(client.connection.id).to.equal(originalId);
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -540,6 +549,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('failed', () => {
@@ -612,6 +622,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       // Track all subsequent connected events
@@ -654,6 +665,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('failed', () => {

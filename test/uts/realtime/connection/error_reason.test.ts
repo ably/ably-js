@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/error_reason', function () {
   afterEach(function () {
@@ -34,6 +34,7 @@ describe('uts/realtime/connection/error_reason', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     // Initially errorReason should be null
     expect(client.connection.errorReason).to.be.null;
@@ -72,6 +73,7 @@ describe('uts/realtime/connection/error_reason', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connection.once('disconnected', () => {
       expect(client.connection.errorReason).to.not.be.null;
@@ -106,28 +108,23 @@ describe('uts/realtime/connection/error_reason', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       disconnectedRetryTimeout: 500,
+      connectionStateTtl: 2000,
       fallbackHosts: [],
-    });
+    } as any);
+    trackClient(client);
 
     client.connect();
 
-    // Pump to let initial failure happen
-    for (let i = 0; i < 30; i++) {
-      clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
-    }
-
-    // Advance past connectionStateTtl
-    await clock.tickAsync(121000);
-
-    for (let i = 0; i < 30; i++) {
-      clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+    // Advance past connectionStateTtl (2s) in small increments
+    for (let i = 0; i < 10; i++) {
+      await clock.tickAsync(500);
+      if (client.connection.state === 'suspended') break;
     }
 
     expect(client.connection.state).to.equal('suspended');
     expect(client.connection.errorReason).to.not.be.null;
     expect(client.connection.errorReason.message).to.be.a('string');
+    client.close();
   });
 
   /**
@@ -149,6 +146,7 @@ describe('uts/realtime/connection/error_reason', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('disconnected', () => {
       expect(client.connection.errorReason).to.not.be.null;
@@ -163,7 +161,7 @@ describe('uts/realtime/connection/error_reason', function () {
   /**
    * RTN25 - errorReason cleared on successful reconnection
    */
-  it('RTN25 - errorReason cleared on successful reconnect', async function () {
+  it('RTN25 - errorReason cleared on successful reconnect', function (done) {
     let connectionAttemptCount = 0;
 
     const mock = new MockWebSocket({
@@ -184,39 +182,34 @@ describe('uts/realtime/connection/error_reason', function () {
     });
     installMockHttp(httpMock);
 
-    const clock = enableFakeTimers();
-
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      disconnectedRetryTimeout: 100,
+      disconnectedRetryTimeout: 15,
       fallbackHosts: [],
+    });
+    trackClient(client);
+
+    client.connection.once('disconnected', function () {
+      try {
+        expect(client.connection.errorReason).to.not.be.null;
+      } catch (err) {
+        return done(err);
+      }
+
+      client.connection.once('connected', function () {
+        try {
+          expect(client.connection.errorReason).to.be.null;
+          client.close();
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
     });
 
     client.connect();
-
-    // Pump to let first failure happen
-    for (let i = 0; i < 30; i++) {
-      clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
-    }
-
-    expect(client.connection.state).to.equal('disconnected');
-    expect(client.connection.errorReason).to.not.be.null;
-
-    // Advance past retry timeout
-    await clock.tickAsync(200);
-
-    // Pump to let reconnection succeed
-    for (let i = 0; i < 30; i++) {
-      clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
-    }
-
-    expect(client.connection.state).to.equal('connected');
-    // ably-js clears errorReason on successful connection
-    expect(client.connection.errorReason).to.be.null;
   });
 
   /**
@@ -238,6 +231,7 @@ describe('uts/realtime/connection/error_reason', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
@@ -269,6 +263,7 @@ describe('uts/realtime/connection/error_reason', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', (stateChange: any) => {
       // State change has reason populated

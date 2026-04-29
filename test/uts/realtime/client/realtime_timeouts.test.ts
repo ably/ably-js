@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 /**
  * Helper: wait for connection state using real event loop.
@@ -49,6 +49,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
     });
+    trackClient(client);
 
     expect(client.options.timeouts.realtimeRequestTimeout).to.equal(10000);
     expect(client.options.timeouts.disconnectedRetryTimeout).to.equal(15000);
@@ -58,6 +59,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
     // ably-js uses webSocketSlowTimeout (4000) and webSocketConnectTimeout (10000) instead.
     expect(client.options.timeouts.webSocketSlowTimeout).to.equal(4000);
     expect(client.options.timeouts.webSocketConnectTimeout).to.equal(10000);
+    client.close();
   });
 
   /**
@@ -88,6 +90,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
       useBinaryProtocol: false,
       realtimeRequestTimeout: 500,
     });
+    trackClient(client);
 
     await connectWithFakeTimers(client, clock);
     expect(client.connection.state).to.equal('connected');
@@ -113,6 +116,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
 
     // RTL4f: attach timeout → SUSPENDED
     expect(channel.state).to.equal('suspended');
+    client.close();
   });
 
   /**
@@ -148,6 +152,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
       useBinaryProtocol: false,
       realtimeRequestTimeout: 500,
     });
+    trackClient(client);
 
     await connectWithFakeTimers(client, clock);
     expect(client.connection.state).to.equal('connected');
@@ -179,6 +184,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
 
     // RTL5f: detach timeout → back to ATTACHED
     expect(channel.state).to.equal('attached');
+    client.close();
   });
 
   /**
@@ -222,6 +228,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
       disconnectedRetryTimeout: 2000,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     await connectWithFakeTimers(client, clock);
     expect(connectionAttemptCount).to.equal(1);
@@ -246,5 +253,6 @@ describe('uts/realtime/client/realtime_timeouts', function () {
 
     // A new reconnection attempt should have been made
     expect(connectionAttemptCount).to.be.greaterThan(countAfterImmediate);
+    client.close();
   });
 });

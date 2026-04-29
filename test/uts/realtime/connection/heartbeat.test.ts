@@ -15,7 +15,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -53,6 +53,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
   });
@@ -96,6 +97,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
@@ -117,6 +119,7 @@ describe('uts/realtime/connection/heartbeat', function () {
 
     // Verify state sequence includes disconnected
     expect(stateChanges).to.include('disconnected');
+    client.close();
   });
 
   /**
@@ -155,6 +158,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -184,6 +188,7 @@ describe('uts/realtime/connection/heartbeat', function () {
 
     // Should have reconnected
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -222,6 +227,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -250,6 +256,7 @@ describe('uts/realtime/connection/heartbeat', function () {
 
     // Should have reconnected
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -289,6 +296,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
@@ -308,6 +316,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     expect(stateChanges).to.include('connected');
     expect(connectionAttemptCount).to.equal(2);
     expect(client.connection.id).to.equal('connection-id-2');
+    client.close();
   });
 
   /**
@@ -346,6 +355,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -363,6 +373,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     // Second connection should include resume with first connectionKey
     const secondUrl = mock.connect_attempts[1].url;
     expect(secondUrl.searchParams.get('resume')).to.equal('connection-key-1');
+    client.close();
   });
 
   // --- RTN23b: Ping frame tests ---
@@ -404,6 +415,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
@@ -421,6 +433,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     expect(stateChanges).to.include('disconnected');
     expect(connectionAttemptCount).to.equal(2);
     expect(client.connection.id).to.equal('connection-id-2');
+    client.close();
   });
 
   /**
@@ -459,6 +472,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -486,6 +500,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     await pumpTimers(clock);
 
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -524,6 +539,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -572,6 +588,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     await pumpTimers(clock);
 
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -611,6 +628,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
@@ -630,6 +648,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     // Verify resume param
     const secondUrl = mock.connect_attempts[1].url;
     expect(secondUrl.searchParams.get('resume')).to.equal('connection-key-1');
+    client.close();
   });
 
   /**
@@ -668,6 +687,7 @@ describe('uts/realtime/connection/heartbeat', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -684,5 +704,6 @@ describe('uts/realtime/connection/heartbeat', function () {
     // Connection stayed alive through all ping frames
     expect(connectionAttemptCount).to.equal(1);
     expect(client.connection.state).to.equal('connected');
+    client.close();
   });
 });
