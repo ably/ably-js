@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/realtime/client/realtime_stats', function () {
   afterEach(function () {
@@ -32,6 +32,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     try {
       await client.stats();
     } catch (e) {
@@ -41,6 +42,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     expect(captured).to.have.length.at.least(1);
     expect(captured[0].method.toUpperCase()).to.equal('GET');
     expect(captured[0].path).to.equal('/stats');
+    client.close();
   });
 
   /**
@@ -58,6 +60,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     try {
       await client.stats({ start: '1704067200000', limit: '10', direction: 'forwards' });
     } catch (e) {
@@ -68,6 +71,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     expect(captured[0].url.searchParams.get('start')).to.equal('1704067200000');
     expect(captured[0].url.searchParams.get('limit')).to.equal('10');
     expect(captured[0].url.searchParams.get('direction')).to.equal('forwards');
+    client.close();
   });
 
   /**
@@ -85,9 +89,11 @@ describe('uts/realtime/client/realtime_stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
+    trackClient(client);
     const result = await client.stats();
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(1);
+    client.close();
   });
 });

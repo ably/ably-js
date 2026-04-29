@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/auto_connect', function () {
   afterEach(function () {
@@ -37,6 +37,7 @@ describe('uts/realtime/connection/auto_connect', function () {
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(client.connection.state).to.equal('connected');
@@ -65,6 +66,7 @@ describe('uts/realtime/connection/auto_connect', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
 
@@ -73,6 +75,7 @@ describe('uts/realtime/connection/auto_connect', function () {
       expect(connectionAttempted).to.be.false;
       expect(client.connection.state).to.equal('initialized');
       expect(mock.connect_attempts).to.have.length(0);
+      client.close();
       done();
     }, 100);
   });
@@ -103,6 +106,7 @@ describe('uts/realtime/connection/auto_connect', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     // Verify no connection yet
     expect(client.connection.state).to.equal('initialized');

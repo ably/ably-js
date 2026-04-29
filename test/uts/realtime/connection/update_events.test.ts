@@ -13,7 +13,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/update_events', function () {
   let mock: MockWebSocket;
@@ -43,6 +43,7 @@ describe('uts/realtime/connection/update_events', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       done(client);

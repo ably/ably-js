@@ -11,7 +11,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/fallback_hosts', function () {
   afterEach(function () {
@@ -59,6 +59,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       // First attempt was primary domain
@@ -112,6 +113,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(connectionHosts.length).to.be.at.least(2);
@@ -173,6 +175,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(connectionHosts.length).to.be.at.least(2);
@@ -217,6 +220,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('disconnected', () => {
       // Only the custom host was tried, no fallbacks
@@ -266,6 +270,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(connectionHosts.length).to.be.at.least(2);
@@ -316,6 +321,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       // Connectivity check was performed via HTTP mock
@@ -379,6 +385,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
         autoConnect: false,
         useBinaryProtocol: false,
       });
+      trackClient(client);
 
       client.connection.once('connected', () => {
         // Record fallback order (skip primary at index 0)

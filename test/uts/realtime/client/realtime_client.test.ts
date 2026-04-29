@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/realtime/client/realtime_client', function () {
   afterEach(function () {
@@ -22,6 +22,7 @@ describe('uts/realtime/client/realtime_client', function () {
    */
   it('RTC2 - client.connection is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
+    trackClient(client);
     expect(client.connection).to.not.be.null;
     expect(client.connection).to.not.be.undefined;
     expect(client.connection.state).to.equal('initialized');
@@ -35,6 +36,7 @@ describe('uts/realtime/client/realtime_client', function () {
    */
   it('RTC3 - client.channels is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
+    trackClient(client);
     expect(client.channels).to.not.be.null;
     expect(client.channels).to.not.be.undefined;
 
@@ -48,6 +50,7 @@ describe('uts/realtime/client/realtime_client', function () {
    */
   it('RTC4 - client.auth is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
+    trackClient(client);
     expect(client.auth).to.not.be.null;
     expect(client.auth).to.not.be.undefined;
     expect(typeof client.auth.authorize).to.equal('function');
@@ -59,6 +62,7 @@ describe('uts/realtime/client/realtime_client', function () {
    */
   it('RTC13 - client.push is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
+    trackClient(client);
     expect(client.push).to.not.be.null;
     expect(client.push).to.not.be.undefined;
     expect(client.push.admin).to.not.be.null;
@@ -74,6 +78,7 @@ describe('uts/realtime/client/realtime_client', function () {
       clientId: 'explicit-client-id',
       autoConnect: false,
     });
+    trackClient(client);
     expect(client.clientId).to.equal('explicit-client-id');
     expect(client.clientId).to.equal(client.auth.clientId);
   });
@@ -101,6 +106,7 @@ describe('uts/realtime/client/realtime_client', function () {
     installMockWebSocket(mock.constructorFn);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    trackClient(client);
     client.connection.once('connected', () => {
       client.close();
       done();
@@ -124,6 +130,7 @@ describe('uts/realtime/client/realtime_client', function () {
       echoMessages: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
     client.connection.once('connected', () => {
       client.close();
       done();
@@ -145,6 +152,7 @@ describe('uts/realtime/client/realtime_client', function () {
 
     // Not passing autoConnect: false — should connect immediately
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(mock.connect_attempts).to.have.length.at.least(1);
@@ -169,6 +177,7 @@ describe('uts/realtime/client/realtime_client', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
     expect(mock.connect_attempts).to.have.length(0);
@@ -177,6 +186,7 @@ describe('uts/realtime/client/realtime_client', function () {
     setTimeout(() => {
       expect(client.connection.state).to.equal('initialized');
       expect(mock.connect_attempts).to.have.length(0);
+      client.close();
       done();
     }, 100);
   });
@@ -197,6 +207,7 @@ describe('uts/realtime/client/realtime_client', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
 
@@ -234,6 +245,7 @@ describe('uts/realtime/client/realtime_client', function () {
       recover: recoveryKey,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -259,6 +271,7 @@ describe('uts/realtime/client/realtime_client', function () {
       recover: 'invalid-not-a-valid-recovery-key',
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -286,6 +299,7 @@ describe('uts/realtime/client/realtime_client', function () {
       transportParams: { customParam: 'customValue', anotherParam: '123' },
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -318,6 +332,7 @@ describe('uts/realtime/client/realtime_client', function () {
       },
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -343,6 +358,7 @@ describe('uts/realtime/client/realtime_client', function () {
       transportParams: { v: '3', heartbeats: 'false' },
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -368,6 +384,7 @@ describe('uts/realtime/client/realtime_client', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
 
@@ -401,6 +418,7 @@ describe('uts/realtime/client/realtime_client', function () {
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('closed', () => {
@@ -437,6 +455,7 @@ describe('uts/realtime/client/realtime_client', function () {
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -461,6 +480,7 @@ describe('uts/realtime/client/realtime_client', function () {
       tls: true,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -482,6 +502,7 @@ describe('uts/realtime/client/realtime_client', function () {
       tls: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -505,6 +526,7 @@ describe('uts/realtime/client/realtime_client', function () {
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.close();
@@ -523,9 +545,9 @@ describe('uts/realtime/client/realtime_client', function () {
     });
     installMockWebSocket(mock.constructorFn);
 
-    new Ably.Realtime({
+    trackClient(new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: true,
-    });
+    }));
   });
 });

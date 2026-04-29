@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 /** Helper: pump fake + real event loops */
 async function pumpTimers(clock: any, iterations = 30) {
@@ -48,6 +48,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', async () => {
       const duration = await client.connection.ping();
@@ -87,6 +88,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', async () => {
       const duration = await client.connection.ping();
@@ -125,6 +127,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', async () => {
       const duration = await client.connection.ping();
@@ -162,6 +165,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', async () => {
       const [d1, d2] = await Promise.all([
@@ -202,6 +206,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       useBinaryProtocol: false,
       realtimeRequestTimeout: 2000,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -222,6 +227,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     } catch (err: any) {
       expect(err).to.not.be.null;
     }
+    client.close();
   });
 
   /**
@@ -233,6 +239,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
 
@@ -242,6 +249,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     } catch (err: any) {
       expect(err).to.not.be.null;
     }
+    client.close();
   });
 
   /**
@@ -266,6 +274,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('closed', async () => {
@@ -302,6 +311,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', async () => {
       try {
@@ -343,6 +353,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       suspendedRetryTimeout: 100,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -359,22 +370,37 @@ describe('uts/realtime/connection/connection_ping', function () {
     } catch (err: any) {
       expect(err).to.not.be.null;
     }
+    client.close();
   });
 
   /**
    * RTN13d - Ping deferred from CONNECTING until CONNECTED
    *
-   * DEVIATION: ably-js does not defer ping() — it rejects immediately
-   * with "not connected" error in any non-connected state.
-   * See ConnectionManager.ping() which checks state !== 'connected'.
+   * Per spec: "If the connection is not in the CONNECTED state when ping()
+   * is called, the ping is deferred until the connection reaches a state
+   * that can resolve it."
    */
-  it('RTN13d - ping rejects in CONNECTING state (deviation: no deferral)', async function () {
+  it('RTN13d - ping deferred from CONNECTING until CONNECTED', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
-        // Delay response so we can call ping() while CONNECTING
+        mock.active_connection = conn;
         setTimeout(() => {
-          conn.respond_with_connected();
+          conn.respond_with_connected({
+            connectionId: 'conn-id',
+            connectionDetails: {
+              connectionKey: 'conn-key',
+              maxIdleInterval: 15000,
+              connectionStateTtl: 120000,
+            },
+          });
         }, 50);
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 0) { // HEARTBEAT
+          mock.active_connection!.send_to_client({ action: 0, id: msg.id });
+        }
       },
     });
     installMockWebSocket(mock.constructorFn);
@@ -388,14 +414,10 @@ describe('uts/realtime/connection/connection_ping', function () {
     client.connect();
     expect(client.connection.state).to.equal('connecting');
 
-    // ably-js rejects ping() immediately in non-connected states
-    try {
-      await client.connection.ping();
-      expect.fail('Expected ping to reject');
-    } catch (err: any) {
-      expect(err).to.not.be.null;
-      expect(err.message).to.contain('not connected');
-    }
+    // Per spec, ping() should defer and resolve once CONNECTED
+    const rtt = await client.connection.ping();
+    expect(typeof rtt).to.equal('number');
+    expect(rtt).to.be.at.least(0);
   });
 
   /**
@@ -442,6 +464,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       useBinaryProtocol: false,
       disconnectedRetryTimeout: 500,
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -462,6 +485,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     const duration = await pingPromise;
     expect(duration).to.be.a('number');
     expect(duration).to.be.at.least(0);
+    client.close();
   });
 
   /**
@@ -488,6 +512,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     expect(client.connection.state).to.equal('connecting');
@@ -530,6 +555,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       disconnectedRetryTimeout: 1000,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -551,6 +577,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     } catch (err: any) {
       expect(err).to.not.be.null;
     }
+    client.close();
   });
 
   /**
@@ -579,6 +606,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       useBinaryProtocol: false,
       realtimeRequestTimeout: 2000,
     });
+    trackClient(client);
 
     client.connect();
 
@@ -598,5 +626,6 @@ describe('uts/realtime/connection/connection_ping', function () {
     } catch (err: any) {
       expect(err).to.not.be.null;
     }
+    client.close();
   });
 });

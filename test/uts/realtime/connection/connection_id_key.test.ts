@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/connection_id_key', function () {
   afterEach(function () {
@@ -38,6 +38,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     // Before connecting, id should be undefined/null
     expect(client.connection.id).to.not.be.ok;
@@ -74,6 +75,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.key).to.not.be.ok;
 
@@ -112,12 +114,14 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client1);
 
     const client2 = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client2);
 
     client1.connection.once('connected', () => {
       client2.connection.once('connected', () => {
@@ -160,12 +164,14 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client1);
 
     const client2 = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client2);
 
     client1.connection.once('connected', () => {
       client2.connection.once('connected', () => {
@@ -211,6 +217,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(client.connection.id).to.equal('conn-id-1');
@@ -255,6 +262,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(client.connection.key).to.equal('conn-key-1');
@@ -289,6 +297,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', () => {
       expect(client.connection.id).to.not.be.ok;
@@ -327,6 +336,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
       suspendedRetryTimeout: 100,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
 
@@ -348,5 +358,6 @@ describe('uts/realtime/connection/connection_id_key', function () {
     expect(client.connection.state).to.equal('suspended');
     expect(client.connection.id).to.not.be.ok;
     expect(client.connection.key).to.not.be.ok;
+    client.close();
   });
 });

@@ -11,7 +11,7 @@
 
 import { expect } from 'chai';
 import { MockHttpClient } from '../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../helpers';
+import { Ably, trackClient, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/realtime/time', function () {
   let mock;
@@ -37,6 +37,7 @@ describe('uts/realtime/time', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'app.key:secret', autoConnect: false });
+    trackClient(client);
     const result = await client.time();
 
     expect(result).to.be.a('number');
@@ -45,6 +46,7 @@ describe('uts/realtime/time', function () {
     expect(captured).to.have.length(1);
     expect(captured[0].method.toUpperCase()).to.equal('GET');
     expect(captured[0].path).to.equal('/time');
+    client.close();
   });
 
   /**
@@ -63,6 +65,7 @@ describe('uts/realtime/time', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'app.key:secret', autoConnect: false });
+    trackClient(client);
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -74,6 +77,7 @@ describe('uts/realtime/time', function () {
     expect(request.headers).to.have.property('Ably-Agent');
     expect(request.headers['X-Ably-Version']).to.match(/[0-9.]+/);
     expect(request.headers['Ably-Agent']).to.match(/ably-js\/[0-9]+\.[0-9]+\.[0-9]+/);
+    client.close();
   });
 
   /**
@@ -92,12 +96,14 @@ describe('uts/realtime/time', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'app.key:secret', autoConnect: false });
+    trackClient(client);
     const result = await client.time();
 
     expect(result).to.be.a('number');
     expect(captured).to.have.length(1);
     expect(captured[0].headers).to.not.have.property('Authorization');
     expect(captured[0].headers).to.not.have.property('authorization');
+    client.close();
   });
 
   /**
@@ -121,6 +127,7 @@ describe('uts/realtime/time', function () {
       useTokenAuth: true,
       autoConnect: false,
     });
+    trackClient(client);
     const result = await client.time();
 
     expect(result).to.be.a('number');
@@ -128,6 +135,7 @@ describe('uts/realtime/time', function () {
     expect(captured[0].url.protocol).to.equal('http:');
     expect(captured[0].headers).to.not.have.property('Authorization');
     expect(captured[0].headers).to.not.have.property('authorization');
+    client.close();
   });
 
   /**
@@ -149,6 +157,7 @@ describe('uts/realtime/time', function () {
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'app.key:secret', autoConnect: false });
+    trackClient(client);
 
     try {
       await client.time();
@@ -157,5 +166,6 @@ describe('uts/realtime/time', function () {
       expect(error.statusCode).to.equal(500);
       expect(error.code).to.equal(50000);
     }
+    client.close();
   });
 });

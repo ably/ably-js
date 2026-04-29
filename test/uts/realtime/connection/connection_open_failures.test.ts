@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -41,6 +41,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', () => {
       expect(client.connection.state).to.equal('failed');
@@ -92,6 +93,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       expect(client.connection.state).to.equal('connected');
@@ -106,13 +108,13 @@ describe('uts/realtime/connection/connection_open_failures', function () {
   });
 
   /**
-   * RTN14b - Token error without renewal means → FAILED
+   * RSA4a - Token error without renewal means → FAILED
    *
-   * DEVIATION: ably-js transitions to FAILED (not DISCONNECTED) when
-   * token cannot be renewed (no authCallback/authUrl/key). The spec says
-   * DISCONNECTED but ably-js fails permanently since there's no renewal path.
+   * Per RSA4a2: if the server responds with a token error and there is no
+   * means to renew the token, the connection transitions to FAILED with
+   * error code 40171.
    */
-  it('RTN14b - token error without renewal causes FAILED', function (done) {
+  it('RSA4a - token error without renewal causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         conn.respond_with_error({
@@ -128,11 +130,11 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      // ably-js sets code 40171 (no means to renew) rather than 40142
-      expect(client.connection.errorReason.code).to.be.a('number');
+      expect(client.connection.errorReason.code).to.equal(40171);
       done();
     });
 
@@ -171,6 +173,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     } as any);
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -183,6 +186,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
 
     expect(client.connection.state).to.equal('disconnected');
     expect(client.connection.errorReason).to.not.be.null;
+    client.close();
   });
 
   /**
@@ -225,6 +229,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -237,6 +242,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
 
     expect(client.connection.state).to.equal('connected');
     expect(connectionAttemptCount).to.equal(2);
+    client.close();
   });
 
   /**
@@ -265,6 +271,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
     await pumpTimers(clock);
@@ -277,6 +284,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
 
     expect(client.connection.state).to.equal('suspended');
     expect(client.connection.errorReason).to.not.be.null;
+    client.close();
   });
 
   /**
@@ -321,6 +329,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     client.connect();
 
@@ -334,6 +343,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
     expect(client.connection.state).to.equal('connected');
     // Multiple connection attempts were made
     expect(connectionAttemptCount).to.be.at.least(3);
+    client.close();
   });
 
   /**
@@ -360,6 +370,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       client.connection.once('failed', () => {

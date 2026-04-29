@@ -12,7 +12,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 describe('uts/realtime/connection/when_state', function () {
   afterEach(function () {
@@ -35,6 +35,7 @@ describe('uts/realtime/connection/when_state', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     // Already in initialized state
     const result = await client.connection.whenState('initialized');
@@ -67,6 +68,7 @@ describe('uts/realtime/connection/when_state', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     expect(client.connection.state).to.equal('initialized');
 
@@ -121,6 +123,7 @@ describe('uts/realtime/connection/when_state', function () {
       useBinaryProtocol: false,
       disconnectedRetryTimeout: 100,
     });
+    trackClient(client);
 
     let callbackCount = 0;
 
@@ -163,6 +166,7 @@ describe('uts/realtime/connection/when_state', function () {
 
     // Callback should still only be 1 (Promise resolves once)
     expect(callbackCount).to.equal(1);
+    client.close();
   });
 
   /**
@@ -181,6 +185,7 @@ describe('uts/realtime/connection/when_state', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     const p1 = client.connection.whenState('connected');
     const p2 = client.connection.whenState('connected');
@@ -211,6 +216,7 @@ describe('uts/realtime/connection/when_state', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connection.once('connected', () => {
       // Now in connected state. Register whenState for 'connecting' (a past state)
@@ -254,6 +260,7 @@ describe('uts/realtime/connection/when_state', function () {
       useBinaryProtocol: false,
       fallbackHosts: [],
     });
+    trackClient(client);
 
     // Already in initialized state — resolves immediately with null
     const initResult = await client.connection.whenState('initialized');
@@ -273,5 +280,6 @@ describe('uts/realtime/connection/when_state', function () {
     const disconnectedResult = await disconnectedPromise;
     expect(disconnectedResult).to.not.be.null;
     expect(disconnectedResult.current).to.equal('disconnected');
+    client.close();
   });
 });

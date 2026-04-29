@@ -8,7 +8,7 @@
  */
 
 import { expect } from 'chai';
-import { Ably, restoreAll } from '../../helpers';
+import { Ably, trackClient, restoreAll } from '../../helpers';
 
 describe('uts/realtime/client/client_options', function () {
   afterEach(function () {
@@ -20,16 +20,19 @@ describe('uts/realtime/client/client_options', function () {
    */
   it('RSC1a - API key string (standard format)', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
+    trackClient(client);
     expect(client.options.key).to.equal('appId.keyId:keySecret');
   });
 
   it('RSC1a - API key string (special chars)', function () {
     const client = new Ably.Realtime({ key: 'xVLyHw.A-pwh:5WEB4HEAT3pOqWp9', autoConnect: false });
+    trackClient(client);
     expect(client.options.key).to.equal('xVLyHw.A-pwh:5WEB4HEAT3pOqWp9');
   });
 
   it('RSC1a - API key string (extended secret)', function () {
     const client = new Ably.Realtime({ key: 'xVLyHw.A-pwh:5WEB4HEAT3pOqWp9-the_rest', autoConnect: false });
+    trackClient(client);
     expect(client.options.key).to.equal('xVLyHw.A-pwh:5WEB4HEAT3pOqWp9-the_rest');
   });
 
@@ -38,12 +41,14 @@ describe('uts/realtime/client/client_options', function () {
    */
   it('RSC1c - token string (opaque)', function () {
     const client = new Ably.Realtime({ token: 'abcdef1234567890', autoConnect: false });
+    trackClient(client);
     expect(client.options.token).to.equal('abcdef1234567890');
   });
 
   it('RSC1c - token string (JWT format)', function () {
     const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
     const client = new Ably.Realtime({ token: jwt, autoConnect: false });
+    trackClient(client);
     expect(client.options.token).to.equal(jwt);
   });
 
@@ -93,6 +98,7 @@ describe('uts/realtime/client/client_options', function () {
       idempotentRestPublishing: true,
       autoConnect: false,
     });
+    trackClient(client);
 
     expect(client.options.key).to.equal('appId.keyId:keySecret');
     expect(client.options.clientId).to.equal('testClient');
