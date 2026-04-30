@@ -252,9 +252,7 @@ describe('uts/rest/channel/history', function () {
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
         captured.push(req);
-        req.respond_with(200, [
-          { name: 'event', data: 'in-range', timestamp: 1500 },
-        ]);
+        req.respond_with(200, [{ name: 'event', data: 'in-range', timestamp: 1500 }]);
       },
     });
     installMockHttp(mock);

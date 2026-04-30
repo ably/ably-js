@@ -185,9 +185,9 @@ describe('uts/rest/encoding/message_encoding', function () {
    * RSL6a - Decode base64 data to binary
    */
   it('RSL6a - base64 decoded to Buffer', async function () {
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: 'AAECAwQ=', encoding: 'base64', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([{ id: 'msg1', name: 'event', data: 'AAECAwQ=', encoding: 'base64', timestamp: 1234567890000 }]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -201,9 +201,11 @@ describe('uts/rest/encoding/message_encoding', function () {
    * RSL6a - Decode JSON string to native object
    */
   it('RSL6a - json decoded to object', async function () {
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: '{"key":"value","number":42}', encoding: 'json', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([
+        { id: 'msg1', name: 'event', data: '{"key":"value","number":42}', encoding: 'json', timestamp: 1234567890000 },
+      ]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -219,9 +221,11 @@ describe('uts/rest/encoding/message_encoding', function () {
     // {"key":"value"} → base64 = eyJrZXkiOiJ2YWx1ZSJ9
     const base64OfJson = Buffer.from('{"key":"value"}').toString('base64');
 
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: base64OfJson, encoding: 'json/base64', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([
+        { id: 'msg1', name: 'event', data: base64OfJson, encoding: 'json/base64', timestamp: 1234567890000 },
+      ]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -235,9 +239,11 @@ describe('uts/rest/encoding/message_encoding', function () {
    */
   it('RSL6 - utf-8/base64 decoded to string', async function () {
     // "Hello World" → base64 = SGVsbG8gV29ybGQ=
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: 'SGVsbG8gV29ybGQ=', encoding: 'utf-8/base64', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([
+        { id: 'msg1', name: 'event', data: 'SGVsbG8gV29ybGQ=', encoding: 'utf-8/base64', timestamp: 1234567890000 },
+      ]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -254,9 +260,11 @@ describe('uts/rest/encoding/message_encoding', function () {
     const obj = { status: 'active', count: 5 };
     const base64Data = Buffer.from(JSON.stringify(obj)).toString('base64');
 
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: base64Data, encoding: 'json/utf-8/base64', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([
+        { id: 'msg1', name: 'event', data: base64Data, encoding: 'json/utf-8/base64', timestamp: 1234567890000 },
+      ]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -272,9 +280,11 @@ describe('uts/rest/encoding/message_encoding', function () {
     // base64 of "encrypted-data"
     const base64Data = Buffer.from('encrypted-data').toString('base64');
 
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: base64Data, encoding: 'custom-encryption/base64', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(
+      historyMock([
+        { id: 'msg1', name: 'event', data: base64Data, encoding: 'custom-encryption/base64', timestamp: 1234567890000 },
+      ]),
+    );
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);
@@ -289,9 +299,7 @@ describe('uts/rest/encoding/message_encoding', function () {
    * RSL6a - String data without encoding passes through
    */
   it('RSL6a - string data without encoding passes through', async function () {
-    installMockHttp(historyMock([
-      { id: 'msg1', name: 'event', data: 'plain text', timestamp: 1234567890000 },
-    ]));
+    installMockHttp(historyMock([{ id: 'msg1', name: 'event', data: 'plain text', timestamp: 1234567890000 }]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const result = await client.channels.get('test').history(null);

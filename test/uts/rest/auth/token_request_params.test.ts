@@ -127,10 +127,7 @@ describe('uts/rest/auth/token_request_params', function () {
       key: 'appId.keyId:keySecret',
       defaultTokenParams: { capability: '{"*":["subscribe"]}' },
     });
-    const tokenRequest = await client.auth.createTokenRequest(
-      { capability: '{"channel-x":["publish"]}' },
-      null,
-    );
+    const tokenRequest = await client.auth.createTokenRequest({ capability: '{"channel-x":["publish"]}' }, null);
 
     expect(tokenRequest.capability).to.equal('{"channel-x":["publish"]}');
   });

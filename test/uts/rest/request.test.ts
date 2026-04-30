@@ -60,7 +60,14 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('GET', '/channels/test/messages', 3, { limit: '10', direction: 'backwards' }, null as any, null as any);
+      await client.request(
+        'GET',
+        '/channels/test/messages',
+        3,
+        { limit: '10', direction: 'backwards' },
+        null as any,
+        null as any,
+      );
 
       expect(captured).to.have.length(1);
       expect(captured[0].url.searchParams.get('limit')).to.equal('10');
@@ -125,7 +132,14 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('POST', '/channels/test/messages', 3, null as any, { name: 'event', data: 'payload' }, null as any);
+      await client.request(
+        'POST',
+        '/channels/test/messages',
+        3,
+        null as any,
+        { name: 'event', data: 'payload' },
+        null as any,
+      );
 
       expect(captured).to.have.length(1);
       const body = JSON.parse(captured[0].body);
@@ -189,9 +203,13 @@ describe('uts/rest/request', function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(401, { error: { code: 40101, message: 'Unauthorized' } }, {
-            'X-Ably-Errorcode': '40101',
-          });
+          req.respond_with(
+            401,
+            { error: { code: 40101, message: 'Unauthorized' } },
+            {
+              'X-Ably-Errorcode': '40101',
+            },
+          );
         },
       });
       installMockHttp(mock);
@@ -206,10 +224,14 @@ describe('uts/rest/request', function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(401, { error: { code: 40101, message: 'Unauthorized' } }, {
-            'X-Ably-Errorcode': '40101',
-            'X-Ably-Errormessage': 'Token expired',
-          });
+          req.respond_with(
+            401,
+            { error: { code: 40101, message: 'Unauthorized' } },
+            {
+              'X-Ably-Errorcode': '40101',
+              'X-Ably-Errormessage': 'Token expired',
+            },
+          );
         },
       });
       installMockHttp(mock);
@@ -269,7 +291,7 @@ describe('uts/rest/request', function () {
           reqCount++;
           if (reqCount === 1) {
             req.respond_with(200, [{ id: '1' }, { id: '2' }], {
-              'Link': '<./messages?cursor=abc>; rel="next"',
+              Link: '<./messages?cursor=abc>; rel="next"',
             });
           } else {
             req.respond_with(200, [{ id: '3' }]);
@@ -294,7 +316,7 @@ describe('uts/rest/request', function () {
           reqCount++;
           if (reqCount === 1) {
             req.respond_with(200, [{ id: '1' }, { id: '2' }], {
-              'Link': '<./messages?cursor=abc>; rel="next"',
+              Link: '<./messages?cursor=abc>; rel="next"',
             });
           } else {
             req.respond_with(200, [{ id: '3' }]);

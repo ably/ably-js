@@ -7,7 +7,6 @@
  * See: specification/uts/rest/unit/helpers/mock_http.md
  */
 
-
 interface ConnectionResult {
   success: boolean;
   error?: { code: string; statusCode: number; message: string };
@@ -80,7 +79,13 @@ class PendingRequest {
   _resolve: ((value: RequestResult) => void) | null;
   _promise: Promise<RequestResult>;
 
-  constructor(method: string, uri: string, headers?: Record<string, string>, body?: any, params?: Record<string, string> | null) {
+  constructor(
+    method: string,
+    uri: string,
+    headers?: Record<string, string>,
+    body?: any,
+    params?: Record<string, string> | null,
+  ) {
     this.method = method;
     this.url = new URL(uri);
     this.path = this.url.pathname;
@@ -106,7 +111,7 @@ class PendingRequest {
       error = {
         message: errBody ? errBody.message : `HTTP ${status}`,
         code: errBody ? errBody.code : status * 100,
-        statusCode: errBody ? (errBody.statusCode || status) : status,
+        statusCode: errBody ? errBody.statusCode || status : status,
       };
     }
 
@@ -188,9 +193,7 @@ class MockHttpClient {
   /** Wait for the next HTTP request (after connection succeeds) */
   await_request(timeout?: number): Promise<PendingRequest> {
     return new Promise((resolve, reject) => {
-      const timer = timeout
-        ? setTimeout(() => reject(new Error('Timeout waiting for request')), timeout)
-        : null;
+      const timer = timeout ? setTimeout(() => reject(new Error('Timeout waiting for request')), timeout) : null;
       this._requestWaiters.push((req) => {
         if (timer) clearTimeout(timer);
         resolve(req);
@@ -225,7 +228,13 @@ class MockHttpClient {
         this.supportsLinkHeaders = true;
       }
 
-      async doUri(method: string, uri: string, headers: Record<string, string>, body: any, params: Record<string, string>): Promise<RequestResult> {
+      async doUri(
+        method: string,
+        uri: string,
+        headers: Record<string, string>,
+        body: any,
+        params: Record<string, string>,
+      ): Promise<RequestResult> {
         // Phase 1: Connection attempt
         let parsedUrl: URL;
         try {
@@ -242,7 +251,13 @@ class MockHttpClient {
           }
           parsedUrl = new URL(fullUri);
         } catch (e) {
-          return { error: { message: 'Invalid URI: ' + uri, statusCode: 400, code: 40000 }, body: null, headers: {}, unpacked: false, statusCode: 400 };
+          return {
+            error: { message: 'Invalid URI: ' + uri, statusCode: 400, code: 40000 },
+            body: null,
+            headers: {},
+            unpacked: false,
+            statusCode: 400,
+          };
         }
 
         const host = parsedUrl.hostname;
@@ -295,8 +310,14 @@ class MockHttpClient {
         if (!error) return false;
         const code = error.code;
         const statusCode = error.statusCode;
-        if (code === 'ECONNREFUSED' || code === 'ENETUNREACH' || code === 'EHOSTUNREACH' ||
-            code === 'ETIMEDOUT' || code === 'ECONNRESET' || code === 'ENOTFOUND') {
+        if (
+          code === 'ECONNREFUSED' ||
+          code === 'ENETUNREACH' ||
+          code === 'EHOSTUNREACH' ||
+          code === 'ETIMEDOUT' ||
+          code === 'ECONNRESET' ||
+          code === 'ENOTFOUND'
+        ) {
           return true;
         }
         return statusCode >= 500 && statusCode <= 504;

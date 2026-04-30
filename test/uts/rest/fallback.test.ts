@@ -640,7 +640,11 @@ describe('uts/rest/fallback', function () {
         if (requestCount === 1) {
           // Spec: CloudFront Server header with status >= 400 should trigger fallback
           // DEVIATION: ably-js does not inspect the Server header. See deviations.md.
-          req.respond_with(403, { error: { message: 'Forbidden', code: 40300, statusCode: 403 } }, { 'Server': 'CloudFront' });
+          req.respond_with(
+            403,
+            { error: { message: 'Forbidden', code: 40300, statusCode: 403 } },
+            { Server: 'CloudFront' },
+          );
         } else {
           req.respond_with(200, [1234567890000]);
         }
@@ -656,7 +660,9 @@ describe('uts/rest/fallback', function () {
       expect(hosts[0]).to.equal('main.realtime.ably.net');
       expect(hosts[1]).to.not.equal('main.realtime.ably.net');
     } catch (e) {
-      expect.fail('CloudFront 403 with Server header should trigger fallback, but ably-js threw: ' + (e as Error).message);
+      expect.fail(
+        'CloudFront 403 with Server header should trigger fallback, but ably-js threw: ' + (e as Error).message,
+      );
     }
   });
 
@@ -939,5 +945,4 @@ describe('uts/rest/fallback', function () {
     expect(hosts[0]).to.equal('sandbox.realtime.ably.net');
     expect(hosts[1]).to.match(/^sandbox\.[a-e]\.fallback\.ably-realtime\.com$/);
   });
-
 });

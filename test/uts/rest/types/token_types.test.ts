@@ -71,13 +71,16 @@ describe('uts/rest/types/token_types', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
-    const tokenRequest = await client.auth.createTokenRequest({
-      ttl: 3600000,
-      capability: '{"*":["subscribe"]}',
-      clientId: 'param-client',
-      timestamp: 1234567890000,
-      nonce: 'custom-nonce',
-    }, null);
+    const tokenRequest = await client.auth.createTokenRequest(
+      {
+        ttl: 3600000,
+        capability: '{"*":["subscribe"]}',
+        clientId: 'param-client',
+        timestamp: 1234567890000,
+        nonce: 'custom-nonce',
+      },
+      null,
+    );
 
     // TK1 - ttl
     expect(tokenRequest.ttl).to.equal(3600000);
@@ -100,9 +103,7 @@ describe('uts/rest/types/token_types', function () {
 
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
-    expect(tokenRequest.ttl).to.satisfy(
-      (v: any) => v === null || v === undefined || v === '',
-    );
+    expect(tokenRequest.ttl).to.satisfy((v: any) => v === null || v === undefined || v === '');
   });
 
   /**
@@ -114,9 +115,7 @@ describe('uts/rest/types/token_types', function () {
 
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
-    expect(tokenRequest.capability).to.satisfy(
-      (v: any) => v === null || v === undefined || v === '',
-    );
+    expect(tokenRequest.capability).to.satisfy((v: any) => v === null || v === undefined || v === '');
   });
 
   // --- TE1-TE6: TokenRequest attributes ---
@@ -131,13 +130,16 @@ describe('uts/rest/types/token_types', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
-    const tokenRequest = await client.auth.createTokenRequest({
-      ttl: 3600000,
-      capability: '{"*":["*"]}',
-      clientId: 'request-client',
-      timestamp: 1234567890000,
-      nonce: 'unique-nonce',
-    }, null);
+    const tokenRequest = await client.auth.createTokenRequest(
+      {
+        ttl: 3600000,
+        capability: '{"*":["*"]}',
+        clientId: 'request-client',
+        timestamp: 1234567890000,
+        nonce: 'unique-nonce',
+      },
+      null,
+    );
 
     // TE1 - keyName (derived from the API key)
     expect(tokenRequest.keyName).to.equal('appId.keyId');
@@ -163,12 +165,15 @@ describe('uts/rest/types/token_types', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
-    const tokenRequest = await client.auth.createTokenRequest({
-      ttl: 3600000,
-      capability: '{"*":["*"]}',
-      timestamp: 1234567890000,
-      nonce: 'nonce-for-mac',
-    }, null);
+    const tokenRequest = await client.auth.createTokenRequest(
+      {
+        ttl: 3600000,
+        capability: '{"*":["*"]}',
+        timestamp: 1234567890000,
+        nonce: 'nonce-for-mac',
+      },
+      null,
+    );
 
     expect(tokenRequest.mac).to.be.a('string');
     expect(tokenRequest.mac.length).to.be.greaterThan(0);
@@ -184,13 +189,16 @@ describe('uts/rest/types/token_types', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
-    const tokenRequest = await client.auth.createTokenRequest({
-      ttl: 3600000,
-      capability: '{"*":["*"]}',
-      clientId: 'json-client',
-      timestamp: 1234567890000,
-      nonce: 'json-nonce',
-    }, null);
+    const tokenRequest = await client.auth.createTokenRequest(
+      {
+        ttl: 3600000,
+        capability: '{"*":["*"]}',
+        clientId: 'json-client',
+        timestamp: 1234567890000,
+        nonce: 'json-nonce',
+      },
+      null,
+    );
 
     const json = JSON.stringify(tokenRequest);
     const parsed = JSON.parse(json);
@@ -312,9 +320,12 @@ describe('uts/rest/types/token_types', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
-    const tokenRequest = await client.auth.createTokenRequest({
-      ttl: 7200000,
-    }, null);
+    const tokenRequest = await client.auth.createTokenRequest(
+      {
+        ttl: 7200000,
+      },
+      null,
+    );
 
     expect(tokenRequest.ttl).to.equal(7200000);
   });

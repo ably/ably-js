@@ -47,7 +47,11 @@ describe('uts/rest/auth/authorize', function () {
     expect(tokenDetails.token).to.equal('obtained-token');
 
     // Verify token is now used for requests
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     const apiReq = captured[captured.length - 1];
     const expectedAuth = 'Bearer ' + Buffer.from('obtained-token').toString('base64');
     expect(apiReq.headers.authorization).to.equal(expectedAuth);

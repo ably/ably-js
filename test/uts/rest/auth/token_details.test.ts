@@ -42,7 +42,11 @@ describe('uts/rest/auth/token_details', function () {
     } as any);
 
     // Force token acquisition
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.tokenDetails).to.not.be.null;
     expect(client.auth.tokenDetails!.token).to.equal('callback-token-abc');
@@ -111,7 +115,11 @@ describe('uts/rest/auth/token_details', function () {
     } as any);
 
     // Force token acquisition
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.tokenDetails).to.not.be.null;
     expect(client.auth.tokenDetails!.token).to.equal('just-a-token-string');
@@ -215,7 +223,11 @@ describe('uts/rest/auth/token_details', function () {
     const firstToken = client.auth.tokenDetails;
 
     // Make a request that will fail with 40142, triggering renewal
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     const secondToken = client.auth.tokenDetails;
 
     expect(firstToken!.token).to.equal('token-v1');
@@ -284,7 +296,11 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.tokenDetails).to.satisfy((v: any) => v === null || v === undefined);
   });
@@ -323,13 +339,25 @@ describe('uts/rest/auth/token_details', function () {
     } as any);
 
     // Make multiple requests
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     const firstCheck = client.auth.tokenDetails;
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     const secondCheck = client.auth.tokenDetails;
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     const thirdCheck = client.auth.tokenDetails;
 
     expect(firstCheck!.token).to.equal('stable-token');
@@ -354,7 +382,11 @@ describe('uts/rest/auth/token_details', function () {
       },
     } as any);
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.tokenDetails).to.not.be.null;
     expect(client.auth.tokenDetails!.capability).to.equal(

@@ -121,10 +121,11 @@ describe('uts/rest/channel/update_delete_message', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test-channel');
-    await ch.updateMessage(
-      msg({ serial: 's1', data: 'updated' }),
-      { clientId: 'user1', description: 'fixed typo', metadata: { reason: 'typo' } },
-    );
+    await ch.updateMessage(msg({ serial: 's1', data: 'updated' }), {
+      clientId: 'user1',
+      description: 'fixed typo',
+      metadata: { reason: 'typo' },
+    });
 
     expect(captured).to.have.length(1);
     const body = JSON.parse(captured[0].body);
@@ -254,11 +255,7 @@ describe('uts/rest/channel/update_delete_message', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test-channel');
-    await ch.updateMessage(
-      msg({ serial: 's1', data: 'd' }),
-      undefined,
-      { key: 'value', num: '42' },
-    );
+    await ch.updateMessage(msg({ serial: 's1', data: 'd' }), undefined, { key: 'value', num: '42' });
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('key')).to.equal('value');

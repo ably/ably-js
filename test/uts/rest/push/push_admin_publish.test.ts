@@ -88,10 +88,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.push.admin.publish(
-      { clientId: 'user-123' },
-      { data: { key: 'value' } },
-    );
+    await client.push.admin.publish({ clientId: 'user-123' }, { data: { key: 'value' } });
 
     expect(captured).to.have.length(1);
     const body = JSON.parse(captured[0].body);
@@ -116,10 +113,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.push.admin.publish(
-      { deviceId: 'device-abc' },
-      { notification: { title: 'Device Push' } },
-    );
+    await client.push.admin.publish({ deviceId: 'device-abc' }, { notification: { title: 'Device Push' } });
 
     expect(captured).to.have.length(1);
     const body = JSON.parse(captured[0].body);
@@ -179,10 +173,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.push.admin.publish(
-      { clientId: 'user-1' },
-      { notification: { title: 'Test' } },
-    );
+    await client.push.admin.publish({ clientId: 'user-1' }, { notification: { title: 'Test' } });
 
     expect(captured).to.have.length(1);
     expect(captured[0].headers.authorization).to.match(/^Basic /);
@@ -223,10 +214,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
 
     try {
-      await client.push.admin.publish(
-        { clientId: 'user-1' },
-        { notification: { title: 'Test' } },
-      );
+      await client.push.admin.publish({ clientId: 'user-1' }, { notification: { title: 'Test' } });
       expect.fail('Expected publish to throw');
     } catch (err: any) {
       expect(err.code).to.equal(40000);

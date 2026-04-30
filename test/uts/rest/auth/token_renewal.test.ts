@@ -60,7 +60,11 @@ describe('uts/rest/auth/token_renewal', function () {
       },
     });
 
-    try { await client.stats({} as any); } catch (e) { /* response parse ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse ok */
+    }
 
     // authCallback called twice: initial + renewal
     expect(callbackCount).to.equal(2);
@@ -106,7 +110,11 @@ describe('uts/rest/auth/token_renewal', function () {
       },
     });
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(callbackCount).to.equal(2);
     expect(requestCount).to.equal(2);
@@ -178,7 +186,11 @@ describe('uts/rest/auth/token_renewal', function () {
       authUrl: 'https://auth.example.com/token',
     });
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(authUrlCallCount).to.equal(2);
     expect(apiRequestCount).to.equal(2);
@@ -221,7 +233,11 @@ describe('uts/rest/auth/token_renewal', function () {
     });
 
     // This should succeed transparently despite the first 40142
-    try { await client.stats({} as any); } catch (e) { /* response parse ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse ok */
+    }
 
     expect(callbackCount).to.equal(2);
     expect(captured).to.have.length(2);
@@ -331,7 +347,11 @@ describe('uts/rest/auth/token_renewal', function () {
     expect(callbackCount).to.equal(1);
 
     // Request uses expired token → server rejects → renewal → retry
-    try { await client.channels.get('test').history({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.channels.get('test').history({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     // Callback called twice: initial + renewal after 40142
     expect(callbackCount).to.equal(2);

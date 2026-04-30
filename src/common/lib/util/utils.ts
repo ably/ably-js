@@ -476,7 +476,10 @@ export function throwMissingPluginError(pluginName: keyof ModularPlugins): never
 
 export async function withTimeoutAsync<A>(promise: Promise<A>, timeout = 5000, err = 'Timeout expired'): Promise<A> {
   const e = new ErrorInfo(err, 50000, 500);
-  return Promise.race([promise, new Promise<A>((_resolve, reject) => Platform.Config.setTimeout(() => reject(e), timeout))]);
+  return Promise.race([
+    promise,
+    new Promise<A>((_resolve, reject) => Platform.Config.setTimeout(() => reject(e), timeout)),
+  ]);
 }
 
 type NonFunctionKeyNames<A> = { [P in keyof A]: A[P] extends Function ? never : P }[keyof A];

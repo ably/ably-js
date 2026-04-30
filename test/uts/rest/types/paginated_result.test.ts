@@ -116,17 +116,19 @@ describe('uts/rest/types/paginated_result', function () {
 
         if (requestCount === 1) {
           // First page — includes next link
-          req.respond_with(200, [
-            { id: 'page1-item1', name: 'a', data: 'x' },
-            { id: 'page1-item2', name: 'b', data: 'y' },
-          ], {
-            Link: '<./messages?cursor=abc123>; rel="next"',
-          });
+          req.respond_with(
+            200,
+            [
+              { id: 'page1-item1', name: 'a', data: 'x' },
+              { id: 'page1-item2', name: 'b', data: 'y' },
+            ],
+            {
+              Link: '<./messages?cursor=abc123>; rel="next"',
+            },
+          );
         } else {
           // Second page — last page, no next link
-          req.respond_with(200, [
-            { id: 'page2-item1', name: 'c', data: 'z' },
-          ]);
+          req.respond_with(200, [{ id: 'page2-item1', name: 'c', data: 'z' }]);
         }
       },
     });
@@ -169,23 +171,17 @@ describe('uts/rest/types/paginated_result', function () {
 
         if (requestCount === 1) {
           // First page — has next and first links
-          req.respond_with(200, [
-            { id: 'item1', name: 'first', data: 'one' },
-          ], {
+          req.respond_with(200, [{ id: 'item1', name: 'first', data: 'one' }], {
             Link: '<./messages?cursor=abc>; rel="next", <./messages?start=0>; rel="first"',
           });
         } else if (requestCount === 2) {
           // Second page — has first link only
-          req.respond_with(200, [
-            { id: 'item2', name: 'second', data: 'two' },
-          ], {
+          req.respond_with(200, [{ id: 'item2', name: 'second', data: 'two' }], {
             Link: '<./messages?start=0>; rel="first"',
           });
         } else {
           // First page again (via first())
-          req.respond_with(200, [
-            { id: 'item1', name: 'first', data: 'one' },
-          ], {
+          req.respond_with(200, [{ id: 'item1', name: 'first', data: 'one' }], {
             Link: '<./messages?cursor=abc>; rel="next", <./messages?start=0>; rel="first"',
           });
         }

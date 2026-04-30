@@ -9,6 +9,7 @@ Tracks confirmed ably-js non-compliance with the Ably spec. Each entry correspon
 **Spec (RSA7b)**: "The clientId attribute of the Auth object is derived from the tokenDetails that are returned from an explicit auth request, or from the authCallback."
 
 **ably-js behavior**: For REST clients, `auth.clientId` is only set from `ClientOptions.clientId` (via `_userSetClientId` during construction). It is NOT extracted from:
+
 - `tokenDetails.clientId` passed in the constructor
 - `TokenDetails.clientId` returned by `authCallback`
 - `TokenDetails.clientId` returned by `authorize()`
@@ -16,6 +17,7 @@ Tracks confirmed ably-js non-compliance with the Ably spec. Each entry correspon
 The `_uncheckedSetClientId` method exists but is only called from the Realtime connectionManager (on CONNECTED), never from REST token acquisition paths.
 
 **Tests affected** (5 failures):
+
 - `RSA7b - clientId from TokenDetails` — `auth.clientId` is undefined instead of `'token-client-id'`
 - `RSA7b - clientId from authCallback TokenDetails` — `auth.clientId` is undefined instead of `'callback-client-id'`
 - `RSA7 - clientId updated after authorize()` — `auth.clientId` is undefined instead of `'client-1'`/`'client-2'`
@@ -31,12 +33,14 @@ The `_uncheckedSetClientId` method exists but is only called from the Realtime c
 **Spec (RSA4b/RSC10)**: When a REST request fails with a token error (40140-40149), the library should obtain a new token and retry the request with the new token's authorization header.
 
 **ably-js behavior**: The retry sends the **old** token's authorization header instead of the new one. In `Resource.do()`, after a token error:
+
 ```javascript
 await client.auth.authorize(null, null);
 return withAuthDetails(client, headers, params, doRequest);
 ```
 
 The `headers` parameter passed to `withAuthDetails` is the `doRequest` function parameter — the **merged** headers from the first `withAuthDetails` call, which already contains `authorization: 'Bearer <old-token>'`. Then `withAuthDetails` does:
+
 ```javascript
 const authHeaders = await client.auth.getAuthHeaders();
 return opCallback(Utils.mixin(authHeaders, headers), params);
@@ -45,10 +49,12 @@ return opCallback(Utils.mixin(authHeaders, headers), params);
 `Utils.mixin(newAuthHeaders, oldMergedHeaders)` copies the old `authorization` from `oldMergedHeaders` into `newAuthHeaders`, overwriting the new token's header.
 
 **Consequences**:
+
 1. The retry always sends the old (expired) token
 2. Combined with the lack of a retry limit (see below), this causes an infinite loop
 
 **Tests affected**:
+
 - `RSA4b - renewal on 40142 error` — `captured[1].headers.authorization` has the old token instead of the renewed one.
 - `RSC10 - transparent retry after renewal` — same symptom: the retried request carries the old token's authorization header.
 
@@ -229,6 +235,7 @@ Tests that pass but were adapted to assert ably-js's actual behavior instead of 
 The UTS mock HTTP infrastructure (`test/uts/mock_http.ts`) operates at the JSON level — `PendingRequest.respond_with()` JSON-stringifies response bodies and `PendingRequest.body` contains the JSON-parsed request body. It has no mechanism to encode/decode msgpack binary format.
 
 **Tests affected (10 skipped)**:
+
 - `RSL4c` — binary data with msgpack protocol (message_encoding.test.ts)
 - `RSL6` — msgpack bin type decoded to Buffer (message_encoding.test.ts)
 - `RSL6` — msgpack str type decoded to string (message_encoding.test.ts)

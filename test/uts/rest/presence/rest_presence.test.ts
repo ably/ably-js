@@ -392,9 +392,7 @@ describe('uts/rest/presence/rest_presence', function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, [
-          { action: 1, clientId: 'user-1', data: 'hello world' },
-        ]);
+        req.respond_with(200, [{ action: 1, clientId: 'user-1', data: 'hello world' }]);
       },
     });
     installMockHttp(mock);
@@ -489,10 +487,8 @@ describe('uts/rest/presence/rest_presence', function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, [
-          { action: 1, clientId: 'user-1', data: 'hello' },
-        ], {
-          'Link': '<./presence?cursor=abc&limit=1>; rel="next"',
+        req.respond_with(200, [{ action: 1, clientId: 'user-1', data: 'hello' }], {
+          Link: '<./presence?cursor=abc&limit=1>; rel="next"',
         });
       },
     });
@@ -519,15 +515,11 @@ describe('uts/rest/presence/rest_presence', function () {
       onRequest: (req) => {
         reqCount++;
         if (reqCount === 1) {
-          req.respond_with(200, [
-            { action: 2, clientId: 'alice', timestamp: 1609459200000 },
-          ], {
-            'Link': '<./presence?cursor=page2&limit=1>; rel="next"',
+          req.respond_with(200, [{ action: 2, clientId: 'alice', timestamp: 1609459200000 }], {
+            Link: '<./presence?cursor=page2&limit=1>; rel="next"',
           });
         } else {
-          req.respond_with(200, [
-            { action: 3, clientId: 'bob', timestamp: 1609459100000 },
-          ]);
+          req.respond_with(200, [{ action: 3, clientId: 'bob', timestamp: 1609459100000 }]);
         }
       },
     });
@@ -628,7 +620,7 @@ describe('uts/rest/presence/rest_presence', function () {
     for (let i = 0; i < expected.length; i++) {
       expect(result.items[i].action).to.equal(
         expected[i].str,
-        'wire action ' + expected[i].wire + ' should decode to ' + expected[i].str
+        'wire action ' + expected[i].wire + ' should decode to ' + expected[i].str,
       );
     }
   });

@@ -53,7 +53,11 @@ describe('uts/rest/auth/auth_scheme', function () {
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Basic ' + Buffer.from('appId.keyId:keySecret').toString('base64');
@@ -68,7 +72,11 @@ describe('uts/rest/auth/auth_scheme', function () {
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ token: 'explicit-token-string' });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('explicit-token-string').toString('base64');
@@ -88,7 +96,11 @@ describe('uts/rest/auth/auth_scheme', function () {
         expires: Date.now() + 3600000,
       } as any,
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('token-from-details').toString('base64');
@@ -106,7 +118,11 @@ describe('uts/rest/auth/auth_scheme', function () {
       key: 'appId.keyId:keySecret',
       useTokenAuth: true,
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     // API request should use Bearer, not Basic
     const apiRequest = captured[captured.length - 1];
@@ -126,7 +142,11 @@ describe('uts/rest/auth/auth_scheme', function () {
         callback(null, 'callback-token');
       },
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
@@ -155,7 +175,11 @@ describe('uts/rest/auth/auth_scheme', function () {
     const client = new Ably.Rest({
       authUrl: 'https://auth.example.com/token',
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(captured.length).to.be.at.least(2);
     const apiRequest = captured[captured.length - 1];
@@ -232,7 +256,11 @@ describe('uts/rest/auth/auth_scheme', function () {
         callback(null, 'callback-token');
       },
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     const request = captured[0];
     const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
@@ -247,7 +275,11 @@ describe('uts/rest/auth/auth_scheme', function () {
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'app123.key456:secretXYZ' });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     const request = captured[0];
     const expected = 'Basic ' + Buffer.from('app123.key456:secretXYZ').toString('base64');
@@ -265,7 +297,11 @@ describe('uts/rest/auth/auth_scheme', function () {
       token: 'explicit-token',
       tls: false,
     });
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     const request = captured[0];
     const expectedAuth = 'Bearer ' + Buffer.from('explicit-token').toString('base64');
