@@ -7,9 +7,6 @@
  * See: specification/uts/rest/unit/helpers/mock_http.md
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const Ably = require('../../build/ably-node');
-
 interface ConnectionResult {
   success: boolean;
   error?: { code: string; statusCode: number; message: string };
