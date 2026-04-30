@@ -286,4 +286,36 @@ describe('uts/rest/types/token_types', function () {
     expect(tokenRequest.nonce).to.be.a('string');
     expect(tokenRequest.nonce.length).to.be.greaterThan(0);
   });
+
+  /**
+   * TD - TokenDetails from token string
+   *
+   * When a Rest client is instantiated with a plain token string,
+   * the token should be accessible via client.auth.tokenDetails.
+   */
+  it('TD - TokenDetails from token string', async function () {
+    installMockHttp(simpleMock());
+
+    const client = new Ably.Rest({ token: 'test-token' });
+
+    // Accessing tokenDetails should reflect the token provided
+    expect(client.auth.tokenDetails.token).to.equal('test-token');
+  });
+
+  /**
+   * TE - createTokenRequest preserves custom ttl
+   *
+   * When a custom TTL (e.g. 7200000 = 2 hours) is specified in
+   * TokenParams, createTokenRequest must preserve it in the result.
+   */
+  it('TE - createTokenRequest preserves custom ttl', async function () {
+    installMockHttp(simpleMock());
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+
+    const tokenRequest = await client.auth.createTokenRequest({
+      ttl: 7200000,
+    }, null);
+
+    expect(tokenRequest.ttl).to.equal(7200000);
+  });
 });

@@ -83,10 +83,22 @@ describe('uts/rest/channel/getMessageVersions', function () {
     const result = await ch.getMessageVersions('msg-serial-1');
 
     expect(result.items).to.have.length(2);
+
+    // First item: updated version with full version fields
     expect(result.items[0].data).to.equal('updated-data');
     expect(result.items[0].action).to.equal('message.update');
+    expect(result.items[0].version).to.be.an('object');
+    expect(result.items[0].version.serial).to.equal('vs2');
+    expect(result.items[0].version.timestamp).to.equal(1700000002000);
+    expect(result.items[0].version.clientId).to.equal('user-1');
+    expect(result.items[0].version.description).to.equal('edit');
+
+    // Second item: original version with minimal version fields
     expect(result.items[1].data).to.equal('original-data');
     expect(result.items[1].action).to.equal('message.create');
+    expect(result.items[1].version).to.be.an('object');
+    expect(result.items[1].version.serial).to.equal('vs1');
+    expect(result.items[1].version.timestamp).to.equal(1700000001000);
   });
 
   /**

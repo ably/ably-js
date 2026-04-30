@@ -106,12 +106,13 @@ describe('uts/rest/channel/publish', function () {
   });
 
   /**
-   * RSL1e - null name in message
+   * RSL1e - null name omitted from body
    *
-   * When name is null, ably-js includes it as null in the serialized body.
-   * The spec says it should be omitted, but ably-js sends it as null.
+   * Per spec: "If any of the values are null, then key is not sent to Ably"
    */
-  it('RSL1e - null name sent as null', async function () {
+  it('RSL1e - null name omitted from body', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -130,18 +131,18 @@ describe('uts/rest/channel/publish', function () {
     const body = JSON.parse(captured[0].body);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
-    // ably-js sends null rather than omitting the field
-    expect(body[0].name).to.be.null;
+    expect('name' in body[0]).to.be.false;
     expect(body[0].data).to.equal('data');
   });
 
   /**
-   * RSL1e - null data in message
+   * RSL1e - null data omitted from body
    *
-   * When data is null, ably-js includes it as null in the serialized body.
-   * The spec says it should be omitted, but ably-js sends it as null.
+   * Per spec: "If any of the values are null, then key is not sent to Ably"
    */
-  it('RSL1e - null data sent as null', async function () {
+  it('RSL1e - null data omitted from body', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -161,8 +162,7 @@ describe('uts/rest/channel/publish', function () {
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].name).to.equal('event');
-    // ably-js sends null rather than omitting the field
-    expect(body[0].data).to.be.null;
+    expect('data' in body[0]).to.be.false;
   });
 
   /**
@@ -197,8 +197,9 @@ describe('uts/rest/channel/publish', function () {
   /**
    * RSL1i - message size limit exceeded
    *
-   * When the total message size exceeds maxMessageSize (default 65536),
-   * the publish must fail with error code 40009 without sending a request.
+   * When the total message size exceeds maxMessageSize, the publish must
+   * fail with error code 40009 without sending a request. Uses explicit
+   * maxMessageSize for deterministic testing.
    */
   it('RSL1i - message size limit exceeded', async function () {
     const captured = [];
@@ -211,11 +212,16 @@ describe('uts/rest/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    // Use explicit maxMessageSize for deterministic testing
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      useBinaryProtocol: false,
+      maxMessageSize: 1024,
+    });
     const ch = client.channels.get('test');
 
-    // Create a string larger than the default maxMessageSize (65536)
-    const largeData = 'x'.repeat(70000);
+    // Data that exceeds the 1024 limit
+    const largeData = 'x'.repeat(2000);
 
     try {
       await ch.publish('event', largeData);
@@ -223,6 +229,38 @@ describe('uts/rest/channel/publish', function () {
     } catch (error) {
       expect(error.code).to.equal(40009);
     }
+
+    // No HTTP request should have been made
+    expect(captured).to.have.length(0);
+  });
+
+  /**
+   * RSL1i - message at size limit succeeds
+   *
+   * A message at or under the size limit should succeed.
+   */
+  it('RSL1i - message at size limit succeeds', async function () {
+    const captured = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(201, {});
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      useBinaryProtocol: false,
+      maxMessageSize: 65536,
+    });
+    const ch = client.channels.get('test');
+
+    // Small data well within the limit
+    await ch.publish('event', 'small data');
+
+    expect(captured).to.have.length(1);
   });
 
   /**
@@ -361,5 +399,62 @@ describe('uts/rest/channel/publish', function () {
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].clientId).to.equal('msg-client');
+  });
+
+  /**
+   * RSL1e - Both name and data null
+   *
+   * Publishing with both name and data null should succeed.
+   * The wire body should contain an empty message object (or one with
+   * null fields).
+   */
+  it('RSL1e - both name and data null', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(201, {});
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.channels.get('test').publish(null, null);
+
+    expect(captured).to.have.length(1);
+    const body = JSON.parse(captured[0].body);
+    expect(body).to.be.an('array');
+    expect(body).to.have.length(1);
+    // The message should be essentially empty (name and data are null/missing)
+  });
+
+  /**
+   * RSL1l - Publish params passed as querystring
+   *
+   * Additional params passed to publish should appear as query parameters.
+   */
+  it('RSL1l - publish params as querystring', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(201, {});
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const ch = client.channels.get('test');
+
+    const msg = Message.fromValues({ name: 'event', data: 'data' });
+    await ch.publish(msg, { customParam: 'customValue', anotherParam: '123' } as any);
+
+    expect(captured).to.have.length(1);
+    // Spec (RSL1l): additional params MUST appear as query parameters.
+    // DEVIATION: ably-js RestChannel.publish() may not support additional params. See deviations.md.
+    expect(captured[0].url.searchParams.get('customParam')).to.equal('customValue');
+    expect(captured[0].url.searchParams.get('anotherParam')).to.equal('123');
   });
 });

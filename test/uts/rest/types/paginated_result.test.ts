@@ -385,4 +385,40 @@ describe('uts/rest/types/paginated_result', function () {
       expect(error.code).to.equal(40400);
     }
   });
+
+  /**
+   * TG - multiple results on a page
+   *
+   * When the server returns multiple items on a single page,
+   * all items should be deserialized and accessible via result.items.
+   */
+  it('TG - multiple results on a page', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, [
+          { id: 'item1', name: 'e1', data: 'd1' },
+          { id: 'item2', name: 'e2', data: 'd2' },
+          { id: 'item3', name: 'e3', data: 'd3' },
+          { id: 'item4', name: 'e4', data: 'd4' },
+          { id: 'item5', name: 'e5', data: 'd5' },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    const result = await channel.history();
+
+    expect(result.items).to.be.an('array');
+    expect(result.items).to.have.length(5);
+    expect(result.items[0].name).to.equal('e1');
+    expect(result.items[0].data).to.equal('d1');
+    expect(result.items[1].name).to.equal('e2');
+    expect(result.items[2].name).to.equal('e3');
+    expect(result.items[3].name).to.equal('e4');
+    expect(result.items[4].name).to.equal('e5');
+    expect(result.items[4].data).to.equal('d5');
+  });
 });

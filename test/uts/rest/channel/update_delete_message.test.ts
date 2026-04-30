@@ -41,7 +41,7 @@ describe('uts/rest/channel/update_delete_message', function () {
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('patch');
-    expect(captured[0].path).to.include('msg-serial-1');
+    expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
     const body = JSON.parse(captured[0].body);
     expect(body.action).to.equal(1);
     expect(body.name).to.equal('updated');
@@ -69,6 +69,8 @@ describe('uts/rest/channel/update_delete_message', function () {
     await ch.deleteMessage(msg({ serial: 'msg-serial-1' }));
 
     expect(captured).to.have.length(1);
+    expect(captured[0].method).to.equal('patch');
+    expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
     const body = JSON.parse(captured[0].body);
     expect(body.action).to.equal(2);
   });
@@ -94,6 +96,8 @@ describe('uts/rest/channel/update_delete_message', function () {
     await ch.appendMessage(msg({ serial: 'msg-serial-1', data: 'appended' }));
 
     expect(captured).to.have.length(1);
+    expect(captured[0].method).to.equal('patch');
+    expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
     const body = JSON.parse(captured[0].body);
     expect(body.action).to.equal(5);
   });

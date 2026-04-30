@@ -1,7 +1,7 @@
 /**
  * UTS: Push Device Registrations Tests
  *
- * Spec points: RSH1b, RSH1b1, RSH1b2, RSH1b3, RSH1b4, RSH1b5
+ * Spec points: RSH1b, RSH1b1 (get), RSH1b2 (list), RSH1b3 (save), RSH1b4 (remove), RSH1b5 (removeWhere)
  * Source: uts/test/rest/unit/push/push_device_registrations.md
  */
 
@@ -13,12 +13,12 @@ describe('uts/rest/push/push_device_registrations', function () {
   afterEach(restoreAll);
 
   /**
-   * RSH1b1 - save sends PUT to /push/deviceRegistrations/{id}
+   * RSH1b3 - save sends PUT to /push/deviceRegistrations/{id}
    *
    * save() issues a PUT request to the device-specific endpoint
    * with the device details in the body.
    */
-  it('RSH1b1 - save sends PUT to /push/deviceRegistrations/{id}', async function () {
+  it('RSH1b3 - save sends PUT to /push/deviceRegistrations/{id}', async function () {
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -56,12 +56,12 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b1 - save body contains device details
+   * RSH1b3 - save body contains device details
    *
    * The PUT body must contain the device's id, clientId, platform,
    * formFactor, and push recipient fields.
    */
-  it('RSH1b1 - save body contains device details', async function () {
+  it('RSH1b3 - save body contains device details', async function () {
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -106,11 +106,11 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b2 - get sends GET to /push/deviceRegistrations/{id}
+   * RSH1b1 - get sends GET to /push/deviceRegistrations/{id}
    *
    * get() issues a GET request to the device-specific endpoint.
    */
-  it('RSH1b2 - get sends GET to /push/deviceRegistrations/{id}', async function () {
+  it('RSH1b1 - get sends GET to /push/deviceRegistrations/{id}', async function () {
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -140,12 +140,12 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b2 - get returns device object
+   * RSH1b1 - get returns device object
    *
    * get() returns a DeviceDetails object with all the fields
    * from the server response.
    */
-  it('RSH1b2 - get returns device object', async function () {
+  it('RSH1b1 - get returns device object', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -176,11 +176,11 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b3 - list sends GET to /push/deviceRegistrations
+   * RSH1b2 - list sends GET to /push/deviceRegistrations
    *
    * list() issues a GET request to the deviceRegistrations collection endpoint.
    */
-  it('RSH1b3 - list sends GET to /push/deviceRegistrations', async function () {
+  it('RSH1b2 - list sends GET to /push/deviceRegistrations', async function () {
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -208,12 +208,12 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b3 - list with params (deviceId filter)
+   * RSH1b2 - list with params (deviceId filter)
    *
    * list() forwards the deviceId parameter as a query parameter and
    * returns only matching results.
    */
-  it('RSH1b3 - list with params (deviceId filter)', async function () {
+  it('RSH1b2 - list with params (deviceId filter)', async function () {
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -240,11 +240,11 @@ describe('uts/rest/push/push_device_registrations', function () {
   });
 
   /**
-   * RSH1b3 - list returns PaginatedResult
+   * RSH1b2 - list returns PaginatedResult
    *
    * list() returns a PaginatedResult containing DeviceDetails objects.
    */
-  it('RSH1b3 - list returns PaginatedResult', async function () {
+  it('RSH1b2 - list returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -349,5 +349,207 @@ describe('uts/rest/push/push_device_registrations', function () {
     expect(captured[0].method).to.equal('delete');
     expect(captured[0].path).to.equal('/push/deviceRegistrations');
     expect(captured[0].url.searchParams.get('clientId')).to.equal('client-abc');
+  });
+
+  /**
+   * RSH1b1 - get returns 404 for unknown device
+   *
+   * When the server returns a 404 for an unknown deviceId, get()
+   * must propagate it as an exception with error code 40400.
+   */
+  it('RSH1b1 - get returns 404 for unknown device', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(404, {
+          error: { code: 40400, statusCode: 404, message: 'Not found' },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+
+    try {
+      await client.push.admin.deviceRegistrations.get('unknown-device');
+      expect.fail('Expected get to throw');
+    } catch (err: any) {
+      expect(err.code).to.equal(40400);
+    }
+  });
+
+  /**
+   * RSH1b1 - get URL-encodes deviceId
+   *
+   * get() must URL-encode the deviceId in the request path so that
+   * special characters are handled correctly.
+   */
+  it('RSH1b1 - get URL-encodes deviceId', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, {
+          id: 'device/special:id',
+          platform: 'ios',
+          formFactor: 'phone',
+          push: { recipient: {}, state: 'Active' },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.push.admin.deviceRegistrations.get('device/special:id');
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].path).to.equal('/push/deviceRegistrations/' + encodeURIComponent('device/special:id'));
+  });
+
+  /**
+   * RSH1b2 - list with clientId filter
+   *
+   * list() forwards the clientId parameter as a query parameter.
+   */
+  it('RSH1b2 - list with clientId filter', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, [
+          {
+            id: 'device-001',
+            clientId: 'client-abc',
+            platform: 'ios',
+            formFactor: 'phone',
+            push: { recipient: {}, state: 'Active' },
+          },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.push.admin.deviceRegistrations.list({ clientId: 'client-abc' });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('clientId')).to.equal('client-abc');
+  });
+
+  /**
+   * RSH1b2 - list supports limit
+   *
+   * list() forwards the limit parameter as a query parameter.
+   */
+  it('RSH1b2 - list supports limit', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, [
+          {
+            id: 'device-001',
+            platform: 'ios',
+            formFactor: 'phone',
+            push: { recipient: {}, state: 'Active' },
+          },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.push.admin.deviceRegistrations.list({ limit: '2' });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('limit')).to.equal('2');
+  });
+
+  /**
+   * RSH1b3 - save propagates server error
+   *
+   * When the server returns an error response, save() must
+   * propagate it as an exception with the correct error code.
+   */
+  it('RSH1b3 - save propagates server error', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(400, {
+          error: { code: 40000, statusCode: 400, message: 'Invalid request' },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+
+    try {
+      await client.push.admin.deviceRegistrations.save({
+        id: 'device-001',
+        platform: 'ios',
+        formFactor: 'phone',
+        push: {
+          recipient: { transportType: 'apns', deviceToken: 'token-123' },
+        },
+      });
+      expect.fail('Expected save to throw');
+    } catch (err: any) {
+      expect(err.code).to.equal(40000);
+    }
+  });
+
+  /**
+   * RSH1b4 - remove nonexistent succeeds
+   *
+   * remove() for a nonexistent device should not throw when the
+   * server returns a successful response.
+   */
+  it('RSH1b4 - remove nonexistent succeeds', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, {});
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.push.admin.deviceRegistrations.remove('nonexistent');
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].method).to.equal('delete');
+    expect(captured[0].path).to.equal('/push/deviceRegistrations/' + encodeURIComponent('nonexistent'));
+  });
+
+  /**
+   * RSH1b5 - removeWhere with deviceId
+   *
+   * removeWhere() forwards the deviceId parameter as a query
+   * parameter in the DELETE request.
+   */
+  it('RSH1b5 - removeWhere with deviceId', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(204, null);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.push.admin.deviceRegistrations.removeWhere({ deviceId: 'device-001' });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].method).to.equal('delete');
+    expect(captured[0].path).to.equal('/push/deviceRegistrations');
+    expect(captured[0].url.searchParams.get('deviceId')).to.equal('device-001');
   });
 });

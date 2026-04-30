@@ -252,25 +252,16 @@ describe('uts/rest/channel/idempotency', function () {
     });
     const ch = client.channels.get('test');
 
-    // ably-js may or may not retry on 500 — handle both cases
-    try {
-      await ch.publish('event', 'data');
-    } catch (e) {
-      // If it throws (no retry), that's fine — we still have the captured request
-    }
+    // Spec (RSL1k2): publish MUST retry on 500 with the same idempotent ID.
+    await ch.publish('event', 'data');
 
-    expect(captured.length).to.be.at.least(1);
+    expect(captured).to.have.length(2);
 
-    // Verify the first request has a valid ID
     const body1 = JSON.parse(captured[0].body);
+    const body2 = JSON.parse(captured[1].body);
     expect(body1[0].id).to.be.a('string');
     expect(body1[0].id).to.match(/^[A-Za-z0-9+/_-]+:0$/);
-
-    if (captured.length >= 2) {
-      // If retried, both requests must have the same ID
-      const body2 = JSON.parse(captured[1].body);
-      expect(body2[0].id).to.equal(body1[0].id);
-    }
+    expect(body2[0].id).to.equal(body1[0].id);
   });
 
   /**

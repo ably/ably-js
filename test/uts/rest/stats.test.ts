@@ -99,6 +99,39 @@ describe('uts/rest/stats', function () {
   });
 
   /**
+   * RSC6a - stats() with no parameters sends no query params
+   *
+   * When called without parameters, no query parameters should be sent
+   * (the server applies its own defaults).
+   */
+  it('RSC6a - stats() with no params sends no query params', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.stats();
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].method).to.equal('get');
+    expect(captured[0].path).to.equal('/stats');
+
+    // No user-specified query params (format may be sent by SDK)
+    const params = captured[0].url.searchParams;
+    expect(params.get('start')).to.be.null;
+    expect(params.get('end')).to.be.null;
+    expect(params.get('direction')).to.be.null;
+    expect(params.get('limit')).to.be.null;
+    expect(params.get('unit')).to.be.null;
+  });
+
+  /**
    * RSC6b1 - stats() with start parameter
    *
    * start is an optional timestamp field represented as milliseconds

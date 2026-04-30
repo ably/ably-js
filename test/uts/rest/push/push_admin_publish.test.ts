@@ -187,4 +187,49 @@ describe('uts/rest/push/push_admin_publish', function () {
     expect(captured).to.have.length(1);
     expect(captured[0].headers.authorization).to.match(/^Basic /);
   });
+
+  /**
+   * RSH1 - client.push.admin exposes PushAdmin
+   *
+   * The client.push property must exist and expose admin with
+   * deviceRegistrations and channelSubscriptions sub-objects.
+   */
+  it('RSH1 - client.push.admin exposes PushAdmin', function () {
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+
+    expect(client.push).to.exist;
+    expect(client.push.admin).to.exist;
+    expect(client.push.admin.deviceRegistrations).to.exist;
+    expect(client.push.admin.channelSubscriptions).to.exist;
+  });
+
+  /**
+   * RSH1a - publish propagates server error
+   *
+   * When the server returns an error response, publish() must
+   * propagate it as an exception with the correct error code.
+   */
+  it('RSH1a - publish propagates server error', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(400, {
+          error: { code: 40000, statusCode: 400, message: 'Invalid request' },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+
+    try {
+      await client.push.admin.publish(
+        { clientId: 'user-1' },
+        { notification: { title: 'Test' } },
+      );
+      expect.fail('Expected publish to throw');
+    } catch (err: any) {
+      expect(err.code).to.equal(40000);
+    }
+  });
 });

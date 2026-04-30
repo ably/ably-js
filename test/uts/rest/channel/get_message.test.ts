@@ -59,6 +59,8 @@ describe('uts/rest/channel/getMessage', function () {
       serial: 'serial-xyz',
       clientId: 'client-1',
       timestamp: 1700000000000,
+      extras: { headers: { source: 'api' } },
+      version: { serial: 'vs1', timestamp: 1700000000000, clientId: 'client-1' },
     };
 
     const mock = new MockHttpClient({
@@ -79,6 +81,10 @@ describe('uts/rest/channel/getMessage', function () {
     expect(msg.serial).to.equal('serial-xyz');
     expect(msg.clientId).to.equal('client-1');
     expect(msg.timestamp).to.equal(1700000000000);
+    expect(msg.extras).to.deep.equal({ headers: { source: 'api' } });
+    expect(msg.version).to.be.an('object');
+    expect(msg.version.serial).to.equal('vs1');
+    expect(msg.version.timestamp).to.equal(1700000000000);
   });
 
   /**

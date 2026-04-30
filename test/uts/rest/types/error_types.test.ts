@@ -116,4 +116,45 @@ describe('uts/rest/types/error_types', function () {
     expect(str).to.include('40100');
     expect(str).to.include('401');
   });
+
+  /**
+   * TI5 - nested error cause
+   *
+   * When an ErrorInfo is created with a cause that is itself an ErrorInfo,
+   * the cause's attributes should be accessible.
+   */
+  it('TI5 - nested error cause', function () {
+    const inner = new Ably.ErrorInfo('inner', 40100, 401);
+    const outer = Ably.ErrorInfo.fromValues({
+      code: 50000,
+      statusCode: 500,
+      message: 'Outer error',
+      cause: inner,
+    });
+
+    expect(outer.cause).to.equal(inner);
+    expect(outer.cause.code).to.equal(40100);
+    expect(outer.cause.statusCode).to.equal(401);
+    expect(outer.cause.message).to.equal('inner');
+  });
+
+  /**
+   * TI - ErrorInfo with all attributes
+   *
+   * Verify that an ErrorInfo constructed with code, statusCode, message,
+   * and href exposes all properties correctly.
+   */
+  it('TI - ErrorInfo with all attributes', function () {
+    const error = Ably.ErrorInfo.fromValues({
+      code: 40300,
+      statusCode: 403,
+      message: 'Forbidden: account disabled',
+      href: 'https://help.ably.io/error/40300',
+    });
+
+    expect(error.code).to.equal(40300);
+    expect(error.statusCode).to.equal(403);
+    expect(error.message).to.equal('Forbidden: account disabled');
+    expect(error.href).to.equal('https://help.ably.io/error/40300');
+  });
 });

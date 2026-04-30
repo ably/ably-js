@@ -10,13 +10,13 @@ import { Ably } from '../../helpers';
 
 describe('uts/rest/types/mutable_message_types', function () {
   /**
-   * TM5 - MessageAction values
+   * TM5 - MessageAction string values
    *
    * MessageAction enum has values: MESSAGE_CREATE (0), MESSAGE_UPDATE (1),
    * MESSAGE_DELETE (2), META (3), MESSAGE_SUMMARY (4), MESSAGE_APPEND (5).
-   * In ably-js, application code uses string actions; wire format uses numeric.
+   * In ably-js, application code uses string actions.
    */
-  it('TM5 - MessageAction values', function () {
+  it('TM5 - MessageAction string values', function () {
     const actionStrings = [
       'message.create',
       'message.update',
@@ -30,6 +30,32 @@ describe('uts/rest/types/mutable_message_types', function () {
       const msg = Ably.Rest.Message.fromValues({ action: actionStr });
       expect(msg.action).to.equal(actionStr);
     });
+  });
+
+  /**
+   * TM5 - MessageAction numeric wire values
+   *
+   * Wire format uses numeric values (0-5). fromEncoded must decode
+   * these to their string equivalents.
+   */
+  it('TM5 - MessageAction numeric wire values', async function () {
+    const wireToString = [
+      [0, 'message.create'],
+      [1, 'message.update'],
+      [2, 'message.delete'],
+      [3, 'meta'],
+      [4, 'message.summary'],
+      [5, 'message.append'],
+    ];
+
+    for (const [wireValue, expectedString] of wireToString) {
+      const msg = await Ably.Rest.Message.fromEncoded({
+        action: wireValue,
+        serial: 'test-serial',
+        name: 'test',
+      });
+      expect(msg.action).to.equal(expectedString);
+    }
   });
 
   /**

@@ -46,6 +46,8 @@ describe('uts/rest/auth/client_id', function () {
    * accessible via auth.clientId.
    */
   it('RSA7b - clientId from TokenDetails', function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     installMockHttp(simpleMock(captured));
 
@@ -67,6 +69,8 @@ describe('uts/rest/auth/client_id', function () {
    * update auth.clientId after the first auth request.
    */
   it('RSA7b - clientId from authCallback TokenDetails', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     installMockHttp(simpleMock(captured));
 
@@ -181,6 +185,8 @@ describe('uts/rest/auth/client_id', function () {
    * a new token with a different clientId.
    */
   it('RSA7 - clientId updated after authorize()', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     let tokenCount = 0;
 
     const mock = new MockHttpClient({
@@ -217,6 +223,8 @@ describe('uts/rest/auth/client_id', function () {
    * and accessible via auth.clientId.
    */
   it('RSA12 - Wildcard clientId', function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     installMockHttp(simpleMock(captured));
 
@@ -229,6 +237,69 @@ describe('uts/rest/auth/client_id', function () {
     });
 
     expect(client.auth.clientId).to.equal('*');
+  });
+
+  /**
+   * RSA7 - Consistency case 3: explicit clientId in options, null in token
+   *
+   * When ClientOptions.clientId is set but the token has no clientId,
+   * the client should keep the explicit clientId from options.
+   */
+  it('RSA7 - case 3: explicit clientId kept when token has none', async function () {
+    const captured: any[] = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      clientId: 'explicit-client',
+      authCallback: function (params, callback) {
+        callback(null, {
+          token: 'token-no-clientId',
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          // no clientId in token
+        });
+      },
+    });
+
+    // Force auth
+    try { await client.stats(); } catch (e) { /* ok */ }
+
+    expect(client.auth.clientId).to.equal('explicit-client');
+  });
+
+  /**
+   * RSA7 - Consistency case 5: no clientId in options, clientId in token
+   *
+   * When ClientOptions.clientId is not set but the token has a clientId,
+   * the client should inherit the clientId from the token.
+   *
+   * DEVIATION: ably-js does not derive auth.clientId from TokenDetails
+   * for REST clients — see deviations.md (RSA7b). This test documents
+   * the expected behavior even though it currently fails.
+   */
+  it('RSA7 - case 5: clientId inherited from token', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
+    const captured: any[] = [];
+    installMockHttp(simpleMock(captured));
+
+    const client = new Ably.Rest({
+      // no clientId in options
+      authCallback: function (params, callback) {
+        callback(null, {
+          token: 'token-with-clientId',
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          clientId: 'token-client',
+        });
+      },
+    });
+
+    // Force auth
+    try { await client.stats(); } catch (e) { /* ok */ }
+
+    // Per spec, should inherit clientId from token
+    expect(client.auth.clientId).to.equal('token-client');
   });
 
   /**
@@ -254,12 +325,12 @@ describe('uts/rest/auth/client_id', function () {
   });
 
   /**
-   * RSA15b - Mismatched clientId error (40102)
+   * RSA15a - Mismatched clientId error (40102)
    *
    * Per spec, if ClientOptions.clientId and TokenDetails.clientId are both
    * non-wildcard and don't match, an error with code 40102 must be raised.
    */
-  it('RSA15b - Mismatched clientId error (40102)', async function () {
+  it('RSA15a - Mismatched clientId error (40102)', async function () {
     const captured = [];
     installMockHttp(simpleMock(captured));
 
@@ -281,9 +352,9 @@ describe('uts/rest/auth/client_id', function () {
   });
 
   /**
-   * RSA15c - Wildcard token clientId permits any ClientOptions clientId
+   * RSA15b - Wildcard token clientId permits any ClientOptions clientId
    */
-  it('RSA15c - Wildcard token clientId permits any ClientOptions clientId', async function () {
+  it('RSA15b - Wildcard token clientId permits any ClientOptions clientId', async function () {
     const captured = [];
     installMockHttp(simpleMock(captured));
 

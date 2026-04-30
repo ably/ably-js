@@ -286,6 +286,13 @@ class MockHttpClient {
         return req._promise;
       }
 
+      async checkConnectivity(): Promise<boolean> {
+        // Perform the connectivity check via doUri (same as real implementation)
+        const url = 'https://internet-up.ably-realtime.com/is-the-internet-up.txt';
+        const { error, body } = await this.doUri('get', url, {}, null, null);
+        return !error && (body as string)?.toString().trim() === 'yes';
+      }
+
       shouldFallback(error: any): boolean {
         if (!error) return false;
         const code = error.code;

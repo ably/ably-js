@@ -156,6 +156,11 @@ describe('uts/rest/auth/auth_callback', function () {
     expect(receivedParams).to.not.be.null;
     expect(receivedParams.clientId).to.equal('requested-client-id');
     expect(receivedParams.ttl).to.equal(7200000);
+    // ably-js serializes capability as a JSON string
+    const cap = typeof receivedParams.capability === 'string'
+      ? JSON.parse(receivedParams.capability)
+      : receivedParams.capability;
+    expect(cap).to.deep.equal({ channel1: ['publish'] });
   });
 
   /**
@@ -291,6 +296,10 @@ describe('uts/rest/auth/auth_callback', function () {
       expect.fail('Expected request to throw');
     } catch (error) {
       expect(error.statusCode).to.equal(401);
+      // UTS spec: error.message CONTAINS "Authentication server unavailable"
+      // ably-js wraps the original error — check the message is preserved somewhere
+      const errorStr = String(error.message || error);
+      expect(errorStr).to.include('Authentication server unavailable');
     }
 
     // No API requests should have been made
@@ -324,8 +333,10 @@ describe('uts/rest/auth/auth_callback', function () {
       await client.stats();
       expect.fail('Expected request to throw');
     } catch (error) {
-      // Error should indicate auth failure (statusCode may be 401 per RSA4e or 500)
-      expect(error.statusCode).to.be.oneOf([401, 500]);
+      // UTS spec: error.statusCode == 500 OR error.message CONTAINS "auth"
+      const hasExpectedStatus = error.statusCode === 500 || error.statusCode === 401;
+      const hasAuthMessage = String(error.message || '').toLowerCase().includes('auth');
+      expect(hasExpectedStatus || hasAuthMessage).to.be.true;
     }
 
     // Only authUrl request was made, not the API request

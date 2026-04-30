@@ -118,9 +118,12 @@ describe('uts/rest/types/message_types', function () {
   });
 
   /**
-   * TM4 - null/missing attributes are undefined
+   * TM2 - null/missing attributes are undefined
+   *
+   * When a Message is constructed with only partial fields, the
+   * unspecified attributes should be undefined (not defaulted).
    */
-  it('TM4 - null/missing attributes are undefined', function () {
+  it('TM2 - null/missing attributes are undefined', function () {
     const msg = Message.fromValues({ name: 'test' });
 
     expect(msg.name).to.equal('test');
@@ -129,5 +132,77 @@ describe('uts/rest/types/message_types', function () {
     expect(msg.connectionId).to.be.undefined;
     expect(msg.id).to.be.undefined;
     expect(msg.timestamp).to.be.undefined;
+  });
+
+  /**
+   * TM3 - fromEncoded with all fields
+   *
+   * Verify that fromEncoded correctly deserializes a wire message
+   * containing all standard fields.
+   */
+  it('TM3 - fromEncoded with all fields', async function () {
+    const msg = await Message.fromEncoded({
+      id: 'id1',
+      name: 'test',
+      data: 'hello',
+      clientId: 'c1',
+      connectionId: 'conn1',
+      timestamp: 1700000000000,
+      encoding: null,
+      extras: { key: 'val' },
+    });
+
+    expect(msg.id).to.equal('id1');
+    expect(msg.name).to.equal('test');
+    expect(msg.data).to.equal('hello');
+    expect(msg.clientId).to.equal('c1');
+    expect(msg.connectionId).to.equal('conn1');
+    expect(msg.timestamp).to.equal(1700000000000);
+    expect(msg.extras).to.deep.equal({ key: 'val' });
+  });
+
+  /**
+   * TM2 - binary data preserved
+   *
+   * When fromEncoded receives base64-encoded data with encoding 'base64',
+   * it should decode it to a binary type (Buffer or Uint8Array) and
+   * clear the encoding.
+   */
+  it('TM2 - binary data preserved via base64 decoding', async function () {
+    const msg = await Message.fromEncoded({
+      data: 'SGVsbG8=',
+      encoding: 'base64',
+    });
+
+    // After decoding, data should be a Buffer or Uint8Array
+    const isBinary = Buffer.isBuffer(msg.data) || msg.data instanceof Uint8Array;
+    expect(isBinary).to.be.true;
+    // Encoding should be consumed (null) after decode
+    expect(msg.encoding).to.be.null;
+    // Verify the decoded content is 'Hello'
+    const text = Buffer.from(msg.data).toString('utf8');
+    expect(text).to.equal('Hello');
+  });
+
+  /**
+   * TM4 - toJSON serialization
+   *
+   * If Message exposes a toJSON method, verify it returns an object
+   * with the expected name and data keys.
+   */
+  it('TM4 - toJSON serialization', function () {
+    const msg = Message.fromValues({ name: 'event', data: 'payload' });
+
+    if (typeof msg.toJSON === 'function') {
+      const json = msg.toJSON();
+      expect(json).to.have.property('name', 'event');
+      expect(json).to.have.property('data', 'payload');
+    } else {
+      // DEVIATION: ably-js Message may not expose toJSON directly.
+      // Verify JSON.stringify produces expected output instead.
+      const json = JSON.parse(JSON.stringify(msg));
+      expect(json).to.have.property('name', 'event');
+      expect(json).to.have.property('data', 'payload');
+    }
   });
 });
