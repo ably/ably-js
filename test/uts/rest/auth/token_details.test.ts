@@ -95,6 +95,7 @@ describe('uts/rest/auth/token_details', function () {
     expect(client.auth.tokenDetails.expires).to.satisfy((v) => v === null || v === undefined);
     expect(client.auth.tokenDetails.issued).to.satisfy((v) => v === null || v === undefined);
     expect(client.auth.tokenDetails.clientId).to.satisfy((v) => v === null || v === undefined);
+    expect(client.auth.tokenDetails.capability).to.satisfy((v) => v === null || v === undefined);
   });
 
   /**
@@ -170,6 +171,110 @@ describe('uts/rest/auth/token_details', function () {
     expect(firstToken.token).to.equal('token-v1');
     expect(secondToken.token).to.equal('token-v2');
     expect(firstToken.token).to.not.equal(secondToken.token);
+  });
+
+  /**
+   * RSA16c - tokenDetails updated after library-initiated renewal on 40142
+   *
+   * When a request fails with 40142 (token expired), the library renews
+   * the token and tokenDetails should reflect the new token.
+   */
+  it('RSA16c - tokenDetails updated after 40142 renewal', async function () {
+    let requestCount = 0;
+    let tokenCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        if (requestCount === 1) {
+          req.respond_with(401, {
+            error: { code: 40142, statusCode: 401, message: 'Token expired' },
+          });
+        } else {
+          req.respond_with(200, []);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        tokenCount++;
+        callback(null, {
+          token: 'token-v' + tokenCount,
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+          clientId: 'client-v' + tokenCount,
+        });
+      },
+    });
+
+    // First authorize
+    await client.auth.authorize();
+    const firstToken = client.auth.tokenDetails;
+
+    // Make a request that will fail with 40142, triggering renewal
+    try { await client.stats(); } catch (e) { /* ok */ }
+    const secondToken = client.auth.tokenDetails;
+
+    expect(firstToken.token).to.equal('token-v1');
+    expect(secondToken.token).to.equal('token-v2');
+  });
+
+  /**
+   * RSA16d - tokenDetails null after failed renewal attempt
+   *
+   * When a token is invalidated and renewal fails, tokenDetails
+   * should reflect the failure state.
+   */
+  it('RSA16d - tokenDetails after failed renewal', async function () {
+    this.timeout(5000);
+    let callbackCount = 0;
+    let requestCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        req.respond_with(401, {
+          error: { code: 40142, statusCode: 401, message: 'Token expired' },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        callbackCount++;
+        if (callbackCount === 1) {
+          callback(null, {
+            token: 'first-token',
+            expires: Date.now() + 3600000,
+            issued: Date.now(),
+          });
+        } else {
+          callback(new Error('Cannot obtain new token'));
+        }
+      },
+    });
+
+    // First authorize succeeds
+    await client.auth.authorize();
+    expect(client.auth.tokenDetails).to.not.be.null;
+    expect(client.auth.tokenDetails.token).to.equal('first-token');
+
+    // Make a request that fails with 40142, renewal will also fail
+    try {
+      await client.stats();
+    } catch (e) {
+      // Expected — renewal failed
+    }
+
+    // Spec (RSA16d): after failed renewal, tokenDetails MUST be null.
+    // DEVIATION: ably-js may keep the stale token. See deviations.md.
+    expect(callbackCount).to.equal(2);
+    expect(client.auth.tokenDetails).to.be.null;
   });
 
   /**

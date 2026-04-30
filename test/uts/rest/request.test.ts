@@ -355,5 +355,93 @@ describe('uts/rest/request', function () {
       expect(response.success).to.be.false;
       expect(response.errorCode).to.equal(50000);
     });
+
+    it('Token auth request uses Bearer authorization', async function () {
+      const captured: any[] = [];
+      const mock = new MockHttpClient({
+        onConnectionAttempt: (conn) => conn.respond_with_success(),
+        onRequest: (req) => {
+          captured.push(req);
+          req.respond_with(200, []);
+        },
+      });
+      installMockHttp(mock);
+
+      const client = new Ably.Rest({
+        useBinaryProtocol: false,
+        authCallback: (params: any, callback: any) => {
+          callback(null, 'my-token');
+        },
+      });
+      await client.request('GET', '/test', 3);
+
+      expect(captured).to.have.length(1);
+      expect(captured[0].headers).to.have.property('authorization');
+      expect(captured[0].headers['authorization']).to.match(/^Bearer /);
+    });
+
+    /**
+     * Path normalization - ably-js does not normalize paths without leading slash.
+     * The path is appended directly to the base URI, so 'test' without '/' may
+     * cause a malformed URL or unexpected path. This test verifies ably-js
+     * behavior: path is used as-is and the leading slash comes from the base URI.
+     */
+    it('Path normalization - path with leading slash', async function () {
+      const captured: any[] = [];
+      const mock = new MockHttpClient({
+        onConnectionAttempt: (conn) => conn.respond_with_success(),
+        onRequest: (req) => {
+          captured.push(req);
+          req.respond_with(200, []);
+        },
+      });
+      installMockHttp(mock);
+
+      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+      await client.request('GET', '/test', 3);
+
+      expect(captured).to.have.length(1);
+      expect(captured[0].path).to.equal('/test');
+    });
+
+    /**
+     * Network error handling - connection refused propagates as error.
+     * When the mock refuses the connection, client.request() throws
+     * rather than returning a response object.
+     */
+    it('Network error handling - connection refused', async function () {
+      const mock = new MockHttpClient({
+        onConnectionAttempt: (conn) => conn.respond_with_refused(),
+      });
+      installMockHttp(mock);
+
+      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+
+      try {
+        await client.request('GET', '/test', 3);
+        expect.fail('Expected request to throw on connection refused');
+      } catch (error: any) {
+        expect(error).to.exist;
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // MsgPack tests — PENDING (mock HTTP does not support msgpack encoding)
+  // ---------------------------------------------------------------------------
+
+  it('RSC19c - msgpack request headers', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
+  });
+
+  it('RSC19c - msgpack request body encoding', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
+  });
+
+  it('RSC19c - msgpack response decoding', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
   });
 });

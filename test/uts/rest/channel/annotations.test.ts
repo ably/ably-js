@@ -59,7 +59,7 @@ describe('uts/rest/channel/annotations', function () {
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('post');
-    expect(captured[0].path).to.include('/messages/msg-serial-1/annotations');
+    expect(captured[0].path).to.equal('/channels/test/messages/msg-serial-1/annotations');
 
     const body = JSON.parse(captured[0].body);
     expect(body).to.be.an('array');
@@ -82,6 +82,8 @@ describe('uts/rest/channel/annotations', function () {
    * without a type instead of throwing.
    */
   it('RSAN1a3 - type required', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -95,14 +97,12 @@ describe('uts/rest/channel/annotations', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
 
-    // ably-js deviation: does not validate type is present; publish succeeds
-    // Spec says this should throw with code 40003
+    // Spec (RSAN1a3): publishing without a type MUST throw with code 40003.
+    // DEVIATION: ably-js does not validate type. See deviations.md.
     try {
       await ch.annotations.publish('msg-serial-1', { name: 'like' });
-      // If it succeeds, verify at least the body was sent (deviation from spec)
-      expect(captured).to.have.length(1);
-    } catch (error) {
-      // If ably-js adds type validation in the future, this path will be taken
+      expect.fail('Expected publish without type to throw with code 40003');
+    } catch (error: any) {
       expect(error.code).to.equal(40003);
     }
   });
@@ -150,6 +150,8 @@ describe('uts/rest/channel/annotations', function () {
    * documents the spec requirement as a known deviation.
    */
   it('RSAN1c4 - idempotent ID generated', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -172,18 +174,15 @@ describe('uts/rest/channel/annotations', function () {
     const body = JSON.parse(captured[0].body);
     expect(body).to.have.length(1);
 
-    // ably-js deviation: does not generate idempotent IDs for annotations
-    // Spec (RSAN1c4) says id should match <base64>:0 format
-    if (body[0].id) {
-      const parts = body[0].id.split(':');
-      expect(parts).to.have.length(2);
-      expect(parts[0]).to.match(/^[A-Za-z0-9_-]+$/);
-      expect(parts[0].length).to.be.at.least(12);
-      expect(parts[1]).to.equal('0');
-    } else {
-      // Currently id is not generated — this is the expected ably-js behaviour
-      expect(body[0].id).to.be.undefined;
-    }
+    // Spec (RSAN1c4): annotation id MUST be auto-generated in <base64>:0 format.
+    // DEVIATION: ably-js does not generate idempotent IDs for annotations. See deviations.md.
+    const id = body[0].id;
+    expect(id).to.be.a('string');
+    const parts = id.split(':');
+    expect(parts).to.have.length(2);
+    expect(parts[0]).to.match(/^[A-Za-z0-9_-]+$/);
+    expect(parts[0].length).to.be.at.least(12);
+    expect(parts[1]).to.equal('0');
   });
 
   /**
@@ -310,6 +309,19 @@ describe('uts/rest/channel/annotations', function () {
             serial: 'ann-serial-1',
             messageSerial: 'msg-serial-1',
             timestamp: 1700000000000,
+            extras: { headers: { source: 'web' } },
+          },
+          {
+            id: 'ann-2',
+            action: 0,
+            type: 'com.example.reaction',
+            name: 'heart',
+            clientId: 'user-2',
+            count: 3,
+            data: null,
+            serial: 'ann-serial-2',
+            messageSerial: 'msg-serial-1',
+            timestamp: 1700000001000,
           },
         ]);
       },
@@ -321,8 +333,9 @@ describe('uts/rest/channel/annotations', function () {
     const result = await ch.annotations.get('msg-serial-1');
 
     expect(result.items).to.be.an('array');
-    expect(result.items).to.have.length(1);
+    expect(result.items).to.have.length(2);
 
+    // First annotation — full field coverage including extras
     const ann = result.items[0];
     expect(ann.id).to.equal('ann-1');
     expect(ann.action).to.equal('annotation.create'); // decoded from wire value 0
@@ -334,6 +347,14 @@ describe('uts/rest/channel/annotations', function () {
     expect(ann.serial).to.equal('ann-serial-1');
     expect(ann.messageSerial).to.equal('msg-serial-1');
     expect(ann.timestamp).to.equal(1700000000000);
+    expect(ann.extras).to.deep.equal({ headers: { source: 'web' } });
+
+    // Second annotation — verify multiple items decoded
+    const ann2 = result.items[1];
+    expect(ann2.id).to.equal('ann-2');
+    expect(ann2.name).to.equal('heart');
+    expect(ann2.clientId).to.equal('user-2');
+    expect(ann2.count).to.equal(3);
   });
 
   /**

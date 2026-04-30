@@ -101,29 +101,28 @@ describe('uts/rest/types/presence_message_types', function () {
   /**
    * TP3h - memberKey combines connectionId and clientId
    *
-   * In ably-js, memberKey is computed externally by PresenceMap, not as a property
-   * on PresenceMessage. We verify the expected format connectionId:clientId.
+   * Per spec, memberKey is a "string function that combines the connectionId
+   * and clientId ensuring multiple connected clients with the same clientId
+   * are uniquely identifiable."
    */
   it('TP3h - memberKey format', function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const pm = Ably.Rest.PresenceMessage.fromValues({
       connectionId: 'conn-1',
       clientId: 'client-1',
     });
 
-    // memberKey is connectionId + ':' + clientId
-    const memberKey = pm.connectionId + ':' + pm.clientId;
-    expect(memberKey).to.equal('conn-1:client-1');
+    expect(typeof pm.memberKey).to.equal('string');
+    expect(pm.memberKey).to.equal('conn-1:client-1');
 
     const pm2 = Ably.Rest.PresenceMessage.fromValues({
       connectionId: 'conn-2',
       clientId: 'client-1',
     });
 
-    const memberKey2 = pm2.connectionId + ':' + pm2.clientId;
-    expect(memberKey2).to.equal('conn-2:client-1');
-
-    // Same clientId, different connectionId — different memberKey
-    expect(memberKey).to.not.equal(memberKey2);
+    expect(pm2.memberKey).to.equal('conn-2:client-1');
+    expect(pm.memberKey).to.not.equal(pm2.memberKey);
   });
 
   /**
@@ -198,5 +197,63 @@ describe('uts/rest/types/presence_message_types', function () {
     expect(messages[0].data).to.equal('hello');
     expect(messages[1].clientId).to.equal('bob');
     expect(messages[1].data).to.equal('world');
+  });
+
+  /**
+   * TP3 - null/missing attributes are undefined
+   *
+   * When fromEncoded receives a minimal presence message (only action),
+   * unspecified attributes should be null or undefined.
+   */
+  it('TP3 - null/missing attributes are undefined', async function () {
+    const pm = await Ably.Rest.PresenceMessage.fromEncoded({ action: 1 });
+
+    expect(pm.action).to.equal('present');
+    // clientId, connectionId, data should be null or undefined
+    expect(pm.clientId).to.satisfy((v: any) => v === null || v === undefined);
+    expect(pm.connectionId).to.satisfy((v: any) => v === null || v === undefined);
+    expect(pm.data).to.satisfy((v: any) => v === null || v === undefined);
+  });
+
+  /**
+   * TP3 - timestamp as number
+   *
+   * When fromEncoded receives a presence message with a numeric timestamp,
+   * it should be preserved as-is.
+   */
+  it('TP3 - timestamp as number', async function () {
+    const pm = await Ably.Rest.PresenceMessage.fromEncoded({
+      action: 1,
+      timestamp: 1700000000000,
+    });
+
+    expect(pm.action).to.equal('present');
+    expect(pm.timestamp).to.equal(1700000000000);
+  });
+
+  /**
+   * TP - presence message with data exists as complete object
+   *
+   * Construct a PresenceMessage with data and verify it has all
+   * the expected properties of a complete presence message.
+   */
+  it('TP - presence message with data is a complete object', function () {
+    const pm = Ably.Rest.PresenceMessage.fromValues({
+      action: 'enter',
+      clientId: 'user-1',
+      connectionId: 'conn-1',
+      data: { status: 'online', role: 'admin' },
+      timestamp: 1700000000000,
+      id: 'pm-full',
+      encoding: null,
+    });
+
+    expect(pm).to.be.an('object');
+    expect(pm.action).to.equal('enter');
+    expect(pm.clientId).to.equal('user-1');
+    expect(pm.connectionId).to.equal('conn-1');
+    expect(pm.data).to.deep.equal({ status: 'online', role: 'admin' });
+    expect(pm.timestamp).to.equal(1700000000000);
+    expect(pm.id).to.equal('pm-full');
   });
 });

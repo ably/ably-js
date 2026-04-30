@@ -16,6 +16,9 @@ let _savedSetTimeout: any = null;
 let _savedClearTimeout: any = null;
 let _savedNow: any = null;
 
+// Tracked clients for cleanup — ensures timers are released even if a test crashes
+const _trackedClients: any[] = [];
+
 /**
  * Install a MockHttpClient as the platform HTTP implementation.
  * Call uninstallMockHttp() in afterEach to restore the original.
@@ -81,7 +84,7 @@ class FakeClock {
   private _nextId: number;
 
   constructor() {
-    this._now = 0;
+    this._now = 1000000; // Must be non-zero: ably-js uses !lastActivity to check "not set" and 0 is falsy
     this._timers = [];
     this._nextId = 1;
   }
@@ -130,8 +133,10 @@ class FakeClock {
       const timer = this._timers.shift()!;
       this._now = timer.fireAt;
       timer.fn();
-      // Yield to microtask queue
-      await new Promise<void>((resolve) => process.nextTick(resolve));
+      // Yield to the event loop (not just the microtask queue) so that all
+      // chained process.nextTick callbacks (e.g. mock WebSocket error/close
+      // events) are fully drained before the next fake timer fires.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
     this._now = targetTime;
   }
@@ -174,9 +179,31 @@ function enableFakeTimers(): FakeClock {
 }
 
 /**
+ * Register a client for automatic cleanup in restoreAll().
+ * Call this after creating any Ably.Rest or Ably.Realtime client in a test.
+ * restoreAll() will close all tracked clients, preventing timer leaks
+ * even if the test throws before reaching its own cleanup code.
+ */
+function trackClient(client: any): void {
+  _trackedClients.push(client);
+}
+
+/**
  * Restore all mocks. Call this in afterEach to clean up everything.
  */
 function restoreAll(): void {
+  // Close all tracked clients first (before restoring mocks/timers)
+  // so their internal timers are cancelled while mocks are still in place.
+  while (_trackedClients.length > 0) {
+    const client = _trackedClients.pop();
+    try {
+      if (typeof client.close === 'function') {
+        client.close();
+      }
+    } catch (_) {
+      // Ignore errors during cleanup
+    }
+  }
   uninstallMockHttp();
   uninstallMockWebSocket();
   // Restore fake timers if installed
@@ -199,5 +226,6 @@ export {
   uninstallMockWebSocket,
   enableFakeTimers,
   FakeClock,
+  trackClient,
   restoreAll,
 };

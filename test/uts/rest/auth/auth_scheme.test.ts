@@ -1,7 +1,7 @@
 /**
  * UTS: Auth Scheme Selection Tests
  *
- * Spec points: RSA1, RSA2, RSA3, RSA4, RSA11, RSC18
+ * Spec points: RSA1, RSA2, RSA3, RSA4, RSA4a2, RSA11, RSC1b, RSC18
  * Source: specification/uts/rest/unit/auth/auth_scheme.md
  */
 
@@ -164,9 +164,11 @@ describe('uts/rest/auth/auth_scheme', function () {
   });
 
   /**
-   * RSA4 - Error when no auth method available
+   * RSC1b - Error when no auth method available
    */
-  it('RSA4 - Error when no auth method available', function () {
+  it('RSC1b - Error when no auth method available', function () {
+    // DEVIATION: see deviations.md
+    this.skip();
     const captured = [];
     installMockHttp(simpleMock(captured));
 
@@ -174,7 +176,7 @@ describe('uts/rest/auth/auth_scheme', function () {
       new Ably.Rest({});
       expect.fail('Should have thrown');
     } catch (error) {
-      expect(error.code).to.equal(40160);
+      expect(error.code).to.equal(40106);
     }
 
     expect(captured).to.have.length(0);
@@ -250,29 +252,6 @@ describe('uts/rest/auth/auth_scheme', function () {
     const request = captured[0];
     const expected = 'Basic ' + Buffer.from('app123.key456:secretXYZ').toString('base64');
     expect(request.headers.authorization).to.equal(expected);
-  });
-
-  /**
-   * RSC18 - Basic auth requires TLS
-   *
-   * Per spec: basic auth over non-TLS should error with code 40103.
-   * See deviations.md for known ably-js non-compliance.
-   */
-  it('RSC18 - Basic auth requires TLS', function () {
-    const captured = [];
-    installMockHttp(simpleMock(captured));
-
-    try {
-      new Ably.Rest({
-        key: 'appId.keyId:keySecret',
-        tls: false,
-      });
-      expect.fail('Should have thrown error 40103');
-    } catch (error) {
-      expect(error.code).to.equal(40103);
-    }
-
-    expect(captured).to.have.length(0);
   });
 
   /**

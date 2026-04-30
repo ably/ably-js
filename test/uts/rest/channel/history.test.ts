@@ -119,6 +119,28 @@ describe('uts/rest/channel/history', function () {
   });
 
   /**
+   * RSL2b - history with direction: backwards
+   */
+  it('RSL2b - history with direction backwards', async function () {
+    const captured = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const ch = client.channels.get('test');
+    await ch.history({ direction: 'backwards' });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('direction')).to.equal('backwards');
+  });
+
+  /**
    * RSL2b1 - default direction is backwards
    *
    * When direction is not specified, it defaults to 'backwards'
@@ -219,5 +241,71 @@ describe('uts/rest/channel/history', function () {
     expect(captured).to.have.length(1);
     const expectedPath = `/channels/${encodeURIComponent(channelName)}/messages`;
     expect(captured[0].path).to.equal(expectedPath);
+  });
+
+  /**
+   * RSL2 - History with combined time range (start and end)
+   */
+  it('RSL2 - history with start and end time range', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, [
+          { name: 'event', data: 'in-range', timestamp: 1500 },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.channels.get('test').history({ start: 1000, end: 2000 });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('start')).to.equal('1000');
+    expect(captured[0].url.searchParams.get('end')).to.equal('2000');
+  });
+
+  /**
+   * RSL2 - URL encoding with colon in channel name
+   */
+  it('RSL2 - URL encoding with colon', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.channels.get('namespace:channel').history();
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].path).to.equal('/channels/' + encodeURIComponent('namespace:channel') + '/messages');
+  });
+
+  /**
+   * RSL2 - URL encoding with slash in channel name
+   */
+  it('RSL2 - URL encoding with slash', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    await client.channels.get('path/to/channel').history();
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].path).to.equal('/channels/' + encodeURIComponent('path/to/channel') + '/messages');
   });
 });

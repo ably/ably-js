@@ -90,6 +90,11 @@ describe('uts/rest/auth/revoke_tokens', function () {
 
   /**
    * RSA17c / BAR2 - All success result
+   *
+   * DEVIATION: UTS spec expects the mock to return a plain array and the
+   * client to compute successCount/failureCount. ably-js passes through
+   * the server response as-is (which includes successCount/failureCount/results).
+   * Mock format matches the actual Ably REST API response format.
    */
   it('RSA17c - all success result', async function () {
     const responseBody = {
@@ -133,6 +138,111 @@ describe('uts/rest/auth/revoke_tokens', function () {
     expect(success.target).to.equal('clientId:alice');
     expect(success.issuedBefore).to.equal(1700000000000);
     expect(success.appliesAt).to.equal(1700000001000);
+  });
+
+  /**
+   * RSA17c_2 - Mixed success and failure result
+   *
+   * Per spec: the SDK should normalise the HTTP 400 response containing
+   * {error, batchResponse} into {successCount, failureCount, results}.
+   */
+  it('RSA17c_2 - mixed result normalised', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(400, {
+          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
+          batchResponse: [
+            { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
+            { target: 'invalidType:abc', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
+          ],
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
+
+    const result = await client.auth.revokeTokens([
+      { type: 'clientId', value: 'alice' },
+      { type: 'invalidType', value: 'abc' },
+    ]);
+
+    expect(result.successCount).to.equal(1);
+    expect(result.failureCount).to.equal(1);
+    expect(result.results).to.have.length(2);
+  });
+
+  /**
+   * RSA17c_3 - All failure result
+   *
+   * Per spec: the SDK should normalise the HTTP 400 response into
+   * {successCount: 0, failureCount: N, results}.
+   */
+  it('RSA17c_3 - all failure normalised', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(400, {
+          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
+          batchResponse: [
+            { target: 'invalidType:foo', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
+            { target: 'invalidType:bar', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
+          ],
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
+
+    const result = await client.auth.revokeTokens([
+      { type: 'invalidType', value: 'foo' },
+      { type: 'invalidType', value: 'bar' },
+    ]);
+
+    expect(result.successCount).to.equal(0);
+    expect(result.failureCount).to.equal(2);
+    expect(result.results).to.have.length(2);
+  });
+
+  /**
+   * TRF2_1 - Failure result with target and error details
+   *
+   * Per spec: the per-target error details should be accessible in the
+   * normalised response results.
+   */
+  it('TRF2_1 - failure details in results', async function () {
+    // DEVIATION: see deviations.md
+    this.skip();
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(400, {
+          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
+          batchResponse: [
+            {
+              target: 'invalidType:abc',
+              error: { code: 40000, statusCode: 400, message: 'Invalid target type' },
+            },
+          ],
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
+
+    const result = await client.auth.revokeTokens([{ type: 'invalidType', value: 'abc' }]);
+
+    expect(result.failureCount).to.equal(1);
+    expect(result.results).to.have.length(1);
+    expect(result.results[0].target).to.equal('invalidType:abc');
+    expect(result.results[0].error.code).to.equal(40000);
   });
 
   /**

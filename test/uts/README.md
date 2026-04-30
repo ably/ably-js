@@ -153,8 +153,17 @@ test/uts/
   README.md           # This file
   helpers.ts          # install/uninstall, FakeClock, Ably re-export
   mock_http.ts        # MockHttpClient (PendingConnection, PendingRequest)
-  rest/
+  mock_websocket.ts   # MockWebSocket (PendingWSConnection, MockWSInstance)
+  deviations.md       # Known spec/implementation deviations
+  rest/               # REST API tests
     time.test.ts      # RSC16 — time() tests
-  realtime/
+    ...               # (37 test files)
+  realtime/           # Realtime API tests
     time.test.ts      # RTC6a — RealtimeClient#time proxy tests
+    client/           # Realtime client tests
+      client_options.test.ts      # RSC1, RTC12
+      realtime_client.test.ts     # RTC1a-f, RTC2-4, RTC13-17
+      realtime_request.test.ts    # RTC9
+      realtime_stats.test.ts      # RTC5
+      realtime_timeouts.test.ts   # RTC7
 ```

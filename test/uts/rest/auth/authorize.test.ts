@@ -238,8 +238,88 @@ describe('uts/rest/auth/authorize', function () {
       await client.auth.authorize();
       expect.fail('Expected authorize to throw');
     } catch (error) {
+      expect(error.code).to.equal(40100);
       expect(error.statusCode).to.equal(401);
     }
+  });
+
+  /**
+   * RSA10e - authorize() saves tokenParams for reuse
+   *
+   * tokenParams provided to authorize() are saved and reused on subsequent
+   * token requests (e.g. when the token expires and is re-acquired).
+   */
+  it('RSA10e - tokenParams saved for reuse', async function () {
+    const callbackInvocations: any[] = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, []),
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      authCallback: function (params, callback) {
+        callbackInvocations.push({ ...params });
+        callback(null, {
+          token: 'token-' + callbackInvocations.length,
+          expires: Date.now() + 3600000,
+          issued: Date.now(),
+        });
+      },
+    });
+
+    // First authorize with custom tokenParams
+    await client.auth.authorize({
+      clientId: 'saved-client',
+      ttl: 3600000,
+    });
+
+    // Second authorize without explicit tokenParams — should reuse saved
+    await client.auth.authorize();
+
+    expect(callbackInvocations).to.have.length(2);
+    // Second callback should have received the saved params
+    expect(callbackInvocations[1].clientId).to.equal('saved-client');
+    expect(callbackInvocations[1].ttl).to.equal(3600000);
+  });
+
+  /**
+   * RSA10i - authorize() preserves key from constructor
+   *
+   * The API key from ClientOptions is preserved even when authOptions
+   * are provided to authorize().
+   */
+  it('RSA10i - key preserved after authorize with authOptions', async function () {
+    const captured: any[] = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        if (req.path.match(/\/keys\/.*\/requestToken/)) {
+          req.respond_with(200, {
+            token: 'token-via-key',
+            expires: Date.now() + 3600000,
+            issued: Date.now(),
+            keyName: 'appId.keyId',
+          });
+        } else {
+          req.respond_with(200, []);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+
+    // Authorize with queryTime option (but same key)
+    await client.auth.authorize(null, { key: 'appId.keyId:keySecret', queryTime: false });
+
+    // Key should still work — make a second authorize
+    const result = await client.auth.authorize();
+    expect(result).to.be.an('object');
+    expect(result.token).to.be.a('string');
   });
 
   /**

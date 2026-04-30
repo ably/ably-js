@@ -6,7 +6,6 @@
  *
  * Skipped:
  * - Msgpack-specific tests (RSL4c msgpack, RSL6 msgpack bin/str) — mock doesn't support msgpack responses
- * - Number/boolean data — ably-js throws 40013 "Data type is unsupported" for non-string/object/buffer/null
  * - Encoding fixtures from ably-common — separate fixture-based tests
  */
 
@@ -302,12 +301,12 @@ describe('uts/rest/encoding/message_encoding', function () {
   });
 
   /**
-   * RSL4 - Number data type is unsupported
+   * RSL4a - Number data type rejected
    *
-   * ably-js throws error 40013 for non-string/object/buffer/null data types.
-   * The UTS spec expects numbers to pass through, but ably-js rejects them.
+   * Per RSL4a: payloads must be binary, strings, or objects capable of
+   * JSON representation. Any other data type should result in an error.
    */
-  it('RSL4 - number data type rejected', async function () {
+  it('RSL4a - number data type rejected', async function () {
     const { mock } = publishMock();
     installMockHttp(mock);
 
@@ -318,5 +317,43 @@ describe('uts/rest/encoding/message_encoding', function () {
     } catch (e) {
       expect(e.code).to.equal(40013);
     }
+  });
+
+  /**
+   * RSL4a - Boolean data type rejected
+   *
+   * Per RSL4a: payloads must be binary, strings, or objects capable of
+   * JSON representation. Any other data type should result in an error.
+   */
+  it('RSL4a - boolean data type rejected', async function () {
+    const { mock } = publishMock();
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    try {
+      await client.channels.get('test').publish('event', true);
+      expect.fail('Expected publish to throw');
+    } catch (e) {
+      expect(e.code).to.equal(40013);
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // MsgPack tests — PENDING (mock HTTP does not support msgpack encoding)
+  // ---------------------------------------------------------------------------
+
+  it('RSL4c - binary data with msgpack protocol', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
+  });
+
+  it('RSL6 - msgpack bin type decoded to Buffer', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
+  });
+
+  it('RSL6 - msgpack str type decoded to string', function () {
+    // PENDING: Requires mock msgpack encoding support. See deviations.md.
+    this.skip();
   });
 });

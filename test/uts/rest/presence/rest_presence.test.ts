@@ -632,4 +632,237 @@ describe('uts/rest/presence/rest_presence', function () {
       );
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // RSP3a1b - get() limit defaults to 100
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP3a1b - limit defaults to 100
+   *
+   * When get() is called without a limit parameter, the request must either
+   * omit the limit param (server default) or send limit=100.
+   */
+  it('RSP3a1b - get() limit defaults to 100', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.get();
+
+    expect(captured).to.have.length(1);
+    const params = captured[0].url.searchParams;
+    const limit = params.get('limit');
+    // limit should either be absent (null) or '100'
+    expect(limit === null || limit === '100').to.be.true;
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP3 - get() with combined filters
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP3 - combined filters
+   *
+   * get() with limit, clientId, and connectionId must send all three as
+   * query parameters.
+   */
+  it('RSP3 - get() with combined filters sends all params', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.get({ limit: 25, clientId: 'user1', connectionId: 'conn1' });
+
+    expect(captured).to.have.length(1);
+    const params = captured[0].url.searchParams;
+    expect(params.get('limit')).to.equal('25');
+    expect(params.get('clientId')).to.equal('user1');
+    expect(params.get('connectionId')).to.equal('conn1');
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP4b1c - history() with start and end combined
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP4b1c - start and end combined
+   *
+   * history() with both start and end must send both as query parameters.
+   */
+  it('RSP4b1c - history() with start and end combined sends both params', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({ start: 1609459200000, end: 1609545600000 });
+
+    expect(captured).to.have.length(1);
+    const params = captured[0].url.searchParams;
+    expect(params.get('start')).to.equal('1609459200000');
+    expect(params.get('end')).to.equal('1609545600000');
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP4b3b - history() limit defaults to 100
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP4b3b - history limit defaults to 100
+   *
+   * When history() is called without a limit parameter, the request must either
+   * omit the limit param (server default) or send limit=100.
+   */
+  it('RSP4b3b - history() limit defaults to 100', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history();
+
+    expect(captured).to.have.length(1);
+    const params = captured[0].url.searchParams;
+    const limit = params.get('limit');
+    // limit should either be absent (null) or '100'
+    expect(limit === null || limit === '100').to.be.true;
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP4 - history() with all parameters
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP4 - all parameters combined
+   *
+   * history() with start, end, direction, and limit must send all four
+   * as query parameters.
+   */
+  it('RSP4 - history() with all parameters sends all params', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({ start: 1609459200000, end: 1609545600000, direction: 'forwards', limit: 50 });
+
+    expect(captured).to.have.length(1);
+    const params = captured[0].url.searchParams;
+    expect(params.get('start')).to.equal('1609459200000');
+    expect(params.get('end')).to.equal('1609545600000');
+    expect(params.get('direction')).to.equal('forwards');
+    expect(params.get('limit')).to.equal('50');
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP Error 2 - auth error on history()
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP Error 2 - auth error on history
+   *
+   * When the server responds with 401 and error code 40101, the operation
+   * must throw with the appropriate error code and statusCode.
+   */
+  it('RSP Error 2 - auth error on history() throws with error code', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(401, {
+          error: {
+            code: 40101,
+            statusCode: 401,
+            message: 'Unauthorized',
+          },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+
+    try {
+      await channel.presence.history();
+      expect.fail('Expected history() to throw');
+    } catch (error) {
+      expect(error.code).to.equal(40101);
+      expect(error.statusCode).to.equal(401);
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP Headers - get() includes standard headers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP Headers - standard headers
+   *
+   * get() must include authorization, X-Ably-Version, and accept headers
+   * in the request.
+   */
+  it('RSP Headers - get() includes standard headers', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.get();
+
+    expect(captured).to.have.length(1);
+    const headers = captured[0].headers;
+    expect(headers).to.have.property('authorization');
+    expect(headers['authorization']).to.not.be.empty;
+    expect(headers).to.have.property('X-Ably-Version');
+    expect(headers['X-Ably-Version']).to.not.be.empty;
+    expect(headers).to.have.property('accept');
+    expect(headers['accept']).to.not.be.empty;
+  });
 });

@@ -1,9 +1,10 @@
 /**
- * UTS: Batch Publish (RSC22) and Batch Presence (RSC24) Tests
+ * UTS: Batch Publish Tests
  *
- * Spec points: RSC22, RSC22c, RSC22d, BSP2a, BSP2b, BPR2a-c, BPF2a-b,
- *              RSC24, BAR2, BGR2, BGF2
- * Source: uts/test/rest/unit/batch_publish.md, uts/test/rest/unit/batch_presence.md
+ * Spec points: RSC22, RSC22c, RSC22d, BSP2a, BSP2b, BPR2a-c, BPF2a-b
+ * Source: specification/uts/rest/unit/batch_publish.md
+ *
+ * Batch Presence tests are in batch_presence.test.ts.
  */
 
 import { expect } from 'chai';
@@ -609,216 +610,67 @@ describe('uts/rest/batch_publish', function () {
       expect(body[0].messages[1].name).to.equal('event2');
     });
   });
-});
-
-// =============================================================================
-// Batch Presence (RSC24)
-// =============================================================================
-
-describe('uts/rest/batch_presence', function () {
-  afterEach(function () {
-    restoreAll();
-  });
 
   // ---------------------------------------------------------------------------
-  // RSC24 - batchPresence sends GET to /presence
+  // RSC22d - idempotent publish with idempotentRestPublishing
   // ---------------------------------------------------------------------------
 
-  describe('RSC24 - batchPresence sends GET to /presence', function () {
-    it('RSC24_1 - sends GET request to /presence with channels query param', async function () {
-      const captured = [];
+  describe('RSC22d - idempotent batch publish', function () {
+    /**
+     * RSC22d - batch publish generates idempotent IDs per RSL1k1
+     *
+     * Per spec: "If idempotentRestPublishing is enabled, then RSL1k1 should
+     * be applied (to each BatchPublishSpec separately)."
+     */
+    it('RSC22d - batch publish generates idempotent IDs', async function () {
+      // DEVIATION: see deviations.md
+      this.skip();
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
           captured.push(req);
-          req.respond_with(200, {
-            successCount: 2,
-            failureCount: 0,
-            results: [
-              { channel: 'channel-a', presence: [] },
-              { channel: 'channel-b', presence: [] },
-            ],
-          });
+          req.respond_with(201, [
+            {
+              successCount: 1,
+              failureCount: 0,
+              results: [{ channel: 'ch1', messageId: 'msg-id-1', serials: ['s1'] }],
+            },
+          ]);
         },
       });
       installMockHttp(mock);
 
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.batchPresence(['channel-a', 'channel-b']);
+      const client = new Ably.Rest({
+        key: 'appId.keyId:keySecret',
+        useBinaryProtocol: false,
+        idempotentRestPublishing: true,
+      });
+      await client.batchPublish({
+        channels: ['ch1'],
+        messages: [{ name: 'event', data: 'data' }],
+      });
 
       expect(captured).to.have.length(1);
-      expect(captured[0].method.toUpperCase()).to.equal('GET');
-      expect(captured[0].path).to.equal('/presence');
-      expect(captured[0].url.searchParams.get('channels')).to.equal('channel-a,channel-b');
+      const body = JSON.parse(captured[0].body);
+      expect(body[0].messages[0]).to.have.property('id');
+      expect(body[0].messages[0].id).to.match(/^.+:0$/);
     });
+  });
 
-    it('RSC24_2 - single channel sends GET with single channel name', async function () {
-      const captured = [];
+  // ---------------------------------------------------------------------------
+  // RSC22_Error - edge cases
+  // ---------------------------------------------------------------------------
+
+  describe('RSC22_Error - edge cases', function () {
+    it('RSC22_Error1 - empty channels array', async function () {
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
           captured.push(req);
-          req.respond_with(200, {
-            successCount: 1,
-            failureCount: 0,
-            results: [{ channel: 'my-channel', presence: [] }],
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.batchPresence(['my-channel']);
-
-      expect(captured).to.have.length(1);
-      expect(captured[0].url.searchParams.get('channels')).to.equal('my-channel');
-    });
-
-    it('RSC24_3 - channel names with special characters are comma-joined', async function () {
-      const captured = [];
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          captured.push(req);
-          req.respond_with(200, {
-            successCount: 2,
-            failureCount: 0,
-            results: [
-              { channel: 'foo:bar', presence: [] },
-              { channel: 'baz/qux', presence: [] },
-            ],
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.batchPresence(['foo:bar', 'baz/qux']);
-
-      expect(captured).to.have.length(1);
-      // The SDK joins channels with comma; URL encoding may apply
-      const channelsParam = captured[0].url.searchParams.get('channels');
-      expect(channelsParam).to.include('foo:bar');
-      expect(channelsParam).to.include('baz/qux');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // BAR2 - BatchPresenceResponse structure
-  // ---------------------------------------------------------------------------
-
-  describe('BAR2 - BatchPresenceResponse structure', function () {
-    it('BAR2_2 - all success', async function () {
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          req.respond_with(200, {
-            successCount: 2,
-            failureCount: 0,
-            results: [
-              { channel: 'ch-a', presence: [] },
-              { channel: 'ch-b', presence: [] },
-            ],
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const result = await client.batchPresence(['ch-a', 'ch-b']);
-
-      expect(result.successCount).to.equal(2);
-      expect(result.failureCount).to.equal(0);
-      expect(result.results).to.have.lengthOf(2);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // BGR2 - BatchPresenceSuccessResult structure
-  // ---------------------------------------------------------------------------
-
-  describe('BGR2 - BatchPresenceSuccessResult structure', function () {
-    it('BGR2_1 - success result with members present', async function () {
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          req.respond_with(200, {
-            successCount: 1,
-            failureCount: 0,
-            results: [
-              {
-                channel: 'my-channel',
-                presence: [
-                  {
-                    clientId: 'client-1',
-                    action: 1,
-                    connectionId: 'conn-abc',
-                    id: 'conn-abc:0:0',
-                    timestamp: 1700000000000,
-                    data: 'hello',
-                  },
-                  {
-                    clientId: 'client-2',
-                    action: 1,
-                    connectionId: 'conn-def',
-                    id: 'conn-def:0:0',
-                    timestamp: 1700000000000,
-                    data: '{"key":"value"}',
-                  },
-                ],
-              },
-            ],
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const result = await client.batchPresence(['my-channel']);
-
-      expect(result.results).to.have.lengthOf(1);
-
-      const success = result.results[0];
-      expect(success.channel).to.equal('my-channel');
-      expect(success.presence).to.be.an('array').with.lengthOf(2);
-      expect(success.presence[0].clientId).to.equal('client-1');
-      expect(success.presence[0].connectionId).to.equal('conn-abc');
-      expect(success.presence[1].clientId).to.equal('client-2');
-    });
-
-    it('BGR2_2 - success result with empty presence (no members)', async function () {
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          req.respond_with(200, {
-            successCount: 1,
-            failureCount: 0,
-            results: [{ channel: 'empty-channel', presence: [] }],
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const result = await client.batchPresence(['empty-channel']);
-
-      const success = result.results[0];
-      expect(success.channel).to.equal('empty-channel');
-      expect(success.presence).to.be.an('array').with.lengthOf(0);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Error handling
-  // ---------------------------------------------------------------------------
-
-  describe('Error handling', function () {
-    it('RSC24_Error_1 - server error is propagated', async function () {
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          req.respond_with(500, {
-            error: { code: 50000, statusCode: 500, message: 'Internal error' },
+          req.respond_with(400, {
+            error: { code: 40000, statusCode: 400, message: 'No channels specified' },
           });
         },
       });
@@ -828,66 +680,98 @@ describe('uts/rest/batch_presence', function () {
 
       let threw = false;
       try {
-        await client.batchPresence(['any-channel']);
-      } catch (err) {
+        await client.batchPublish({
+          channels: [],
+          messages: [{ name: 'e', data: 'd' }],
+        });
+      } catch (err: any) {
         threw = true;
-        expect(err.code).to.equal(50000);
-        expect(err.statusCode).to.equal(500);
+        // Either the SDK validates locally or the server rejects it
+        expect(err.code).to.be.a('number');
       }
-      expect(threw).to.be.true;
-    });
 
-    it('RSC24_Error_2 - authentication error is propagated', async function () {
-      const mock = new MockHttpClient({
-        onConnectionAttempt: (conn) => conn.respond_with_success(),
-        onRequest: (req) => {
-          req.respond_with(401, {
-            error: { code: 40101, statusCode: 401, message: 'Invalid credentials' },
-          });
-        },
-      });
-      installMockHttp(mock);
-
-      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-
-      let threw = false;
-      try {
-        await client.batchPresence(['any-channel']);
-      } catch (err) {
-        threw = true;
-        expect(err.code).to.equal(40101);
-        expect(err.statusCode).to.equal(401);
+      // Either an error is thrown or the request was made with the empty array
+      if (!threw) {
+        expect(captured).to.have.length(1);
+        const body = JSON.parse(captured[0].body);
+        expect(body[0].channels).to.deep.equal([]);
       }
-      expect(threw).to.be.true;
     });
   });
 
   // ---------------------------------------------------------------------------
-  // RSC24_Auth - request authentication
+  // RSC22c6 - encoding in batch messages
   // ---------------------------------------------------------------------------
 
-  describe('RSC24_Auth - request authentication', function () {
-    it('RSC24_Auth_1 - basic auth header is included', async function () {
-      const captured = [];
+  describe('RSC22c6 - encoding in batch messages', function () {
+    it('RSC22c6 - JSON string data sent correctly in body', async function () {
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
           captured.push(req);
-          req.respond_with(200, {
-            successCount: 1,
-            failureCount: 0,
-            results: [{ channel: 'ch', presence: [] }],
-          });
+          req.respond_with(200, [
+            {
+              successCount: 1,
+              failureCount: 0,
+              results: [{ channel: 'ch', messageId: 'msg', serials: ['s1'] }],
+            },
+          ]);
         },
       });
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.batchPresence(['ch']);
+      await client.batchPublish({
+        channels: ['ch'],
+        messages: [{ name: 'event', data: JSON.stringify({ key: 'value' }) }],
+      });
 
       expect(captured).to.have.length(1);
-      expect(captured[0].headers).to.have.property('authorization');
-      expect(captured[0].headers['authorization']).to.match(/^Basic /);
+      const body = JSON.parse(captured[0].body);
+      expect(body[0].messages[0].name).to.equal('event');
+      // The data should be the JSON string as-is
+      const parsedData = JSON.parse(body[0].messages[0].data);
+      expect(parsedData).to.deep.equal({ key: 'value' });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // BSP - additional BatchPublishSpec tests
+  // ---------------------------------------------------------------------------
+
+  describe('BSP - additional BatchPublishSpec tests', function () {
+    it('BSP - single channel in BatchPublishSpec', async function () {
+      const captured: any[] = [];
+      const mock = new MockHttpClient({
+        onConnectionAttempt: (conn) => conn.respond_with_success(),
+        onRequest: (req) => {
+          captured.push(req);
+          req.respond_with(200, [
+            {
+              successCount: 1,
+              failureCount: 0,
+              results: [{ channel: 'single-ch', messageId: 'msg', serials: ['s1'] }],
+            },
+          ]);
+        },
+      });
+      installMockHttp(mock);
+
+      const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+      await client.batchPublish({
+        channels: ['single-ch'],
+        messages: [{ name: 'e', data: 'd' }],
+      });
+
+      expect(captured).to.have.length(1);
+      const body = JSON.parse(captured[0].body);
+      // Single spec is wrapped in an array
+      expect(body).to.be.an('array').with.lengthOf(1);
+      expect(body[0].channels).to.deep.equal(['single-ch']);
+      expect(body[0].messages).to.be.an('array').with.lengthOf(1);
+      expect(body[0].messages[0].name).to.equal('e');
+      expect(body[0].messages[0].data).to.equal('d');
     });
   });
 });
