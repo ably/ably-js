@@ -14,7 +14,7 @@ import { MockHttpClient } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 function publishMock() {
-  const captured = [];
+  const captured: any[] = [];
   const mock = new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -25,7 +25,7 @@ function publishMock() {
   return { mock, captured };
 }
 
-function historyMock(messages) {
+function historyMock(messages: any) {
   const mock = new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -54,7 +54,7 @@ describe('uts/rest/encoding/message_encoding', function () {
 
     const body = JSON.parse(captured[0].body);
     expect(body[0].data).to.equal('plain string data');
-    expect(body[0].encoding).to.satisfy((v) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
   });
 
   /**
@@ -116,8 +116,8 @@ describe('uts/rest/encoding/message_encoding', function () {
     await client.channels.get('test').publish('event', null);
 
     const body = JSON.parse(captured[0].body);
-    expect(body[0].data).to.satisfy((v) => v === undefined || v === null);
-    expect(body[0].encoding).to.satisfy((v) => v === undefined || v === null);
+    expect(body[0].data).to.satisfy((v: any) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
   });
 
   /**
@@ -132,7 +132,7 @@ describe('uts/rest/encoding/message_encoding', function () {
 
     const body = JSON.parse(captured[0].body);
     expect(body[0].data).to.equal('');
-    expect(body[0].encoding).to.satisfy((v) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
   });
 
   /**
@@ -190,7 +190,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(Buffer.isBuffer(result.items[0].data)).to.be.true;
     expect(Buffer.compare(result.items[0].data, Buffer.from([0, 1, 2, 3, 4]))).to.equal(0);
@@ -206,7 +206,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(result.items[0].data).to.deep.equal({ key: 'value', number: 42 });
     expect(result.items[0].encoding).to.be.null;
@@ -224,7 +224,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(result.items[0].data).to.deep.equal({ key: 'value' });
     expect(result.items[0].encoding).to.be.null;
@@ -240,7 +240,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(result.items[0].data).to.equal('Hello World');
     expect(typeof result.items[0].data).to.equal('string');
@@ -259,7 +259,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(result.items[0].data).to.deep.equal({ status: 'active', count: 5 });
     expect(result.items[0].encoding).to.be.null;
@@ -277,7 +277,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     // base64 should be decoded, but custom-encryption is unrecognized and preserved
     expect(result.items[0].encoding).to.equal('custom-encryption');
@@ -294,7 +294,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     ]));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.channels.get('test').history();
+    const result = await client.channels.get('test').history(null);
 
     expect(result.items[0].data).to.equal('plain text');
     expect(typeof result.items[0].data).to.equal('string');
@@ -314,7 +314,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     try {
       await client.channels.get('test').publish('event', 42);
       expect.fail('Expected publish to throw');
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.equal(40013);
     }
   });
@@ -333,7 +333,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     try {
       await client.channels.get('test').publish('event', true);
       expect.fail('Expected publish to throw');
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.equal(40013);
     }
   });

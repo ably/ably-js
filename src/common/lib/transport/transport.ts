@@ -113,7 +113,7 @@ abstract class Transport extends EventEmitter {
     this.isFinished = true;
     this.isConnected = false;
     this.maxIdleInterval = null;
-    Platform.Config.clearTimeout(this.idleTimer ?? undefined);
+    Platform.Config.clearTimeout((this.idleTimer ?? undefined) as unknown as ReturnType<typeof setTimeout>);
     this.idleTimer = null;
     this.emit(event, err);
     this.dispose();
@@ -310,7 +310,7 @@ abstract class Transport extends EventEmitter {
     let transportAttemptTimer: NodeJS.Timeout | number;
 
     const errorCb = function (this: { event: string }, err: ErrorInfo) {
-      Platform.Config.clearTimeout(transportAttemptTimer);
+      Platform.Config.clearTimeout(transportAttemptTimer as unknown as ReturnType<typeof setTimeout>);
       callback({ event: this.event, error: err });
     };
 
@@ -332,7 +332,7 @@ abstract class Transport extends EventEmitter {
         'Transport.tryConnect()',
         'viable transport ' + transport,
       );
-      Platform.Config.clearTimeout(transportAttemptTimer);
+      Platform.Config.clearTimeout(transportAttemptTimer as unknown as ReturnType<typeof setTimeout>);
       transport.off(['failed', 'disconnected'], errorCb);
       callback(null, transport);
     });

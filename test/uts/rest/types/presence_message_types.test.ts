@@ -113,16 +113,16 @@ describe('uts/rest/types/presence_message_types', function () {
       clientId: 'client-1',
     });
 
-    expect(typeof pm.memberKey).to.equal('string');
-    expect(pm.memberKey).to.equal('conn-1:client-1');
+    expect(typeof (pm as any).memberKey).to.equal('string');
+    expect((pm as any).memberKey).to.equal('conn-1:client-1');
 
     const pm2 = Ably.Rest.PresenceMessage.fromValues({
       connectionId: 'conn-2',
       clientId: 'client-1',
     });
 
-    expect(pm2.memberKey).to.equal('conn-2:client-1');
-    expect(pm.memberKey).to.not.equal(pm2.memberKey);
+    expect((pm2 as any).memberKey).to.equal('conn-2:client-1');
+    expect((pm as any).memberKey).to.not.equal((pm2 as any).memberKey);
   });
 
   /**

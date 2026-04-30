@@ -26,7 +26,7 @@ describe('uts/rest/types/mutable_message_types', function () {
       'message.append',
     ];
 
-    actionStrings.forEach(function (actionStr) {
+    actionStrings.forEach(function (actionStr: any) {
       const msg = Ably.Rest.Message.fromValues({ action: actionStr });
       expect(msg.action).to.equal(actionStr);
     });
@@ -99,11 +99,11 @@ describe('uts/rest/types/mutable_message_types', function () {
     });
 
     expect(msg.version).to.exist;
-    expect(msg.version.serial).to.equal('version-serial-1');
-    expect(msg.version.timestamp).to.equal(1700000001000);
-    expect(msg.version.clientId).to.equal('editor-1');
-    expect(msg.version.description).to.equal('fixed typo');
-    expect(msg.version.metadata).to.deep.equal({ reason: 'typo', tool: 'editor' });
+    expect(msg.version!.serial).to.equal('version-serial-1');
+    expect(msg.version!.timestamp).to.equal(1700000001000);
+    expect(msg.version!.clientId).to.equal('editor-1');
+    expect(msg.version!.description).to.equal('fixed typo');
+    expect(msg.version!.metadata).to.deep.equal({ reason: 'typo', tool: 'editor' });
   });
 
   /**
@@ -121,9 +121,9 @@ describe('uts/rest/types/mutable_message_types', function () {
 
     expect(msg.version).to.exist;
     // TM2s1: version.serial defaults to message serial
-    expect(msg.version.serial).to.equal('msg-serial-1');
+    expect(msg.version!.serial).to.equal('msg-serial-1');
     // TM2s2: version.timestamp defaults to message timestamp
-    expect(msg.version.timestamp).to.equal(1700000000000);
+    expect(msg.version!.timestamp).to.equal(1700000000000);
   });
 
   /**
@@ -138,8 +138,8 @@ describe('uts/rest/types/mutable_message_types', function () {
     });
 
     expect(msg.annotations).to.exist;
-    expect(msg.annotations.summary).to.exist;
-    expect(Object.keys(msg.annotations.summary)).to.have.lengthOf(0);
+    expect(msg.annotations!.summary).to.exist;
+    expect(Object.keys(msg.annotations!.summary)).to.have.lengthOf(0);
   });
 
   /**
@@ -161,7 +161,7 @@ describe('uts/rest/types/mutable_message_types', function () {
     expect(op.metadata.tool).to.equal('editor');
 
     // Empty operation
-    const emptyOp = {};
+    const emptyOp: any = {};
     expect(emptyOp.clientId).to.be.undefined;
     expect(emptyOp.description).to.be.undefined;
     expect(emptyOp.metadata).to.be.undefined;
@@ -183,7 +183,7 @@ describe('uts/rest/types/mutable_message_types', function () {
     expect(result2.versionSerial).to.be.null;
 
     // Missing versionSerial key
-    const result3 = {};
+    const result3: any = {};
     expect(result3.versionSerial).to.be.undefined;
   });
 

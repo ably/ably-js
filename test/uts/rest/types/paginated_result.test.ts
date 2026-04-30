@@ -4,7 +4,7 @@
  * Spec points: TG1, TG2, TG3, TG4
  * Source: uts/test/rest/unit/types/paginated_result.md
  *
- * Tests pagination via channel.history() with mock HTTP responses.
+ * Tests pagination via channel.history(null) with mock HTTP responses.
  * Link header URLs MUST use the `./word?params` format to match
  * ably-js's getRelParams regex: /^\.\/(\w+)\?(.*)$/
  */
@@ -22,7 +22,7 @@ describe('uts/rest/types/paginated_result', function () {
    * TG1 - items attribute
    *
    * PaginatedResult must contain an items array with the result data.
-   * channel.history() returns PaginatedResult<Message> with correctly
+   * channel.history(null) returns PaginatedResult<Message> with correctly
    * deserialized Message objects.
    */
   it('TG1 - items attribute contains correct messages', async function () {
@@ -37,9 +37,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(2);
@@ -66,9 +66,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.hasNext()).to.be.true;
     expect(result.isLast()).to.be.false;
@@ -89,9 +89,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.hasNext()).to.be.false;
     expect(result.isLast()).to.be.true;
@@ -105,7 +105,7 @@ describe('uts/rest/types/paginated_result', function () {
    * must include the cursor parameter from the Link header.
    */
   it('TG3 - next() fetches next page using Link header cursor', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -132,19 +132,19 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
 
-    const page1 = await channel.history();
+    const page1 = await channel.history(null);
     expect(page1.items).to.have.length(2);
     expect(page1.items[0].name).to.equal('a');
     expect(page1.hasNext()).to.be.true;
 
     const page2 = await page1.next();
     expect(page2).to.not.be.null;
-    expect(page2.items).to.have.length(1);
-    expect(page2.items[0].name).to.equal('c');
-    expect(page2.hasNext()).to.be.false;
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].name).to.equal('c');
+    expect(page2!.hasNext()).to.be.false;
 
     // Verify the next request included the cursor param
     expect(captured).to.have.length(2);
@@ -158,7 +158,7 @@ describe('uts/rest/types/paginated_result', function () {
    * The Link header must include rel="first" with ./messages? format.
    */
   it('TG4 - first() returns first page', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -193,19 +193,19 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
 
-    const page1 = await channel.history();
+    const page1 = await channel.history(null);
     expect(page1.items[0].name).to.equal('first');
 
     const page2 = await page1.next();
-    expect(page2.items[0].name).to.equal('second');
-    expect(page2.hasFirst()).to.be.true;
+    expect(page2!.items[0].name).to.equal('second');
+    expect(page2!.hasFirst()).to.be.true;
 
-    const firstPage = await page2.first();
-    expect(firstPage.items[0].name).to.equal('first');
-    expect(firstPage.items[0].id).to.equal('item1');
+    const firstPage = await page2!.first();
+    expect(firstPage!.items[0].name).to.equal('first');
+    expect(firstPage!.items[0].id).to.equal('item1');
   });
 
   /**
@@ -223,9 +223,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(0);
@@ -248,9 +248,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.isLast()).to.be.true;
 
@@ -265,7 +265,7 @@ describe('uts/rest/types/paginated_result', function () {
    * include the same Authorization header.
    */
   it('TG - pagination preserves auth credentials', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -285,10 +285,10 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
 
-    const page1 = await channel.history();
+    const page1 = await channel.history(null);
     await page1.next();
 
     // Both requests must have authorization header
@@ -306,7 +306,7 @@ describe('uts/rest/types/paginated_result', function () {
    * (X-Ably-Version and Ably-Agent).
    */
   it('TG - pagination includes standard Ably headers', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -326,10 +326,10 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
 
-    const page1 = await channel.history();
+    const page1 = await channel.history(null);
     await page1.next();
 
     // Verify the pagination (second) request has standard headers
@@ -371,16 +371,16 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
 
-    const page1 = await channel.history();
+    const page1 = await channel.history(null);
     expect(page1.hasNext()).to.be.true;
 
     try {
       await page1.next();
       expect.fail('Expected next() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(404);
       expect(error.code).to.equal(40400);
     }
@@ -407,9 +407,9 @@ describe('uts/rest/types/paginated_result', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
     const channel = client.channels.get('test');
-    const result = await channel.history();
+    const result = await channel.history(null);
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(5);

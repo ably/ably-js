@@ -21,7 +21,7 @@ describe('uts/rest/stats', function () {
    * PaginatedResult containing Stats objects.
    */
   it('RSC6a - stats() returns PaginatedResult with Stats objects', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -35,7 +35,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.stats();
+    const result = await client.stats({} as any);
 
     // Result should be a PaginatedResult with 2 items
     expect(result.items).to.have.length(2);
@@ -49,7 +49,7 @@ describe('uts/rest/stats', function () {
    * The stats endpoint must be accessed via GET /stats.
    */
   it('RSC6a - stats() sends GET /stats', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -60,7 +60,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -74,7 +74,7 @@ describe('uts/rest/stats', function () {
    * valid credentials and standard Ably headers.
    */
   it('RSC6a - stats() sends authenticated request with standard headers', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -85,7 +85,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     const request = captured[0];
@@ -116,7 +116,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -138,7 +138,7 @@ describe('uts/rest/stats', function () {
    * since epoch.
    */
   it('RSC6b1 - stats() with start parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -149,7 +149,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats({ start: 1704067200000 });
+    await client.stats({ start: 1704067200000 } as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('start')).to.equal('1704067200000');
@@ -162,7 +162,7 @@ describe('uts/rest/stats', function () {
    * since epoch.
    */
   it('RSC6b1 - stats() with end parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -173,7 +173,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats({ end: 1706745599000 });
+    await client.stats({ end: 1706745599000 } as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('end')).to.equal('1706745599000');
@@ -185,7 +185,7 @@ describe('uts/rest/stats', function () {
    * Both start and end can be provided together. start must be <= end.
    */
   it('RSC6b1 - stats() with start and end parameters', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -196,7 +196,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats({ start: 1704067200000, end: 1706745599000 });
+    await client.stats({ start: 1704067200000, end: 1706745599000 } as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('start')).to.equal('1704067200000');
@@ -210,7 +210,7 @@ describe('uts/rest/stats', function () {
    * to the REST API default (backwards).
    */
   it('RSC6b2 - stats() with direction parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -234,7 +234,7 @@ describe('uts/rest/stats', function () {
    * (letting the server apply the default) or sent as "backwards".
    */
   it('RSC6b2 - stats() direction defaults to backwards', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -245,7 +245,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     const direction = captured[0].url.searchParams.get('direction');
@@ -259,7 +259,7 @@ describe('uts/rest/stats', function () {
    * to the REST API default (100).
    */
   it('RSC6b3 - stats() with limit parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -270,7 +270,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats({ limit: 10 });
+    await client.stats({ limit: 10 } as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('limit')).to.equal('10');
@@ -283,7 +283,7 @@ describe('uts/rest/stats', function () {
    * or sent as "100".
    */
   it('RSC6b3 - stats() limit defaults to 100', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -294,7 +294,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     const limit = captured[0].url.searchParams.get('limit');
@@ -305,7 +305,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (minute)
    */
   it('RSC6b4 - stats() with unit=minute', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -326,7 +326,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (hour)
    */
   it('RSC6b4 - stats() with unit=hour', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -347,7 +347,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (day)
    */
   it('RSC6b4 - stats() with unit=day', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -368,7 +368,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (month)
    */
   it('RSC6b4 - stats() with unit=month', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -392,7 +392,7 @@ describe('uts/rest/stats', function () {
    * or sent as "minute".
    */
   it('RSC6b4 - stats() unit defaults to minute', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -403,7 +403,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    await client.stats();
+    await client.stats({} as any);
 
     expect(captured).to.have.length(1);
     const unit = captured[0].url.searchParams.get('unit');
@@ -416,7 +416,7 @@ describe('uts/rest/stats', function () {
    * All query parameters can be used together in a single request.
    */
   it('RSC6b - stats() with all parameters combined', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -433,7 +433,7 @@ describe('uts/rest/stats', function () {
       direction: 'forwards',
       limit: 50,
       unit: 'hour',
-    });
+    } as any);
 
     expect(captured).to.have.length(1);
     const params = captured[0].url.searchParams;
@@ -459,7 +459,7 @@ describe('uts/rest/stats', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-    const result = await client.stats();
+    const result = await client.stats({} as any);
 
     expect(result.items).to.have.length(0);
     expect(result.hasNext()).to.be.false;
@@ -489,9 +489,9 @@ describe('uts/rest/stats', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
 
     try {
-      await client.stats();
+      await client.stats({} as any);
       expect.fail('Expected stats() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(401);
       expect(error.code).to.equal(40100);
     }
@@ -503,7 +503,7 @@ describe('uts/rest/stats', function () {
    * PaginatedResult supports navigation via Link headers (TG4, TG6).
    */
   it('RSC6a - stats() pagination with Link headers', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let reqCount = 0;
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -528,7 +528,7 @@ describe('uts/rest/stats', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
 
     // First page
-    const page1 = await client.stats({ limit: 1 });
+    const page1 = await client.stats({ limit: 1 } as any);
     expect(page1.items).to.have.length(1);
     expect(page1.items[0].intervalId).to.equal('2024-01-01:01:00');
     expect(page1.hasNext()).to.be.true;
@@ -536,9 +536,9 @@ describe('uts/rest/stats', function () {
 
     // Second page
     const page2 = await page1.next();
-    expect(page2.items).to.have.length(1);
-    expect(page2.items[0].intervalId).to.equal('2024-01-01:00:00');
-    expect(page2.hasNext()).to.be.false;
-    expect(page2.isLast()).to.be.true;
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].intervalId).to.equal('2024-01-01:00:00');
+    expect(page2!.hasNext()).to.be.false;
+    expect(page2!.isLast()).to.be.true;
   });
 });

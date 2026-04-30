@@ -35,7 +35,7 @@ describe('uts/rest/auth/token_renewal', function () {
     this.skip();
     let callbackCount = 0;
     let requestCount = 0;
-    const captured = [];
+    const captured: any[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -60,7 +60,7 @@ describe('uts/rest/auth/token_renewal', function () {
       },
     });
 
-    try { await client.stats(); } catch (e) { /* response parse ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse ok */ }
 
     // authCallback called twice: initial + renewal
     expect(callbackCount).to.equal(2);
@@ -106,7 +106,7 @@ describe('uts/rest/auth/token_renewal', function () {
       },
     });
 
-    try { await client.stats(); } catch (e) { /* ok */ }
+    try { await client.stats({} as any); } catch (e) { /* ok */ }
 
     expect(callbackCount).to.equal(2);
     expect(requestCount).to.equal(2);
@@ -136,9 +136,9 @@ describe('uts/rest/auth/token_renewal', function () {
     const client = new Ably.Rest({ token: 'static-token' });
 
     try {
-      await client.stats();
+      await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error) {
+    } catch (error: any) {
       // RSA4a2: client must indicate error with code 40171
       expect(error.code).to.equal(40171);
     }
@@ -178,7 +178,7 @@ describe('uts/rest/auth/token_renewal', function () {
       authUrl: 'https://auth.example.com/token',
     });
 
-    try { await client.stats(); } catch (e) { /* ok */ }
+    try { await client.stats({} as any); } catch (e) { /* ok */ }
 
     expect(authUrlCallCount).to.equal(2);
     expect(apiRequestCount).to.equal(2);
@@ -195,7 +195,7 @@ describe('uts/rest/auth/token_renewal', function () {
     this.skip();
     let callbackCount = 0;
     let requestCount = 0;
-    const captured = [];
+    const captured: any[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -221,7 +221,7 @@ describe('uts/rest/auth/token_renewal', function () {
     });
 
     // This should succeed transparently despite the first 40142
-    try { await client.stats(); } catch (e) { /* response parse ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse ok */ }
 
     expect(callbackCount).to.equal(2);
     expect(captured).to.have.length(2);
@@ -265,9 +265,9 @@ describe('uts/rest/auth/token_renewal', function () {
     });
 
     try {
-      await client.stats();
+      await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(401);
     }
 
@@ -315,13 +315,13 @@ describe('uts/rest/auth/token_renewal', function () {
             token: 'expired-token',
             expires: Date.now() - 1000,
             issued: Date.now() - 3600000,
-          });
+          } as any);
         } else {
           callback(null, {
             token: 'fresh-token',
             expires: Date.now() + 3600000,
             issued: Date.now(),
-          });
+          } as any);
         }
       },
     });
@@ -331,7 +331,7 @@ describe('uts/rest/auth/token_renewal', function () {
     expect(callbackCount).to.equal(1);
 
     // Request uses expired token → server rejects → renewal → retry
-    try { await client.channels.get('test').history(); } catch (e) { /* ok */ }
+    try { await client.channels.get('test').history({} as any); } catch (e) { /* ok */ }
 
     // Callback called twice: initial + renewal after 40142
     expect(callbackCount).to.equal(2);
@@ -373,7 +373,7 @@ describe('uts/rest/auth/token_renewal', function () {
         callbackCount++;
         if (callbackCount > 3) {
           // Cap retries to prevent infinite loop (ably-js has no limit)
-          callback(new Error('Token renewal limit exceeded'));
+          callback(new Error('Token renewal limit exceeded') as any, null);
           return;
         }
         callback(null, 'token-' + callbackCount);
@@ -381,7 +381,7 @@ describe('uts/rest/auth/token_renewal', function () {
     });
 
     try {
-      await client.stats();
+      await client.stats({} as any);
       expect.fail('Expected request to throw');
     } catch (error) {
       expect(error).to.exist;

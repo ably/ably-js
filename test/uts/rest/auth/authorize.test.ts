@@ -9,7 +9,7 @@ import { expect } from 'chai';
 import { MockHttpClient } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
-function tokenRoutingMock(captured) {
+function tokenRoutingMock(captured: any) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -37,7 +37,7 @@ describe('uts/rest/auth/authorize', function () {
    * RSA10a - authorize() obtains token with defaults
    */
   it('RSA10a - authorize() obtains token', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(tokenRoutingMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -47,7 +47,7 @@ describe('uts/rest/auth/authorize', function () {
     expect(tokenDetails.token).to.equal('obtained-token');
 
     // Verify token is now used for requests
-    try { await client.stats(); } catch (e) { /* ok */ }
+    try { await client.stats({} as any); } catch (e) { /* ok */ }
     const apiReq = captured[captured.length - 1];
     const expectedAuth = 'Bearer ' + Buffer.from('obtained-token').toString('base64');
     expect(apiReq.headers.authorization).to.equal(expectedAuth);
@@ -57,7 +57,7 @@ describe('uts/rest/auth/authorize', function () {
    * RSA10b - authorize() with explicit tokenParams overrides defaults
    */
   it('RSA10b - tokenParams override defaults', async function () {
-    let callbackParams = null;
+    let callbackParams: any = null;
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -79,8 +79,8 @@ describe('uts/rest/auth/authorize', function () {
     });
 
     expect(callbackParams).to.not.be.null;
-    expect(callbackParams.clientId).to.equal('override-client');
-    expect(callbackParams.ttl).to.equal(7200000);
+    expect(callbackParams!.clientId).to.equal('override-client');
+    expect(callbackParams!.ttl).to.equal(7200000);
   });
 
   /**
@@ -108,12 +108,12 @@ describe('uts/rest/auth/authorize', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
     // Before authorize
-    expect(client.auth.tokenDetails).to.satisfy((v) => v === null || v === undefined);
+    expect(client.auth.tokenDetails).to.satisfy((v: any) => v === null || v === undefined);
 
     const result = await client.auth.authorize();
 
     expect(client.auth.tokenDetails).to.not.be.null;
-    expect(client.auth.tokenDetails.token).to.equal('new-token');
+    expect(client.auth.tokenDetails!.token).to.equal('new-token');
     expect(result.token).to.equal('new-token');
   });
 
@@ -167,7 +167,7 @@ describe('uts/rest/auth/authorize', function () {
           token: 'token-' + tokenCount,
           expires: Date.now() + 3600000,
           issued: Date.now(),
-        });
+        } as any);
       },
     });
 
@@ -176,14 +176,14 @@ describe('uts/rest/auth/authorize', function () {
 
     expect(result1.token).to.equal('token-1');
     expect(result2.token).to.equal('token-2');
-    expect(client.auth.tokenDetails.token).to.equal('token-2');
+    expect(client.auth.tokenDetails!.token).to.equal('token-2');
   });
 
   /**
    * RSA10k - authorize() with queryTime queries server time
    */
   it('RSA10k - queryTime queries server', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -237,7 +237,7 @@ describe('uts/rest/auth/authorize', function () {
     try {
       await client.auth.authorize();
       expect.fail('Expected authorize to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40100);
       expect(error.statusCode).to.equal(401);
     }
@@ -265,7 +265,7 @@ describe('uts/rest/auth/authorize', function () {
           token: 'token-' + callbackInvocations.length,
           expires: Date.now() + 3600000,
           issued: Date.now(),
-        });
+        } as any);
       },
     });
 
@@ -337,7 +337,7 @@ describe('uts/rest/auth/authorize', function () {
     try {
       await client.auth.authorize(null, { key: 'different.key:secret' });
       expect.fail('Expected authorize to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40102);
     }
   });

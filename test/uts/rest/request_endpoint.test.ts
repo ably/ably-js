@@ -24,7 +24,7 @@ describe('uts/rest/request_endpoint', function () {
    * sent to the default primary domain (main.realtime.ably.net).
    */
   it('RSC25 - default primary domain', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -48,7 +48,7 @@ describe('uts/rest/request_endpoint', function () {
    * must be sent to the corresponding domain.
    */
   it('RSC25 - custom endpoint', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -76,7 +76,7 @@ describe('uts/rest/request_endpoint', function () {
    * without host switching (absent any fallback triggering errors).
    */
   it('RSC25 - multiple requests use primary domain', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -105,7 +105,7 @@ describe('uts/rest/request_endpoint', function () {
    */
   it('RSC25 - primary tried before fallback', async function () {
     let requestCount = 0;
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -137,7 +137,7 @@ describe('uts/rest/request_endpoint', function () {
    * regardless of endpoint configuration.
    */
   it('RSC25 - request path preserved', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -148,7 +148,7 @@ describe('uts/rest/request_endpoint', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
-    await client.channels.get('test-channel').history();
+    await client.channels.get('test-channel').history(null);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.hostname).to.equal('main.realtime.ably.net');

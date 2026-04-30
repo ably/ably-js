@@ -7,8 +7,6 @@
  * See: specification/uts/rest/unit/helpers/mock_http.md
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const Ably = require('../../build/ably-node');
 
 interface ConnectionResult {
   success: boolean;
@@ -289,7 +287,7 @@ class MockHttpClient {
       async checkConnectivity(): Promise<boolean> {
         // Perform the connectivity check via doUri (same as real implementation)
         const url = 'https://internet-up.ably-realtime.com/is-the-internet-up.txt';
-        const { error, body } = await this.doUri('get', url, {}, null, null);
+        const { error, body } = await this.doUri('get', url, {}, null, null as any);
         return !error && (body as string)?.toString().trim() === 'yes';
       }
 

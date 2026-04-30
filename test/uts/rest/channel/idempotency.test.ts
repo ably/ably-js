@@ -35,7 +35,7 @@ describe('uts/rest/channel/idempotency', function () {
    * URL-safe base64 and <serial> starts at 0.
    */
   it('RSL1k2 - message ID format', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -79,7 +79,7 @@ describe('uts/rest/channel/idempotency', function () {
    * same base ID but have incrementing serial numbers starting from 0.
    */
   it('RSL1k2 - batch serial increments', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -126,7 +126,7 @@ describe('uts/rest/channel/idempotency', function () {
    * publishes are independently idempotent.
    */
   it('RSL1k3 - separate publishes get unique base IDs', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -161,7 +161,7 @@ describe('uts/rest/channel/idempotency', function () {
    * generate message IDs.
    */
   it('RSL1k3 - no ID when disabled', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -193,7 +193,7 @@ describe('uts/rest/channel/idempotency', function () {
    * must preserve it and not overwrite it with a generated ID.
    */
   it('RSL1k - client-supplied ID preserved', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -229,7 +229,7 @@ describe('uts/rest/channel/idempotency', function () {
    * single request.
    */
   it('RSL1k2 - same ID on retry', async function () {
-    const captured = [];
+    const captured: any[] = [];
     let requestCount = 0;
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -273,7 +273,7 @@ describe('uts/rest/channel/idempotency', function () {
    * remain without IDs.
    */
   it('RSL1k - mixed client and library IDs skips generation', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

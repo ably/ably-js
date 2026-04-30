@@ -21,7 +21,7 @@ describe('uts/rest/channel/publish_result', function () {
    * PublishResult containing a serials array with one entry.
    */
   it('RSL1n - single message returns PublishResult with serial', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -48,7 +48,7 @@ describe('uts/rest/channel/publish_result', function () {
    * responds with a serials array containing one entry per message.
    */
   it('RSL1n - batch returns PublishResult with multiple serials', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -81,7 +81,7 @@ describe('uts/rest/channel/publish_result', function () {
    * serials entries. The client must preserve these null values.
    */
   it('RSL1n - null serial preserved (conflated)', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

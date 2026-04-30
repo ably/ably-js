@@ -43,7 +43,7 @@ describe('uts/rest/channel/annotations', function () {
    * the messageSerial, type, and name fields.
    */
   it('RSAN1 - publish sends POST with ANNOTATION_CREATE', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -84,7 +84,7 @@ describe('uts/rest/channel/annotations', function () {
   it('RSAN1a3 - type required', async function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -115,7 +115,7 @@ describe('uts/rest/channel/annotations', function () {
    * message encoding rules.
    */
   it('RSAN1c3 - data encoded per RSL4', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -152,7 +152,7 @@ describe('uts/rest/channel/annotations', function () {
   it('RSAN1c4 - idempotent ID generated', async function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -192,7 +192,7 @@ describe('uts/rest/channel/annotations', function () {
    * be generated on the annotation.
    */
   it('RSAN1c4 - no ID when disabled', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -223,7 +223,7 @@ describe('uts/rest/channel/annotations', function () {
    * action=1 (ANNOTATION_DELETE) to the correct endpoint.
    */
   it('RSAN2a - delete sends POST with ANNOTATION_DELETE', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -257,7 +257,7 @@ describe('uts/rest/channel/annotations', function () {
    * /channels/{channelName}/messages/{messageSerial}/annotations.
    */
   it('RSAN3b - get sends GET to correct path', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -280,7 +280,7 @@ describe('uts/rest/channel/annotations', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
-    const result = await ch.annotations.get('msg-serial-1');
+    const result = await ch.annotations.get('msg-serial-1', {});
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -330,7 +330,7 @@ describe('uts/rest/channel/annotations', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
-    const result = await ch.annotations.get('msg-serial-1');
+    const result = await ch.annotations.get('msg-serial-1', {});
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(2);
@@ -364,7 +364,7 @@ describe('uts/rest/channel/annotations', function () {
    * query string parameters on the GET request.
    */
   it('RSAN3b - get passes params as querystring', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -376,7 +376,7 @@ describe('uts/rest/channel/annotations', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
-    await ch.annotations.get('msg-serial-1', { limit: '50' });
+    await ch.annotations.get('msg-serial-1', { limit: '50' } as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('limit')).to.equal('50');

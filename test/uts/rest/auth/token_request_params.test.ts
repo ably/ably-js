@@ -36,7 +36,7 @@ describe('uts/rest/auth/token_request_params', function () {
     const tokenRequest = await client.auth.createTokenRequest(null, null);
 
     // TTL should be null/undefined, not defaulted to 3600000
-    expect(tokenRequest.ttl).to.satisfy((v) => v === null || v === undefined);
+    expect(tokenRequest.ttl).to.satisfy((v: any) => v === null || v === undefined);
   });
 
   /**
@@ -87,7 +87,7 @@ describe('uts/rest/auth/token_request_params', function () {
     const tokenRequest = await client.auth.createTokenRequest(null, null);
 
     // Capability should be null/undefined, not defaulted to '{"*":["*"]}'
-    expect(tokenRequest.capability).to.satisfy((v) => v === null || v === undefined);
+    expect(tokenRequest.capability).to.satisfy((v: any) => v === null || v === undefined);
   });
 
   /**

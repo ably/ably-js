@@ -21,7 +21,7 @@ describe('uts/rest/channel/getMessage', function () {
    * /channels/{channelName}/messages/{serial}.
    */
   it('RSL11b - GET to correct path', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -83,8 +83,8 @@ describe('uts/rest/channel/getMessage', function () {
     expect(msg.timestamp).to.equal(1700000000000);
     expect(msg.extras).to.deep.equal({ headers: { source: 'api' } });
     expect(msg.version).to.be.an('object');
-    expect(msg.version.serial).to.equal('vs1');
-    expect(msg.version.timestamp).to.equal(1700000000000);
+    expect(msg.version!.serial).to.equal('vs1');
+    expect(msg.version!.timestamp).to.equal(1700000000000);
   });
 
   /**
@@ -94,7 +94,7 @@ describe('uts/rest/channel/getMessage', function () {
    * getMessage must URL-encode the serial in the request path.
    */
   it('RSL11b - URL-encodes serial', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -141,7 +141,7 @@ describe('uts/rest/channel/getMessage', function () {
     try {
       await ch.getMessage('');
       expect.fail('Expected getMessage to throw due to empty serial');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40003);
     }
   });

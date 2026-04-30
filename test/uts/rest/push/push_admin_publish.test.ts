@@ -19,7 +19,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * with the recipient and data fields in the body.
    */
   it('RSH1a - publish sends POST to /push/publish', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -47,7 +47,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * fields (notification, data) merged at the top level.
    */
   it('RSH1a - body contains recipient and data', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -77,7 +77,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * publish() works with a clientId-based recipient.
    */
   it('RSH1a - recipient as clientId', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -105,7 +105,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * publish() works with a deviceId-based recipient.
    */
   it('RSH1a - recipient as deviceId', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -134,7 +134,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * request body alongside the recipient.
    */
   it('RSH1a - data contains notification fields', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -168,7 +168,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * for authentication.
    */
   it('RSH1a - auth header included', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

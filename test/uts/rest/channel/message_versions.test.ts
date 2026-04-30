@@ -21,7 +21,7 @@ describe('uts/rest/channel/getMessageVersions', function () {
    * /channels/{channelName}/messages/{serial}/versions.
    */
   it('RSL14b - GET to correct path', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -88,17 +88,17 @@ describe('uts/rest/channel/getMessageVersions', function () {
     expect(result.items[0].data).to.equal('updated-data');
     expect(result.items[0].action).to.equal('message.update');
     expect(result.items[0].version).to.be.an('object');
-    expect(result.items[0].version.serial).to.equal('vs2');
-    expect(result.items[0].version.timestamp).to.equal(1700000002000);
-    expect(result.items[0].version.clientId).to.equal('user-1');
-    expect(result.items[0].version.description).to.equal('edit');
+    expect(result.items[0].version!.serial).to.equal('vs2');
+    expect(result.items[0].version!.timestamp).to.equal(1700000002000);
+    expect(result.items[0].version!.clientId).to.equal('user-1');
+    expect(result.items[0].version!.description).to.equal('edit');
 
     // Second item: original version with minimal version fields
     expect(result.items[1].data).to.equal('original-data');
     expect(result.items[1].action).to.equal('message.create');
     expect(result.items[1].version).to.be.an('object');
-    expect(result.items[1].version.serial).to.equal('vs1');
-    expect(result.items[1].version.timestamp).to.equal(1700000001000);
+    expect(result.items[1].version!.serial).to.equal('vs1');
+    expect(result.items[1].version!.timestamp).to.equal(1700000001000);
   });
 
   /**
@@ -108,7 +108,7 @@ describe('uts/rest/channel/getMessageVersions', function () {
    * as query string parameters on the request.
    */
   it('RSL14a - params as querystring', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

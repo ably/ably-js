@@ -193,8 +193,8 @@ describe('uts/rest/types/message_types', function () {
   it('TM4 - toJSON serialization', function () {
     const msg = Message.fromValues({ name: 'event', data: 'payload' });
 
-    if (typeof msg.toJSON === 'function') {
-      const json = msg.toJSON();
+    if (typeof (msg as any).toJSON === 'function') {
+      const json = (msg as any).toJSON();
       expect(json).to.have.property('name', 'event');
       expect(json).to.have.property('data', 'payload');
     } else {

@@ -55,7 +55,7 @@ describe('uts/rest/types/error_types', function () {
       statusCode: 500,
       message: 'Timeout',
       cause: cause,
-    });
+    } as any);
     expect(error.cause).to.equal(cause);
   });
 
@@ -130,12 +130,12 @@ describe('uts/rest/types/error_types', function () {
       statusCode: 500,
       message: 'Outer error',
       cause: inner,
-    });
+    } as any);
 
     expect(outer.cause).to.equal(inner);
-    expect(outer.cause.code).to.equal(40100);
-    expect(outer.cause.statusCode).to.equal(401);
-    expect(outer.cause.message).to.equal('inner');
+    expect(outer.cause!.code).to.equal(40100);
+    expect(outer.cause!.statusCode).to.equal(401);
+    expect(outer.cause!.message).to.equal('inner');
   });
 
   /**
@@ -150,7 +150,7 @@ describe('uts/rest/types/error_types', function () {
       statusCode: 403,
       message: 'Forbidden: account disabled',
       href: 'https://help.ably.io/error/40300',
-    });
+    } as any);
 
     expect(error.code).to.equal(40300);
     expect(error.statusCode).to.equal(403);

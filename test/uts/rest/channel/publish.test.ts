@@ -23,7 +23,7 @@ describe('uts/rest/channel/publish', function () {
    * to /channels/<channelName>/messages.
    */
   it('RSL1a - publish sends POST to correct path', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -48,7 +48,7 @@ describe('uts/rest/channel/publish', function () {
    * The POST body must contain the published message serialized as JSON.
    */
   it('RSL1b - publish body contains message', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -78,7 +78,7 @@ describe('uts/rest/channel/publish', function () {
    * POST request, with the body containing all messages.
    */
   it('RSL1c - publish array sends single request', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -113,7 +113,7 @@ describe('uts/rest/channel/publish', function () {
   it('RSL1e - null name omitted from body', async function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -143,7 +143,7 @@ describe('uts/rest/channel/publish', function () {
   it('RSL1e - null data omitted from body', async function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -172,7 +172,7 @@ describe('uts/rest/channel/publish', function () {
    * with both name and data fields in the request body.
    */
   it('RSL1h - publish(name, data) two-arg form', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -202,7 +202,7 @@ describe('uts/rest/channel/publish', function () {
    * maxMessageSize for deterministic testing.
    */
   it('RSL1i - message size limit exceeded', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -226,7 +226,7 @@ describe('uts/rest/channel/publish', function () {
     try {
       await ch.publish('event', largeData);
       expect.fail('Expected publish to throw due to message size limit');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40009);
     }
 
@@ -240,7 +240,7 @@ describe('uts/rest/channel/publish', function () {
    * A message at or under the size limit should succeed.
    */
   it('RSL1i - message at size limit succeeds', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -270,7 +270,7 @@ describe('uts/rest/channel/publish', function () {
    * (id, clientId, extras), they must all appear in the request body.
    */
   it('RSL1j - all message attributes transmitted', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -312,7 +312,7 @@ describe('uts/rest/channel/publish', function () {
    * clientId into the message body (ably-js behaviour for REST).
    */
   it('RSL1m1 - library clientId not auto-injected', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -344,7 +344,7 @@ describe('uts/rest/channel/publish', function () {
    * same clientId, it must be preserved in the request body.
    */
   it('RSL1m2 - explicit matching clientId preserved', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -378,7 +378,7 @@ describe('uts/rest/channel/publish', function () {
    * a clientId, it must be preserved in the request body.
    */
   it('RSL1m3 - unidentified client with message clientId', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
