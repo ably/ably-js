@@ -23,7 +23,7 @@ describe('uts/rest/time', function () {
    * and returns it as a timestamp.
    */
   it('RSC16 - time() returns server time', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const serverTimeMs = 1704067200000; // 2024-01-01 00:00:00 UTC
 
     mock = new MockHttpClient({
@@ -54,7 +54,7 @@ describe('uts/rest/time', function () {
    * The time request must be a GET request to /time with standard Ably headers.
    */
   it('RSC16 - time() request format', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -93,7 +93,7 @@ describe('uts/rest/time', function () {
    * an Authorization header, even when credentials are available.
    */
   it('RSC16 - time() does not require authentication', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -125,7 +125,7 @@ describe('uts/rest/time', function () {
    * over non-TLS) does not apply because time() doesn't send authentication.
    */
   it('RSC16 - time() works without TLS', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -181,7 +181,7 @@ describe('uts/rest/time', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(500);
       expect(error.code).to.equal(50000);
     }

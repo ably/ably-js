@@ -57,7 +57,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * presence.get() must send a GET request to /channels/{name}/presence.
    */
   it('RSP3a - get() sends GET to /channels/{name}/presence', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -69,7 +69,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test-channel');
-    await channel.presence.get();
+    await channel.presence.get({});
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -108,7 +108,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(2);
 
@@ -143,7 +143,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(0);
     expect(result.hasNext()).to.be.false;
@@ -156,7 +156,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({limit: 50}) must send limit=50 as a query parameter.
    */
   it('RSP3a1 - get() with limit param sends limit query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -180,7 +180,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({clientId: 'specific'}) must send clientId=specific as a query parameter.
    */
   it('RSP3a2 - get() with clientId filter sends clientId query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -204,7 +204,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({connectionId: 'conn123'}) must send connectionId=conn123 as a query parameter.
    */
   it('RSP3a3 - get() with connectionId filter sends connectionId query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -232,7 +232,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * presence.history() must send a GET request to /channels/{name}/presence/history.
    */
   it('RSP4a - history() sends GET to /channels/{name}/presence/history', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -244,7 +244,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test-channel');
-    await channel.presence.history();
+    await channel.presence.history({});
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -272,7 +272,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.history();
+    const result = await channel.presence.history({});
 
     expect(result.items).to.have.length(3);
     expect(result.items[0].action).to.equal('enter');
@@ -289,7 +289,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({start: 1609459200000}) must send start=1609459200000 as a query parameter.
    */
   it('RSP4b1 - history() with start param sends start query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -313,7 +313,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({end: 1609545600000}) must send end=1609545600000 as a query parameter.
    */
   it('RSP4b1 - history() with end param sends end query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -337,7 +337,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({direction: 'forwards'}) must send direction=forwards as a query parameter.
    */
   it('RSP4b2 - history() with direction forwards sends direction query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -361,7 +361,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({limit: 50}) must send limit=50 as a query parameter.
    */
   it('RSP4b3 - history() with limit param sends limit query parameter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -401,7 +401,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(1);
     expect(result.items[0].data).to.equal('hello world');
@@ -431,7 +431,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(1);
     expect(result.items[0].data).to.deep.equal({ status: 'online', count: 42 });
@@ -467,7 +467,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(1);
     expect(result.items[0].data).to.deep.equal({ key: 'value' });
@@ -545,11 +545,11 @@ describe('uts/rest/presence/rest_presence', function () {
 
     // Second page
     const page2 = await page1.next();
-    expect(page2.items).to.have.length(1);
-    expect(page2.items[0].action).to.equal('leave');
-    expect(page2.items[0].clientId).to.equal('bob');
-    expect(page2.hasNext()).to.be.false;
-    expect(page2.isLast()).to.be.true;
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].action).to.equal('leave');
+    expect(page2!.items[0].clientId).to.equal('bob');
+    expect(page2!.hasNext()).to.be.false;
+    expect(page2!.isLast()).to.be.true;
   });
 
   // ---------------------------------------------------------------------------
@@ -581,9 +581,9 @@ describe('uts/rest/presence/rest_presence', function () {
     const channel = client.channels.get('test');
 
     try {
-      await channel.presence.get();
+      await channel.presence.get({});
       expect.fail('Expected get() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(500);
       expect(error.code).to.equal(50000);
     }
@@ -614,7 +614,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    const result = await channel.presence.get();
+    const result = await channel.presence.get({});
 
     expect(result.items).to.have.length(4);
 
@@ -656,7 +656,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    await channel.presence.get();
+    await channel.presence.get({});
 
     expect(captured).to.have.length(1);
     const params = captured[0].url.searchParams;
@@ -750,7 +750,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    await channel.presence.history();
+    await channel.presence.history({});
 
     expect(captured).to.have.length(1);
     const params = captured[0].url.searchParams;
@@ -823,9 +823,9 @@ describe('uts/rest/presence/rest_presence', function () {
     const channel = client.channels.get('test');
 
     try {
-      await channel.presence.history();
+      await channel.presence.history({});
       expect.fail('Expected history() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40101);
       expect(error.statusCode).to.equal(401);
     }
@@ -854,7 +854,7 @@ describe('uts/rest/presence/rest_presence', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
-    await channel.presence.get();
+    await channel.presence.get({});
 
     expect(captured).to.have.length(1);
     const headers = captured[0].headers;

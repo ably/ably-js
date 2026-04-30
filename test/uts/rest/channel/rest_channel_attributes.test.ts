@@ -50,7 +50,7 @@ describe('uts/rest/channel/rest_channel_attributes', function () {
    * /channels/<channelName>.
    */
   it('RSL8 - status sends GET to correct path', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -82,7 +82,7 @@ describe('uts/rest/channel/rest_channel_attributes', function () {
    * must be URL-encoded in the request path.
    */
   it('RSL8 - status URL encodes channel name', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

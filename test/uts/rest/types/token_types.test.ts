@@ -48,15 +48,15 @@ describe('uts/rest/types/token_types', function () {
     await client.auth.authorize();
 
     // TD1 - token attribute
-    expect(client.auth.tokenDetails.token).to.equal('test-token');
+    expect(client.auth.tokenDetails!.token).to.equal('test-token');
     // TD2 - expires attribute (milliseconds since epoch)
-    expect(client.auth.tokenDetails.expires).to.equal(1234567890000);
+    expect(client.auth.tokenDetails!.expires).to.equal(1234567890000);
     // TD3 - issued attribute (milliseconds since epoch)
-    expect(client.auth.tokenDetails.issued).to.equal(1234567800000);
+    expect(client.auth.tokenDetails!.issued).to.equal(1234567800000);
     // TD4 - capability attribute (JSON string)
-    expect(client.auth.tokenDetails.capability).to.equal('{"*":["*"]}');
+    expect(client.auth.tokenDetails!.capability).to.equal('{"*":["*"]}');
     // TD5 - clientId attribute
-    expect(client.auth.tokenDetails.clientId).to.equal('my-client');
+    expect(client.auth.tokenDetails!.clientId).to.equal('my-client');
   });
 
   // --- TK1-TK6: TokenParams attributes via createTokenRequest ---
@@ -101,7 +101,7 @@ describe('uts/rest/types/token_types', function () {
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
     expect(tokenRequest.ttl).to.satisfy(
-      (v) => v === null || v === undefined || v === '',
+      (v: any) => v === null || v === undefined || v === '',
     );
   });
 
@@ -115,7 +115,7 @@ describe('uts/rest/types/token_types', function () {
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
     expect(tokenRequest.capability).to.satisfy(
-      (v) => v === null || v === undefined || v === '',
+      (v: any) => v === null || v === undefined || v === '',
     );
   });
 
@@ -299,7 +299,7 @@ describe('uts/rest/types/token_types', function () {
     const client = new Ably.Rest({ token: 'test-token' });
 
     // Accessing tokenDetails should reflect the token provided
-    expect(client.auth.tokenDetails.token).to.equal('test-token');
+    expect(client.auth.tokenDetails!.token).to.equal('test-token');
   });
 
   /**

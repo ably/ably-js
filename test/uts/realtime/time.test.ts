@@ -24,7 +24,7 @@ describe('uts/realtime/time', function () {
    * RTC6a - time() returns server time (proxied from REST)
    */
   it('RTC6a - time() returns server time', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const serverTimeMs = 1704067200000;
 
     mock = new MockHttpClient({
@@ -51,7 +51,7 @@ describe('uts/realtime/time', function () {
    * RTC6a - time() request format (proxied from REST)
    */
   it('RTC6a - time() request format', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -80,7 +80,7 @@ describe('uts/realtime/time', function () {
    * RTC6a - time() does not require authentication (proxied from REST)
    */
   it('RTC6a - time() does not require authentication', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -104,7 +104,7 @@ describe('uts/realtime/time', function () {
    * RTC6a - time() works without TLS (proxied from REST)
    */
   it('RTC6a - time() works without TLS', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -153,7 +153,7 @@ describe('uts/realtime/time', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.statusCode).to.equal(500);
       expect(error.code).to.equal(50000);
     }

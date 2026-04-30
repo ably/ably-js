@@ -10,7 +10,7 @@ import { MockHttpClient } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 /** Standard mock that auto-succeeds and returns 200 */
-function simpleMock(captured) {
+function simpleMock(captured: any) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -21,7 +21,7 @@ function simpleMock(captured) {
 }
 
 /** Mock that routes requestToken vs API requests */
-function tokenRoutingMock(captured, tokenValue) {
+function tokenRoutingMock(captured: any, tokenValue?: any) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -49,11 +49,11 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - Basic auth with API key only
    */
   it('RSA4 - Basic auth with API key only', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Basic ' + Buffer.from('appId.keyId:keySecret').toString('base64');
@@ -64,11 +64,11 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA3 - Token auth with explicit token string
    */
   it('RSA3 - Token auth with explicit token string', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ token: 'explicit-token-string' });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('explicit-token-string').toString('base64');
@@ -79,16 +79,16 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA3 - Token auth with TokenDetails
    */
   it('RSA3 - Token auth with TokenDetails', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
       tokenDetails: {
         token: 'token-from-details',
         expires: Date.now() + 3600000,
-      },
+      } as any,
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('token-from-details').toString('base64');
@@ -99,14 +99,14 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - useTokenAuth forces token auth
    */
   it('RSA4 - useTokenAuth forces token auth', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(tokenRoutingMock(captured, 'obtained-token'));
 
     const client = new Ably.Rest({
       key: 'appId.keyId:keySecret',
       useTokenAuth: true,
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     // API request should use Bearer, not Basic
     const apiRequest = captured[captured.length - 1];
@@ -118,7 +118,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - authCallback triggers token auth
    */
   it('RSA4 - authCallback triggers token auth', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
@@ -126,7 +126,7 @@ describe('uts/rest/auth/auth_scheme', function () {
         callback(null, 'callback-token');
       },
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
@@ -137,7 +137,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - authUrl triggers token auth
    */
   it('RSA4 - authUrl triggers token auth', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -155,7 +155,7 @@ describe('uts/rest/auth/auth_scheme', function () {
     const client = new Ably.Rest({
       authUrl: 'https://auth.example.com/token',
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     expect(captured.length).to.be.at.least(2);
     const apiRequest = captured[captured.length - 1];
@@ -169,13 +169,13 @@ describe('uts/rest/auth/auth_scheme', function () {
   it('RSC1b - Error when no auth method available', function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     try {
       new Ably.Rest({});
       expect.fail('Should have thrown');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40106);
     }
 
@@ -190,7 +190,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * Note: RSA4b1 (local expiry detection) is optional.
    */
   it('RSA4a2 - Error when token expired and no renewal method', async function () {
-    const captured = [];
+    const captured: any[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -208,13 +208,13 @@ describe('uts/rest/auth/auth_scheme', function () {
       tokenDetails: {
         token: 'expired-token',
         expires: Date.now() - 1000,
-      },
+      } as any,
     });
 
     try {
-      await client.stats();
+      await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40171);
     }
   });
@@ -223,7 +223,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA1 - Auth method priority (authCallback over key)
    */
   it('RSA1 - Auth method priority (authCallback over key)', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
@@ -232,7 +232,7 @@ describe('uts/rest/auth/auth_scheme', function () {
         callback(null, 'callback-token');
       },
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     const request = captured[0];
     const expectedAuth = 'Bearer ' + Buffer.from('callback-token').toString('base64');
@@ -243,11 +243,11 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA2, RSA11 - Basic auth header format
    */
   it('RSA2, RSA11 - Basic auth header format', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'app123.key456:secretXYZ' });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     const request = captured[0];
     const expected = 'Basic ' + Buffer.from('app123.key456:secretXYZ').toString('base64');
@@ -258,14 +258,14 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSC18 - Token auth allowed over non-TLS
    */
   it('RSC18 - Token auth allowed over non-TLS', async function () {
-    const captured = [];
+    const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
       token: 'explicit-token',
       tls: false,
     });
-    try { await client.stats(); } catch (e) { /* response parse errors ok */ }
+    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
 
     const request = captured[0];
     const expectedAuth = 'Bearer ' + Buffer.from('explicit-token').toString('base64');

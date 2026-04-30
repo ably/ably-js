@@ -23,7 +23,7 @@ describe('uts/rest/request', function () {
 
     methods.forEach(function (method) {
       it(`${method} request to /test`, async function () {
-        const captured = [];
+        const captured: any[] = [];
         const mock = new MockHttpClient({
           onConnectionAttempt: (conn) => conn.respond_with_success(),
           onRequest: (req) => {
@@ -34,7 +34,7 @@ describe('uts/rest/request', function () {
         installMockHttp(mock);
 
         const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-        const response = await client.request(method, '/test', 3);
+        const response = await client.request(method, '/test', 3, null as any, null as any, null as any);
 
         expect(captured).to.have.length(1);
         expect(captured[0].method).to.equal(method.toLowerCase());
@@ -49,7 +49,7 @@ describe('uts/rest/request', function () {
 
   describe('RSC19f - Request details', function () {
     it('query params sent correctly', async function () {
-      const captured = [];
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -60,7 +60,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('GET', '/channels/test/messages', 3, { limit: '10', direction: 'backwards' });
+      await client.request('GET', '/channels/test/messages', 3, { limit: '10', direction: 'backwards' }, null as any, null as any);
 
       expect(captured).to.have.length(1);
       expect(captured[0].url.searchParams.get('limit')).to.equal('10');
@@ -68,7 +68,7 @@ describe('uts/rest/request', function () {
     });
 
     it('custom headers included', async function () {
-      const captured = [];
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -79,7 +79,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('GET', '/test', 3, null, null, {
+      await client.request('GET', '/test', 3, null as any, null as any, {
         'X-Custom-Header': 'custom-value',
         'X-Another': 'another-value',
       });
@@ -90,7 +90,7 @@ describe('uts/rest/request', function () {
     });
 
     it('Basic auth header included automatically', async function () {
-      const captured = [];
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -101,7 +101,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('GET', '/test', 3);
+      await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(captured).to.have.length(1);
       expect(captured[0].headers).to.have.property('authorization');
@@ -114,7 +114,7 @@ describe('uts/rest/request', function () {
     });
 
     it('body encoding (JSON)', async function () {
-      const captured = [];
+      const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -125,7 +125,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('POST', '/channels/test/messages', 3, null, { name: 'event', data: 'payload' });
+      await client.request('POST', '/channels/test/messages', 3, null as any, { name: 'event', data: 'payload' }, null as any);
 
       expect(captured).to.have.length(1);
       const body = JSON.parse(captured[0].body);
@@ -149,7 +149,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('POST', '/test', 3, null, { data: 'test' });
+      const response = await client.request('POST', '/test', 3, null as any, { data: 'test' }, null as any);
 
       expect(response.statusCode).to.equal(201);
     });
@@ -164,7 +164,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(response.success).to.be.true;
     });
@@ -179,7 +179,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(response.statusCode).to.equal(400);
       expect(response.success).to.be.false;
@@ -197,7 +197,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(response.errorCode).to.equal(40101);
     });
@@ -215,7 +215,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       // errorMessage comes from the error body, not the header
       expect(response.errorMessage).to.be.a('string');
@@ -235,11 +235,11 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/channels/test/messages', 3);
+      const response = await client.request('GET', '/channels/test/messages', 3, null as any, null as any, null as any);
 
       expect(response.items).to.have.length(2);
-      expect(response.items[0].id).to.equal('msg1');
-      expect(response.items[1].id).to.equal('msg2');
+      expect((response.items[0] as any).id).to.equal('msg1');
+      expect((response.items[1] as any).id).to.equal('msg2');
     });
 
     it('HP8 - response headers accessible', async function () {
@@ -255,7 +255,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(response.headers['X-Request-Id']).to.equal('req-123');
       expect(response.headers['X-Custom-Header']).to.equal('custom-value');
@@ -279,7 +279,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/channels/test/messages', 3);
+      const response = await client.request('GET', '/channels/test/messages', 3, null as any, null as any, null as any);
 
       expect(response.items).to.have.length(2);
       expect(response.hasNext()).to.be.true;
@@ -304,16 +304,16 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const page1 = await client.request('GET', '/channels/test/messages', 3);
+      const page1 = await client.request('GET', '/channels/test/messages', 3, null as any, null as any, null as any);
 
       expect(page1.items).to.have.length(2);
       expect(page1.hasNext()).to.be.true;
 
       const page2 = await page1.next();
-      expect(page2.items).to.have.length(1);
-      expect(page2.items[0].id).to.equal('3');
-      expect(page2.hasNext()).to.be.false;
-      expect(page2.isLast()).to.be.true;
+      expect(page2!.items).to.have.length(1);
+      expect((page2!.items[0] as any).id).to.equal('3');
+      expect(page2!.hasNext()).to.be.false;
+      expect(page2!.isLast()).to.be.true;
     });
   });
 
@@ -332,7 +332,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/nonexistent', 3);
+      const response = await client.request('GET', '/nonexistent', 3, null as any, null as any, null as any);
 
       expect(response.statusCode).to.equal(404);
       expect(response.success).to.be.false;
@@ -349,7 +349,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      const response = await client.request('GET', '/test', 3);
+      const response = await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(response.statusCode).to.equal(500);
       expect(response.success).to.be.false;
@@ -373,7 +373,7 @@ describe('uts/rest/request', function () {
           callback(null, 'my-token');
         },
       });
-      await client.request('GET', '/test', 3);
+      await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(captured).to.have.length(1);
       expect(captured[0].headers).to.have.property('authorization');
@@ -398,7 +398,7 @@ describe('uts/rest/request', function () {
       installMockHttp(mock);
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
-      await client.request('GET', '/test', 3);
+      await client.request('GET', '/test', 3, null as any, null as any, null as any);
 
       expect(captured).to.have.length(1);
       expect(captured[0].path).to.equal('/test');
@@ -418,7 +418,7 @@ describe('uts/rest/request', function () {
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
 
       try {
-        await client.request('GET', '/test', 3);
+        await client.request('GET', '/test', 3, null as any, null as any, null as any);
         expect.fail('Expected request to throw on connection refused');
       } catch (error: any) {
         expect(error).to.exist;

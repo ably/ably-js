@@ -988,7 +988,7 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.startTransitionTimer()',
         'clearing already-running timer',
       );
-      Platform.Config.clearTimeout(this.transitionTimer as number);
+      Platform.Config.clearTimeout(this.transitionTimer as unknown as ReturnType<typeof setTimeout>);
     }
 
     this.transitionTimer = Platform.Config.setTimeout(() => {
@@ -1008,7 +1008,7 @@ class ConnectionManager extends EventEmitter {
   cancelTransitionTimer(): void {
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
     if (this.transitionTimer) {
-      Platform.Config.clearTimeout(this.transitionTimer as number);
+      Platform.Config.clearTimeout(this.transitionTimer as unknown as ReturnType<typeof setTimeout>);
       this.transitionTimer = null;
     }
   }
@@ -1037,7 +1037,7 @@ class ConnectionManager extends EventEmitter {
   cancelSuspendTimer(): void {
     this.states.connecting.failState = 'disconnected';
     if (this.suspendTimer) {
-      Platform.Config.clearTimeout(this.suspendTimer as number);
+      Platform.Config.clearTimeout(this.suspendTimer as unknown as ReturnType<typeof setTimeout>);
       this.suspendTimer = null;
     }
   }
@@ -1052,7 +1052,7 @@ class ConnectionManager extends EventEmitter {
 
   cancelRetryTimer(): void {
     if (this.retryTimer) {
-      Platform.Config.clearTimeout(this.retryTimer as NodeJS.Timeout);
+      Platform.Config.clearTimeout(this.retryTimer as unknown as ReturnType<typeof setTimeout>);
       this.retryTimer = null;
     }
   }

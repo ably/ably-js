@@ -952,7 +952,7 @@ class RealtimeChannel extends EventEmitter {
   clearStateTimer(): void {
     const stateTimer = this.stateTimer;
     if (stateTimer) {
-      Platform.Config.clearTimeout(stateTimer);
+      Platform.Config.clearTimeout(stateTimer as unknown as ReturnType<typeof setTimeout>);
       this.stateTimer = null;
     }
   }
@@ -981,7 +981,7 @@ class RealtimeChannel extends EventEmitter {
 
   cancelRetryTimer(): void {
     if (this.retryTimer) {
-      Platform.Config.clearTimeout(this.retryTimer as NodeJS.Timeout);
+      Platform.Config.clearTimeout(this.retryTimer as unknown as ReturnType<typeof setTimeout>);
       this.retryTimer = null;
     }
   }

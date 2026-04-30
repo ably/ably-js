@@ -309,7 +309,7 @@ describe('uts/rest/batch_presence', function () {
       expect(result.failureCount).to.equal(1);
       expect(result.results).to.have.length(1);
       expect(result.results[0].channel).to.equal('restricted-channel');
-      expect(result.results[0].error.code).to.equal(40160);
+      expect((result.results[0] as any).error.code).to.equal(40160);
     });
   });
 

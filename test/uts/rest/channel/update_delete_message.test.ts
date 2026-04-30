@@ -9,7 +9,7 @@ import { expect } from 'chai';
 import { MockHttpClient } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
-function msg(fields) {
+function msg(fields: any) {
   return Ably.Rest.Message.fromValues(fields);
 }
 
@@ -25,7 +25,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * with the message body containing action=1 (MESSAGE_UPDATE).
    */
   it('RSL15b - updateMessage sends PATCH', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -54,7 +54,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * deleteMessage must send a PATCH request with action=2 (MESSAGE_DELETE).
    */
   it('RSL15b - deleteMessage sends PATCH with action 2', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -81,7 +81,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * appendMessage must send a PATCH request with action=5 (MESSAGE_APPEND).
    */
   it('RSL15b - appendMessage sends PATCH with action 5', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -109,7 +109,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * a version field with clientId, description, and metadata from the operation.
    */
   it('RSL15b7 - version set with MessageOperation', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -141,7 +141,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * include a version field.
    */
   it('RSL15b7 - version absent without operation', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -167,7 +167,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * passed in by the user.
    */
   it('RSL15c - does not mutate user-supplied message', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -195,7 +195,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * The resolved value must contain the versionSerial from the server response.
    */
   it('RSL15e - returns UpdateDeleteResult with versionSerial', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -219,7 +219,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * preserve it as null rather than converting to undefined.
    */
   it('RSL15e - null versionSerial preserved', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -242,7 +242,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * When params are provided, they must be sent as URL query parameters.
    */
   it('RSL15f - params sent as querystring', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -272,7 +272,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * appendMessage must all throw an error with code 40003.
    */
   it('RSL15a - serial required', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -289,7 +289,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     try {
       await ch.updateMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected updateMessage to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40003);
     }
 
@@ -297,7 +297,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     try {
       await ch.deleteMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected deleteMessage to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40003);
     }
 
@@ -305,7 +305,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     try {
       await ch.appendMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected appendMessage to throw');
-    } catch (error) {
+    } catch (error: any) {
       expect(error.code).to.equal(40003);
     }
 
@@ -319,7 +319,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * Object data must be JSON-encoded with an encoding field set to 'json'.
    */
   it('RSL15d - data encoded per RSL4', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -346,7 +346,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * special characters correctly.
    */
   it('RSL15b - serial URL-encoded', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

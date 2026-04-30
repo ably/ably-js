@@ -29,7 +29,7 @@ describe('uts/rest/rest_client', function () {
    * All REST requests must include the X-Ably-Version header with a version string.
    */
   it('RSC7e - X-Ably-Version header is sent', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -54,7 +54,7 @@ describe('uts/rest/rest_client', function () {
    * All REST requests must include the Ably-Agent header identifying the library.
    */
   it('RSC7d - Ably-Agent header is sent', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -85,7 +85,7 @@ describe('uts/rest/rest_client', function () {
   it('RSC7c - request_id query param when addRequestIds is true', async function () {
     // DEVIATION: see deviations.md
     this.skip();
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -95,7 +95,7 @@ describe('uts/rest/rest_client', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', addRequestIds: true });
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', addRequestIds: true } as any);
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -110,7 +110,7 @@ describe('uts/rest/rest_client', function () {
    * With useBinaryProtocol: false, Content-Type should be application/json.
    */
   it('RSC8a/RSC8b - JSON content type when useBinaryProtocol is false', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -133,7 +133,7 @@ describe('uts/rest/rest_client', function () {
    * Accept header must match the configured protocol.
    */
   it('RSC8c - Accept header is application/json', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -167,7 +167,7 @@ describe('uts/rest/rest_client', function () {
    * RSC18 - TLS: true uses HTTPS (default)
    */
   it('RSC18 - default TLS uses HTTPS', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -188,7 +188,7 @@ describe('uts/rest/rest_client', function () {
    * RSC18 - TLS: false uses HTTP
    */
   it('RSC18 - tls:false uses HTTP', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -211,7 +211,7 @@ describe('uts/rest/rest_client', function () {
    * Verify that stats() sends a GET request to /stats.
    */
   it('RSC6 - stats() sends GET /stats', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -223,7 +223,7 @@ describe('uts/rest/rest_client', function () {
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
     try {
-      await client.stats();
+      await client.stats({} as any);
     } catch (e) {
       // Response parsing may fail — we only care about the request
     }

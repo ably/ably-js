@@ -5,9 +5,24 @@
  * WebSocket, and timer implementations with test doubles.
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const Ably = require('../../build/ably-node');
-const Platform = Ably.Rest.Platform;
+// Import from the internal Node.js source so consumers get the real internal
+// types rather than the trimmed-down public surface in ably.d.ts. The
+// side-effect import wires up Platform with the Node-specific Http, Config,
+// Crypto, etc. — equivalent to loading build/ably-node.js.
+import '../../src/platform/nodejs';
+import { DefaultRest } from '../../src/common/lib/client/defaultrest';
+import { DefaultRealtime } from '../../src/common/lib/client/defaultrealtime';
+import ErrorInfo from '../../src/common/lib/types/errorinfo';
+import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../src/common/lib/types/protocolmessage';
+
+const Ably = {
+  Rest: DefaultRest,
+  Realtime: DefaultRealtime,
+  ErrorInfo,
+  makeProtocolMessageFromDeserialized,
+};
+
+const Platform = DefaultRest.Platform;
 
 // Saved originals for teardown
 let _savedHttp: any = null;
@@ -147,8 +162,11 @@ class FakeClock {
     _savedSetTimeout = Platform.Config.setTimeout;
     _savedClearTimeout = Platform.Config.clearTimeout;
     _savedNow = Platform.Config.now;
-    Platform.Config.setTimeout = this.setTimeout.bind(this);
-    Platform.Config.clearTimeout = this.clearTimeout.bind(this);
+    // The fake clock returns numeric ids rather than NodeJS.Timeout objects;
+    // since clearTimeout is also faked, the id only flows back through our
+    // own implementation, so the type mismatch is purely cosmetic.
+    Platform.Config.setTimeout = this.setTimeout.bind(this) as unknown as typeof Platform.Config.setTimeout;
+    Platform.Config.clearTimeout = this.clearTimeout.bind(this) as unknown as typeof Platform.Config.clearTimeout;
     Platform.Config.now = () => this._now;
     return this;
   }

@@ -19,7 +19,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * with the subscription in the body.
    */
   it('RSH1c3 - save sends POST to /push/channelSubscriptions', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -51,7 +51,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * PushChannelSubscription object.
    */
   it('RSH1c3 - save body contains channel and subscription details', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -86,7 +86,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * list() issues a GET request to the channelSubscriptions endpoint.
    */
   it('RSH1c1 - list sends GET to /push/channelSubscriptions', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -113,7 +113,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * and returns matching subscriptions.
    */
   it('RSH1c1 - list with channel filter', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -154,9 +154,9 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
     const result = await client.push.admin.channelSubscriptions.list({ channel: 'my-channel' });
 
     expect(result.items).to.have.length(2);
-    expect(result.items[0].channel).to.equal('my-channel');
-    expect(result.items[0].deviceId).to.equal('device-001');
-    expect(result.items[1].clientId).to.equal('client-abc');
+    expect((result.items[0] as any).channel).to.equal('my-channel');
+    expect((result.items[0] as any).deviceId).to.equal('device-001');
+    expect((result.items[1] as any).clientId).to.equal('client-abc');
   });
 
   /**
@@ -166,7 +166,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * endpoint with filter parameters as query params.
    */
   it('RSH1c5 - removeWhere sends DELETE to /push/channelSubscriptions', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -192,7 +192,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * filter params to delete matching subscriptions.
    */
   it('RSH1c5 - removeWhere with channel param', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -221,7 +221,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * listChannels() issues a GET request to the /push/channels endpoint.
    */
   it('RSH1c2 - listChannels sends GET to /push/channels', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -269,7 +269,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * listChannels() forwards the limit parameter as a query parameter.
    */
   it('RSH1c2 - listChannels with params', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

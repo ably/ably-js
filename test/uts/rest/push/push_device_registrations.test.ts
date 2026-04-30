@@ -19,7 +19,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * with the device details in the body.
    */
   it('RSH1b3 - save sends PUT to /push/deviceRegistrations/{id}', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -62,7 +62,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * formFactor, and push recipient fields.
    */
   it('RSH1b3 - save body contains device details', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -102,7 +102,7 @@ describe('uts/rest/push/push_device_registrations', function () {
 
     // Response is parsed as DeviceDetails
     expect(result.id).to.equal('device-001');
-    expect(result.push.state).to.equal('Active');
+    expect(result.push!.state).to.equal('Active');
   });
 
   /**
@@ -111,7 +111,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * get() issues a GET request to the device-specific endpoint.
    */
   it('RSH1b1 - get sends GET to /push/deviceRegistrations/{id}', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -171,8 +171,8 @@ describe('uts/rest/push/push_device_registrations', function () {
     expect(device.clientId).to.equal('client-abc');
     expect(device.formFactor).to.equal('phone');
     expect(device.platform).to.equal('ios');
-    expect(device.push.recipient.transportType).to.equal('apns');
-    expect(device.push.state).to.equal('Active');
+    expect(device.push!.recipient!.transportType).to.equal('apns');
+    expect(device.push!.state).to.equal('Active');
   });
 
   /**
@@ -181,7 +181,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * list() issues a GET request to the deviceRegistrations collection endpoint.
    */
   it('RSH1b2 - list sends GET to /push/deviceRegistrations', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -214,7 +214,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * returns only matching results.
    */
   it('RSH1b2 - list with params (deviceId filter)', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -272,8 +272,8 @@ describe('uts/rest/push/push_device_registrations', function () {
     const result = await client.push.admin.deviceRegistrations.list({ clientId: 'client-abc' });
 
     expect(result.items).to.have.length(2);
-    expect(result.items[0].id).to.equal('device-001');
-    expect(result.items[1].id).to.equal('device-002');
+    expect((result.items[0] as any).id).to.equal('device-001');
+    expect((result.items[1] as any).id).to.equal('device-002');
   });
 
   /**
@@ -282,7 +282,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * remove() issues a DELETE request to the device-specific endpoint.
    */
   it('RSH1b4 - remove sends DELETE to /push/deviceRegistrations/{id}', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -306,7 +306,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * remove() accepts a plain string deviceId (not just a DeviceDetails object).
    */
   it('RSH1b4 - remove accepts string deviceId', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -332,7 +332,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * with filter parameters as query params.
    */
   it('RSH1b5 - removeWhere sends DELETE to /push/deviceRegistrations with params', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
