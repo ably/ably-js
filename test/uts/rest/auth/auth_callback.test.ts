@@ -53,7 +53,11 @@ describe('uts/rest/auth/auth_callback', function () {
         callback(null, 'callback-token');
       },
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(callbackInvoked).to.be.true;
     expect(captured).to.have.length(1);
@@ -74,7 +78,11 @@ describe('uts/rest/auth/auth_callback', function () {
         callback(null, jwt);
       },
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(captured).to.have.length(1);
     const expectedAuth = 'Bearer ' + Buffer.from(jwt).toString('base64');
@@ -115,7 +123,11 @@ describe('uts/rest/auth/auth_callback', function () {
         } as any);
       },
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(captured.length).to.be.at.least(2);
 
@@ -157,9 +169,8 @@ describe('uts/rest/auth/auth_callback', function () {
     expect(receivedParams.clientId).to.equal('requested-client-id');
     expect(receivedParams.ttl).to.equal(7200000);
     // ably-js serializes capability as a JSON string
-    const cap = typeof receivedParams.capability === 'string'
-      ? JSON.parse(receivedParams.capability)
-      : receivedParams.capability;
+    const cap =
+      typeof receivedParams.capability === 'string' ? JSON.parse(receivedParams.capability) : receivedParams.capability;
     expect(cap).to.deep.equal({ channel1: ['publish'] });
   });
 
@@ -173,7 +184,11 @@ describe('uts/rest/auth/auth_callback', function () {
     const client = new Ably.Rest({
       authUrl: 'https://auth.example.com/token',
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(captured.length).to.be.at.least(2);
 
@@ -212,7 +227,11 @@ describe('uts/rest/auth/auth_callback', function () {
       authUrl: 'https://auth.example.com/token',
       authMethod: 'POST',
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     const authReq = captured[0];
     expect(authReq.method.toUpperCase()).to.equal('POST');
@@ -232,7 +251,11 @@ describe('uts/rest/auth/auth_callback', function () {
         'X-API-Key': 'my-api-key',
       },
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     const authReq = captured[0];
     expect(authReq.headers['X-Custom-Header']).to.equal('custom-value');
@@ -253,7 +276,11 @@ describe('uts/rest/auth/auth_callback', function () {
         scope: 'publish:*',
       },
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     const authReq = captured[0];
     expect(authReq.url.searchParams.get('client_id')).to.equal('my-client');
@@ -271,7 +298,11 @@ describe('uts/rest/auth/auth_callback', function () {
     const client = new Ably.Rest({
       authUrl: 'https://auth.example.com/jwt',
     } as any);
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     const apiReq = captured[captured.length - 1];
     const expectedAuth = 'Bearer ' + Buffer.from(jwt).toString('base64');
@@ -335,7 +366,9 @@ describe('uts/rest/auth/auth_callback', function () {
     } catch (error: any) {
       // UTS spec: error.statusCode == 500 OR error.message CONTAINS "auth"
       const hasExpectedStatus = error.statusCode === 500 || error.statusCode === 401;
-      const hasAuthMessage = String(error.message || '').toLowerCase().includes('auth');
+      const hasAuthMessage = String(error.message || '')
+        .toLowerCase()
+        .includes('auth');
       expect(hasExpectedStatus || hasAuthMessage).to.be.true;
     }
 

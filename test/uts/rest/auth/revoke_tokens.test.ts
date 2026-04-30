@@ -14,11 +14,14 @@ function revokeMock(captured: any, responseBody?: any) {
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
       if (captured) captured.push(req);
-      req.respond_with(200, responseBody || {
-        successCount: 1,
-        failureCount: 0,
-        results: [{ target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 }],
-      });
+      req.respond_with(
+        200,
+        responseBody || {
+          successCount: 1,
+          failureCount: 0,
+          results: [{ target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 }],
+        },
+      );
     },
   });
 }
@@ -81,11 +84,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
     ]);
 
     const body = JSON.parse(captured[0].body);
-    expect(body.targets).to.deep.equal([
-      'clientId:alice',
-      'revocationKey:group-1',
-      'channel:secret',
-    ]);
+    expect(body.targets).to.deep.equal(['clientId:alice', 'revocationKey:group-1', 'channel:secret']);
   });
 
   /**
@@ -125,9 +124,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
     const responseBody = {
       successCount: 1,
       failureCount: 0,
-      results: [
-        { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
-      ],
+      results: [{ target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 }],
     };
     installMockHttp(revokeMock(null, responseBody));
 
@@ -294,10 +291,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
-    await client.auth.revokeTokens(
-      [{ type: 'clientId', value: 'alice' }],
-      { issuedBefore: 1699999000000 },
-    );
+    await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }], { issuedBefore: 1699999000000 });
 
     const body = JSON.parse(captured[0].body);
     expect(body.issuedBefore).to.equal(1699999000000);
@@ -325,10 +319,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
-    await client.auth.revokeTokens(
-      [{ type: 'clientId', value: 'alice' }],
-      { allowReauthMargin: true },
-    );
+    await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }], { allowReauthMargin: true });
 
     const body = JSON.parse(captured[0].body);
     expect(body.allowReauthMargin).to.equal(true);
@@ -356,10 +347,10 @@ describe('uts/rest/auth/revoke_tokens', function () {
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
-    await client.auth.revokeTokens(
-      [{ type: 'clientId', value: 'alice' }],
-      { issuedBefore: 1699999000000, allowReauthMargin: true },
-    );
+    await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }], {
+      issuedBefore: 1699999000000,
+      allowReauthMargin: true,
+    });
 
     const body = JSON.parse(captured[0].body);
     expect(body.targets).to.deep.equal(['clientId:alice']);

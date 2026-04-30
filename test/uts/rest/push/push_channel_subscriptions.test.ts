@@ -91,9 +91,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
         captured.push(req);
-        req.respond_with(200, [
-          { channel: 'my-channel', deviceId: 'device-001' },
-        ]);
+        req.respond_with(200, [{ channel: 'my-channel', deviceId: 'device-001' }]);
       },
     });
     installMockHttp(mock);
@@ -299,9 +297,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
         captured.push(req);
-        req.respond_with(200, [
-          { channel: 'my-channel', deviceId: 'device-001', clientId: 'client-abc' },
-        ]);
+        req.respond_with(200, [{ channel: 'my-channel', deviceId: 'device-001', clientId: 'client-abc' }]);
       },
     });
     installMockHttp(mock);
@@ -325,9 +321,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
         captured.push(req);
-        req.respond_with(200, [
-          { channel: 'ch1', deviceId: 'device-001' },
-        ]);
+        req.respond_with(200, [{ channel: 'ch1', deviceId: 'device-001' }]);
       },
     });
     installMockHttp(mock);

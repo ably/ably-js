@@ -27,8 +27,16 @@ describe('uts/rest/stats', function () {
       onRequest: (req) => {
         captured.push(req);
         req.respond_with(200, [
-          { intervalId: '2024-01-01:00:00', unit: 'hour', all: { messages: { count: 100, data: 5000 }, all: { count: 100, data: 5000 } } },
-          { intervalId: '2024-01-01:01:00', unit: 'hour', all: { messages: { count: 150, data: 7500 }, all: { count: 150, data: 7500 } } },
+          {
+            intervalId: '2024-01-01:00:00',
+            unit: 'hour',
+            all: { messages: { count: 100, data: 5000 }, all: { count: 100, data: 5000 } },
+          },
+          {
+            intervalId: '2024-01-01:01:00',
+            unit: 'hour',
+            all: { messages: { count: 150, data: 7500 }, all: { count: 150, data: 7500 } },
+          },
         ]);
       },
     });
@@ -511,15 +519,11 @@ describe('uts/rest/stats', function () {
         captured.push(req);
         reqCount++;
         if (reqCount === 1) {
-          req.respond_with(200, [
-            { intervalId: '2024-01-01:01:00', unit: 'hour' },
-          ], {
-            'Link': '<./stats?start=1704070800000&limit=1>; rel="next"',
+          req.respond_with(200, [{ intervalId: '2024-01-01:01:00', unit: 'hour' }], {
+            Link: '<./stats?start=1704070800000&limit=1>; rel="next"',
           });
         } else {
-          req.respond_with(200, [
-            { intervalId: '2024-01-01:00:00', unit: 'hour' },
-          ]);
+          req.respond_with(200, [{ intervalId: '2024-01-01:00:00', unit: 'hour' }]);
         }
       },
     });

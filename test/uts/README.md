@@ -72,29 +72,29 @@ uninstallMockHttp();
 
 ### PendingConnection methods
 
-| Method | Effect |
-|--------|--------|
-| `respond_with_success()` | Connection succeeds, allows HTTP request |
-| `respond_with_refused()` | TCP connection refused |
-| `respond_with_timeout()` | Connection times out |
-| `respond_with_dns_error()` | DNS resolution fails |
+| Method                     | Effect                                   |
+| -------------------------- | ---------------------------------------- |
+| `respond_with_success()`   | Connection succeeds, allows HTTP request |
+| `respond_with_refused()`   | TCP connection refused                   |
+| `respond_with_timeout()`   | Connection times out                     |
+| `respond_with_dns_error()` | DNS resolution fails                     |
 
 ### PendingRequest methods
 
-| Method | Effect |
-|--------|--------|
-| `respond_with(status, body, headers?)` | Return HTTP response |
-| `respond_with_timeout()` | Request times out after connection |
+| Method                                 | Effect                             |
+| -------------------------------------- | ---------------------------------- |
+| `respond_with(status, body, headers?)` | Return HTTP response               |
+| `respond_with_timeout()`               | Request times out after connection |
 
 ### PendingRequest properties
 
-| Property | Description |
-|----------|-------------|
-| `method` | HTTP method (GET, POST, etc.) |
-| `url` | Parsed URL object |
-| `path` | URL pathname (e.g., `/time`) |
-| `headers` | Request headers |
-| `body` | Request body |
+| Property  | Description                   |
+| --------- | ----------------------------- |
+| `method`  | HTTP method (GET, POST, etc.) |
+| `url`     | Parsed URL object             |
+| `path`    | URL pathname (e.g., `/time`)  |
+| `headers` | Request headers               |
+| `body`    | Request body                  |
 
 ## Fake Timers
 
@@ -114,6 +114,7 @@ clock.uninstall(); // restore real timers
 ```
 
 Maps to UTS pseudocode:
+
 - `enable_fake_timers()` → `enableFakeTimers()`
 - `ADVANCE_TIME(ms)` → `clock.tick(ms)` or `clock.tickAsync(ms)`
 

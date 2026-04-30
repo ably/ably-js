@@ -30,9 +30,7 @@ describe('uts/rest/batch_publish', function () {
           req.respond_with(200, {
             successCount: 1,
             failureCount: 0,
-            results: [
-              { channel: 'ch1', messageId: 'msg123', serials: ['s1'] },
-            ],
+            results: [{ channel: 'ch1', messageId: 'msg123', serials: ['s1'] }],
           });
         },
       });
@@ -106,9 +104,7 @@ describe('uts/rest/batch_publish', function () {
             {
               successCount: 1,
               failureCount: 0,
-              results: [
-                { channel: 'ch1', messageId: 'msg123', serials: ['serial1'] },
-              ],
+              results: [{ channel: 'ch1', messageId: 'msg123', serials: ['serial1'] }],
             },
           ]);
         },
@@ -276,7 +272,10 @@ describe('uts/rest/batch_publish', function () {
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
       const result = await client.batchPublish({
         channels: ['ch'],
-        messages: [{ name: 'e1', data: 'd1' }, { name: 'e2', data: 'd2' }],
+        messages: [
+          { name: 'e1', data: 'd1' },
+          { name: 'e2', data: 'd2' },
+        ],
       });
 
       expect((result.results[0] as any).messageId).to.equal('unique-id-prefix');
@@ -300,7 +299,11 @@ describe('uts/rest/batch_publish', function () {
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
       const result = await client.batchPublish({
         channels: ['ch'],
-        messages: [{ name: 'e1', data: 'd1' }, { name: 'e2', data: 'd2' }, { name: 'e3', data: 'd3' }],
+        messages: [
+          { name: 'e1', data: 'd1' },
+          { name: 'e2', data: 'd2' },
+          { name: 'e3', data: 'd3' },
+        ],
       });
 
       expect((result.results[0] as any).serials).to.deep.equal(['serial1', 'serial2', 'serial3']);
@@ -324,7 +327,11 @@ describe('uts/rest/batch_publish', function () {
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
       const result = await client.batchPublish({
         channels: ['ch'],
-        messages: [{ name: 'e1', data: 'd1' }, { name: 'e2', data: 'd2' }, { name: 'e3', data: 'd3' }],
+        messages: [
+          { name: 'e1', data: 'd1' },
+          { name: 'e2', data: 'd2' },
+          { name: 'e3', data: 'd3' },
+        ],
       });
 
       expect((result.results[0] as any).serials).to.deep.equal(['serial1', null, 'serial3']);

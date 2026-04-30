@@ -86,7 +86,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // Trigger auth by making a request
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.clientId).to.equal('callback-client-id');
   });
@@ -140,7 +144,11 @@ describe('uts/rest/auth/client_id', function () {
       clientId: 'library-client-id',
     } as any);
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(receivedParams).to.not.be.null;
     expect(receivedParams.clientId).to.equal('library-client-id');
@@ -170,7 +178,11 @@ describe('uts/rest/auth/client_id', function () {
       clientId: 'url-client-id',
     } as any);
 
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     const authReq = captured[0];
     expect(authReq.url.host).to.equal('auth.example.com');
@@ -208,7 +220,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // First auth
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
     expect(client.auth.clientId).to.equal('client-1');
 
     // Second auth with explicit authorize
@@ -262,7 +278,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // Force auth
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     expect(client.auth.clientId).to.equal('explicit-client');
   });
@@ -296,7 +316,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // Force auth
-    try { await client.stats({} as any); } catch (e) { /* ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
 
     // Per spec, should inherit clientId from token
     expect(client.auth.clientId).to.equal('token-client');
@@ -319,7 +343,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // Should not throw when using the token
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(client.auth.clientId).to.equal('my-client');
   });
@@ -368,7 +396,11 @@ describe('uts/rest/auth/client_id', function () {
     } as any);
 
     // Should not throw — wildcard allows any clientId
-    try { await client.stats({} as any); } catch (e) { /* response parse errors ok */ }
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* response parse errors ok */
+    }
 
     expect(client.auth.clientId).to.equal('any-client');
   });
