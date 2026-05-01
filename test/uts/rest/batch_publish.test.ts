@@ -631,7 +631,7 @@ describe('uts/rest/batch_publish', function () {
      */
     it('RSC22d - batch publish generates idempotent IDs', async function () {
       // DEVIATION: see deviations.md
-      this.skip();
+      if (!process.env.RUN_DEVIATIONS) this.skip();
       const captured: any[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),

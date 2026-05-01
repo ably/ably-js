@@ -136,7 +136,7 @@ describe('uts/rest/batch_presence', function () {
      */
     it('BAR2_1 - mixed results normalised', async function () {
       // DEVIATION: see deviations.md
-      this.skip();
+      if (!process.env.RUN_DEVIATIONS) this.skip();
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -169,7 +169,7 @@ describe('uts/rest/batch_presence', function () {
      */
     it('BAR2_3 - all failure normalised', async function () {
       // DEVIATION: see deviations.md
-      this.skip();
+      if (!process.env.RUN_DEVIATIONS) this.skip();
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -281,7 +281,7 @@ describe('uts/rest/batch_presence', function () {
      */
     it('BGF2_1 - failure result normalised with error details', async function () {
       // DEVIATION: see deviations.md
-      this.skip();
+      if (!process.env.RUN_DEVIATIONS) this.skip();
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -326,7 +326,7 @@ describe('uts/rest/batch_presence', function () {
      */
     it('RSC24_Mixed_1 - mixed results normalised', async function () {
       // DEVIATION: see deviations.md
-      this.skip();
+      if (!process.env.RUN_DEVIATIONS) this.skip();
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {

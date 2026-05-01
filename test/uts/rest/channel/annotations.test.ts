@@ -83,7 +83,7 @@ describe('uts/rest/channel/annotations', function () {
    */
   it('RSAN1a3 - type required', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -151,7 +151,7 @@ describe('uts/rest/channel/annotations', function () {
    */
   it('RSAN1c4 - idempotent ID generated', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

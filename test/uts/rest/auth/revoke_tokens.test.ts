@@ -145,7 +145,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    */
   it('RSA17c_2 - mixed result normalised', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -180,7 +180,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    */
   it('RSA17c_3 - all failure normalised', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -215,7 +215,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    */
   it('TRF2_1 - failure details in results', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
