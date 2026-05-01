@@ -77,7 +77,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 5000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -138,7 +138,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 3000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -207,7 +207,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -276,7 +276,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -335,7 +335,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -395,7 +395,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 5000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -452,7 +452,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 3000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -519,7 +519,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -608,7 +608,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: `connection-key-${connectionAttemptCount}`,
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -667,7 +667,7 @@ describe('uts/realtime/connection/heartbeat', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 2000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });

@@ -32,7 +32,7 @@ describe('uts/realtime/connection/update_events', function () {
             connectionKey: 'connection-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -82,7 +82,7 @@ describe('uts/realtime/connection/update_events', function () {
           connectionKey: 'connection-key-1',
           maxIdleInterval: 20000,
           connectionStateTtl: 120000,
-        },
+        } as any,
       });
     });
   });
@@ -111,7 +111,7 @@ describe('uts/realtime/connection/update_events', function () {
           connectionKey: 'connection-key-1',
           maxIdleInterval: 15000,
           connectionStateTtl: 120000,
-        },
+        } as any,
         error: {
           code: 40142,
           statusCode: 401,
@@ -150,7 +150,7 @@ describe('uts/realtime/connection/update_events', function () {
           connectionStateTtl: 120000,
           maxMessageSize: 32768,
           serverId: 'server-2',
-        },
+        } as any,
       });
     });
   });
@@ -193,7 +193,7 @@ describe('uts/realtime/connection/update_events', function () {
             connectionKey: 'connection-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       }
     });

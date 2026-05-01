@@ -33,7 +33,8 @@ describe('uts/realtime/connection/connection_ping', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           mock.active_connection!.send_to_client({
             action: 0, // HEARTBEAT
             id: msg.id,
@@ -73,7 +74,8 @@ describe('uts/realtime/connection/connection_ping', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           capturedId = msg.id;
           // Send wrong id first (should be ignored), then correct
           mock.active_connection!.send_to_client({ action: 0, id: 'wrong-id' });
@@ -112,7 +114,8 @@ describe('uts/realtime/connection/connection_ping', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           // Send no-id heartbeat first (should be ignored)
           mock.active_connection!.send_to_client({ action: 0 });
           // Then correct response
@@ -152,7 +155,8 @@ describe('uts/realtime/connection/connection_ping', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           sentIds.push(msg.id);
           mock.active_connection!.send_to_client({ action: 0, id: msg.id });
         }
@@ -168,10 +172,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     trackClient(client);
 
     client.connection.once('connected', async () => {
-      const [d1, d2] = await Promise.all([
-        client.connection.ping(),
-        client.connection.ping(),
-      ]);
+      const [d1, d2] = await Promise.all([client.connection.ping(), client.connection.ping()]);
 
       expect(d1).to.be.a('number');
       expect(d2).to.be.a('number');
@@ -262,7 +263,8 @@ describe('uts/realtime/connection/connection_ping', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
         }
       },
@@ -393,12 +395,13 @@ describe('uts/realtime/connection/connection_ping', function () {
               connectionKey: 'conn-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }, 50);
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           mock.active_connection!.send_to_client({ action: 0, id: msg.id });
         }
       },
@@ -439,11 +442,12 @@ describe('uts/realtime/connection/connection_ping', function () {
             connectionKey: `conn-key-${connectionAttemptCount}`,
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 0) { // HEARTBEAT
+        if (msg.action === 0) {
+          // HEARTBEAT
           mock.active_connection!.send_to_client({ action: 0, id: msg.id });
         }
       },
@@ -519,11 +523,13 @@ describe('uts/realtime/connection/connection_ping', function () {
 
     // Call ping() while CONNECTING
     client.connection.ping().then(
-      () => { done(new Error('Expected ping to reject')); },
+      () => {
+        done(new Error('Expected ping to reject'));
+      },
       (err: any) => {
         expect(err).to.not.be.null;
         done();
-      }
+      },
     );
   });
 

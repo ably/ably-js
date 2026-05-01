@@ -35,14 +35,16 @@ describe('uts/realtime/channels/channel_publish', function () {
         }
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 15) { // MESSAGE
+        if (msg.action === 15) {
+          // MESSAGE
           captured.push(msg);
         }
         if (opts?.onMessage) {
@@ -159,7 +161,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         }
         if (msg.action === 15) {
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -208,7 +212,9 @@ describe('uts/realtime/channels/channel_publish', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -245,7 +251,9 @@ describe('uts/realtime/channels/channel_publish', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -284,7 +292,9 @@ describe('uts/realtime/channels/channel_publish', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -324,7 +334,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (msg.action === 10) attachCount++;
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -372,7 +384,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (msg.action === 15) {
           captured.push(msg);
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -424,7 +438,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (msg.action === 15) {
           captured.push(msg);
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -474,7 +490,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (msg.action === 15) {
           captured.push(msg);
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -534,7 +552,9 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (msg.action === 15) {
           captured.push(msg);
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['s1'] }],
           });
         }
@@ -576,7 +596,8 @@ describe('uts/realtime/channels/channel_publish', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           conn!.send_to_client({ action: 8 }); // CLOSED
         }
       },
@@ -913,7 +934,8 @@ describe('uts/realtime/channels/channel_publish', function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
         // Don't ACK — leave publish pending
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
         }
       },
@@ -996,7 +1018,8 @@ describe('uts/realtime/channels/channel_publish', function () {
   it('RTN7e - multiple pending publishes all fail on close', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
         }
         // Don't ACK publishes
@@ -1124,10 +1147,12 @@ describe('uts/realtime/channels/channel_publish', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({ action: 11, channel: msg.channel, flags: 0 });
         }
-        if (msg.action === 15) { // MESSAGE
+        if (msg.action === 15) {
+          // MESSAGE
           const idx = connectCount - 1;
           if (idx < messagesPerConn.length) {
             messagesPerConn[idx].push(msg);
@@ -1177,9 +1202,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     expect(result.serials).to.deep.equal(['resent-serial']);
     // Message was resent on second transport
     expect(messagesPerConn[1].length).to.be.at.least(1);
-    const resentMsg = messagesPerConn[1].find((m: any) =>
-      m.messages?.some((m2: any) => m2.name === 'resend-me')
-    );
+    const resentMsg = messagesPerConn[1].find((m: any) => m.messages?.some((m2: any) => m2.name === 'resend-me'));
     expect(resentMsg).to.not.be.undefined;
     client.close();
   });
@@ -1199,13 +1222,13 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (connectCount === 1) {
           conn.respond_with_connected({
             connectionId: 'conn-1',
-            connectionDetails: { connectionKey: 'key-1' },
+            connectionDetails: { connectionKey: 'key-1' } as any,
           });
         } else {
           // Same connectionId = successful resume
           conn.respond_with_connected({
             connectionId: 'conn-1',
-            connectionDetails: { connectionKey: 'key-1-resumed' },
+            connectionDetails: { connectionKey: 'key-1-resumed' } as any,
           });
         }
       },
@@ -1284,13 +1307,13 @@ describe('uts/realtime/channels/channel_publish', function () {
         if (connectCount === 1) {
           conn.respond_with_connected({
             connectionId: 'conn-1',
-            connectionDetails: { connectionKey: 'key-1' },
+            connectionDetails: { connectionKey: 'key-1' } as any,
           });
         } else {
           // Different connectionId = failed resume
           conn.respond_with_connected({
             connectionId: 'conn-2',
-            connectionDetails: { connectionKey: 'key-2' },
+            connectionDetails: { connectionKey: 'key-2' } as any,
           });
         }
       },
@@ -1344,9 +1367,7 @@ describe('uts/realtime/channels/channel_publish', function () {
 
     // Resent messages should have new msgSerials starting from 0
     expect(conn2Msgs.length).to.be.at.least(2);
-    const msgSerials = conn2Msgs
-      .filter((m: any) => m.messages?.length)
-      .map((m: any) => m.msgSerial);
+    const msgSerials = conn2Msgs.filter((m: any) => m.messages?.length).map((m: any) => m.msgSerial);
     expect(msgSerials).to.include(0);
     expect(msgSerials).to.include(1);
     client.close();
@@ -1366,7 +1387,8 @@ describe('uts/realtime/channels/channel_publish', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           const idx = connectCount - 1;
           if (idx < attachMsgsPerConn.length) {
             attachMsgsPerConn[idx].push(msg);
@@ -1374,7 +1396,9 @@ describe('uts/realtime/channels/channel_publish', function () {
           // Only respond on second connection
           if (idx >= 1) {
             conn!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           }
           // Don't respond on first connection — leave ATTACHING
@@ -1428,10 +1452,12 @@ describe('uts/realtime/channels/channel_publish', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({ action: 11, channel: msg.channel, flags: 0 });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           const idx = connectCount - 1;
           if (idx < detachMsgsPerConn.length) {
             detachMsgsPerConn[idx].push(msg);

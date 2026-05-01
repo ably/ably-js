@@ -27,7 +27,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -84,7 +85,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -141,7 +143,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -192,7 +195,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
         }
       },
@@ -232,7 +236,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -311,7 +316,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -345,7 +351,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // First message — both listeners get it
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8a',
+      action: 15,
+      channel: 'test-RTL8a',
       messages: [{ name: 'msg1', data: 'first' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -355,7 +362,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // Second message — only listener2 gets it
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8a',
+      action: 15,
+      channel: 'test-RTL8a',
       messages: [{ name: 'msg2', data: 'second' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -375,7 +383,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -407,8 +416,12 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // First batch
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8b',
-      messages: [{ name: 'alpha', data: 'a1' }, { name: 'beta', data: 'b1' }],
+      action: 15,
+      channel: 'test-RTL8b',
+      messages: [
+        { name: 'alpha', data: 'a1' },
+        { name: 'beta', data: 'b1' },
+      ],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
     expect(received.length).to.equal(2);
@@ -418,8 +431,12 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // Second batch
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8b',
-      messages: [{ name: 'alpha', data: 'a2' }, { name: 'beta', data: 'b2' }],
+      action: 15,
+      channel: 'test-RTL8b',
+      messages: [
+        { name: 'alpha', data: 'a2' },
+        { name: 'beta', data: 'b2' },
+      ],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
 
@@ -439,7 +456,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -469,7 +487,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // First message
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8c',
+      action: 15,
+      channel: 'test-RTL8c',
       messages: [{ name: 'named', data: 'first' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -481,7 +500,8 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // Second message
     mock.active_connection!.send_to_client({
-      action: 15, channel: 'test-RTL8c',
+      action: 15,
+      channel: 'test-RTL8c',
       messages: [{ name: 'named', data: 'second' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));

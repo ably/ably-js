@@ -30,11 +30,12 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 17) { // AUTH
+        if (msg.action === 17) {
+          // AUTH
           capturedAuthMessages.push(msg);
           // Respond with updated CONNECTED (same id/key)
           mock.active_connection!.send_to_client({
@@ -45,7 +46,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -77,9 +78,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
         expect(capturedAuthMessages[0].auth).to.not.be.undefined;
 
         // Connection stayed CONNECTED throughout (no non-connected transitions)
-        const nonConnected = stateChanges.filter(
-          (c: any) => c.current !== 'connected'
-        );
+        const nonConnected = stateChanges.filter((c: any) => c.current !== 'connected');
         expect(nonConnected).to.have.length(0);
 
         client.close();
@@ -108,11 +107,12 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
             connectionKey: 'key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 17) { // AUTH
+        if (msg.action === 17) {
+          // AUTH
           mock.active_connection!.send_to_client({
             action: 4, // CONNECTED
             connectionId: 'conn-1',
@@ -121,7 +121,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -179,7 +179,7 @@ describe('uts/realtime/connection/server_initiated_reauth', function () {
             connectionKey: 'key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });

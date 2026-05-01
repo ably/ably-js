@@ -21,7 +21,7 @@ describe('uts/realtime/client/realtime_request', function () {
    * RTC9 / RSC19 - GET request
    */
   it('RTC9 - request() sends GET', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -33,7 +33,7 @@ describe('uts/realtime/client/realtime_request', function () {
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
-    const result = await client.request('get', '/test', 2);
+    const result = await client.request('get', '/test', 2, null as any, null as any, null as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('get');
@@ -47,7 +47,7 @@ describe('uts/realtime/client/realtime_request', function () {
    * RTC9 / RSC19 - POST request with body
    */
   it('RTC9 - request() sends POST with body', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -63,7 +63,7 @@ describe('uts/realtime/client/realtime_request', function () {
       useBinaryProtocol: false,
     });
     trackClient(client);
-    const result = await client.request('post', '/items', 2, null, { name: 'test' });
+    const result = await client.request('post', '/items', 2, null as any, { name: 'test' }, null as any);
 
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('post');
@@ -75,7 +75,7 @@ describe('uts/realtime/client/realtime_request', function () {
    * RTC9 / RSC19 - request() with query params
    */
   it('RTC9 - request() passes query params', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -87,7 +87,14 @@ describe('uts/realtime/client/realtime_request', function () {
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
-    const result = await client.request('get', '/test', 2, { limit: '5', direction: 'forwards' });
+    const result = await client.request(
+      'get',
+      '/test',
+      2,
+      { limit: '5', direction: 'forwards' },
+      null as any,
+      null as any,
+    );
 
     expect(captured).to.have.length(1);
     expect(captured[0].url.searchParams.get('limit')).to.equal('5');
@@ -109,7 +116,7 @@ describe('uts/realtime/client/realtime_request', function () {
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
-    const result = await client.request('get', '/items', 2);
+    const result = await client.request('get', '/items', 2, null as any, null as any, null as any);
 
     expect(result.statusCode).to.equal(200);
     expect(result.success).to.be.true;
@@ -132,7 +139,7 @@ describe('uts/realtime/client/realtime_request', function () {
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
-    const result = await client.request('get', '/missing', 2);
+    const result = await client.request('get', '/missing', 2, null as any, null as any, null as any);
 
     expect(result.statusCode).to.equal(404);
     expect(result.success).to.be.false;

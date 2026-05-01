@@ -46,7 +46,8 @@ describe('uts/realtime/client/client_options', function () {
   });
 
   it('RSC1c - token string (JWT format)', function () {
-    const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    const jwt =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
     const client = new Ably.Realtime({ token: jwt, autoConnect: false });
     trackClient(client);
     expect(client.options.token).to.equal(jwt);
@@ -60,9 +61,9 @@ describe('uts/realtime/client/client_options', function () {
    */
   it('RSC1b - no credentials raises error', function () {
     try {
-      new Ably.Realtime({ autoConnect: false });
+      new Ably.Realtime({ autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
-    } catch (e) {
+    } catch (e: any) {
       // ably-js deviation: uses 40160 instead of spec's 40106
       expect(e.code).to.equal(40160);
     }
@@ -70,7 +71,7 @@ describe('uts/realtime/client/client_options', function () {
 
   it('RSC1b - useTokenAuth without means raises error', function () {
     try {
-      new Ably.Realtime({ useTokenAuth: true, autoConnect: false });
+      new Ably.Realtime({ useTokenAuth: true, autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
     } catch (e) {
       expect(e).to.be.an('error');
@@ -79,9 +80,9 @@ describe('uts/realtime/client/client_options', function () {
 
   it('RSC1b - clientId alone raises error', function () {
     try {
-      new Ably.Realtime({ clientId: 'test', autoConnect: false });
+      new Ably.Realtime({ clientId: 'test', autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
-    } catch (e) {
+    } catch (e: any) {
       // ably-js deviation: uses 40160 instead of spec's 40106
       expect(e.code).to.equal(40160);
     }

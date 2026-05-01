@@ -45,7 +45,8 @@ describe('uts/realtime/channels/channel_attributes', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -99,7 +100,8 @@ describe('uts/realtime/channels/channel_attributes', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           // Respond with DETACHED + error (attach rejected)
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
@@ -157,7 +159,8 @@ describe('uts/realtime/channels/channel_attributes', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             // First attach fails
@@ -228,14 +231,16 @@ describe('uts/realtime/channels/channel_attributes', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,

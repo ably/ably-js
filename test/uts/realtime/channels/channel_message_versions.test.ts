@@ -29,7 +29,9 @@ describe('uts/realtime/channels/channel_message_versions', function () {
       onMessageFromClient: (msg) => {
         if (msg.action === 10) {
           mock.active_connection!.send_to_client({
-            action: 11, channel: msg.channel, flags: 0,
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
           });
         }
       },
@@ -39,10 +41,14 @@ describe('uts/realtime/channels/channel_message_versions', function () {
     const httpMock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, [
-          { name: 'msg', data: 'v1', serial: 'msg-serial-abc' },
-          { name: 'msg', data: 'v2', serial: 'msg-serial-abc' },
-        ], { 'content-type': 'application/json' });
+        req.respond_with(
+          200,
+          [
+            { name: 'msg', data: 'v1', serial: 'msg-serial-abc' },
+            { name: 'msg', data: 'v2', serial: 'msg-serial-abc' },
+          ],
+          { 'content-type': 'application/json' },
+        );
       },
     });
     installMockHttp(httpMock);

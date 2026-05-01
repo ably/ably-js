@@ -36,7 +36,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachMessageCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -83,7 +84,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachMessageCount++;
           pendingAttachChannel = msg.channel;
           // Don't respond immediately — let the test control timing
@@ -146,7 +148,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             // First attach: respond with ERROR
@@ -212,7 +215,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({
             action: 8, // CLOSED
           });
@@ -356,7 +360,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         // Don't respond yet — hold in connecting state
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -412,7 +417,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsg = msg;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -469,7 +475,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsgs.push({ ...msg });
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -503,10 +510,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     client.close();
     expect(capturedAttachMsgs.length).to.equal(2);
     // First ATTACH should have no channelSerial
-    expect(capturedAttachMsgs[0].channelSerial).to.satisfy(
-      (v: any) => !v,
-      'First ATTACH should have no channelSerial',
-    );
+    expect(capturedAttachMsgs[0].channelSerial).to.satisfy((v: any) => !v, 'First ATTACH should have no channelSerial');
     // Second ATTACH should include the serial from the server
     expect(capturedAttachMsgs[1].channelSerial).to.equal('serial-from-server-1');
   });
@@ -581,7 +585,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsg = msg;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -621,8 +626,8 @@ describe('uts/realtime/channels/channel_attach', function () {
    * RTL4l - ATTACH includes modes as flags
    */
   it('RTL4l - ATTACH includes modes as flags', async function () {
-    const PUBLISH = 131072;    // 1 << 17
-    const SUBSCRIBE = 262144;  // 1 << 18
+    const PUBLISH = 131072; // 1 << 17
+    const SUBSCRIBE = 262144; // 1 << 18
 
     let capturedAttachMsg: any = null;
 
@@ -632,7 +637,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsg = msg;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -672,8 +678,8 @@ describe('uts/realtime/channels/channel_attach', function () {
    * RTL4m - Channel modes populated from ATTACHED response flags
    */
   it('RTL4m - modes populated from ATTACHED flags', async function () {
-    const PUBLISH = 131072;    // 1 << 17
-    const SUBSCRIBE = 262144;  // 1 << 18
+    const PUBLISH = 131072; // 1 << 17
+    const SUBSCRIBE = 262144; // 1 << 18
 
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -681,7 +687,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -733,7 +740,8 @@ describe('uts/realtime/channels/channel_attach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsgs.push({ ...msg });
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED

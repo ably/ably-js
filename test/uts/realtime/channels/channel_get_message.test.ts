@@ -29,7 +29,9 @@ describe('uts/realtime/channels/channel_get_message', function () {
       onMessageFromClient: (msg) => {
         if (msg.action === 10) {
           mock.active_connection!.send_to_client({
-            action: 11, channel: msg.channel, flags: 0,
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
           });
         }
       },
@@ -39,11 +41,15 @@ describe('uts/realtime/channels/channel_get_message', function () {
     const httpMock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, {
-          name: 'test-msg',
-          data: 'hello',
-          serial: 'msg-serial-123',
-        }, { 'content-type': 'application/json' });
+        req.respond_with(
+          200,
+          {
+            name: 'test-msg',
+            data: 'hello',
+            serial: 'msg-serial-123',
+          },
+          { 'content-type': 'application/json' },
+        );
       },
     });
     installMockHttp(httpMock);
@@ -64,9 +70,7 @@ describe('uts/realtime/channels/channel_get_message', function () {
 
     client.close();
     // Verify REST endpoint was called with the serial
-    const req = httpMock.captured_requests.find(
-      (r: any) => r.path.includes('msg-serial-123'),
-    );
+    const req = httpMock.captured_requests.find((r: any) => r.path.includes('msg-serial-123'));
     expect(req).to.not.be.undefined;
     expect(req!.method.toUpperCase()).to.equal('GET');
     expect(result.name).to.equal('test-msg');

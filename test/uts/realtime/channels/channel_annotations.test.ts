@@ -34,12 +34,16 @@ describe('uts/realtime/channels/channel_annotations', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({
-            action: 11, channel: msg.channel, flags: attachFlags,
+            action: 11,
+            channel: msg.channel,
+            flags: attachFlags,
           });
         }
-        if (msg.action === 21) { // ANNOTATION
+        if (msg.action === 21) {
+          // ANNOTATION
           captured.push(msg);
         }
         if (opts?.onMessage) {
@@ -61,8 +65,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     const channel = client.channels.get('test-RTL26');
@@ -92,8 +96,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -125,7 +129,9 @@ describe('uts/realtime/channels/channel_annotations', function () {
       onMessage: (msg, conn) => {
         if (msg.action === 21) {
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: [] }],
           });
         }
@@ -137,8 +143,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -174,8 +180,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -204,8 +210,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -240,7 +246,9 @@ describe('uts/realtime/channels/channel_annotations', function () {
       onMessage: (msg, conn) => {
         if (msg.action === 21) {
           conn!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: [] }],
           });
         }
@@ -252,8 +260,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -274,9 +282,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
     expect(wireAnnotation.messageSerial).to.equal('msg-serial-abc');
     expect(wireAnnotation.type).to.equal('reaction');
     // action should be annotation.delete (numeric: 1)
-    expect(wireAnnotation.action).to.satisfy(
-      (a: any) => a === 1 || a === 'annotation.delete',
-    );
+    expect(wireAnnotation.action).to.satisfy((a: any) => a === 1 || a === 'annotation.delete');
   });
 
   /**
@@ -290,8 +296,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -337,8 +343,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -381,10 +387,13 @@ describe('uts/realtime/channels/channel_annotations', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
-            action: 11, channel: msg.channel, flags: ANNOTATION_SUBSCRIBE,
+            action: 11,
+            channel: msg.channel,
+            flags: ANNOTATION_SUBSCRIBE,
           });
         }
       },
@@ -395,8 +404,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -425,8 +434,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -460,8 +469,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -487,8 +496,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -503,7 +512,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
 
     // First annotation received
     mock.active_connection!.send_to_client({
-      action: 21, channel: 'test-RTAN5a',
+      action: 21,
+      channel: 'test-RTAN5a',
       annotations: [{ type: 'reaction', name: 'heart', messageSerial: 'msg-1' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -514,7 +524,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
 
     // Second annotation NOT received
     mock.active_connection!.send_to_client({
-      action: 21, channel: 'test-RTAN5a',
+      action: 21,
+      channel: 'test-RTAN5a',
       annotations: [{ type: 'reaction', name: 'fire', messageSerial: 'msg-2' }],
     });
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
@@ -533,8 +544,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { RealtimeAnnotations: Ably.RealtimeAnnotations },
-    });
+      plugins: { RealtimeAnnotations: (Ably as any).RealtimeAnnotations },
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -553,7 +564,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
 
     // Both receive
     mock.active_connection!.send_to_client({
-      action: 21, channel: 'test-RTAN5a-typed',
+      action: 21,
+      channel: 'test-RTAN5a-typed',
       annotations: [
         { type: 'reaction', name: 'heart', messageSerial: 'msg-1' },
         { type: 'comment', name: 'text', messageSerial: 'msg-2' },
@@ -568,7 +580,8 @@ describe('uts/realtime/channels/channel_annotations', function () {
 
     // Send more
     mock.active_connection!.send_to_client({
-      action: 21, channel: 'test-RTAN5a-typed',
+      action: 21,
+      channel: 'test-RTAN5a-typed',
       annotations: [
         { type: 'reaction', name: 'fire', messageSerial: 'msg-3' },
         { type: 'comment', name: 'reply', messageSerial: 'msg-4' },

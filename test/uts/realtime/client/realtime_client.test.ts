@@ -406,8 +406,9 @@ describe('uts/realtime/client/realtime_client', function () {
         mock.active_connection = conn;
         conn.respond_with_connected();
       },
-      onMessageFromClient: (msg, conn) => {
-        if (msg.action === 7) { // CLOSE
+      onMessageFromClient: (msg: any, conn: any) => {
+        if (msg.action === 7) {
+          // CLOSE
           conn.send_to_client({ action: 8 }); // CLOSED
         }
       },
@@ -545,9 +546,11 @@ describe('uts/realtime/client/realtime_client', function () {
     });
     installMockWebSocket(mock.constructorFn);
 
-    trackClient(new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      useBinaryProtocol: true,
-    }));
+    trackClient(
+      new Ably.Realtime({
+        key: 'appId.keyId:keySecret',
+        useBinaryProtocol: true,
+      }),
+    );
   });
 });

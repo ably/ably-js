@@ -162,7 +162,8 @@ describe('uts/realtime/channels/channel_options', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -239,7 +240,8 @@ describe('uts/realtime/channels/channel_options', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED

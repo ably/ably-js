@@ -27,7 +27,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: 'conn-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -64,7 +64,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: 'conn-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -103,7 +103,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: `conn-key-${connectionCount}`,
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -153,7 +153,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: `conn-key-${connectionCount}`,
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -201,11 +201,12 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: 'conn-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
         }
       },
@@ -246,11 +247,12 @@ describe('uts/realtime/connection/connection_id_key', function () {
             connectionKey: 'conn-key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
         }
       },

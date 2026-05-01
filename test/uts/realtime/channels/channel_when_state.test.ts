@@ -30,7 +30,8 @@ describe('uts/realtime/channels/channel_when_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -70,7 +71,8 @@ describe('uts/realtime/channels/channel_when_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -104,9 +106,7 @@ describe('uts/realtime/channels/channel_when_state', function () {
     // Result should be a ChannelStateChange (not null)
     expect(result).to.not.be.null;
     expect(result!.current).to.equal('attached');
-    expect(result!.previous).to.satisfy(
-      (p: string) => p === 'initialized' || p === 'attaching',
-    );
+    expect(result!.previous).to.satisfy((p: string) => p === 'initialized' || p === 'attaching');
     client.close();
   });
 
@@ -120,14 +120,16 @@ describe('uts/realtime/channels/channel_when_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
@@ -150,7 +152,9 @@ describe('uts/realtime/channels/channel_when_state', function () {
     const channel = client.channels.get('test-RTL25b-once');
 
     let attachCount = 0;
-    channel.once('attached', () => { attachCount++; });
+    channel.once('attached', () => {
+      attachCount++;
+    });
 
     // Start whenState before attach
     const whenStatePromise = channel.whenState('attached');
@@ -183,7 +187,8 @@ describe('uts/realtime/channels/channel_when_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -212,7 +217,9 @@ describe('uts/realtime/channels/channel_when_state', function () {
 
     // Call whenState for 'attaching' — a past state
     let resolved = false;
-    channel.whenState('attaching').then(() => { resolved = true; });
+    channel.whenState('attaching').then(() => {
+      resolved = true;
+    });
 
     // Wait to see if it resolves
     await new Promise<void>((resolve) => setTimeout(resolve, 200));

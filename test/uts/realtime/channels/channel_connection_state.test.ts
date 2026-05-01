@@ -32,7 +32,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -78,7 +79,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -130,14 +132,16 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
@@ -194,14 +198,16 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 7) { // CLOSE
+        if (msg.action === 7) {
+          // CLOSE
           mock.active_connection!.send_to_client({
             action: 8, // CLOSED
           });
@@ -251,7 +257,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         }
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -322,7 +329,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           capturedAttachMsgs.push({ ...msg });
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -380,7 +388,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachedChannels.push(msg.channel);
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -388,7 +397,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
@@ -448,7 +458,8 @@ describe('uts/realtime/channels/channel_connection_state', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachedChannels.push(msg.channel);
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -484,7 +495,9 @@ describe('uts/realtime/channels/channel_connection_state', function () {
     // Wait for both to re-attach
     await new Promise<void>((resolve) => {
       let count = 0;
-      const check = () => { if (++count === 2) resolve(); };
+      const check = () => {
+        if (++count === 2) resolve();
+      };
       chanA.once('attached', check);
       chanB.once('attached', check);
     });

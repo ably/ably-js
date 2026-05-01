@@ -44,9 +44,7 @@ describe('uts/realtime/channels/channel_detach', function () {
     await channel.detach();
     client.close();
     // Deviation: ably-js transitions to 'detached' (not stays 'initialized')
-    expect(channel.state).to.satisfy(
-      (s: string) => s === 'initialized' || s === 'detached',
-    );
+    expect(channel.state).to.satisfy((s: string) => s === 'initialized' || s === 'detached');
   });
 
   /**
@@ -61,14 +59,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           detachMessageCount++;
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
@@ -115,14 +115,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           detachMessageCount++;
           pendingDetachChannel = msg.channel;
           // Don't respond — let test control timing
@@ -180,7 +182,8 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 9, // ERROR
             channel: msg.channel,
@@ -239,10 +242,12 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           // Don't respond — let it timeout
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           detachMessageCount++;
         }
       },
@@ -300,14 +305,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           capturedDetachMsg = msg;
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
@@ -356,14 +363,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           // Don't respond — simulate timeout
         }
       },
@@ -422,14 +431,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           detachMessageCount++;
           if (detachMessageCount === 1) {
             // First DETACH: respond with ATTACHED (simulating race condition)
@@ -482,7 +493,8 @@ describe('uts/realtime/channels/channel_detach', function () {
         // Don't respond — hold in connecting state
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           detachMessageCount++;
         }
       },
@@ -527,14 +539,16 @@ describe('uts/realtime/channels/channel_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
