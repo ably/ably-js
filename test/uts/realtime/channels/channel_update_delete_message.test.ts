@@ -18,9 +18,7 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
   });
 
   // Helper: standard mock that auto-connects, auto-attaches, and captures messages
-  function setupMock(opts?: {
-    onMessage?: (msg: any, conn: PendingWSConnection | undefined) => void;
-  }) {
+  function setupMock(opts?: { onMessage?: (msg: any, conn: PendingWSConnection | undefined) => void }) {
     const captured: any[] = [];
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -28,12 +26,16 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({
-            action: 11, channel: msg.channel, flags: 0,
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
           });
         }
-        if (msg.action === 15) { // MESSAGE
+        if (msg.action === 15) {
+          // MESSAGE
           captured.push(msg);
         }
         if (opts?.onMessage) {
@@ -52,7 +54,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['version-serial-1'] }],
           });
         }
@@ -97,7 +101,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['version-serial-1'] }],
           });
         }
@@ -136,7 +142,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['version-serial-1'] }],
           });
         }
@@ -179,7 +187,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['vs-1'] }],
           });
         }
@@ -221,7 +231,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['vs-1'] }],
           });
         }
@@ -261,7 +273,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['version-abc-123'] }],
           });
         }
@@ -337,7 +351,9 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
       onMessage: (msg) => {
         if (msg.action === 15) {
           mock.active_connection!.send_to_client({
-            action: 1, msgSerial: msg.msgSerial, count: 1,
+            action: 1,
+            msgSerial: msg.msgSerial,
+            count: 1,
             res: [{ serials: ['vs-1'] }],
           });
         }
@@ -358,11 +374,7 @@ describe('uts/realtime/channels/channel_update_delete_message', function () {
     const channel = client.channels.get('test-RTL32e', { attachOnSubscribe: false });
     await channel.attach();
 
-    await channel.updateMessage(
-      { serial: 'serial-1', data: 'data' },
-      undefined,
-      { key1: 'value1', key2: 'value2' },
-    );
+    await channel.updateMessage({ serial: 'serial-1', data: 'data' }, undefined, { key1: 'value1', key2: 'value2' });
 
     expect(captured.length).to.equal(1);
     expect(captured[0].params).to.deep.equal({ key1: 'value1', key2: 'value2' });

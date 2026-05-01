@@ -139,7 +139,11 @@ class PendingWSConnection {
   /**
    * Connection succeeds and delivers a CONNECTED protocol message.
    */
-  respond_with_connected(connectedMsg?: Partial<typeof DEFAULT_CONNECTED> & { connectionDetails?: Partial<typeof DEFAULT_CONNECTED.connectionDetails> }): void {
+  respond_with_connected(
+    connectedMsg?: Partial<typeof DEFAULT_CONNECTED> & {
+      connectionDetails?: Partial<typeof DEFAULT_CONNECTED.connectionDetails>;
+    },
+  ): void {
     const msg = connectedMsg
       ? Object.assign({}, DEFAULT_CONNECTED, connectedMsg, {
           connectionDetails: Object.assign(
@@ -355,9 +359,7 @@ class MockWebSocket {
   /** Wait for the next protocol message from the client */
   await_next_message_from_client(timeout?: number): Promise<any> {
     return new Promise((resolve, reject) => {
-      const timer = timeout
-        ? setTimeout(() => reject(new Error('Timeout waiting for client message')), timeout)
-        : null;
+      const timer = timeout ? setTimeout(() => reject(new Error('Timeout waiting for client message')), timeout) : null;
       this._messageWaiters.push((msg) => {
         if (timer) clearTimeout(timer);
         resolve(msg);
@@ -368,9 +370,7 @@ class MockWebSocket {
   /** Wait for the client to close the WebSocket */
   await_client_close(timeout?: number): Promise<{ code?: number; reason?: string }> {
     return new Promise((resolve, reject) => {
-      const timer = timeout
-        ? setTimeout(() => reject(new Error('Timeout waiting for client close')), timeout)
-        : null;
+      const timer = timeout ? setTimeout(() => reject(new Error('Timeout waiting for client close')), timeout) : null;
       this._closeWaiters.push((ev) => {
         if (timer) clearTimeout(timer);
         resolve(ev);

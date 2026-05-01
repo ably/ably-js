@@ -102,7 +102,7 @@ describe('uts/realtime/connection/when_state', function () {
             connectionKey: `conn-key-${connectionAttemptCount}`,
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });

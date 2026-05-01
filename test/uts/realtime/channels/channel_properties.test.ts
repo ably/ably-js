@@ -29,7 +29,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -38,7 +39,8 @@ describe('uts/realtime/channels/channel_properties', function () {
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
@@ -81,7 +83,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -130,7 +133,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -170,7 +174,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -218,7 +223,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -226,7 +232,8 @@ describe('uts/realtime/channels/channel_properties', function () {
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,
@@ -266,7 +273,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -317,7 +325,8 @@ describe('uts/realtime/channels/channel_properties', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             mock.active_connection!.send_to_client({

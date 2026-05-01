@@ -46,8 +46,8 @@ describe('uts/realtime/connection/connection_open_failures', function () {
     client.connection.once('failed', () => {
       expect(client.connection.state).to.equal('failed');
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(40005);
-      expect(client.connection.errorReason.statusCode).to.equal(400);
+      expect(client.connection.errorReason!.code).to.equal(40005);
+      expect(client.connection.errorReason!.statusCode).to.equal(400);
       expect(client.connection.id).to.not.be.ok;
       expect(client.connection.key).to.not.be.ok;
       done();
@@ -77,7 +77,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -134,7 +134,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
 
     client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(40171);
+      expect(client.connection.errorReason!.code).to.equal(40171);
       done();
     });
 
@@ -207,7 +207,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -306,7 +306,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -359,7 +359,7 @@ describe('uts/realtime/connection/connection_open_failures', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -376,8 +376,8 @@ describe('uts/realtime/connection/connection_open_failures', function () {
       client.connection.once('failed', () => {
         expect(client.connection.state).to.equal('failed');
         expect(client.connection.errorReason).to.not.be.null;
-        expect(client.connection.errorReason.code).to.equal(50000);
-        expect(client.connection.errorReason.statusCode).to.equal(500);
+        expect(client.connection.errorReason!.code).to.equal(50000);
+        expect(client.connection.errorReason!.statusCode).to.equal(500);
         done();
       });
 

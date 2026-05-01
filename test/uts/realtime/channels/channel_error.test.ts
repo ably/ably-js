@@ -27,7 +27,8 @@ describe('uts/realtime/channels/channel_error', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -87,7 +88,8 @@ describe('uts/realtime/channels/channel_error', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           // Respond with channel-scoped ERROR instead of ATTACHED
           mock.active_connection!.send_to_client({
             action: 9, // ERROR
@@ -140,7 +142,8 @@ describe('uts/realtime/channels/channel_error', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -198,14 +201,16 @@ describe('uts/realtime/channels/channel_error', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
             flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           // Respond with ERROR instead of DETACHED
           mock.active_connection!.send_to_client({
             action: 9, // ERROR

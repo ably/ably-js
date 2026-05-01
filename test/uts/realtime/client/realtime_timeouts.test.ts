@@ -14,11 +14,14 @@ import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTim
  * Helper: wait for connection state using real event loop.
  * Fake timers only replace Platform.Config — Node.js setTimeout still works.
  */
-function waitForState(connection, state, timeoutMs) {
-  return new Promise((resolve, reject) => {
+function waitForState(connection: any, state: any, timeoutMs: any) {
+  return new Promise<void>((resolve, reject) => {
     if (connection.state === state) return resolve();
     const timer = setTimeout(() => reject(new Error(`Timeout waiting for state ${state}`)), timeoutMs || 5000);
-    connection.once(state, () => { clearTimeout(timer); resolve(); });
+    connection.once(state, () => {
+      clearTimeout(timer);
+      resolve();
+    });
   });
 }
 
@@ -27,7 +30,7 @@ function waitForState(connection, state, timeoutMs) {
  * ably-js uses Platform.Config.setTimeout(fn, 0) for scheduling and real
  * async chains for auth. This pumps both until the client connects.
  */
-async function connectWithFakeTimers(client, clock) {
+async function connectWithFakeTimers(client: any, clock: any) {
   client.connect();
   // Pump fake timers and real event loop in alternation
   for (let i = 0; i < 30; i++) {
@@ -75,7 +78,8 @@ describe('uts/realtime/client/realtime_timeouts', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           // Do NOT respond — simulate timeout
         }
       },
@@ -133,11 +137,13 @@ describe('uts/realtime/client/realtime_timeouts', function () {
         mock.active_connection = conn;
         conn.respond_with_connected();
       },
-      onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+      onMessageFromClient: (msg: any, conn: any) => {
+        if (msg.action === 10) {
+          // ATTACH
           conn.send_to_client({ action: 11, channel: msg.channel, flags: 0 }); // ATTACHED
         }
-        if (msg.action === 12 && ignoreDetach) { // DETACH
+        if (msg.action === 12 && ignoreDetach) {
+          // DETACH
           // Do NOT respond — simulate timeout
         }
       },
@@ -202,7 +208,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
         if (connectionAttemptCount === 1) {
           mock.active_connection = conn;
           conn.respond_with_connected({
-            connectionDetails: { maxIdleInterval: 0, connectionStateTtl: 120000 },
+            connectionDetails: { maxIdleInterval: 0, connectionStateTtl: 120000 } as any,
           });
         } else {
           // All subsequent attempts fail
@@ -234,7 +240,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
     expect(connectionAttemptCount).to.equal(1);
 
     // Force disconnection
-    mock.active_connection.simulate_disconnect();
+    mock.active_connection!.simulate_disconnect();
 
     // Pump to process disconnect + immediate retry (RTN15a)
     for (let i = 0; i < 30; i++) {

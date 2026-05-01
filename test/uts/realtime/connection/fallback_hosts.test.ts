@@ -40,7 +40,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -95,7 +95,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -157,7 +157,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -252,7 +252,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -303,7 +303,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
               connectionKey: 'connection-key',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -325,9 +325,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
 
     client.connection.once('connected', () => {
       // Connectivity check was performed via HTTP mock
-      const connectivityChecks = httpMock.captured_requests.filter(
-        (req) => req.url.href.includes('internet-up')
-      );
+      const connectivityChecks = httpMock.captured_requests.filter((req) => req.url.href.includes('internet-up'));
       expect(connectivityChecks.length).to.be.at.least(1);
 
       // Connection proceeded to fallback after check
@@ -367,7 +365,7 @@ describe('uts/realtime/connection/fallback_hosts', function () {
                 connectionKey: 'connection-key',
                 maxIdleInterval: 15000,
                 connectionStateTtl: 120000,
-              },
+              } as any,
             });
           }
         },

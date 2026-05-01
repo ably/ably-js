@@ -26,7 +26,7 @@ describe('uts/realtime/connection/auto_connect', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -95,7 +95,7 @@ describe('uts/realtime/connection/auto_connect', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });

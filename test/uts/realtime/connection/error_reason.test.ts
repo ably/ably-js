@@ -41,8 +41,8 @@ describe('uts/realtime/connection/error_reason', function () {
 
     client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(40005);
-      expect(client.connection.errorReason.statusCode).to.equal(400);
+      expect(client.connection.errorReason!.code).to.equal(40005);
+      expect(client.connection.errorReason!.statusCode).to.equal(400);
       done();
     });
 
@@ -77,7 +77,7 @@ describe('uts/realtime/connection/error_reason', function () {
 
     client.connection.once('disconnected', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.message).to.be.a('string');
+      expect(client.connection.errorReason!.message).to.be.a('string');
       done();
     });
 
@@ -123,7 +123,7 @@ describe('uts/realtime/connection/error_reason', function () {
 
     expect(client.connection.state).to.equal('suspended');
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.message).to.be.a('string');
+    expect(client.connection.errorReason!.message).to.be.a('string');
     client.close();
   });
 
@@ -150,8 +150,8 @@ describe('uts/realtime/connection/error_reason', function () {
 
     client.connection.once('disconnected', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(40142);
-      expect(client.connection.errorReason.statusCode).to.equal(401);
+      expect(client.connection.errorReason!.code).to.equal(40142);
+      expect(client.connection.errorReason!.statusCode).to.equal(401);
       done();
     });
 
@@ -235,9 +235,9 @@ describe('uts/realtime/connection/error_reason', function () {
 
     client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(50000);
-      expect(client.connection.errorReason.statusCode).to.equal(500);
-      expect(client.connection.errorReason.message).to.contain('Internal server error');
+      expect(client.connection.errorReason!.code).to.equal(50000);
+      expect(client.connection.errorReason!.statusCode).to.equal(500);
+      expect(client.connection.errorReason!.message).to.contain('Internal server error');
       done();
     });
 
@@ -273,7 +273,7 @@ describe('uts/realtime/connection/error_reason', function () {
 
       // Connection errorReason matches state change reason
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason.code).to.equal(stateChange.reason.code);
+      expect(client.connection.errorReason!.code).to.equal(stateChange.reason.code);
       done();
     });
 

@@ -39,7 +39,7 @@ describe('uts/realtime/connection/connection_failures', function () {
             connectionKey: 'key-1',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -100,7 +100,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else {
           // Resume succeeds (same connectionId)
@@ -110,7 +110,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1-updated',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -171,7 +171,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else {
           // Resume failed (different connectionId + error)
@@ -181,7 +181,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-2',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
           // Send error info with the CONNECTED message
           // (ably-js handles this in the connectionDetails)
@@ -240,7 +240,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 5000, // Short TTL for testing
-            },
+            } as any,
           });
         } else if (connectionAttemptCount < 6) {
           // Reconnection attempts fail
@@ -253,7 +253,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-2',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -324,7 +324,7 @@ describe('uts/realtime/connection/connection_failures', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -377,7 +377,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else {
           // Resume after token renewal
@@ -387,7 +387,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1-renewed',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -447,7 +447,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else {
           // Resume succeeds (same ID)
@@ -457,7 +457,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -525,7 +525,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else {
           // Resume attempt fails with fatal error
@@ -555,7 +555,7 @@ describe('uts/realtime/connection/connection_failures', function () {
       client.connection.once('failed', () => {
         expect(client.connection.state).to.equal('failed');
         expect(client.connection.errorReason).to.not.be.null;
-        expect(client.connection.errorReason.code).to.equal(50000);
+        expect(client.connection.errorReason!.code).to.equal(50000);
         expect(connectionAttemptCount).to.equal(2);
         done();
       });
@@ -585,7 +585,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-1',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         } else if (connectionAttemptCount === 2) {
           // Resume attempt fails with token error
@@ -601,7 +601,7 @@ describe('uts/realtime/connection/connection_failures', function () {
               connectionKey: 'key-2',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            },
+            } as any,
           });
         }
       },
@@ -654,7 +654,7 @@ describe('uts/realtime/connection/connection_failures', function () {
             connectionKey: 'connection-key',
             maxIdleInterval: 15000,
             connectionStateTtl: 120000,
-          },
+          } as any,
         });
       },
     });
@@ -671,8 +671,8 @@ describe('uts/realtime/connection/connection_failures', function () {
       client.connection.once('failed', () => {
         expect(client.connection.state).to.equal('failed');
         expect(client.connection.errorReason).to.not.be.null;
-        expect(client.connection.errorReason.code).to.equal(50000);
-        expect(client.connection.errorReason.statusCode).to.equal(500);
+        expect(client.connection.errorReason!.code).to.equal(50000);
+        expect(client.connection.errorReason!.statusCode).to.equal(500);
         done();
       });
 

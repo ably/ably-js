@@ -33,7 +33,8 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
@@ -101,7 +102,8 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             // First attach — don't respond, then send DETACHED
@@ -126,7 +128,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       channelRetryTimeout: 100,
-    });
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -191,12 +193,15 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             // First attach succeeds
             mock.active_connection!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           } else if (attachCount === 2) {
             // Second attach (reattach after DETACHED): server sends DETACHED again
@@ -208,7 +213,9 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
           } else {
             // Third attach succeeds
             mock.active_connection!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           }
         }
@@ -223,7 +230,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       channelRetryTimeout: 100,
-    });
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -280,11 +287,14 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             mock.active_connection!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           } else if (attachCount <= 3) {
             // Reattach attempts 2 and 3 fail with DETACHED
@@ -296,7 +306,9 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
           } else {
             // Attempt 4 succeeds
             mock.active_connection!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           }
         }
@@ -311,7 +323,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       channelRetryTimeout: 100,
-    });
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -380,11 +392,14 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         }
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             mock.active_connection!.send_to_client({
-              action: 11, channel: msg.channel, flags: 0,
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
             });
           }
           // Don't respond to reattach — it should be cancelled
@@ -400,7 +415,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       channelRetryTimeout: 100,
-    });
+    } as any);
     trackClient(client);
 
     client.connect();
@@ -459,13 +474,17 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
         conn.respond_with_connected();
       },
       onMessageFromClient: (msg) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           mock.active_connection!.send_to_client({
-            action: 11, channel: msg.channel, flags: 0,
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
           });
         }
-        if (msg.action === 12) { // DETACH
+        if (msg.action === 12) {
+          // DETACH
           mock.active_connection!.send_to_client({
             action: 13, // DETACHED
             channel: msg.channel,

@@ -21,7 +21,7 @@ describe('uts/realtime/client/realtime_stats', function () {
    * RTC5a - stats() sends GET /stats
    */
   it('RTC5a - stats() sends GET /stats', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -34,7 +34,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
     try {
-      await client.stats();
+      await client.stats({} as any);
     } catch (e) {
       // Response parsing may fail — we only care about the request
     }
@@ -49,7 +49,7 @@ describe('uts/realtime/client/realtime_stats', function () {
    * RTC5b - stats() accepts params
    */
   it('RTC5b - stats() passes query params', async function () {
-    const captured = [];
+    const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -62,7 +62,7 @@ describe('uts/realtime/client/realtime_stats', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
     try {
-      await client.stats({ start: '1704067200000', limit: '10', direction: 'forwards' });
+      await client.stats({ start: '1704067200000', limit: '10', direction: 'forwards' } as any);
     } catch (e) {
       // Response parsing may fail
     }
@@ -81,16 +81,14 @@ describe('uts/realtime/client/realtime_stats', function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, [
-          { all: { messages: { count: 10 } } },
-        ]);
+        req.respond_with(200, [{ all: { messages: { count: 10 } } }]);
       },
     });
     installMockHttp(mock);
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false, useBinaryProtocol: false });
     trackClient(client);
-    const result = await client.stats();
+    const result = await client.stats({} as any);
 
     expect(result.items).to.be.an('array');
     expect(result.items).to.have.length(1);
