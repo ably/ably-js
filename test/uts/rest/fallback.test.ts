@@ -590,7 +590,7 @@ describe('uts/rest/fallback', function () {
 
   it('RSC15l - request timeout triggers fallback', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     let connCount = 0;
     const connHosts: string[] = [];
     let requestCount = 0;
@@ -628,7 +628,7 @@ describe('uts/rest/fallback', function () {
 
   it('RSC15l4 - CloudFront Server header triggers fallback', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     let requestCount = 0;
     const hosts: string[] = [];
 
@@ -737,7 +737,7 @@ describe('uts/rest/fallback', function () {
 
   it('REC1b2 - endpoint as IPv6 address', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

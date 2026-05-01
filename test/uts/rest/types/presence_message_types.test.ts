@@ -107,7 +107,7 @@ describe('uts/rest/types/presence_message_types', function () {
    */
   it('TP3h - memberKey format', function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const pm = Ably.Rest.PresenceMessage.fromValues({
       connectionId: 'conn-1',
       clientId: 'client-1',

@@ -47,7 +47,7 @@ describe('uts/rest/auth/client_id', function () {
    */
   it('RSA7b - clientId from TokenDetails', function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
@@ -70,7 +70,7 @@ describe('uts/rest/auth/client_id', function () {
    */
   it('RSA7b - clientId from authCallback TokenDetails', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
@@ -198,7 +198,7 @@ describe('uts/rest/auth/client_id', function () {
    */
   it('RSA7 - clientId updated after authorize()', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     let tokenCount = 0;
 
     const mock = new MockHttpClient({
@@ -240,7 +240,7 @@ describe('uts/rest/auth/client_id', function () {
    */
   it('RSA12 - Wildcard clientId', function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
@@ -299,7 +299,7 @@ describe('uts/rest/auth/client_id', function () {
    */
   it('RSA7 - case 5: clientId inherited from token', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 

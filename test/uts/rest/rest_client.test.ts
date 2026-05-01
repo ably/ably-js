@@ -84,7 +84,7 @@ describe('uts/rest/rest_client', function () {
    */
   it('RSC7c - request_id query param when addRequestIds is true', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

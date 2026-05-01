@@ -32,7 +32,7 @@ describe('uts/rest/auth/token_renewal', function () {
    */
   it('RSA4b - renewal on 40142 error', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     let callbackCount = 0;
     let requestCount = 0;
     const captured: any[] = [];
@@ -204,7 +204,7 @@ describe('uts/rest/auth/token_renewal', function () {
    */
   it('RSC10 - transparent retry after renewal', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     let callbackCount = 0;
     let requestCount = 0;
     const captured: any[] = [];
@@ -371,7 +371,7 @@ describe('uts/rest/auth/token_renewal', function () {
    */
   it('RSA4b - renewal limit', async function () {
     // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip();
     this.timeout(5000);
 
     let callbackCount = 0;
