@@ -10,6 +10,7 @@ import ChannelStateChange from './channelstatechange';
 import { ErrCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
 import { PresenceMap, RealtimePresenceParams } from './presencemap';
+import Platform from '../../platform';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -401,7 +402,7 @@ class RealtimePresence extends EventEmitter {
         clientId: item.clientId,
         data: item.data,
         encoding: item.encoding,
-        timestamp: Date.now(),
+        timestamp: Platform.Config.now(),
       });
       subscriptions.emit('leave', presence);
     });

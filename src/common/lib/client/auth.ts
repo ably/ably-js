@@ -608,7 +608,7 @@ class Auth {
     return new Promise((resolve, reject) => {
       let tokenRequestCallbackTimeoutExpired = false,
         timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
-        tokenRequestCallbackTimeout = setTimeout(() => {
+        tokenRequestCallbackTimeout = Platform.Config.setTimeout(() => {
           tokenRequestCallbackTimeoutExpired = true;
           const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
@@ -617,7 +617,7 @@ class Auth {
 
       tokenRequestCallback!(resolvedTokenParams, (err, tokenRequestOrDetails, contentType) => {
         if (tokenRequestCallbackTimeoutExpired) return;
-        clearTimeout(tokenRequestCallbackTimeout);
+        Platform.Config.clearTimeout(tokenRequestCallbackTimeout);
 
         if (err) {
           Logger.logAction(

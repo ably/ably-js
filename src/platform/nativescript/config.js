@@ -32,6 +32,9 @@ var Config = {
   nextTick: function (f) {
     setTimeout(f, 0);
   },
+  setTimeout: globalThis.setTimeout,
+  clearTimeout: globalThis.clearTimeout,
+  now: Date.now,
   addEventListener: null,
   inspect: JSON.stringify,
   stringByteSize: function (str) {
