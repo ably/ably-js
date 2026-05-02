@@ -34,6 +34,22 @@ let _savedNow: any = null;
 // Tracked clients for cleanup — ensures timers are released even if a test crashes
 const _trackedClients: any[] = [];
 
+// Track all Platform.Config.setTimeout timers so restoreAll() can cancel orphans.
+// ably-js has a bug where connectWs() overwrites timer handles without cancelling
+// the previous ones, leaking timers that prevent process exit.
+const _allPlatformTimers = new Set<any>();
+const _origPlatformSetTimeout = Platform.Config.setTimeout;
+const _origPlatformClearTimeout = Platform.Config.clearTimeout;
+Platform.Config.setTimeout = function (fn: any, ms?: number, ...args: any[]) {
+  const timer = _origPlatformSetTimeout.call(this, fn, ms, ...args);
+  _allPlatformTimers.add(timer);
+  return timer;
+} as any;
+Platform.Config.clearTimeout = function (timer: any) {
+  _allPlatformTimers.delete(timer);
+  return _origPlatformClearTimeout.call(this, timer);
+} as any;
+
 /**
  * Install a MockHttpClient as the platform HTTP implementation.
  * Call uninstallMockHttp() in afterEach to restore the original.
@@ -151,7 +167,7 @@ class FakeClock {
       // Yield to the event loop (not just the microtask queue) so that all
       // chained process.nextTick callbacks (e.g. mock WebSocket error/close
       // events) are fully drained before the next fake timer fires.
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => setImmediate(resolve));
     }
     this._now = targetTime;
   }
@@ -222,6 +238,12 @@ function restoreAll(): void {
       // Ignore errors during cleanup
     }
   }
+  // Cancel all Platform.Config timers that weren't cleared by client.close().
+  // Covers orphaned timers from ably-js's connectWs() overwrite bug.
+  for (const timer of _allPlatformTimers) {
+    _origPlatformClearTimeout(timer);
+  }
+  _allPlatformTimers.clear();
   uninstallMockHttp();
   uninstallMockWebSocket();
   // Restore fake timers if installed
@@ -235,6 +257,17 @@ function restoreAll(): void {
   }
 }
 
+/**
+ * Flush the async event loop — yields to both microtasks and the macrotask
+ * queue so that pending promise callbacks, nextTick handlers, and queued
+ * mock WebSocket/HTTP deliveries all settle before the test continues.
+ *
+ * Replaces all `await new Promise(r => setTimeout(r, N))` delays in tests.
+ */
+function flushAsync(): Promise<void> {
+  return new Promise<void>((resolve) => setImmediate(resolve));
+}
+
 export {
   Ably,
   Platform,
@@ -246,4 +279,5 @@ export {
   FakeClock,
   trackClient,
   restoreAll,
+  flushAsync,
 };

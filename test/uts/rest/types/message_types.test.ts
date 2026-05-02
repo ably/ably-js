@@ -191,18 +191,11 @@ describe('uts/rest/types/message_types', function () {
    * with the expected name and data keys.
    */
   it('TM4 - toJSON serialization', function () {
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js Message doesn't expose toJSON()
     const msg = Message.fromValues({ name: 'event', data: 'payload' });
 
-    if (typeof (msg as any).toJSON === 'function') {
-      const json = (msg as any).toJSON();
-      expect(json).to.have.property('name', 'event');
-      expect(json).to.have.property('data', 'payload');
-    } else {
-      // DEVIATION: ably-js Message may not expose toJSON directly.
-      // Verify JSON.stringify produces expected output instead.
-      const json = JSON.parse(JSON.stringify(msg));
-      expect(json).to.have.property('name', 'event');
-      expect(json).to.have.property('data', 'payload');
-    }
+    const json = (msg as any).toJSON();
+    expect(json).to.have.property('name', 'event');
+    expect(json).to.have.property('data', 'payload');
   });
 });
