@@ -154,7 +154,79 @@ describe('uts/realtime/connection/connection_failures', function () {
   });
 
   /**
+   * RTN15e - Connection key updated on resume
+   *
+   * Per spec: When connection is resumed, Connection.key may change and is
+   * provided in CONNECTED message connectionDetails.
+   */
+  it('RTN15e - connection key updated on resume', function (done) {
+    let connectionAttemptCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionAttemptCount++;
+        mock.active_connection = conn;
+
+        if (connectionAttemptCount === 1) {
+          conn.respond_with_connected({
+            connectionId: 'connection-1',
+            connectionDetails: {
+              connectionKey: 'key-1',
+              maxIdleInterval: 15000,
+              connectionStateTtl: 120000,
+            } as any,
+          });
+        } else {
+          // Resume succeeds with updated key
+          conn.respond_with_connected({
+            connectionId: 'connection-1',
+            connectionDetails: {
+              connectionKey: 'key-1-updated',
+              maxIdleInterval: 15000,
+              connectionStateTtl: 120000,
+            } as any,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, 'yes'),
+    });
+    installMockHttp(httpMock);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connection.once('connected', () => {
+      expect(client.connection.key).to.equal('key-1');
+
+      client.connection.on('connected', () => {
+        // Connection key should be updated after resume
+        expect(client.connection.key).to.equal('key-1-updated');
+        // Connection ID preserved (successful resume)
+        expect(client.connection.id).to.equal('connection-1');
+        done();
+      });
+
+      mock.active_connection!.simulate_disconnect();
+    });
+
+    client.connect();
+  });
+
+  /**
    * RTN15c7 - Failed resume (new connectionId) resets state
+   *
+   * Per spec: CONNECTED with new connectionId and ErrorInfo in error field.
+   * The error should be set as Connection#errorReason and as the reason
+   * in the CONNECTED event.
    */
   it('RTN15c7 - failed resume gets new connectionId', function (done) {
     let connectionAttemptCount = 0;
@@ -174,7 +246,7 @@ describe('uts/realtime/connection/connection_failures', function () {
             } as any,
           });
         } else {
-          // Resume failed (different connectionId + error)
+          // Resume failed: new connectionId + error
           conn.respond_with_connected({
             connectionId: 'connection-2',
             connectionDetails: {
@@ -182,9 +254,12 @@ describe('uts/realtime/connection/connection_failures', function () {
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
             } as any,
+            error: {
+              code: 80008,
+              statusCode: 400,
+              message: 'Unable to recover connection',
+            },
           });
-          // Send error info with the CONNECTED message
-          // (ably-js handles this in the connectionDetails)
         }
       },
     });
@@ -207,12 +282,20 @@ describe('uts/realtime/connection/connection_failures', function () {
       const originalId = client.connection.id;
       expect(originalId).to.equal('connection-1');
 
-      client.connection.on('connected', () => {
+      client.connection.on('connected', (stateChange: any) => {
         // New connection (different ID = failed resume)
         expect(client.connection.id).to.equal('connection-2');
         expect(client.connection.id).to.not.equal(originalId);
         expect(client.connection.key).to.equal('key-2');
         expect(client.connection.state).to.equal('connected');
+
+        // Error reason set from failed resume
+        expect(client.connection.errorReason).to.not.be.null;
+        expect(client.connection.errorReason!.code).to.equal(80008);
+
+        // CONNECTED event should carry the error as reason
+        expect(stateChange.reason).to.not.be.null;
+        expect(stateChange.reason.code).to.equal(80008);
         done();
       });
 
@@ -680,6 +763,79 @@ describe('uts/realtime/connection/connection_failures', function () {
       mock.active_connection!.send_to_client({
         action: 9, // ERROR
         error: { code: 50000, statusCode: 500, message: 'Internal error' },
+      });
+    });
+
+    client.connect();
+  });
+
+  /**
+   * RTN15h2 - DISCONNECTED with token error, renewal fails → DISCONNECTED
+   *
+   * Per spec: If the DISCONNECTED message contains a token error and the library
+   * has the means to renew the token, but the token creation fails, the connection
+   * must transition to the DISCONNECTED state and set Connection#errorReason.
+   */
+  it('RTN15h2 - token error with renewal failure causes DISCONNECTED', function (done) {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+
+        conn.respond_with_connected({
+          connectionId: 'connection-id',
+          connectionDetails: {
+            connectionKey: 'connection-key',
+            maxIdleInterval: 15000,
+            connectionStateTtl: 120000,
+          } as any,
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    let authCallbackCount = 0;
+    const client = new Ably.Realtime({
+      authCallback: (params: any, cb: any) => {
+        authCallbackCount++;
+        if (authCallbackCount <= 1) {
+          // First call succeeds (initial connection)
+          cb(null, `token-${authCallbackCount}`);
+        } else {
+          // Subsequent calls fail (renewal failure)
+          cb(new Ably.ErrorInfo('Invalid credentials', 40101, 401));
+        }
+      },
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connection.once('connected', () => {
+      // Track state changes after initial connection to find the DISCONNECTED
+      // state that occurs after the failed token renewal (not the brief
+      // transient DISCONNECTED that may occur per RTN15h2i).
+      const statesAfterConnect: string[] = [];
+      client.connection.on((change: any) => {
+        statesAfterConnect.push(change.current);
+
+        // We expect: possibly disconnected (transient), connecting (renewal attempt),
+        // then disconnected (renewal failed). Wait for the pattern:
+        // ...connecting... then disconnected.
+        if (change.current === 'disconnected' && statesAfterConnect.includes('connecting')) {
+          expect(client.connection.state).to.equal('disconnected');
+          expect(client.connection.errorReason).to.not.be.null;
+          done();
+        }
+      });
+
+      // Server sends DISCONNECTED with token error and closes connection
+      mock.active_connection!.send_to_client_and_close({
+        action: 6, // DISCONNECTED
+        error: {
+          message: 'Token expired',
+          code: 40142,
+          statusCode: 401,
+        },
       });
     });
 

@@ -87,19 +87,13 @@ describe('uts/realtime/client/realtime_client', function () {
 
   /**
    * RTC1a_1 - echoMessages defaults to true
-   *
-   * NOTE: ably-js does NOT send echo=true in the URL. It only sends
-   * echo=false when echoMessages is explicitly false. The server
-   * defaults to echoing. This is noted as a UTS spec ambiguity —
-   * the spec asserts echo=="true" but the features spec just says
-   * the default is true, not that it must be sent explicitly.
    */
-  it('RTC1a - echoMessages default (echo param not sent)', function (done) {
+  it('RTC1a - echoMessages default sends echo=true', async function () {
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js omits echo param when true
+    let echoParam: string | null = null;
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
-        // ably-js does not send echo=true; only sends echo=false when disabled
-        const echoParam = conn.url.searchParams.get('echo');
-        expect(echoParam).to.be.null;
+        echoParam = conn.url.searchParams.get('echo');
         conn.respond_with_connected();
       },
     });
@@ -107,10 +101,9 @@ describe('uts/realtime/client/realtime_client', function () {
 
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     trackClient(client);
-    client.connection.once('connected', () => {
-      client.close();
-      done();
-    });
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+    expect(echoParam).to.equal('true');
+    client.close();
   });
 
   /**

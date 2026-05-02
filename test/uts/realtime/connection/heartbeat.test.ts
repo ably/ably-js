@@ -15,7 +15,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, Platform, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -27,6 +27,40 @@ async function pumpTimers(clock: any, iterations = 30) {
 describe('uts/realtime/connection/heartbeat', function () {
   afterEach(function () {
     restoreAll();
+  });
+
+  // --- RTN23a: URL parameter ---
+
+  /**
+   * RTN23a - heartbeats=true when ping frames not observable
+   *
+   * When the platform cannot observe WebSocket ping frames
+   * (useProtocolHeartbeats=true), the client sends heartbeats=true
+   * in the connection URL to request HEARTBEAT protocol messages.
+   */
+  it('RTN23a - heartbeats=true in connection URL when ping frames not observable', function (done) {
+    const savedUseProtocolHeartbeats = Platform.Config.useProtocolHeartbeats;
+    Platform.Config.useProtocolHeartbeats = true;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        const heartbeats = conn.url.searchParams.get('heartbeats');
+        expect(heartbeats).to.equal('true');
+        conn.respond_with_connected();
+        Platform.Config.useProtocolHeartbeats = savedUseProtocolHeartbeats;
+        done();
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
   });
 
   // --- RTN23b: URL parameter ---
@@ -59,6 +93,9 @@ describe('uts/realtime/connection/heartbeat', function () {
   });
 
   // --- RTN23a/b: Idle timer disconnect and reconnect ---
+  // Note: RTN23a tests have flaked in the past (one-off failures in full suite runs
+  // under heavy CPU load) but the issue has not been reproducible in isolation or
+  // repeated full-suite runs. Likely a fake-timer + process.nextTick race under load.
 
   /**
    * RTN23a/b - Disconnect after maxIdleInterval + realtimeRequestTimeout
@@ -94,6 +131,7 @@ describe('uts/realtime/connection/heartbeat', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       realtimeRequestTimeout: 2000,
+      disconnectedRetryTimeout: 500,
       autoConnect: false,
       useBinaryProtocol: false,
     });
@@ -109,16 +147,21 @@ describe('uts/realtime/connection/heartbeat', function () {
     expect(client.connection.state).to.equal('connected');
     expect(connectionAttemptCount).to.equal(1);
 
-    // Advance past maxIdleInterval + realtimeRequestTimeout = 5000 + 2000 = 7000ms
-    await clock.tickAsync(7100);
+    // Advance past idle timeout (maxIdleInterval + realtimeRequestTimeout + 100 = 7100ms)
+    // Use small increments to avoid re-triggering after reconnect
+    await clock.tickAsync(7200);
     await pumpTimers(clock);
 
-    // Should have disconnected and reconnected
+    // Should have disconnected due to idle timeout
+    expect(stateChanges).to.include('disconnected');
+
+    // Advance past disconnectedRetryTimeout (500ms) to trigger reconnection
+    await clock.tickAsync(600);
+    await pumpTimers(clock);
+
+    // Should have reconnected
     expect(connectionAttemptCount).to.equal(2);
     expect(client.connection.id).to.equal('connection-id-2');
-
-    // Verify state sequence includes disconnected
-    expect(stateChanges).to.include('disconnected');
     client.close();
   });
 

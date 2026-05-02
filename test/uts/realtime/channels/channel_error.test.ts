@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, enableFakeTimers, pumpTimers } from '../../helpers';
 
 describe('uts/realtime/channels/channel_error', function () {
   afterEach(function () {
@@ -252,6 +252,109 @@ describe('uts/realtime/channels/channel_error', function () {
     expect(channel.errorReason!.code).to.equal(90198);
     // Connection should remain connected
     expect(client.connection.state).to.equal('connected');
+    client.close();
+  });
+
+  /**
+   * RTL14 - Channel ERROR cancels pending timers
+   *
+   * When a channel ERROR is received while a channel retry timer is pending
+   * (channel in SUSPENDED state), the timer should be cancelled and the
+   * channel should remain in FAILED state without retrying.
+   */
+  it('RTL14 - channel ERROR cancels pending retry timer', async function () {
+    let attachCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          attachCount++;
+          if (attachCount === 1) {
+            mock.active_connection!.send_to_client({
+              action: 11, // ATTACHED
+              channel: msg.channel,
+              flags: 0,
+            });
+          }
+          // Don't respond to subsequent attaches (timeout -> SUSPENDED)
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const clock = enableFakeTimers();
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      realtimeRequestTimeout: 100,
+      channelRetryTimeout: 200,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(client.connection.state).to.equal('connected');
+
+    const channel = client.channels.get('test-RTL14-timers');
+    await channel.attach();
+    expect(attachCount).to.equal(1);
+
+    // Trigger server-initiated DETACHED -> reattach -> timeout -> SUSPENDED
+    mock.active_connection!.send_to_client({
+      action: 13, // DETACHED
+      channel: 'test-RTL14-timers',
+      error: { code: 90198, statusCode: 500, message: 'Detach' },
+    });
+
+    // Pump and advance to get to SUSPENDED
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    await clock.tickAsync(150);
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    expect(channel.state).to.equal('suspended');
+
+    // Channel retry timer is now pending (channelRetryTimeout = 200ms)
+    // Send ERROR before the retry fires
+    mock.active_connection!.send_to_client({
+      action: 9, // ERROR
+      channel: 'test-RTL14-timers',
+      error: { code: 40160, statusCode: 401, message: 'Not permitted' },
+    });
+
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(channel.state).to.equal('failed');
+
+    const attachCountAfterError = attachCount;
+
+    // Advance time well past the channelRetryTimeout
+    await clock.tickAsync(500);
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    // Channel remains FAILED — no retry was attempted
+    expect(channel.state).to.equal('failed');
+    expect(attachCount).to.equal(attachCountAfterError);
     client.close();
   });
 });

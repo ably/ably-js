@@ -347,19 +347,18 @@ describe('uts/realtime/connection/connection_open_failures', function () {
   });
 
   /**
-   * RTN14g - ERROR protocol message with empty channel → FAILED
+   * RTN14g - ERROR protocol message with empty channel during connection opening → FAILED
+   *
+   * Per spec: ERROR ProtocolMessage with empty channel received during connection
+   * opening (before CONNECTED) transitions connection to FAILED.
    */
   it('RTN14g - ERROR with empty channel causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
-        mock.active_connection = conn;
-        conn.respond_with_connected({
-          connectionId: 'connection-id',
-          connectionDetails: {
-            connectionKey: 'connection-key',
-            maxIdleInterval: 15000,
-            connectionStateTtl: 120000,
-          } as any,
+        // Send ERROR during connection opening — before any CONNECTED message
+        conn.respond_with_error({
+          action: 9, // ERROR
+          error: { code: 50000, statusCode: 500, message: 'Internal server error' },
         });
       },
     });
@@ -372,20 +371,80 @@ describe('uts/realtime/connection/connection_open_failures', function () {
     });
     trackClient(client);
 
-    client.connection.once('connected', () => {
-      client.connection.once('failed', () => {
-        expect(client.connection.state).to.equal('failed');
-        expect(client.connection.errorReason).to.not.be.null;
-        expect(client.connection.errorReason!.code).to.equal(50000);
-        expect(client.connection.errorReason!.statusCode).to.equal(500);
-        done();
-      });
+    client.connection.once('failed', () => {
+      expect(client.connection.state).to.equal('failed');
+      expect(client.connection.errorReason).to.not.be.null;
+      expect(client.connection.errorReason!.code).to.equal(50000);
+      expect(client.connection.errorReason!.statusCode).to.equal(500);
+      expect(client.connection.errorReason!.message).to.equal('Internal server error');
+      done();
+    });
 
-      // Send ERROR with no channel (connection-level error)
-      mock.active_connection!.send_to_client({
-        action: 9, // ERROR
-        error: { code: 50000, statusCode: 500, message: 'Internal error' },
-      });
+    client.connect();
+  });
+
+  /**
+   * RTN14b - Token error with renewal failure causes DISCONNECTED
+   *
+   * Per spec: If a connection request fails due to a token error and the token
+   * is renewable, a single attempt to create a new token is made. If the attempt
+   * to create a new token fails, or the subsequent connection attempt fails due
+   * to another token error, then the connection transitions to DISCONNECTED and
+   * Connection#errorReason is set.
+   */
+  it('RTN14b - token error with renewal failure causes DISCONNECTED', function (done) {
+    let connectionAttemptCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionAttemptCount++;
+        // First attempt: token error
+        conn.respond_with_error({
+          action: 9, // ERROR
+          error: { code: 40142, statusCode: 401, message: 'Token expired' },
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    // Mock HTTP for connectivity checker
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, 'yes'),
+    });
+    installMockHttp(httpMock);
+
+    let authCallbackCount = 0;
+    const client = new Ably.Realtime({
+      authCallback: (params: any, cb: any) => {
+        authCallbackCount++;
+        if (authCallbackCount <= 1) {
+          // First call succeeds (initial token)
+          cb(null, `token-${authCallbackCount}`);
+        } else {
+          // Renewal fails
+          cb(new Ably.ErrorInfo('Invalid credentials', 40101, 401));
+        }
+      },
+      autoConnect: false,
+      useBinaryProtocol: false,
+      fallbackHosts: [],
+    });
+    trackClient(client);
+
+    // Track state changes. The client goes through: connecting -> (token error)
+    // -> possibly brief disconnected -> connecting (renewal) -> disconnected
+    // (renewal failed). We need the DISCONNECTED that occurs AFTER a renewal
+    // attempt (i.e. after authCallback has been called at least twice).
+    const stateChanges: string[] = [];
+    client.connection.on((change: any) => {
+      stateChanges.push(change.current);
+
+      if (change.current === 'disconnected' && authCallbackCount >= 2) {
+        expect(client.connection.state).to.equal('disconnected');
+        expect(client.connection.errorReason).to.not.be.null;
+        done();
+      }
     });
 
     client.connect();

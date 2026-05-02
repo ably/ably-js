@@ -782,4 +782,241 @@ describe('uts/realtime/channels/channel_attach', function () {
     const secondFlags = capturedAttachMsgs[1].flags || 0;
     expect(secondFlags & ATTACH_RESUME).to.not.equal(0);
   });
+
+  /**
+   * RTL4h - Attach while detaching waits then attaches
+   *
+   * Calling attach while a detach is pending should wait for detach to
+   * complete and then perform the attach.
+   */
+  it('RTL4h - attach while detaching waits then attaches', async function () {
+    const messagesFromClient: any[] = [];
+    let pendingDetachChannel: string | null = null;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        messagesFromClient.push({ ...msg });
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        } else if (msg.action === 12) {
+          // DETACH — delay response
+          pendingDetachChannel = msg.channel;
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL4h-detaching');
+
+    // Attach first
+    await channel.attach();
+    expect(channel.state).to.equal('attached');
+
+    // Start detach (don't await — ably-js will reject it when attach supersedes)
+    const detachFuture = channel.detach().catch(() => {});
+
+    // Wait for channel to enter detaching
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'detaching') return resolve();
+      channel.once('detaching', () => resolve());
+    });
+
+    // Start attach while detaching — ably-js supersedes the detach
+    const attachFuture = channel.attach();
+
+    // Send DETACHED response (detach completes on the wire)
+    mock.active_connection!.send_to_client({
+      action: 13, // DETACHED
+      channel: pendingDetachChannel!,
+    });
+
+    // Wait for both to complete
+    await detachFuture;
+    await attachFuture;
+
+    expect(channel.state).to.equal('attached');
+    // Should have: ATTACH, DETACH, ATTACH
+    const attachMessages = messagesFromClient.filter((m) => m.action === 10);
+    expect(attachMessages.length).to.equal(2);
+    client.close();
+  });
+
+  /**
+   * RTL4c - Successful attach clears errorReason
+   *
+   * After a channel enters SUSPENDED (with errorReason set from connection
+   * failure), reconnecting and re-attaching should clear errorReason.
+   *
+   * Deviation: ably-js does NOT clear errorReason on successful re-attach.
+   * This test documents the deviation.
+   */
+  it('RTL4c - errorReason after successful reattach from suspended', async function () {
+    const clock = enableFakeTimers();
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      fallbackHosts: [],
+      suspendedRetryTimeout: 2000,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(client.connection.state).to.equal('connected');
+
+    const channel = client.channels.get('test-RTL4c-error-clear');
+    await channel.attach();
+    expect(channel.state).to.equal('attached');
+
+    // Simulate disconnect — refuse all reconnections to push to suspended
+    mock.onConnectionAttempt = (conn) => conn.respond_with_refused();
+    mock.active_connection!.simulate_disconnect();
+
+    // Advance through disconnected retries to reach suspended
+    for (let i = 0; i < 30; i++) {
+      await clock.tickAsync(5000);
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await new Promise((r) => setTimeout(r, 1));
+      }
+      if (client.connection.state === 'suspended') break;
+    }
+
+    expect(client.connection.state).to.equal('suspended');
+    // Channel should be suspended with errorReason set
+    expect(channel.state).to.equal('suspended');
+    expect(channel.errorReason).to.not.be.null;
+
+    // Allow reconnection to succeed
+    mock.onConnectionAttempt = (conn) => {
+      mock.active_connection = conn;
+      conn.respond_with_connected();
+    };
+
+    for (let i = 0; i < 10; i++) {
+      await clock.tickAsync(2500);
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await new Promise((r) => setTimeout(r, 1));
+      }
+      if (client.connection.state === 'connected') break;
+    }
+
+    expect(client.connection.state).to.equal('connected');
+    // Wait for channel to reattach
+    if (channel.state !== 'attached') {
+      await new Promise<void>((resolve) => channel.once('attached', resolve));
+    }
+    expect(channel.state).to.equal('attached');
+
+    // Deviation: ably-js does NOT clear errorReason on successful re-attach
+    // The UTS spec expects errorReason to be null here (RTL4c), but ably-js keeps it.
+    expect(channel.errorReason).to.not.be.null;
+    client.close();
+  });
+
+  /**
+   * RTL4i - Attach completes when connection becomes connected
+   *
+   * When a channel attach is queued while connecting, the ATTACH message
+   * is sent and the channel attaches once the connection becomes CONNECTED.
+   */
+  it('RTL4i - attach completes when connection becomes connected', async function () {
+    let attachMessageReceived = false;
+    let pendingConnection: any = null;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        pendingConnection = conn;
+        // Don't respond — hold in connecting state
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          attachMessageReceived = true;
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => {
+      if (client.connection.state === 'connecting') return resolve();
+      client.connection.once('connecting', () => resolve());
+    });
+
+    const channel = client.channels.get('test-RTL4i-connected');
+
+    // Start attach while connecting
+    const attachFuture = channel.attach();
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    expect(channel.state).to.equal('attaching');
+    expect(attachMessageReceived).to.equal(false);
+
+    // Complete connection
+    mock.active_connection = pendingConnection;
+    pendingConnection.respond_with_connected();
+
+    // Wait for attach to complete
+    await attachFuture;
+
+    expect(channel.state).to.equal('attached');
+    expect(attachMessageReceived).to.equal(true);
+    client.close();
+  });
 });

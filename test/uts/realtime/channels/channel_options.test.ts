@@ -361,4 +361,120 @@ describe('uts/realtime/channels/channel_options', function () {
     expect(channel.name).to.include(`filter=${expectedEncoded}`);
     client.close();
   });
+
+  /**
+   * TB3 - withCipherKey constructor
+   *
+   * Deviation: ably-js uses { cipher: { key } } option rather than a
+   * static withCipherKey constructor. This test verifies that providing a
+   * cipher key through the ably-js pattern sets up cipher params.
+   */
+  it('TB3 - cipher key via channel options', async function () {
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    // 256-bit key as base64
+    const key = 'MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=';
+    const channel = client.channels.get('test-TB3', {
+      cipher: { key },
+    });
+
+    const opts = channel.channelOptions;
+    expect(opts).to.not.be.null;
+    // The cipher option should have been processed
+    expect(opts.cipher).to.not.be.null;
+    expect(opts.cipher).to.not.be.undefined;
+    client.close();
+  });
+
+  /**
+   * RTS3c1 - Error if modes change on attaching channel
+   *
+   * Changing modes on a channel that is in the attaching state should
+   * throw error code 40000.
+   */
+  it('RTS3c1 - error when modes change on attaching channel', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond immediately to keep in attaching state
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTS3c1-attaching');
+
+    // Start attach but don't await (mock won't respond)
+    channel.attach();
+
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'attaching') return resolve();
+      channel.once('attaching', () => resolve());
+    });
+    expect(channel.state).to.equal('attaching');
+
+    // Changing modes on an attaching channel via get() should throw
+    try {
+      client.channels.get('test-RTS3c1-attaching', { modes: ['SUBSCRIBE'] });
+      expect.fail('Expected get() to throw');
+    } catch (err: any) {
+      expect(err.code).to.equal(40000);
+    }
+    client.close();
+  });
+
+  /**
+   * RTS5a2 - Derived channel with params included in name
+   */
+  it('RTS5a2 - derived channel with params in name', function () {
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    const channel = client.channels.getDerived(
+      'test-RTS5a2',
+      { filter: "type == 'message'" },
+      { params: { rewind: '1', delta: 'vcdiff' } },
+    );
+
+    // Channel name should end with base name
+    expect(channel.name).to.match(/\]test-RTS5a2$/);
+    // Extract the qualifier (everything between [ and ])
+    const match = channel.name.match(/^\[(.+)\]/);
+    expect(match).to.not.be.null;
+    const qualifier = match![1];
+
+    // Verify filter is present in qualifier
+    expect(qualifier).to.match(/^filter=/);
+
+    // ably-js puts params in channel options (sent via ATTACH), not in the
+    // channel name qualifier. Verify params are set on the channel options.
+    expect((channel as any).channelOptions.params).to.deep.include({
+      rewind: '1',
+      delta: 'vcdiff',
+    });
+    client.close();
+  });
 });

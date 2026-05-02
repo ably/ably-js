@@ -12,7 +12,8 @@
 
 import { expect } from 'chai';
 import { MockWebSocket, PendingWSConnection } from '../../mock_websocket';
-import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { MockHttpClient } from '../../mock_http';
+import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
 
 describe('uts/realtime/channels/channel_publish', function () {
   afterEach(function () {
@@ -147,8 +148,7 @@ describe('uts/realtime/channels/channel_publish', function () {
    * i.e. a payload with a null value for data would be sent as { "name": "click" }"
    */
   it('RTL6i3 - null name/data fields handled correctly', async function () {
-    // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js includes null fields in wire JSON; see #2199
     const rawFrames: string[] = [];
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1013,6 +1013,88 @@ describe('uts/realtime/channels/channel_publish', function () {
   });
 
   /**
+   * RTN7e - Pending publishes fail when connection enters SUSPENDED
+   */
+  it('RTN7e - pending publishes fail on connection suspended', async function () {
+    let firstConnect = true;
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        if (firstConnect) {
+          firstConnect = false;
+          conn.respond_with_connected();
+        } else {
+          // Refuse all reconnection attempts so connection enters SUSPENDED
+          conn.respond_with_refused();
+        }
+      },
+      onMessageFromClient: (msg, conn) => {
+        if (msg.action === 10) {
+          // ATTACH
+          conn!.send_to_client({ action: 11, channel: msg.channel, flags: 0 });
+        }
+        // Don't ACK MESSAGE — leave publish pending
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, 'yes'),
+    });
+    installMockHttp(httpMock);
+
+    const clock = enableFakeTimers();
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      fallbackHosts: [],
+      disconnectedRetryTimeout: 500,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTN7e-suspended', { attachOnSubscribe: false } as any);
+    await channel.attach();
+
+    // Publish but don't ACK — message stays pending
+    const publishPromise = channel.publish('pending', 'data');
+
+    // Disconnect and refuse all reconnection attempts so connection enters SUSPENDED
+    mock.active_connection!.simulate_disconnect();
+
+    // Pump event loop to let disconnect processing happen
+    for (let i = 0; i < 30; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    // Advance past connectionStateTtl to reach SUSPENDED
+    await clock.tickAsync(121000);
+
+    for (let i = 0; i < 30; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    expect(client.connection.state).to.equal('suspended');
+
+    // The pending publish should now fail
+    try {
+      await publishPromise;
+      expect.fail('Should have thrown');
+    } catch (err: any) {
+      expect(err).to.exist;
+      expect(err.code).to.be.a('number');
+    }
+    client.close();
+  });
+
+  /**
    * RTN7e - Multiple pending publishes all fail on state change
    */
   it('RTN7e - multiple pending publishes all fail on close', async function () {
@@ -1499,6 +1581,171 @@ describe('uts/realtime/channels/channel_publish', function () {
     expect(channel.state).to.equal('detached');
 
     expect(detachMsgsPerConn[1].length).to.be.at.least(1);
+    client.close();
+  });
+
+  /**
+   * RTL6c1 - Publish immediately when CONNECTED and channel ATTACHING
+   *
+   * Messages are sent immediately when the connection is CONNECTED and the
+   * channel is in ATTACHING state (which is neither SUSPENDED nor FAILED).
+   */
+  it('RTL6c1 - publish immediately when connected and channel attaching', async function () {
+    const capturedMessages: any[] = [];
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel in ATTACHING
+        } else if (msg.action === 15) {
+          // MESSAGE
+          capturedMessages.push(msg);
+          mock.active_connection!.send_to_client({
+            action: 1, // ACK
+            msgSerial: msg.msgSerial,
+            count: 1,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL6c1-attaching', { attachOnSubscribe: false } as any);
+    channel.attach().catch(() => {});
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'attaching') return resolve();
+      channel.once('attaching', () => resolve());
+    });
+
+    await channel.publish('while-attaching', 'data');
+
+    expect(capturedMessages.length).to.equal(1);
+    expect(capturedMessages[0].messages[0].name).to.equal('while-attaching');
+    client.close();
+  });
+
+  /**
+   * RTL6c4 - Publish fails when channel is SUSPENDED
+   */
+  it('RTL6c4 - publish fails when channel suspended', async function () {
+    const clock = enableFakeTimers();
+    const capturedMessages: any[] = [];
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg, conn) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel hanging so it times out to SUSPENDED
+        } else if (msg.action === 15) {
+          // MESSAGE
+          capturedMessages.push(msg);
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      realtimeRequestTimeout: 100,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL6c4-ch-suspended', { attachOnSubscribe: false } as any);
+
+    // Start attach — will timeout and channel enters SUSPENDED
+    const attachPromise = channel.attach();
+
+    // Advance time past realtimeRequestTimeout so the attach times out
+    for (let i = 0; i < 10; i++) {
+      await clock.tickAsync(200);
+      for (let j = 0; j < 5; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      if (channel.state === 'suspended') break;
+    }
+
+    // The attach should have failed
+    try {
+      await attachPromise;
+    } catch (e) {
+      // Expected — attach timed out
+    }
+
+    expect(channel.state).to.equal('suspended');
+
+    const capturedBefore = capturedMessages.length;
+
+    try {
+      await channel.publish('fail', 'should-error');
+      expect.fail('Expected publish to fail');
+    } catch (err: any) {
+      expect(err).to.not.be.null;
+    }
+
+    // No MESSAGE sent to server
+    expect(capturedMessages.length).to.equal(capturedBefore);
+    client.close();
+  });
+
+  /**
+   * RTL6c4 - Publish fails when connection is SUSPENDED
+   */
+  it('RTL6c4 - publish fails when connection suspended', async function () {
+    const clock = enableFakeTimers();
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        conn.respond_with_refused();
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      disconnectedRetryTimeout: 1000,
+      connectionStateTtl: 5000,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+
+    // Advance time until SUSPENDED
+    for (let i = 0; i < 15; i++) {
+      await clock.tickAsync(2000);
+      for (let j = 0; j < 10; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      if (client.connection.state === 'suspended') break;
+    }
+    expect(client.connection.state).to.equal('suspended');
+
+    const channel = client.channels.get('test-RTL6c4-suspended', { attachOnSubscribe: false } as any);
+    try {
+      await channel.publish('fail', 'should-error');
+      expect.fail('Expected publish to fail');
+    } catch (err: any) {
+      expect(err).to.not.be.null;
+    }
     client.close();
   });
 });

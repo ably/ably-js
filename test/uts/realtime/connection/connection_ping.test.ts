@@ -383,8 +383,7 @@ describe('uts/realtime/connection/connection_ping', function () {
    * that can resolve it."
    */
   it('RTN13d - ping deferred from CONNECTING until CONNECTED', async function () {
-    // DEVIATION: see deviations.md
-    this.skip();
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js rejects immediately; see #2203
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -413,6 +412,7 @@ describe('uts/realtime/connection/connection_ping', function () {
       autoConnect: false,
       useBinaryProtocol: false,
     });
+    trackClient(client);
 
     client.connect();
     expect(client.connection.state).to.equal('connecting');
@@ -421,6 +421,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     const rtt = await client.connection.ping();
     expect(typeof rtt).to.equal('number');
     expect(rtt).to.be.at.least(0);
+    client.close();
   });
 
   /**
@@ -633,5 +634,57 @@ describe('uts/realtime/connection/connection_ping', function () {
       expect(err).to.not.be.null;
     }
     client.close();
+  });
+
+  /**
+   * RTN13b - Ping errors in CLOSING state
+   *
+   * RTN13b lists CLOSING among the states where ping() must error.
+   * In ably-js, calling client.close() while CONNECTED transitions
+   * synchronously through CLOSING to CLOSED within closeImpl().
+   * We listen on the connectionManager directly (which emits state
+   * changes synchronously) to catch the CLOSING state and call ping().
+   */
+  it('RTN13b - ping errors in CLOSING', function (done) {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connection.once('connected', () => {
+      // Listen on connectionManager directly for synchronous state change
+      (client as any).connection.connectionManager.once(
+        'connectionstate',
+        (stateChange: any) => {
+          if (stateChange.current === 'closing') {
+            // We are now synchronously in CLOSING state
+            client.connection.ping().then(
+              () => {
+                done(new Error('Expected ping to reject'));
+              },
+              (err: any) => {
+                expect(err).to.not.be.null;
+                done();
+              },
+            );
+          }
+        },
+      );
+
+      // Initiate close — transitions through CLOSING -> CLOSED
+      client.close();
+    });
+
+    client.connect();
   });
 });

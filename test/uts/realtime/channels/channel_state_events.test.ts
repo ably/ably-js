@@ -512,4 +512,132 @@ describe('uts/realtime/channels/channel_state_events', function () {
     expect(capturedChange.resumed).to.equal(true);
     client.close();
   });
+
+  /**
+   * Channel errorReason attribute populated on FAILED state
+   *
+   * When a channel enters the FAILED state, errorReason should be
+   * populated with the error from the server.
+   */
+  it('channel errorReason populated when failed', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 9, // ERROR
+            channel: msg.channel,
+            error: {
+              message: 'Not authorized',
+              code: 40160,
+              statusCode: 401,
+            },
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-errorReason');
+
+    try {
+      await channel.attach();
+    } catch (err) {
+      // Expected
+    }
+
+    expect(channel.state).to.equal('failed');
+    expect(channel.errorReason).to.not.be.null;
+    expect(channel.errorReason).to.not.be.undefined;
+    expect(channel.errorReason!.code).to.equal(40160);
+    expect(channel.errorReason!.message).to.include('Not authorized');
+    client.close();
+  });
+
+  /**
+   * RTL4c - errorReason cleared on successful attach after failure
+   *
+   * Deviation: ably-js does NOT clear errorReason on successful re-attach.
+   * This test documents the deviation.
+   */
+  it('RTL4c - errorReason after successful re-attach (deviation)', async function () {
+    let attachCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          attachCount++;
+          if (attachCount === 1) {
+            // First attach fails
+            mock.active_connection!.send_to_client({
+              action: 9, // ERROR
+              channel: msg.channel,
+              error: {
+                message: 'Denied',
+                code: 40160,
+                statusCode: 401,
+              },
+            });
+          } else {
+            // Second attach succeeds
+            mock.active_connection!.send_to_client({
+              action: 11, // ATTACHED
+              channel: msg.channel,
+              flags: 0,
+            });
+          }
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-errorReason-clear');
+
+    // First attach fails
+    try {
+      await channel.attach();
+    } catch (err) {
+      // Expected
+    }
+    expect(channel.state).to.equal('failed');
+    expect(channel.errorReason).to.not.be.null;
+
+    // Second attach succeeds
+    await channel.attach();
+    expect(channel.state).to.equal('attached');
+
+    // Deviation: ably-js does NOT clear errorReason on successful re-attach.
+    // The UTS spec expects errorReason to be null here (RTL4c).
+    expect(channel.errorReason).to.not.be.null;
+    client.close();
+  });
 });

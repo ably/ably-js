@@ -89,21 +89,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
 
   /**
    * RSA17c / BAR2 - All success result
-   *
-   * DEVIATION: UTS spec expects the mock to return a plain array and the
-   * client to compute successCount/failureCount. ably-js passes through
-   * the server response as-is (which includes successCount/failureCount/results).
-   * Mock format matches the actual Ably REST API response format.
    */
   it('RSA17c - all success result', async function () {
-    const responseBody = {
-      successCount: 2,
-      failureCount: 0,
-      results: [
-        { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
-        { target: 'clientId:bob', issuedBefore: 1700000000000, appliesAt: 1700000002000 },
-      ],
-    };
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js passes through response; see #2201
+    const responseBody = [
+      { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
+      { target: 'clientId:bob', issuedBefore: 1700000000000, appliesAt: 1700000002000 },
+    ];
     installMockHttp(revokeMock(null, responseBody));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });

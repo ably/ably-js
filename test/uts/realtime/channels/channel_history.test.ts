@@ -18,6 +18,79 @@ describe('uts/realtime/channels/channel_history', function () {
   });
 
   /**
+   * RTL10a, RTL10c - RealtimeChannel#history supports all RestChannel#history params
+   *
+   * RealtimeChannel#history uses the same underlying REST endpoint as
+   * RestChannel#history. It supports start, end, direction, limit params
+   * and returns a PaginatedResult containing Message objects.
+   */
+  it('RTL10a - history supports REST params and returns PaginatedResult', async function () {
+    const captured: any[] = [];
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, [
+          { id: '1', name: 'event1', data: 'hello' },
+          { id: '2', name: 'event2', data: 'world' },
+        ], { 'content-type': 'application/json' });
+      },
+    });
+    installMockHttp(httpMock);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL10a');
+    await channel.attach();
+
+    const result = await channel.history({ start: 1000, end: 2000, direction: 'backwards', limit: 50 });
+
+    // RTL10c: returns PaginatedResult with Message objects
+    expect(result.items).to.have.length(2);
+    expect(result.items[0].name).to.equal('event1');
+    expect(result.items[0].data).to.equal('hello');
+    expect(result.items[1].name).to.equal('event2');
+    expect(result.items[1].data).to.equal('world');
+
+    // RTL10a: REST params are passed through to the HTTP request
+    expect(captured.length).to.be.greaterThan(0);
+    const historyReq = captured.find((r: any) => r.path.includes('/history') || r.path.includes('test-RTL10a'));
+    expect(historyReq).to.not.be.undefined;
+    const params = historyReq!.url.searchParams;
+    expect(params.get('start')).to.equal('1000');
+    expect(params.get('end')).to.equal('2000');
+    expect(params.get('direction')).to.equal('backwards');
+    expect(params.get('limit')).to.equal('50');
+
+    client.close();
+  });
+
+  /**
    * RTL10b - untilAttach adds fromSerial query parameter
    */
   it('RTL10b - untilAttach adds from_serial param', async function () {
