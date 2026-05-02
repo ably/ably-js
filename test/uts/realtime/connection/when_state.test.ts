@@ -282,4 +282,48 @@ describe('uts/realtime/connection/when_state', function () {
     expect(disconnectedResult.current).to.equal('disconnected');
     client.close();
   });
+
+  /**
+   * RTN26b - whenState waits for 'closed' terminal state
+   *
+   * Tests that whenState registered for 'closed' before closing the client
+   * resolves with a ConnectionStateChange when the client transitions to closed.
+   */
+  it('RTN26b - whenState waits for closed state', function (done) {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 7) {
+          // CLOSE — respond with CLOSED
+          mock.active_connection!.send_to_client({ action: 8 }); // CLOSED
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connection.once('connected', () => {
+      // Register whenState for 'closed' while still connected
+      client.connection.whenState('closed').then((change: any) => {
+        // Should resolve with a ConnectionStateChange (not null)
+        expect(change).to.not.be.null;
+        expect(change.current).to.equal('closed');
+        done();
+      });
+
+      // Initiate close — triggers transition through closing → closed
+      client.close();
+    });
+
+    client.connect();
+  });
 });

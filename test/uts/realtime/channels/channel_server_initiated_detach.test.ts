@@ -353,7 +353,8 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     expect(channel.state).to.equal('suspended');
 
     // Advance past first retry → attempt 3 fails → SUSPENDED again
-    await clock.tickAsync(110);
+    // retryCount=1: delay = channelRetryTimeout * (1+2)/3 * jitter = 100 * 1.0 * [0.8-1.0] = 80-100ms
+    await clock.tickAsync(150);
     for (let i = 0; i < 40; i++) {
       clock.tick(0);
       await new Promise((r) => setTimeout(r, 1));
@@ -362,7 +363,8 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     expect(attachCount).to.equal(3);
 
     // Advance past second retry → attempt 4 succeeds
-    await clock.tickAsync(110);
+    // retryCount=2: delay = channelRetryTimeout * (2+2)/3 * jitter = 100 * 1.333 * [0.8-1.0] = 107-134ms
+    await clock.tickAsync(200);
     for (let i = 0; i < 40; i++) {
       clock.tick(0);
       await new Promise((r) => setTimeout(r, 1));
@@ -513,6 +515,110 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     // Channel should be cleanly detached, not re-attached
     expect(channel.state).to.equal('detached');
     expect(attachCount).to.equal(1);
+    client.close();
+  });
+
+  /**
+   * RTL13a - Server DETACHED on SUSPENDED channel triggers immediate reattach
+   *
+   * When a channel is in SUSPENDED state (e.g. after a failed reattach timeout)
+   * and receives a server-initiated DETACHED, it should immediately attempt
+   * to reattach.
+   */
+  it('RTL13a - server DETACHED on suspended triggers reattach', async function () {
+    let attachCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          attachCount++;
+          if (attachCount === 1) {
+            // First attach succeeds
+            mock.active_connection!.send_to_client({
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
+            });
+          } else if (attachCount === 2) {
+            // Second attach (reattach after first DETACHED) — don't respond (timeout -> SUSPENDED)
+          } else {
+            // Third attach (after second DETACHED on SUSPENDED) — succeed
+            mock.active_connection!.send_to_client({
+              action: 11,
+              channel: msg.channel,
+              flags: 0,
+            });
+          }
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const clock = enableFakeTimers();
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      realtimeRequestTimeout: 100,
+      channelRetryTimeout: 60000, // Large so auto-retry doesn't interfere
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    const channel = client.channels.get('test-RTL13a-suspended');
+    await channel.attach();
+    expect(channel.state).to.equal('attached');
+    expect(attachCount).to.equal(1);
+
+    // Send server-initiated DETACHED to trigger RTL13a reattach
+    mock.active_connection!.send_to_client({
+      action: 13, // DETACHED
+      channel: 'test-RTL13a-suspended',
+      error: { message: 'Detach 1', code: 90198, statusCode: 500 },
+    });
+
+    // Let channel enter ATTACHING state
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(channel.state).to.equal('attaching');
+
+    // Let the reattach timeout -> SUSPENDED
+    await clock.tickAsync(150);
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+    expect(channel.state).to.equal('suspended');
+
+    // Now send another server-initiated DETACHED while SUSPENDED
+    mock.active_connection!.send_to_client({
+      action: 13, // DETACHED
+      channel: 'test-RTL13a-suspended',
+      error: { message: 'Detach 2', code: 90199, statusCode: 500 },
+    });
+
+    // Channel should immediately attempt to reattach and succeed
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await new Promise((r) => setTimeout(r, 1));
+    }
+
+    expect(channel.state).to.equal('attached');
+    // 3 total ATTACH messages
+    expect(attachCount).to.equal(3);
     client.close();
   });
 });

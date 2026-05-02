@@ -293,4 +293,175 @@ describe('uts/realtime/channels/message_field_population', function () {
     expect(received[1].timestamp).to.equal(1700000000000);
     client.close();
   });
+
+  /**
+   * TM2a - No id when ProtocolMessage has no id
+   *
+   * When the ProtocolMessage itself has no id field, messages without
+   * their own id should remain without one.
+   */
+  it('TM2a - no id when ProtocolMessage has no id', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-TM2a-no-proto-id', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const received: any[] = [];
+    channel.subscribe((msg: any) => received.push(msg));
+
+    // ProtocolMessage has no id field — messages should not get computed ids
+    mock.active_connection!.send_to_client({
+      action: 15, // MESSAGE
+      channel: 'test-TM2a-no-proto-id',
+      connectionId: 'abc123',
+      messages: [{ name: 'msg', data: 'hello' }],
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    expect(received.length).to.equal(1);
+    expect(received[0].id).to.satisfy(
+      (v: any) => v === null || v === undefined,
+      'Message id should be null/undefined when ProtocolMessage has no id',
+    );
+    client.close();
+  });
+
+  /**
+   * TM2c - Message with existing connectionId is not overwritten
+   *
+   * A message that already has its own connectionId should retain it,
+   * not have it overwritten by the ProtocolMessage connectionId.
+   */
+  it('TM2c - existing connectionId not overwritten', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-TM2c-existing', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const received: any[] = [];
+    channel.subscribe((msg: any) => received.push(msg));
+
+    // Message already has its own connectionId
+    mock.active_connection!.send_to_client({
+      action: 15, // MESSAGE
+      channel: 'test-TM2c-existing',
+      connectionId: 'proto-conn',
+      messages: [{ connectionId: 'msg-conn', name: 'msg', data: 'hello' }],
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    expect(received.length).to.equal(1);
+    expect(received[0].connectionId).to.equal('msg-conn');
+    client.close();
+  });
+
+  /**
+   * TM2f - Message with existing timestamp is not overwritten
+   *
+   * A message that already has its own timestamp should retain it,
+   * not have it overwritten by the ProtocolMessage timestamp.
+   */
+  it('TM2f - existing timestamp not overwritten', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-TM2f-existing', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const received: any[] = [];
+    channel.subscribe((msg: any) => received.push(msg));
+
+    // Message already has its own timestamp
+    mock.active_connection!.send_to_client({
+      action: 15, // MESSAGE
+      channel: 'test-TM2f-existing',
+      timestamp: 1700000000000,
+      messages: [{ timestamp: 1600000000000, name: 'msg', data: 'hello' }],
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    expect(received.length).to.equal(1);
+    expect(received[0].timestamp).to.equal(1600000000000);
+    client.close();
+  });
 });

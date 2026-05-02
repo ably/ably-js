@@ -3,12 +3,6 @@
  *
  * Spec points: RTN24
  * Source: uts/test/realtime/unit/connection/update_events_test.md
- *
- * Deviation: ably-js does NOT update connection.id or connection.key on
- * subsequent CONNECTED messages. Only internal connectionDetails (maxIdleInterval,
- * connectionStateTtl, etc.) are overridden. The UTS spec asserts id/key change,
- * but ably-js only updates those during transport activation (initial connect or
- * resume). See activateTransport() in connectionmanager.ts.
  */
 
 import { expect } from 'chai';
@@ -123,36 +117,61 @@ describe('uts/realtime/connection/update_events', function () {
 
   /**
    * RTN24 - ConnectionDetails override
-   *
-   * Deviation: ably-js does not update connection.id or connection.key on
-   * UPDATE. We verify the UPDATE event fires and state stays CONNECTED.
    */
-  it('RTN24 - ConnectionDetails updated on new CONNECTED message', function (done) {
-    setupConnectedClient((client) => {
-      expect(client.connection.id).to.equal('connection-id-1');
-      expect(client.connection.key).to.equal('connection-key-1');
-
-      client.connection.on('update', () => {
-        expect(client.connection.state).to.equal('connected');
-
-        client.close();
-        done();
-      });
-
-      // Send new CONNECTED with same id/key but different details
-      mock.active_connection!.send_to_client({
-        action: 4, // CONNECTED
-        connectionId: 'connection-id-1',
-        connectionKey: 'connection-key-1',
-        connectionDetails: {
-          connectionKey: 'connection-key-1',
-          maxIdleInterval: 20000,
-          connectionStateTtl: 120000,
-          maxMessageSize: 32768,
-          serverId: 'server-2',
-        } as any,
-      });
+  it('RTN24 - ConnectionDetails updated on new CONNECTED message', async function () {
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't update connection.id on subsequent CONNECTED
+    mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected({
+          connectionId: 'connection-id-1',
+          connectionDetails: {
+            connectionKey: 'connection-key-1',
+            maxIdleInterval: 15000,
+            connectionStateTtl: 120000,
+          } as any,
+        });
+      },
     });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    expect(client.connection.id).to.equal('connection-id-1');
+    expect(client.connection.key).to.equal('connection-key-1');
+
+    const updatePromise = new Promise<any>((resolve) =>
+      client.connection.once('update', (change: any) => resolve(change)),
+    );
+
+    mock.active_connection!.send_to_client({
+      action: 4, // CONNECTED
+      connectionId: 'connection-id-2',
+      connectionKey: 'connection-key-2',
+      connectionDetails: {
+        connectionKey: 'connection-key-2',
+        maxIdleInterval: 20000,
+        connectionStateTtl: 120000,
+        maxMessageSize: 32768,
+        serverId: 'server-2',
+      } as any,
+    });
+
+    await updatePromise;
+
+    expect(client.connection.state).to.equal('connected');
+    expect(client.connection.id).to.equal('connection-id-2');
+    expect(client.connection.key).to.equal('connection-key-2');
+
+    client.close();
   });
 
   /**

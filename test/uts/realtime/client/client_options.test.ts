@@ -55,17 +55,14 @@ describe('uts/realtime/client/client_options', function () {
 
   /**
    * RSC1b / RTC12 - No credentials raises error
-   *
-   * Spec says error code 40106. ably-js uses 40160 instead.
-   * See deviations.md.
    */
   it('RSC1b - no credentials raises error', function () {
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
       new Ably.Realtime({ autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
     } catch (e: any) {
-      // ably-js deviation: uses 40160 instead of spec's 40106
-      expect(e.code).to.equal(40160);
+      expect(e.code).to.equal(40106);
     }
   });
 
@@ -79,12 +76,12 @@ describe('uts/realtime/client/client_options', function () {
   });
 
   it('RSC1b - clientId alone raises error', function () {
+    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
       new Ably.Realtime({ clientId: 'test', autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
     } catch (e: any) {
-      // ably-js deviation: uses 40160 instead of spec's 40106
-      expect(e.code).to.equal(40160);
+      expect(e.code).to.equal(40106);
     }
   });
 

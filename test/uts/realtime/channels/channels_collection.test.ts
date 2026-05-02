@@ -9,8 +9,6 @@
  *
  * Deviation: ably-js has no channels.exists() method — use `name in channels.all`.
  * Deviation: ably-js has no channels.names — use Object.keys(channels.all).
- * Deviation: ably-js release() is synchronous and throws on attached channels
- *   (only allows release from initialized/detached/failed).
  */
 
 import { expect } from 'chai';
@@ -242,6 +240,37 @@ describe('uts/realtime/channels/channels_collection', function () {
     expect(channel1).to.not.equal(channel2);
     expect(channel2.name).to.equal('test-release-reget');
     expect('test-release-reget' in client.channels.all).to.be.true;
+    client.close();
+  });
+
+  /**
+   * RTS3a - Subscript operator (bracket notation) creates or returns channel
+   *
+   * Deviation: ably-js does not have a true subscript operator for channels,
+   * but channels.all[name] provides similar read access to the channel map.
+   * This test verifies that channels.all[name] returns the same channel as
+   * channels.get(name) after creation.
+   */
+  it('RTS3a - channels.all bracket access returns same channel', function () {
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    // Create channel via get()
+    const channel1 = client.channels.get('test-subscript');
+
+    // Access via bracket notation on channels.all
+    const channel2 = client.channels.all['test-subscript'];
+
+    // Use get() again
+    const channel3 = client.channels.get('test-subscript');
+
+    expect(channel1).to.equal(channel2);
+    expect(channel2).to.equal(channel3);
+    expect(channel1.name).to.equal('test-subscript');
     client.close();
   });
 });

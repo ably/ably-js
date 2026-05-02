@@ -128,9 +128,12 @@ describe('uts/realtime/connection/error_reason', function () {
   });
 
   /**
-   * RTN25 - errorReason on token errors
+   * RTN25/RTN14b/RSA4a - errorReason on token error with no renewal
+   *
+   * Per RTN14b: token ERROR during connection, no means to renew → RSA4a applies.
+   * Per RSA4a2: transition to FAILED with error code 40171.
    */
-  it('RTN25 - errorReason on token error', function (done) {
+  it('RTN25 - errorReason on token error (non-renewable)', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         conn.respond_with_error({
@@ -148,10 +151,10 @@ describe('uts/realtime/connection/error_reason', function () {
     });
     trackClient(client);
 
-    client.connection.once('disconnected', () => {
+    // Per RSA4a2: no means to renew → FAILED state with error code 40171
+    client.connection.once('failed', () => {
       expect(client.connection.errorReason).to.not.be.null;
-      expect(client.connection.errorReason!.code).to.equal(40142);
-      expect(client.connection.errorReason!.statusCode).to.equal(401);
+      expect(client.connection.errorReason!.code).to.equal(40171);
       done();
     });
 
@@ -275,6 +278,64 @@ describe('uts/realtime/connection/error_reason', function () {
       expect(client.connection.errorReason).to.not.be.null;
       expect(client.connection.errorReason!.code).to.equal(stateChange.reason.code);
       done();
+    });
+
+    client.connect();
+  });
+
+  /**
+   * RTN25/RTN15h1 - errorReason set on token error while connected (non-renewable)
+   *
+   * Per RTN15h1: If a DISCONNECTED message contains a token error and there is
+   * no means to renew the token, the connection transitions to FAILED and
+   * Connection#errorReason is set. This tests that errorReason captures the
+   * token error details in this scenario.
+   */
+  it('RTN25 - errorReason set on token error while connected (RTN15h1)', function (done) {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected({
+          connectionId: 'connection-id',
+          connectionDetails: {
+            connectionKey: 'connection-key',
+            maxIdleInterval: 15000,
+            connectionStateTtl: 120000,
+          } as any,
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      token: 'some_token_string',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connection.once('connected', () => {
+      client.connection.once('failed', (stateChange: any) => {
+        // errorReason is set (RTN25)
+        expect(client.connection.errorReason).to.not.be.null;
+        // Per RSA4a: non-renewable token error is wrapped with code 40171
+        expect(client.connection.errorReason!.code).to.equal(40171);
+
+        // State change reason also populated
+        expect(stateChange.reason).to.not.be.null;
+        expect(stateChange.reason.code).to.equal(40171);
+        done();
+      });
+
+      // Server sends DISCONNECTED with token error while connected
+      mock.active_connection!.send_to_client_and_close({
+        action: 6, // DISCONNECTED
+        error: {
+          message: 'Token expired',
+          code: 40142,
+          statusCode: 401,
+        },
+      });
     });
 
     client.connect();

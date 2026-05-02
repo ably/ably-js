@@ -510,4 +510,317 @@ describe('uts/realtime/channels/channel_connection_state', function () {
     expect(newAttaches).to.include('test-RTL3d-multiB');
     client.close();
   });
+
+  /**
+   * RTL3e - DISCONNECTED has no effect on ATTACHING channel
+   */
+  it('RTL3e - DISCONNECTED does not affect attaching channel', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel in ATTACHING
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL3e-attaching');
+    const attachFuture = channel.attach().catch(() => {});
+
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'attaching') return resolve();
+      channel.once('attaching', () => resolve());
+    });
+
+    const channelStateChanges: any[] = [];
+    channel.on((change: any) => channelStateChanges.push(change));
+
+    // Simulate disconnect
+    mock.active_connection!.simulate_disconnect();
+    await new Promise<void>((resolve) => client.connection.once('disconnected', resolve));
+
+    // Channel state must remain ATTACHING
+    expect(channel.state).to.equal('attaching');
+    // No channel state change events should have been emitted
+    expect(channelStateChanges.length).to.equal(0);
+  });
+
+  /**
+   * RTL3b - CLOSED connection transitions ATTACHING channel to DETACHED
+   */
+  it('RTL3b - CLOSED connection transitions ATTACHING channel to DETACHED', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel in ATTACHING
+        }
+        if (msg.action === 7) {
+          // CLOSE
+          mock.active_connection!.send_to_client({
+            action: 8, // CLOSED
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL3b-attaching');
+    const attachFuture = channel.attach().catch(() => {});
+
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'attaching') return resolve();
+      channel.once('attaching', () => resolve());
+    });
+
+    const channelStateChanges: any[] = [];
+    channel.on((change: any) => channelStateChanges.push(change));
+
+    // Close the connection
+    client.close();
+    await new Promise<void>((resolve) => client.connection.once('closed', resolve));
+
+    // The pending attach should fail
+    await attachFuture;
+
+    expect(channel.state).to.equal('detached');
+    const detachedChange = channelStateChanges.find((c: any) => c.current === 'detached');
+    expect(detachedChange).to.not.be.undefined;
+    expect(detachedChange.previous).to.equal('attaching');
+  });
+
+  /**
+   * RTL3a - FAILED connection transitions ATTACHING channel to FAILED
+   */
+  it('RTL3a - FAILED connection transitions ATTACHING channel to FAILED', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel in ATTACHING
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL3a-attaching');
+    const attachFuture = channel.attach().catch(() => {});
+
+    await new Promise<void>((resolve) => {
+      if (channel.state === 'attaching') return resolve();
+      channel.once('attaching', () => resolve());
+    });
+
+    const channelStateChanges: any[] = [];
+    channel.on((change: any) => channelStateChanges.push(change));
+
+    // Send fatal connection ERROR
+    mock.active_connection!.send_to_client({
+      action: 9, // ERROR
+      error: { code: 40198, statusCode: 403, message: 'Account disabled' },
+    });
+
+    await new Promise<void>((resolve) => client.connection.once('failed', resolve));
+    await attachFuture;
+
+    expect(channel.state).to.equal('failed');
+    const failedChange = channelStateChanges.find((c: any) => c.current === 'failed');
+    expect(failedChange).to.not.be.undefined;
+    expect(failedChange.previous).to.equal('attaching');
+    client.close();
+  });
+
+  /**
+   * RTL3c - SUSPENDED connection transitions ATTACHING channel to SUSPENDED
+   */
+  it('RTL3c - SUSPENDED connection transitions ATTACHING channel to SUSPENDED', async function () {
+    const clock = enableFakeTimers();
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, {}),
+    });
+    installMockHttp(httpMock);
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected({
+          connectionDetails: { connectionStateTtl: 5000 },
+        });
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH — don't respond, leave channel in ATTACHING
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      disconnectedRetryTimeout: 1000,
+      connectionStateTtl: 5000,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    for (let i = 0; i < 20; i++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+    expect(client.connection.state).to.equal('connected');
+
+    const channel = client.channels.get('test-RTL3c-attaching');
+    channel.attach().catch(() => {});
+    for (let i = 0; i < 10; i++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+    expect(channel.state).to.equal('attaching');
+
+    const channelStateChanges: any[] = [];
+    channel.on((change: any) => channelStateChanges.push(change));
+
+    // Disconnect — all reconnection attempts will fail
+    mock.onConnectionAttempt = (conn) => conn.respond_with_refused();
+    mock.active_connection!.simulate_disconnect();
+
+    // Advance time past connectionStateTtl to reach SUSPENDED
+    for (let i = 0; i < 15; i++) {
+      await clock.tickAsync(2000);
+      for (let j = 0; j < 10; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      if (client.connection.state === 'suspended') break;
+    }
+
+    expect(client.connection.state).to.equal('suspended');
+    expect(channel.state).to.equal('suspended');
+
+    const suspendedChange = channelStateChanges.find((c: any) => c.current === 'suspended');
+    expect(suspendedChange).to.not.be.undefined;
+    expect(suspendedChange.previous).to.equal('attaching');
+    client.close();
+  });
+
+  /**
+   * RTL3d - CONNECTED connection re-attaches SUSPENDED channels
+   */
+  it('RTL3d - CONNECTED connection re-attaches SUSPENDED channels', async function () {
+    const clock = enableFakeTimers();
+    let attachCount = 0;
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, {}),
+    });
+    installMockHttp(httpMock);
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected({
+          connectionDetails: { connectionStateTtl: 5000 },
+        });
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          attachCount++;
+          mock.active_connection!.send_to_client({
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      disconnectedRetryTimeout: 1000,
+      connectionStateTtl: 5000,
+      suspendedRetryTimeout: 2000,
+    } as any);
+    trackClient(client);
+
+    client.connect();
+    for (let i = 0; i < 20; i++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+    expect(client.connection.state).to.equal('connected');
+
+    const channel = client.channels.get('test-RTL3d-suspended');
+    await channel.attach();
+    expect(attachCount).to.equal(1);
+
+    // Disconnect — all reconnection attempts fail
+    mock.onConnectionAttempt = (conn) => conn.respond_with_refused();
+    mock.active_connection!.simulate_disconnect();
+
+    // Advance to SUSPENDED
+    for (let i = 0; i < 15; i++) {
+      await clock.tickAsync(2000);
+      for (let j = 0; j < 10; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      if (client.connection.state === 'suspended') break;
+    }
+    expect(client.connection.state).to.equal('suspended');
+    expect(channel.state).to.equal('suspended');
+
+    // Allow reconnection to succeed
+    mock.onConnectionAttempt = (conn) => {
+      mock.active_connection = conn;
+      conn.respond_with_connected();
+    };
+
+    // Advance past suspendedRetryTimeout
+    for (let i = 0; i < 10; i++) {
+      await clock.tickAsync(2500);
+      for (let j = 0; j < 10; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      if (client.connection.state === 'connected') break;
+    }
+    expect(client.connection.state).to.equal('connected');
+
+    // Wait for channel to re-attach
+    for (let i = 0; i < 10; i++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+
+    expect(channel.state).to.equal('attached');
+    expect(attachCount).to.be.at.least(2);
+    client.close();
+  });
 });

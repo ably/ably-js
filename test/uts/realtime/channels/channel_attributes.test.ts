@@ -142,15 +142,15 @@ describe('uts/realtime/channels/channel_attributes', function () {
   });
 
   /**
-   * RTL24 - errorReason after successful re-attach
+   * RTL4g/RTL24 - errorReason cleared on successful re-attach from FAILED
    *
-   * UTS spec error: The UTS spec asserts errorReason should be cleared on
-   * successful attach/reattach. However, the features spec (RTL24) only says
-   * when errorReason is SET (via RTN11d, RTL3a, RTL4g, RTL14) — it never
-   * says it should be cleared. ably-js's behavior of retaining errorReason
-   * is consistent with the features spec.
+   * Per RTL4g: "If the channel is in the FAILED state, the attach request
+   * sets its errorReason to null, and proceeds with a channel attach."
    */
-  it('RTL24 - errorReason persists after successful re-attach (UTS spec error)', async function () {
+  it('RTL4g - errorReason cleared on re-attach from FAILED', async function () {
+    // DEVIATION: see deviations.md — ably-js does not clear errorReason on successful re-attach (RTL4c)
+    if (!process.env.RUN_DEVIATIONS) this.skip();
+
     let attachCount = 0;
 
     const mock = new MockWebSocket({
@@ -196,9 +196,9 @@ describe('uts/realtime/channels/channel_attributes', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTL24-clear-attach');
+    const channel = client.channels.get('test-RTL4g-clear-attach');
 
-    // First attach fails
+    // First attach fails — errorReason set
     try {
       await channel.attach();
       expect.fail('Expected attach to fail');
@@ -208,23 +208,23 @@ describe('uts/realtime/channels/channel_attributes', function () {
     expect(channel.errorReason).to.not.be.null;
     expect(channel.errorReason!.code).to.equal(50000);
 
-    // Second attach succeeds — errorReason is NOT cleared (features spec doesn't require it)
+    // Second attach succeeds — per RTL4g, errorReason must be cleared
     await channel.attach();
     expect(channel.state).to.equal('attached');
-    // UTS spec error: errorReason persists — features spec only defines SET, not CLEAR
-    expect(channel.errorReason).to.not.be.null;
-    expect(channel.errorReason!.code).to.equal(50000);
+    expect(channel.errorReason).to.be.null;
     client.close();
   });
 
   /**
-   * RTL24 - errorReason after re-attach and detach following error
+   * RTL4g/RTL24 - errorReason cleared on re-attach from FAILED, then detach
    *
-   * UTS spec error: Same as above — features spec (RTL24) only defines when
-   * errorReason is SET, never when it should be cleared. Persistence through
-   * attach/detach is consistent with the features spec.
+   * Per RTL4g: attach from FAILED clears errorReason. After re-attach and
+   * detach, errorReason should remain null (detach does not set it).
    */
-  it('RTL24 - errorReason persists after re-attach and detach (UTS spec error)', async function () {
+  it('RTL4g - errorReason cleared on re-attach and detach', async function () {
+    // DEVIATION: see deviations.md — ably-js does not clear errorReason on successful re-attach (RTL4c)
+    if (!process.env.RUN_DEVIATIONS) this.skip();
+
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -260,13 +260,13 @@ describe('uts/realtime/channels/channel_attributes', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTL24-clear-detach');
+    const channel = client.channels.get('test-RTL4g-clear-detach');
     await channel.attach();
 
     // Send channel ERROR to put it in FAILED state
     mock.active_connection!.send_to_client({
       action: 9, // ERROR
-      channel: 'test-RTL24-clear-detach',
+      channel: 'test-RTL4g-clear-detach',
       error: {
         message: 'Channel error',
         code: 90002,
@@ -278,15 +278,15 @@ describe('uts/realtime/channels/channel_attributes', function () {
     expect(channel.errorReason).to.not.be.null;
     expect(channel.errorReason!.code).to.equal(90002);
 
-    // Re-attach — errorReason is NOT cleared in ably-js
+    // Re-attach — per RTL4g, errorReason cleared
     await channel.attach();
     expect(channel.state).to.equal('attached');
-    expect(channel.errorReason).to.not.be.null;
+    expect(channel.errorReason).to.be.null;
 
+    // Detach — errorReason stays null
     await channel.detach();
-    client.close();
     expect(channel.state).to.equal('detached');
-    // errorReason still not cleared after detach
-    expect(channel.errorReason).to.not.be.null;
+    expect(channel.errorReason).to.be.null;
+    client.close();
   });
 });

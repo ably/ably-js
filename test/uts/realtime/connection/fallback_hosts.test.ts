@@ -406,4 +406,89 @@ describe('uts/realtime/connection/fallback_hosts', function () {
 
     runIteration();
   });
+
+  /**
+   * RTN17e - HTTP requests use same fallback host as realtime connection
+   *
+   * Spec: If the realtime client is connected to a fallback host endpoint,
+   * HTTP requests should first be attempted to the same datacenter.
+   */
+  it('RTN17e - HTTP requests use same fallback host as realtime connection', async function () {
+    const connectionHosts: string[] = [];
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionHosts.push(conn.url.hostname);
+        mock.active_connection = conn;
+
+        if (connectionHosts.length === 1) {
+          // Primary fails
+          conn.respond_with_refused();
+        } else {
+          // Fallback succeeds
+          conn.respond_with_connected({
+            connectionId: 'connection-id',
+            connectionDetails: {
+              connectionKey: 'connection-key',
+              maxIdleInterval: 15000,
+              connectionStateTtl: 120000,
+            } as any,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const httpRequests: { url: string; host: string }[] = [];
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        httpRequests.push({ url: req.url.href, host: req.url.hostname });
+        if (req.url.pathname.includes('/channels/') && req.url.pathname.includes('/messages')) {
+          req.respond_with(200, '[]');
+        } else if (req.url.href.includes('internet-up')) {
+          req.respond_with(200, 'yes');
+        } else {
+          req.respond_with(200, '{}');
+        }
+      },
+    });
+    installMockHttp(httpMock);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    // Determine which fallback host the realtime connection is using
+    const connectedFallbackHost = connectionHosts[1];
+    expect(connectedFallbackHost).to.match(/main\.[a-e]\.fallback\.ably-realtime\.com/);
+
+    // Make an HTTP request (channel history)
+    const channel = client.channels.get('test-RTN17e');
+    await channel.history();
+
+    // Find HTTP requests that are history-related (not connectivity checks)
+    const historyRequests = httpRequests.filter(
+      (r) => r.url.includes('/channels/') && r.url.includes('/messages'),
+    );
+    expect(historyRequests.length).to.be.at.least(1);
+
+    // The HTTP request host should use the same fallback datacenter letter
+    // Realtime fallback: main.<letter>.fallback.ably-realtime.com
+    // REST fallback: rest.<letter>.fallback.ably-realtime.com
+    const fallbackLetter = connectedFallbackHost.match(/main\.([a-e])\.fallback/)?.[1];
+    expect(fallbackLetter).to.exist;
+
+    const historyHost = historyRequests[0].host;
+    const historyLetter = historyHost.match(/\.([a-e])\.fallback/)?.[1];
+    expect(historyLetter).to.equal(fallbackLetter);
+
+    client.close();
+  });
 });
