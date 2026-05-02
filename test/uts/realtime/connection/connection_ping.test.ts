@@ -8,13 +8,13 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../helpers';
 
 /** Helper: pump fake + real event loops */
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
     clock.tick(0);
-    await new Promise((r) => setTimeout(r, 1));
+    await flushAsync();
   }
 }
 
@@ -387,7 +387,7 @@ describe('uts/realtime/connection/connection_ping', function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
-        setTimeout(() => {
+        setImmediate(() => {
           conn.respond_with_connected({
             connectionId: 'conn-id',
             connectionDetails: {
@@ -396,7 +396,7 @@ describe('uts/realtime/connection/connection_ping', function () {
               connectionStateTtl: 120000,
             } as any,
           });
-        }, 50);
+        });
       },
       onMessageFromClient: (msg) => {
         if (msg.action === 0) {
@@ -501,13 +501,12 @@ describe('uts/realtime/connection/connection_ping', function () {
   it('RTN13b+d - ping from CONNECTING rejects on FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
-        // Delay then send fatal error
-        setTimeout(() => {
+        setImmediate(() => {
           conn.respond_with_error({
             action: 9, // ERROR
             error: { code: 80000, statusCode: 400, message: 'Fatal error' },
           });
-        }, 50);
+        });
       },
     });
     installMockWebSocket(mock.constructorFn);
@@ -596,10 +595,9 @@ describe('uts/realtime/connection/connection_ping', function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
-        // Delay CONNECTED response
-        setTimeout(() => {
+        setImmediate(() => {
           conn.respond_with_connected();
-        }, 50);
+        });
       },
       // No response to HEARTBEAT — will timeout
     });

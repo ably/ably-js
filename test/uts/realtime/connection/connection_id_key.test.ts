@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/connection/connection_id_key', function () {
   afterEach(function () {
@@ -345,7 +345,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
     // Pump to let initial connection attempt + failure happen
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past connectionStateTtl to reach SUSPENDED
@@ -354,7 +354,7 @@ describe('uts/realtime/connection/connection_id_key', function () {
     // Pump again
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('suspended');

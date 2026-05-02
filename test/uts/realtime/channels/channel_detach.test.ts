@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_detach', function () {
   afterEach(function () {
@@ -253,7 +253,7 @@ describe('uts/realtime/channels/channel_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL5j');
@@ -263,7 +263,7 @@ describe('uts/realtime/channels/channel_detach', function () {
 
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past timeout
@@ -378,7 +378,7 @@ describe('uts/realtime/channels/channel_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL5f');
@@ -393,7 +393,7 @@ describe('uts/realtime/channels/channel_detach', function () {
 
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past timeout
@@ -505,7 +505,7 @@ describe('uts/realtime/channels/channel_detach', function () {
     // Start attach while connecting
     const attachPromise = channel.attach();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
 
     // Now detach — should transition immediately since not connected
@@ -759,7 +759,7 @@ describe('uts/realtime/channels/channel_detach', function () {
       flags: 0,
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(detachMessageCount).to.equal(2);
     expect(channel.state).to.equal('detached');

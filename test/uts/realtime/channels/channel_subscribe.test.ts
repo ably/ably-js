@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_subscribe', function () {
   afterEach(function () {
@@ -66,7 +66,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].name).to.equal('msg1');
@@ -123,7 +123,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].name).to.equal('target');
@@ -217,7 +217,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
     expect(channel.state).to.equal('initialized');
 
     channel.subscribe((msg: any) => {});
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('initialized');
     expect(attachCount).to.equal(0);
@@ -264,7 +264,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
     expect(attachCount).to.equal(1);
 
     channel.subscribe((msg: any) => {});
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(attachCount).to.equal(1);
     client.close();
@@ -355,7 +355,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       channel: 'test-RTL8a',
       messages: [{ name: 'msg1', data: 'first' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // Unsubscribe listener1
     channel.unsubscribe(listener1);
@@ -366,7 +366,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       channel: 'test-RTL8a',
       messages: [{ name: 'msg2', data: 'second' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received1.length).to.equal(1);
     expect(received2.length).to.equal(2);
@@ -423,7 +423,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         { name: 'beta', data: 'b1' },
       ],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(received.length).to.equal(2);
 
     // Unsubscribe from 'alpha' only
@@ -438,7 +438,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
         { name: 'beta', data: 'b2' },
       ],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // Should have received alpha+beta (2) + beta only (1) = 3
     expect(received.length).to.equal(3);
@@ -491,7 +491,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       channel: 'test-RTL8c',
       messages: [{ name: 'named', data: 'first' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     const countBefore = received.length;
     expect(countBefore).to.be.at.least(1);
 
@@ -504,7 +504,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       channel: 'test-RTL8c',
       messages: [{ name: 'named', data: 'second' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(countBefore); // No new messages
     client.close();
@@ -547,7 +547,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
     });
 
     // Channel should be in ATTACHING (subscribe triggers implicit attach)
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
 
     // Send a MESSAGE while channel is ATTACHING
@@ -557,7 +557,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       messages: [{ name: 'premature', data: 'should-not-deliver' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // Message should NOT have been delivered
     expect(received.length).to.equal(0);
@@ -613,7 +613,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].name).to.equal('batch1');
@@ -674,7 +674,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(alphaMessages.length).to.equal(2);
     expect(alphaMessages[0].data).to.equal('a1');
@@ -814,7 +814,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       messages: [{ name: 'test', data: 'after-reattach' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].data).to.equal('after-reattach');
@@ -855,13 +855,13 @@ describe('uts/realtime/channels/channel_subscribe', function () {
 
     // Start attach but don't complete it
     channel.attach();
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
     expect(attachCount).to.equal(1);
 
     // Subscribe while attaching — should not trigger another attach
     channel.subscribe((msg: any) => {});
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('attaching');
     expect(attachCount).to.equal(1); // No additional ATTACH message sent
@@ -951,7 +951,7 @@ describe('uts/realtime/channels/channel_subscribe', function () {
       messages: [{ name: 'test', data: 'still-works' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // Existing subscription should be unaffected
     expect(received.length).to.equal(1);

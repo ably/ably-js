@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/auth/connection_auth', function () {
   afterEach(function () {
@@ -282,7 +282,7 @@ describe('uts/realtime/auth/connection_auth', function () {
    * Per RSA4c1: errorReason should be set with code 80019, statusCode 401,
    * and cause set to the underlying error.
    */
-  it('RSA4c1/RSA4c3 - authCallback error while CONNECTED sets errorReason', function (done) {
+  it('RSA4c1/RSA4c3 - authCallback error while CONNECTED sets errorReason', async function () {
     // DEVIATION: see deviations.md — ably-js does not set errorReason (RSA4c1) on auth failure while CONNECTED
     if (!process.env.RUN_DEVIATIONS) this.skip();
 
@@ -322,49 +322,36 @@ describe('uts/realtime/auth/connection_auth', function () {
     });
     trackClient(client);
 
-    client.connection.once('connected', () => {
-      const stateChanges: any[] = [];
-      client.connection.on((change: any) => {
-        stateChanges.push(change);
-      });
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-      // Server requests re-authentication (RTN22)
-      mock.active_connection!.send_to_client({ action: 17 }); // AUTH
-
-      // Wait for either errorReason to be set or a state change to occur
-      const startTime = Date.now();
-      const check = setInterval(() => {
-        const hasError = client.connection.errorReason != null;
-        const hasStateChange = stateChanges.length > 0;
-        const waited = Date.now() - startTime > 1000;
-
-        if (hasError || hasStateChange || waited) {
-          clearInterval(check);
-
-          try {
-            // RSA4c3: connection should remain CONNECTED
-            expect(client.connection.state).to.equal('connected');
-
-            // No transitions away from connected
-            const nonConnected = stateChanges.filter((c: any) => c.current !== 'connected');
-            expect(nonConnected).to.have.length(0);
-
-            // RSA4c1: errorReason has code 80019
-            expect(client.connection.errorReason).to.not.be.null;
-            expect(client.connection.errorReason!.code).to.equal(80019);
-            expect(client.connection.errorReason!.statusCode).to.equal(401);
-            expect(client.connection.errorReason!.cause).to.not.be.null;
-            expect((client.connection.errorReason!.cause as any).code).to.equal(50000);
-
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      }, 20);
+    const stateChanges: any[] = [];
+    client.connection.on((change: any) => {
+      stateChanges.push(change);
     });
 
-    client.connect();
+    // Server requests re-authentication (RTN22)
+    mock.active_connection!.send_to_client({ action: 17 }); // AUTH
+
+    // Wait for auth callback failure to propagate
+    for (let i = 0; i < 10; i++) {
+      await flushAsync();
+      if (client.connection.errorReason != null || stateChanges.length > 0) break;
+    }
+
+    // RSA4c3: connection should remain CONNECTED
+    expect(client.connection.state).to.equal('connected');
+
+    // No transitions away from connected
+    const nonConnected = stateChanges.filter((c: any) => c.current !== 'connected');
+    expect(nonConnected).to.have.length(0);
+
+    // RSA4c1: errorReason has code 80019
+    expect(client.connection.errorReason).to.not.be.null;
+    expect(client.connection.errorReason!.code).to.equal(80019);
+    expect(client.connection.errorReason!.statusCode).to.equal(401);
+    expect(client.connection.errorReason!.cause).to.not.be.null;
+    expect((client.connection.errorReason!.cause as any).code).to.equal(50000);
   });
 
   /**

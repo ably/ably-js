@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/presence/realtime_presence_subscribe', function () {
   afterEach(function () {
@@ -89,7 +89,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(receivedEvents.length).to.equal(3);
     expect(receivedEvents[0].action).to.equal('enter');
@@ -162,7 +162,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // ENTER listener only gets ENTER events
     expect(enterEvents.length).to.equal(1);
@@ -228,7 +228,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Only ENTER and LEAVE events received -- UPDATE filtered out
     expect(enterLeaveEvents.length).to.equal(2);
@@ -332,7 +332,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
 
     channel.presence.subscribe((event: any) => {});
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Channel stays in INITIALIZED -- no implicit attach
     expect(channel.state).to.equal('initialized');
@@ -394,7 +394,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(eventsA.length).to.equal(1);
     expect(eventsB.length).to.equal(1);
@@ -411,7 +411,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(eventsA.length).to.equal(1); // No new events after unsubscribe
     expect(eventsB.length).to.equal(1);
@@ -478,7 +478,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(eventsA.length).to.equal(0); // Unsubscribed -- no events
     expect(eventsB.length).to.equal(1); // Still subscribed -- receives event
@@ -544,7 +544,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Only LEAVE received -- ENTER subscription was removed
     expect(received.length).to.equal(1);
@@ -603,7 +603,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     const members = await channel.presence.get({ waitForSync: false });
 
@@ -667,7 +667,7 @@ describe('uts/realtime/presence/realtime_presence_subscribe', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].clientId).to.equal('alice');

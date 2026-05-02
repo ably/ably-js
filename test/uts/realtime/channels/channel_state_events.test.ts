@@ -16,7 +16,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_state_events', function () {
   afterEach(function () {
@@ -304,7 +304,7 @@ describe('uts/realtime/channels/channel_state_events', function () {
       flags: 0, // No RESUMED flag
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('attached');
     expect(updateEvents.length).to.equal(1);
@@ -365,7 +365,7 @@ describe('uts/realtime/channels/channel_state_events', function () {
       flags: 0,
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // Only one new event should have been emitted (the 'update')
     const newEvents = allEvents.slice(countAfterAttach);

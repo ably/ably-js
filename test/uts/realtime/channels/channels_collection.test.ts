@@ -13,7 +13,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channels_collection', function () {
   afterEach(function () {
@@ -215,7 +215,7 @@ describe('uts/realtime/channels/channels_collection', function () {
     // release() detaches asynchronously then removes via .then() after detach resolves
     await new Promise<void>((resolve) => channel.once('detached', resolve));
     // The delete happens in .then() after the detach promise resolves — yield to let it execute
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await flushAsync();
 
     // Channel should be removed from the collection
     expect('test-RTS4a-attached' in client.channels.all).to.be.false;

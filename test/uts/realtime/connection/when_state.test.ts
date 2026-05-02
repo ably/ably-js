@@ -12,7 +12,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/connection/when_state', function () {
   afterEach(function () {
@@ -138,7 +138,7 @@ describe('uts/realtime/connection/when_state', function () {
     // Pump to establish connection
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('connected');
@@ -150,7 +150,7 @@ describe('uts/realtime/connection/when_state', function () {
     // Pump to process disconnect
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance time for reconnection
@@ -159,7 +159,7 @@ describe('uts/realtime/connection/when_state', function () {
     // Pump to let reconnection complete
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('connected');
@@ -203,7 +203,7 @@ describe('uts/realtime/connection/when_state', function () {
   /**
    * RTN26a - whenState does NOT fire for already-passed state
    */
-  it('RTN26a - whenState does not fire for past state', function (done) {
+  it('RTN26a - whenState does not fire for past state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         conn.respond_with_connected();
@@ -218,22 +218,17 @@ describe('uts/realtime/connection/when_state', function () {
     });
     trackClient(client);
 
-    client.connection.once('connected', () => {
-      // Now in connected state. Register whenState for 'connecting' (a past state)
-      let fired = false;
-      client.connection.whenState('connecting').then(() => {
-        fired = true;
-      });
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-      // Brief delay to verify it does NOT fire
-      setTimeout(() => {
-        expect(fired).to.be.false;
-        client.close();
-        done();
-      }, 100);
+    let fired = false;
+    client.connection.whenState('connecting').then(() => {
+      fired = true;
     });
 
-    client.connect();
+    await flushAsync();
+
+    expect(fired).to.be.false;
   });
 
   /**

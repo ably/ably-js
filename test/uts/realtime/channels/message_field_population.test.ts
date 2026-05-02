@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/message_field_population', function () {
   afterEach(function () {
@@ -67,7 +67,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].id).to.equal('abc123:5:0');
@@ -121,7 +121,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ name: 'msg', data: 'data', id: 'my-custom-id' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].id).to.equal('my-custom-id');
@@ -173,7 +173,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ name: 'msg', data: 'data' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].connectionId).to.equal('server-conn-xyz');
@@ -225,7 +225,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ name: 'msg', data: 'data' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].timestamp).to.equal(1700000000000);
@@ -282,7 +282,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(2);
     expect(received[0].id).to.equal('connId:7:0');
@@ -343,7 +343,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ name: 'msg', data: 'hello' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].id).to.satisfy(
@@ -402,7 +402,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ connectionId: 'msg-conn', name: 'msg', data: 'hello' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].connectionId).to.equal('msg-conn');
@@ -458,7 +458,7 @@ describe('uts/realtime/channels/message_field_population', function () {
       messages: [{ timestamp: 1600000000000, name: 'msg', data: 'hello' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(received.length).to.equal(1);
     expect(received[0].timestamp).to.equal(1600000000000);

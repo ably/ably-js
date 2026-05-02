@@ -14,7 +14,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/auth/realtime_authorize', function () {
   afterEach(function () {
@@ -377,7 +377,7 @@ describe('uts/realtime/auth/realtime_authorize', function () {
     const authMsg = await mock.await_next_message_from_client(5000);
     expect(authMsg.action).to.equal(17);
 
-    await new Promise((r) => setTimeout(r, 50));
+    await flushAsync();
     expect(authorizeCompleted).to.equal(false);
 
     mock.active_connection!.send_to_client({
@@ -423,11 +423,9 @@ describe('uts/realtime/auth/realtime_authorize', function () {
 
     client.connect();
 
-    // Wait for the first WS connection attempt
+    // Wait for the first WS connection attempt (don't open it — client stays CONNECTING)
     const conn1 = await mock.await_connection_attempt(5000);
     capturedWsUrls.push(conn1.url.toString());
-    // Open the WS but don't send CONNECTED — client stays CONNECTING
-    conn1.respond_with_success();
 
     expect(client.connection.state).to.equal('connecting');
 
@@ -482,9 +480,8 @@ describe('uts/realtime/auth/realtime_authorize', function () {
 
     client.connect();
 
-    // Wait for the first WS connection attempt
-    const conn1 = await mock.await_connection_attempt(5000);
-    conn1.respond_with_success();
+    // Wait for the first WS connection attempt (don't open it — client stays CONNECTING)
+    await mock.await_connection_attempt(5000);
 
     expect(client.connection.state).to.equal('connecting');
 

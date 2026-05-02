@@ -16,7 +16,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 const mockVcdiffPlugin = {
   decode(delta: any, base: any): any {
@@ -111,7 +111,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       ],
     });
 
-    await new Promise((r) => setTimeout(r, 50));
+    await flushAsync();
     expect(received.length).to.equal(3);
     expect(received[0].data).to.equal('first message');
     expect(received[1].data).to.equal('second message');
@@ -141,7 +141,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     mock.active_connection!.send_to_client({
       action: 15, channel: channelName, id: 'msg-2:0',
@@ -150,7 +150,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(received.length).to.equal(2);
     expect(received[0].data).to.equal('base payload');
@@ -181,7 +181,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'value-A', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Message 2: delta from msg-1
     mock.active_connection!.send_to_client({
@@ -191,7 +191,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Message 3: delta from msg-2 (verifies base updated to value-B)
     mock.active_connection!.send_to_client({
@@ -201,7 +201,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].data).to.equal('value-A');
@@ -236,7 +236,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         { id: 'serial:1', data: 'second', encoding: null },
       ],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Delta referencing serial:1 (the last message) — should succeed
     mock.active_connection!.send_to_client({
@@ -246,7 +246,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'serial:1', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(received.length).to.equal(3);
     expect(received[0].data).to.equal('first');
@@ -289,7 +289,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     const initialAttachCount = attachMessages.length;
     channel.on((change: any) => stateChanges.push(change));
@@ -344,7 +344,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-0:0',
       messages: [{ id: 'msg-0:0', data: 'base', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Delta message without plugin
     mock.active_connection!.send_to_client({
@@ -402,7 +402,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-100',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
     expect(received.length).to.equal(1);
 
     stateChanges.length = 0;
@@ -480,7 +480,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'original base', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Delta that fails on first attempt → triggers recovery → ATTACHING → ATTACHED
     mock.active_connection!.send_to_client({
@@ -507,7 +507,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-3:0', channelSerial: 'serial-3',
       messages: [{ id: 'msg-3:0', data: 'fresh after recovery', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(channel.state).to.equal('attached');
     expect(received[0].data).to.equal('original base');
@@ -554,7 +554,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'base', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // First failed delta → triggers recovery
     mock.active_connection!.send_to_client({
@@ -577,7 +577,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 50));
+    await flushAsync();
 
     // Only one recovery ATTACH was sent
     const recoveryAttaches = attachMessages.length - initialAttachCount;
@@ -622,7 +622,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         encoding: 'base64',
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Now send a delta referencing the binary base payload.
     // The mock vcdiff decoder is pass-through, so delta data = new value.
@@ -636,7 +636,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(received.length).to.equal(2);
     // First message: base64 decoded to binary buffer
@@ -684,7 +684,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         encoding: 'json',
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Send a delta referencing the JSON string base.
     // The delta is computed against the JSON string, not the parsed object.
@@ -700,7 +700,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     expect(received.length).to.equal(2);
     // First message: subscriber receives the parsed JSON object
@@ -736,7 +736,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
       action: 15, channel: channelName, id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'hello world', encoding: null }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // Delta message
     mock.active_connection!.send_to_client({
@@ -746,7 +746,7 @@ describe('uts/realtime/channels/channel_delta_decoding', function () {
         extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
       }],
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await flushAsync();
 
     // PC3: decoder was called
     expect(recording.calls.length).to.equal(1);

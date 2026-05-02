@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_properties', function () {
   afterEach(function () {
@@ -117,7 +117,7 @@ describe('uts/realtime/channels/channel_properties', function () {
       channelSerial: 'updated-serial',
       flags: 0,
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.properties.attachSerial).to.equal('updated-serial');
     client.close();
@@ -208,7 +208,7 @@ describe('uts/realtime/channels/channel_properties', function () {
       channelSerial: 'serial-002',
       messages: [{ name: 'test', data: 'data' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(channel.properties.channelSerial).to.equal('serial-002');
     client.close();
   });
@@ -355,7 +355,7 @@ describe('uts/realtime/channels/channel_properties', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL15b1-suspended');
@@ -372,7 +372,7 @@ describe('uts/realtime/channels/channel_properties', function () {
     // Pump and advance past timeout to reach suspended
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(150);
 
@@ -428,7 +428,7 @@ describe('uts/realtime/channels/channel_properties', function () {
       messages: [{ name: 'event', data: 'data' }],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // channelSerial should remain unchanged
     expect(channel.properties.channelSerial).to.equal('serial-001');

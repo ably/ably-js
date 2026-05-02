@@ -17,7 +17,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_attach', function () {
   afterEach(function () {
@@ -325,7 +325,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     // Pump event loop to let initial failure happen
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past connectionStateTtl to reach suspended
@@ -333,7 +333,7 @@ describe('uts/realtime/channels/channel_attach', function () {
 
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('suspended');
@@ -392,7 +392,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     const attachPromise = channel.attach();
 
     // Channel should immediately enter attaching state
-    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
 
     // Complete the connection
@@ -546,7 +546,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     // Pump to let connection establish
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -561,7 +561,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     // Pump to let attach start
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past the timeout
@@ -902,7 +902,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -919,7 +919,7 @@ describe('uts/realtime/channels/channel_attach', function () {
       await clock.tickAsync(5000);
       for (let j = 0; j < 10; j++) {
         clock.tick(0);
-        await new Promise((r) => setTimeout(r, 1));
+        await flushAsync();
       }
       if (client.connection.state === 'suspended') break;
     }
@@ -939,7 +939,7 @@ describe('uts/realtime/channels/channel_attach', function () {
       await clock.tickAsync(2500);
       for (let j = 0; j < 10; j++) {
         clock.tick(0);
-        await new Promise((r) => setTimeout(r, 1));
+        await flushAsync();
       }
       if (client.connection.state === 'connected') break;
     }
@@ -1004,7 +1004,7 @@ describe('uts/realtime/channels/channel_attach', function () {
     // Start attach while connecting
     const attachFuture = channel.attach();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
     expect(attachMessageReceived).to.equal(false);
 
