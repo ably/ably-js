@@ -13,7 +13,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_when_state', function () {
   afterEach(function () {
@@ -170,7 +170,7 @@ describe('uts/realtime/channels/channel_when_state', function () {
     await channel.attach();
 
     // Wait a bit
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     // once listener fired only once
     expect(attachCount).to.equal(1);
@@ -222,7 +222,7 @@ describe('uts/realtime/channels/channel_when_state', function () {
     });
 
     // Wait to see if it resolves
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    await flushAsync();
 
     // Should NOT have resolved
     expect(resolved).to.be.false;

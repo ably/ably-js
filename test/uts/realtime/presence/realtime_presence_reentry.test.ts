@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/presence/realtime_presence_reentry', function () {
   afterEach(function () {
@@ -99,7 +99,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     await channel.presence.enter('hello');
 
     // Wait for the echo to be processed
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(capturedPresence.length).to.equal(1);
 
@@ -119,7 +119,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     });
 
     // Wait for presence re-entry message to be sent
-    await new Promise<void>((resolve) => setTimeout(resolve, 500));
+    await flushAsync();
 
     // RTP17i: Automatic re-entry sends ENTER for the member
     // Note: on the wire, presence actions are numeric (2 = ENTER)
@@ -217,9 +217,9 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
 
     // Enter multiple members via enterClient
     await channel.presence.enterClient('alice', 'alice-data');
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     await channel.presence.enterClient('bob', 'bob-data');
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     expect(capturedPresence.length).to.equal(2);
 
@@ -236,7 +236,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
       channel.once('attached', () => resolve());
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 500));
+    await flushAsync();
 
     // Both members re-entered with ENTER action and original data
     const reentryMessages = capturedPresence.slice(capturedBefore);
@@ -348,7 +348,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     await channel.attach();
 
     await channel.presence.enter('hello');
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // First connection is conn-1
     expect(connectionCount).to.equal(1);
@@ -366,7 +366,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
       channel.once('attached', () => resolve());
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 500));
+    await flushAsync();
 
     // Re-entry message should NOT have id set because connectionId changed
     // Note: on the wire, presence actions are numeric (2 = ENTER)
@@ -463,7 +463,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     await channel.attach();
 
     await channel.presence.enter('hello');
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Clear captured
     capturedPresence.length = 0;
@@ -476,7 +476,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
       flags: 4, // RESUMED
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 300));
+    await flushAsync();
 
     // No re-entry -- RESUMED flag means the server still has our presence state
     expect(capturedPresence.length).to.equal(0);
@@ -578,7 +578,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     await channel.attach();
 
     await channel.presence.enter('hello');
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Listen for channel UPDATE events with the re-entry failure error code
     const channelEvents: any[] = [];
@@ -600,20 +600,9 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     });
 
     // Wait for the re-entry NACK to be processed
-    await new Promise<void>((resolve) => {
-      if (channelEvents.length >= 1) return resolve();
-      const check = setInterval(() => {
-        if (channelEvents.length >= 1) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 50);
-      // Timeout safety
-      setTimeout(() => {
-        clearInterval(check);
-        resolve();
-      }, 3000);
-    });
+    for (let i = 0; i < 10 && channelEvents.length < 1; i++) {
+      await flushAsync();
+    }
 
     expect(channelEvents.length).to.be.at.least(1);
 
@@ -700,7 +689,7 @@ describe('uts/realtime/presence/realtime_presence_reentry', function () {
     await channel.attach();
 
     await channel.presence.enter(undefined);
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    await flushAsync();
 
     // Check public presence map
     const members = await channel.presence.get({ waitForSync: false });

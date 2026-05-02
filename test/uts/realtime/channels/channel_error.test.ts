@@ -10,7 +10,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient, enableFakeTimers, pumpTimers } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, enableFakeTimers, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_error', function () {
   afterEach(function () {
@@ -301,7 +301,7 @@ describe('uts/realtime/channels/channel_error', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -319,12 +319,12 @@ describe('uts/realtime/channels/channel_error', function () {
     // Pump and advance to get to SUSPENDED
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(150);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('suspended');
@@ -339,7 +339,7 @@ describe('uts/realtime/channels/channel_error', function () {
 
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('failed');
 
@@ -349,7 +349,7 @@ describe('uts/realtime/channels/channel_error', function () {
     await clock.tickAsync(500);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Channel remains FAILED — no retry was attempted

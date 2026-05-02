@@ -12,7 +12,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/presence/realtime_presence_channel_state', function () {
   afterEach(function () {
@@ -413,7 +413,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
       channel.once('attaching', () => resolve());
     });
     // Allow the attach message to be processed
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     // Queue presence while channel is ATTACHING
     const enterFuture = channel.presence.enter('queued');
@@ -499,7 +499,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     // Pump event loop for connection
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -515,12 +515,12 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     // Pump through disconnected retries and advance past connectionStateTtl
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(121000);
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('suspended');
@@ -581,7 +581,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     await channel.attach();
 
     // Allow sync messages to be processed
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     // Sync is in progress -- not yet complete
     expect(channel.presence.syncComplete).to.be.false;
@@ -597,7 +597,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     });
 
     // Allow the sync completion to be processed
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     expect(channel.presence.syncComplete).to.be.true;
   });
@@ -788,7 +788,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -799,7 +799,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
       channel.once('attaching', () => resolve());
     });
     // Allow the attach message to be sent
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     // Queue presence actions
     const enterFuture = channel.presence.enter('queued-enter');
@@ -812,12 +812,12 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
 
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(121000);
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('suspended');
@@ -882,7 +882,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
       channel.once('attaching', () => resolve());
     });
     // Allow the attach message to be sent
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     // Queue presence
     const enterFuture = channel.presence.enter('queued-enter');
@@ -970,7 +970,7 @@ describe('uts/realtime/presence/realtime_presence_channel_state', function () {
     const enterFuture = channel.presence.enter('awaiting-ack');
 
     // Wait for the presence message to be captured
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
     expect(capturedPresence.length).to.equal(1);
 
     // Detach the channel

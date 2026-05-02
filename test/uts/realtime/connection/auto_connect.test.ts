@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/connection/auto_connect', function () {
   afterEach(function () {
@@ -50,7 +50,7 @@ describe('uts/realtime/connection/auto_connect', function () {
   /**
    * RTN3 - autoConnect false does not initiate connection
    */
-  it('RTN3 - autoConnect false does not initiate connection', function (done) {
+  it('RTN3 - autoConnect false does not initiate connection', async function () {
     let connectionAttempted = false;
 
     const mock = new MockWebSocket({
@@ -70,14 +70,11 @@ describe('uts/realtime/connection/auto_connect', function () {
 
     expect(client.connection.state).to.equal('initialized');
 
-    // Brief delay to confirm no connection attempt is made (proving a negative)
-    setTimeout(() => {
-      expect(connectionAttempted).to.be.false;
-      expect(client.connection.state).to.equal('initialized');
-      expect(mock.connect_attempts).to.have.length(0);
-      client.close();
-      done();
-    }, 100);
+    await flushAsync();
+
+    expect(connectionAttempted).to.be.false;
+    expect(client.connection.state).to.equal('initialized');
+    expect(mock.connect_attempts).to.have.length(0);
   });
 
   /**

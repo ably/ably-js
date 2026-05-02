@@ -13,7 +13,7 @@
 import { expect } from 'chai';
 import { MockWebSocket, PendingWSConnection } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_publish', function () {
   afterEach(function () {
@@ -358,7 +358,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     expect(channel.state).to.equal('initialized');
 
     await channel.publish('msg', 'data');
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('initialized');
     expect(attachCount).to.equal(0);
@@ -374,8 +374,7 @@ describe('uts/realtime/channels/channel_publish', function () {
       onConnectionAttempt: (conn) => {
         // Delay connection — don't respond yet
         mock.active_connection = conn;
-        // Respond after a tick
-        setTimeout(() => conn.respond_with_connected(), 50);
+        setImmediate(() => conn.respond_with_connected());
       },
       onMessageFromClient: (msg, conn) => {
         if (msg.action === 10) {
@@ -1070,7 +1069,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     // Pump event loop to let disconnect processing happen
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past connectionStateTtl to reach SUSPENDED
@@ -1078,7 +1077,7 @@ describe('uts/realtime/channels/channel_publish', function () {
 
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(client.connection.state).to.equal('suspended');
@@ -1272,7 +1271,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     const publishPromise = channel.publish('resend-me', 'data');
 
     // Wait for message to be sent
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(messagesPerConn[0].length).to.equal(1);
 
     // Disconnect — ably-js will auto-reconnect and resend
@@ -1355,7 +1354,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     const p1 = channel.publish('msg1', 'data1');
     const p2 = channel.publish('msg2', 'data2');
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(conn1Msgs.length).to.equal(2);
     const origSerial1 = conn1Msgs[0].msgSerial;
     const origSerial2 = conn1Msgs[1].msgSerial;
@@ -1439,7 +1438,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     const p1 = channel.publish('msg1', 'data1');
     const p2 = channel.publish('msg2', 'data2');
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(conn1Msgs.length).to.equal(2);
 
     // Disconnect — reconnect with new connectionId (failed resume)
@@ -1505,7 +1504,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     // Start attach — won't get response on first connection
     const attachPromise = channel.attach();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(attachMsgsPerConn[0].length).to.equal(1);
     expect(channel.state).to.equal('attaching');
 
@@ -1570,7 +1569,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     // Start detach — won't get response on first connection
     const detachPromise = channel.detach();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(detachMsgsPerConn[0].length).to.equal(1);
     expect(channel.state).to.equal('detaching');
 
@@ -1680,7 +1679,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     // Advance time past realtimeRequestTimeout so the attach times out
     for (let i = 0; i < 10; i++) {
       await clock.tickAsync(200);
-      for (let j = 0; j < 5; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      for (let j = 0; j < 5; j++) { clock.tick(0); await flushAsync(); }
       if (channel.state === 'suspended') break;
     }
 
@@ -1734,7 +1733,7 @@ describe('uts/realtime/channels/channel_publish', function () {
     // Advance time until SUSPENDED
     for (let i = 0; i < 15; i++) {
       await clock.tickAsync(2000);
-      for (let j = 0; j < 10; j++) { clock.tick(0); await new Promise((r) => setTimeout(r, 1)); }
+      for (let j = 0; j < 10; j++) { clock.tick(0); await flushAsync(); }
       if (client.connection.state === 'suspended') break;
     }
     expect(client.connection.state).to.equal('suspended');

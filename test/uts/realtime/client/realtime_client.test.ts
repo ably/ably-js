@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, restoreAll, flushAsync } from '../../helpers';
 
 describe('uts/realtime/client/realtime_client', function () {
   afterEach(function () {
@@ -157,7 +157,7 @@ describe('uts/realtime/client/realtime_client', function () {
   /**
    * RTC1b_2 - autoConnect set to false
    */
-  it('RTC1b - autoConnect false stays initialized', function (done) {
+  it('RTC1b - autoConnect false stays initialized', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: () => {
         throw new Error('Should not attempt connection');
@@ -175,13 +175,10 @@ describe('uts/realtime/client/realtime_client', function () {
     expect(client.connection.state).to.equal('initialized');
     expect(mock.connect_attempts).to.have.length(0);
 
-    // Wait briefly to confirm no connection attempt
-    setTimeout(() => {
-      expect(client.connection.state).to.equal('initialized');
-      expect(mock.connect_attempts).to.have.length(0);
-      client.close();
-      done();
-    }, 100);
+    await flushAsync();
+
+    expect(client.connection.state).to.equal('initialized');
+    expect(mock.connect_attempts).to.have.length(0);
   });
 
   /**

@@ -11,7 +11,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket, PendingWSConnection } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 // Flag values
 const ANNOTATION_SUBSCRIBE = 1 << 22; // 4194304
@@ -323,7 +323,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     client.close();
     expect(received.length).to.equal(1);
@@ -367,7 +367,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
       ],
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     client.close();
     // Only reaction types received
@@ -516,7 +516,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
       channel: 'test-RTAN5a',
       annotations: [{ type: 'reaction', name: 'heart', messageSerial: 'msg-1' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(received.length).to.equal(1);
 
     // Unsubscribe
@@ -528,7 +528,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
       channel: 'test-RTAN5a',
       annotations: [{ type: 'reaction', name: 'fire', messageSerial: 'msg-2' }],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     client.close();
     expect(received.length).to.equal(1); // Still 1
   });
@@ -571,7 +571,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
         { type: 'comment', name: 'text', messageSerial: 'msg-2' },
       ],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
     expect(reactions.length).to.equal(1);
     expect(comments.length).to.equal(1);
 
@@ -587,7 +587,7 @@ describe('uts/realtime/channels/channel_annotations', function () {
         { type: 'comment', name: 'reply', messageSerial: 'msg-4' },
       ],
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     client.close();
     expect(reactions.length).to.equal(1); // Still 1 — unsubscribed

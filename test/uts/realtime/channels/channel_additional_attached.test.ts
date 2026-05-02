@@ -13,7 +13,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_additional_attached', function () {
   afterEach(function () {
@@ -72,7 +72,7 @@ describe('uts/realtime/channels/channel_additional_attached', function () {
       },
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('attached');
     expect(updateEvents.length).to.equal(1);
@@ -134,7 +134,7 @@ describe('uts/realtime/channels/channel_additional_attached', function () {
       flags: RESUMED,
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('attached');
     expect(updateEvents.length).to.equal(0); // No UPDATE emitted
@@ -188,7 +188,7 @@ describe('uts/realtime/channels/channel_additional_attached', function () {
       flags: 0, // No RESUMED
     });
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await flushAsync();
 
     expect(channel.state).to.equal('attached');
     expect(updateEvents.length).to.equal(1);

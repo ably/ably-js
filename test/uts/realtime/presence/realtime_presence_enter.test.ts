@@ -19,7 +19,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/presence/realtime_presence_enter', function () {
   afterEach(function () {
@@ -850,7 +850,7 @@ describe('uts/realtime/presence/realtime_presence_enter', function () {
     // Start attach but don't complete it
     channel.attach();
     // Wait a tick for the attach message to be sent
-    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    await flushAsync();
     expect(channel.state).to.equal('attaching');
 
     // Queue presence while ATTACHING
@@ -1090,7 +1090,7 @@ describe('uts/realtime/presence/realtime_presence_enter', function () {
     }
 
     // Allow events to propagate
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Send a complete SYNC with all 50 members as PRESENT
     const syncMembers: any[] = [];
@@ -1113,7 +1113,7 @@ describe('uts/realtime/presence/realtime_presence_enter', function () {
     });
 
     // Allow sync to complete
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    await flushAsync();
 
     // Get all members after sync
     const members = await channel.presence.get();
@@ -1263,7 +1263,7 @@ describe('uts/realtime/presence/realtime_presence_enter', function () {
     }
 
     // Allow events to propagate
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await flushAsync();
 
     // Server sends a SYNC to client B with all 50 members
     const syncMembers: any[] = [];
@@ -1286,7 +1286,7 @@ describe('uts/realtime/presence/realtime_presence_enter', function () {
     });
 
     // Allow sync to complete
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    await flushAsync();
 
     // Client B gets all members
     const members = await channelB.presence.get();

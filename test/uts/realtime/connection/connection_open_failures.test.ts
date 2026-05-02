@@ -8,12 +8,12 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
     clock.tick(0);
-    await new Promise((r) => setTimeout(r, 1));
+    await flushAsync();
   }
 }
 

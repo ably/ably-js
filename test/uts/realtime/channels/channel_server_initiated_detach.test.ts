@@ -14,7 +14,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
-import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/channels/channel_server_initiated_detach', function () {
   afterEach(function () {
@@ -134,7 +134,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL13b');
@@ -145,7 +145,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     channel.attach();
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('attaching');
     expect(attachCount).to.equal(1);
@@ -159,7 +159,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
 
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('suspended');
 
@@ -167,7 +167,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     await clock.tickAsync(200);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('attached');
@@ -236,7 +236,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL13b-cycle');
@@ -257,7 +257,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     // Process reattach attempt and its failure
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('suspended');
@@ -267,7 +267,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     await clock.tickAsync(200);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('attached');
@@ -329,7 +329,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL13b-repeat');
@@ -348,7 +348,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
 
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('suspended');
 
@@ -357,7 +357,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     await clock.tickAsync(150);
     for (let i = 0; i < 40; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('suspended');
     expect(attachCount).to.equal(3);
@@ -367,7 +367,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     await clock.tickAsync(200);
     for (let i = 0; i < 40; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('attached');
@@ -423,7 +423,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL13c');
@@ -439,7 +439,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
 
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(attachCount).to.equal(2);
 
@@ -449,14 +449,14 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     mock.active_connection!.simulate_disconnect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past retry timeout — no retry since connection is not CONNECTED
     await clock.tickAsync(500);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // No additional ATTACH messages should have been sent
@@ -573,7 +573,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const channel = client.channels.get('test-RTL13a-suspended');
@@ -591,7 +591,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     // Let channel enter ATTACHING state
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('attaching');
 
@@ -599,7 +599,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     await clock.tickAsync(150);
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(channel.state).to.equal('suspended');
 
@@ -613,7 +613,7 @@ describe('uts/realtime/channels/channel_server_initiated_detach', function () {
     // Channel should immediately attempt to reattach and succeed
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('attached');

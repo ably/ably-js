@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../helpers';
+import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../helpers';
 
 /**
  * Helper: wait for connection state using real event loop.
@@ -35,7 +35,7 @@ async function connectWithFakeTimers(client: any, clock: any) {
   // Pump fake timers and real event loop in alternation
   for (let i = 0; i < 30; i++) {
     clock.tick(0);
-    await new Promise((r) => setTimeout(r, 1));
+    await flushAsync();
   }
 }
 
@@ -105,7 +105,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
     // Pump to let ATTACH message be sent
     for (let i = 0; i < 5; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     // Advance past the custom timeout
@@ -169,7 +169,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
     // Pump to let ATTACH and ATTACHED messages flow
     for (let i = 0; i < 10; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await attachPromise;
 
@@ -245,7 +245,7 @@ describe('uts/realtime/client/realtime_timeouts', function () {
     // Pump to process disconnect + immediate retry (RTN15a)
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     const countAfterImmediate = connectionAttemptCount;

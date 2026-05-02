@@ -13,7 +13,7 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../mock_websocket';
 import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient } from '../../helpers';
+import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../helpers';
 
 describe('uts/realtime/presence/realtime_presence_get', function () {
   afterEach(function () {
@@ -69,7 +69,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     });
 
     // Give a tick to confirm get has not resolved yet
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
     expect(getResolved).to.be.false;
 
     // Now send a single-message SYNC (empty cursor = complete)
@@ -139,7 +139,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     });
 
     // Verify not resolved yet
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
     expect(getResolved).to.be.false;
 
     // Send first SYNC message (non-empty cursor = more to come)
@@ -153,7 +153,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     });
 
     // get() should still be waiting -- sync not complete
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
     expect(getResolved).to.be.false;
 
     // Send final SYNC message (empty cursor = sync complete)
@@ -224,7 +224,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     await channel.attach();
 
     // Allow sync messages to be processed
-    await new Promise((r) => setTimeout(r, 10));
+    await flushAsync();
 
     // Sync is in progress but we don't wait
     const members = await channel.presence.get({ waitForSync: false });
@@ -445,7 +445,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -457,12 +457,12 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
 
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(121000);
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('suspended');
@@ -537,7 +537,7 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
     client.connect();
     for (let i = 0; i < 20; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     expect(client.connection.state).to.equal('connected');
 
@@ -549,12 +549,12 @@ describe('uts/realtime/presence/realtime_presence_get', function () {
 
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
     await clock.tickAsync(121000);
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
-      await new Promise((r) => setTimeout(r, 1));
+      await flushAsync();
     }
 
     expect(channel.state).to.equal('suspended');
