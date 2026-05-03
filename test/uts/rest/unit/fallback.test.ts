@@ -715,6 +715,71 @@ describe('uts/rest/unit/fallback', function () {
     expect(hosts[0]).to.equal('main.realtime.ably.net');
   });
 
+  it('RSC15f - expired fallback not resurrected by late in-flight success', async function () {
+    const clock = enableFakeTimers();
+    const hosts: string[] = [];
+    let requestCount = 0;
+    let heldRequest: any = null;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        hosts.push(req.url.hostname);
+        if (requestCount === 1) {
+          // Primary fails → triggers fallback
+          req.respond_with(500, { error: { message: 'fail', code: 50000, statusCode: 500 } });
+        } else if (requestCount === 2) {
+          // First fallback succeeds → caches this host
+          req.respond_with(200, [1234567890000]);
+        } else if (requestCount === 3) {
+          // Second request to cached fallback — hold it, don't respond yet
+          heldRequest = req;
+        } else {
+          // All subsequent requests succeed
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'app.key:secret',
+      useBinaryProtocol: false,
+      fallbackRetryTimeout: 100,
+    } as any);
+
+    // Requests 1+2: primary fails → fallback succeeds → fallback cached
+    await client.time();
+    const fallbackHost = hosts[1];
+    expect(fallbackHost).to.not.equal('main.realtime.ably.net');
+
+    // Request 3: goes to cached fallback, but we hold the response
+    const requestFuture = client.time();
+
+    // Advance time past fallbackRetryTimeout
+    clock.tick(150);
+
+    // Request 4: cache expired → should try primary
+    await client.time();
+    expect(hosts[3]).to.equal('main.realtime.ably.net');
+
+    // Now let the held request complete successfully
+    expect(heldRequest).to.not.be.null;
+    heldRequest.respond_with(200, [1234567890000]);
+    await requestFuture;
+
+    // Request 5: late success must NOT have re-pinned the fallback
+    await client.time();
+
+    expect(hosts).to.have.length(5);
+    expect(hosts[0]).to.equal('main.realtime.ably.net');     // primary fail
+    expect(hosts[1]).to.equal(fallbackHost);                 // fallback success (cached)
+    expect(hosts[2]).to.equal(fallbackHost);                 // cached fallback (held)
+    expect(hosts[3]).to.equal('main.realtime.ably.net');     // after expiry → primary
+    expect(hosts[4]).to.equal('main.realtime.ably.net');     // still primary, not re-pinned
+  });
+
   // ── Category D: Endpoint edge cases ───────────────────────────────
 
   it('REC1b2 - endpoint as localhost', async function () {
