@@ -902,6 +902,438 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   });
 
   /**
+   * RTL22a - Subscribe with MessageFilter matching name
+   *
+   * Tests that subscribing with a MessageFilter specifying `name` delivers
+   * only messages whose name matches the filter.
+   */
+  it('RTL22a - subscribe with name filter', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL22a-name', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const filtered: any[] = [];
+    await channel.subscribe({ name: 'target-event' }, (msg: any) => filtered.push(msg));
+
+    // Message with matching name
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-name',
+      messages: [{ name: 'target-event', data: 'match-1' }],
+    });
+
+    // Message with different name
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-name',
+      messages: [{ name: 'other-event', data: 'no-match' }],
+    });
+
+    // Another matching message
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-name',
+      messages: [{ name: 'target-event', data: 'match-2' }],
+    });
+
+    // Message with no name
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-name',
+      messages: [{ data: 'no-name' }],
+    });
+
+    await flushAsync();
+
+    expect(filtered.length).to.equal(2);
+    expect(filtered[0].name).to.equal('target-event');
+    expect(filtered[0].data).to.equal('match-1');
+    expect(filtered[1].name).to.equal('target-event');
+    expect(filtered[1].data).to.equal('match-2');
+    client.close();
+  });
+
+  /**
+   * RTL22a - Subscribe with MessageFilter matching extras.ref.timeserial
+   *
+   * Tests that subscribing with a MessageFilter specifying `refTimeserial`
+   * delivers only messages whose `extras.ref.timeserial` matches.
+   */
+  it('RTL22a - subscribe with refTimeserial filter', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          mock.active_connection!.send_to_client({
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL22a-ref', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const filtered: any[] = [];
+    await channel.subscribe({ refTimeserial: 'abc123@1700000000000-0' }, (msg: any) => filtered.push(msg));
+
+    // Message with matching extras.ref.timeserial
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-ref',
+      messages: [{
+        name: 'reply',
+        data: 'match',
+        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    // Message with different extras.ref.timeserial
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-ref',
+      messages: [{
+        name: 'reply',
+        data: 'no-match',
+        extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    // Message with no extras.ref
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-ref',
+      messages: [{ name: 'plain', data: 'no-ref' }],
+    });
+
+    // Another message with matching extras.ref.timeserial
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-ref',
+      messages: [{
+        name: 'reaction',
+        data: 'match-2',
+        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reaction' } },
+      }],
+    });
+
+    await flushAsync();
+
+    expect(filtered.length).to.equal(2);
+    expect(filtered[0].data).to.equal('match');
+    expect(filtered[1].data).to.equal('match-2');
+    client.close();
+  });
+
+  /**
+   * RTL22b - Subscribe with MessageFilter isRef false delivers only
+   * messages without extras.ref
+   */
+  it('RTL22b - subscribe with isRef false filter', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          mock.active_connection!.send_to_client({
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL22b-isref', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const filtered: any[] = [];
+    await channel.subscribe({ isRef: false }, (msg: any) => filtered.push(msg));
+
+    // Message WITHOUT extras.ref (no extras at all) — should be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22b-isref',
+      messages: [{ name: 'plain', data: 'no-extras' }],
+    });
+
+    // Message WITH extras.ref — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22b-isref',
+      messages: [{
+        name: 'reply',
+        data: 'has-ref',
+        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    // Message with extras but no ref field — should be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22b-isref',
+      messages: [{
+        name: 'annotated',
+        data: 'extras-no-ref',
+        extras: { headers: { 'custom-key': 'custom-value' } },
+      }],
+    });
+
+    // Another message WITH extras.ref — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22b-isref',
+      messages: [{
+        name: 'reaction',
+        data: 'also-has-ref',
+        extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reaction' } },
+      }],
+    });
+
+    await flushAsync();
+
+    expect(filtered.length).to.equal(2);
+    expect(filtered[0].name).to.equal('plain');
+    expect(filtered[0].data).to.equal('no-extras');
+    expect(filtered[1].name).to.equal('annotated');
+    expect(filtered[1].data).to.equal('extras-no-ref');
+    client.close();
+  });
+
+  /**
+   * RTL22c - Subscribe with MessageFilter matching multiple criteria (name + refType)
+   *
+   * Tests that when a MessageFilter specifies multiple criteria (name AND refType),
+   * only messages matching ALL criteria are delivered.
+   */
+  it('RTL22c - subscribe with multiple criteria filter (name + refType)', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          mock.active_connection!.send_to_client({
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL22c-multi', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const filtered: any[] = [];
+    await channel.subscribe({ name: 'comment', refType: 'com.ably.reply' }, (msg: any) => filtered.push(msg));
+
+    // Message matching BOTH name AND refType — should be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22c-multi',
+      messages: [{
+        name: 'comment',
+        data: 'both-match',
+        extras: { ref: { timeserial: 'abc@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    // Message matching name but NOT refType — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22c-multi',
+      messages: [{
+        name: 'comment',
+        data: 'name-only',
+        extras: { ref: { timeserial: 'def@1700000000000-0', type: 'com.ably.reaction' } },
+      }],
+    });
+
+    // Message matching refType but NOT name — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22c-multi',
+      messages: [{
+        name: 'update',
+        data: 'type-only',
+        extras: { ref: { timeserial: 'ghi@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    // Message matching NEITHER — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22c-multi',
+      messages: [{ name: 'update', data: 'neither' }],
+    });
+
+    // Another message matching BOTH — should be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22c-multi',
+      messages: [{
+        name: 'comment',
+        data: 'both-match-2',
+        extras: { ref: { timeserial: 'jkl@1700000000000-0', type: 'com.ably.reply' } },
+      }],
+    });
+
+    await flushAsync();
+
+    expect(filtered.length).to.equal(2);
+    expect(filtered[0].data).to.equal('both-match');
+    expect(filtered[1].data).to.equal('both-match-2');
+    client.close();
+  });
+
+  /**
+   * RTL22a, MFI2e - Subscribe with MessageFilter matching clientId
+   *
+   * Tests that subscribing with a MessageFilter specifying `clientId` delivers
+   * only messages whose clientId matches the filter value.
+   */
+  it('RTL22a+MFI2e - subscribe with clientId filter', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          mock.active_connection!.send_to_client({
+            action: 11,
+            channel: msg.channel,
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL22a-clientid', { attachOnSubscribe: false });
+    await channel.attach();
+
+    const filtered: any[] = [];
+    await channel.subscribe({ clientId: 'user-42' }, (msg: any) => filtered.push(msg));
+
+    // Message with matching clientId
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-clientid',
+      messages: [{ name: 'chat', data: 'hello', clientId: 'user-42' }],
+    });
+
+    // Message with different clientId — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-clientid',
+      messages: [{ name: 'chat', data: 'hi', clientId: 'user-99' }],
+    });
+
+    // Message with no clientId — should NOT be delivered
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-clientid',
+      messages: [{ name: 'system', data: 'broadcast' }],
+    });
+
+    // Another message with matching clientId
+    mock.active_connection!.send_to_client({
+      action: 15,
+      channel: 'test-RTL22a-clientid',
+      messages: [{ name: 'chat', data: 'world', clientId: 'user-42' }],
+    });
+
+    await flushAsync();
+
+    expect(filtered.length).to.equal(2);
+    expect(filtered[0].data).to.equal('hello');
+    expect(filtered[0].clientId).to.equal('user-42');
+    expect(filtered[1].data).to.equal('world');
+    expect(filtered[1].clientId).to.equal('user-42');
+    client.close();
+  });
+
+  /**
    * RTL8a - Unsubscribe listener not currently subscribed is no-op
    */
   it('RTL8a - unsubscribe non-subscribed listener is no-op', async function () {
