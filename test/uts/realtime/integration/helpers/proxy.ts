@@ -3,9 +3,22 @@
  *
  * Wraps the proxy's REST control API to create sessions, add rules,
  * trigger imperative actions, retrieve event logs, and clean up.
+ *
+ * The proxy binary is built and spawned automatically on first use
+ * via ensureProxy(). It is killed when the Node.js process exits.
  */
 
-const PROXY_CONTROL_HOST = process.env.PROXY_CONTROL_HOST || 'http://localhost:9100';
+import { execSync, spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const CONTROL_PORT = process.env.PROXY_CONTROL_PORT || '9100';
+const PROXY_CONTROL_HOST = process.env.PROXY_CONTROL_HOST || `http://localhost:${CONTROL_PORT}`;
+const PROXY_SRC = path.resolve(__dirname, '../../../../../../specification/uts/proxy');
+const PROXY_BIN = path.join(PROXY_SRC, 'test-proxy');
+
+let _proxyProcess: ChildProcess | null = null;
+let _proxyEnsured = false;
 
 const SANDBOX_REALTIME_HOST = 'sandbox-realtime.ably.io';
 const SANDBOX_REST_HOST = 'sandbox-rest.ably.io';
@@ -158,19 +171,85 @@ async function createProxySession(opts: CreateProxySessionOpts = {}): Promise<Pr
   return new ProxySession(data.sessionId, 'localhost', port, controlUrl);
 }
 
-async function waitForProxy(timeoutMs = 10000): Promise<void> {
-  const controlUrl = PROXY_CONTROL_HOST;
+function buildProxy(): void {
+  if (!fs.existsSync(PROXY_SRC)) {
+    throw new Error(`Proxy source not found at ${PROXY_SRC}`);
+  }
+
+  const needsBuild = !fs.existsSync(PROXY_BIN) || fs.readdirSync(PROXY_SRC)
+    .filter((f) => f.endsWith('.go'))
+    .some((f) => fs.statSync(path.join(PROXY_SRC, f)).mtimeMs > fs.statSync(PROXY_BIN).mtimeMs);
+
+  if (needsBuild) {
+    execSync('go build -o test-proxy .', { cwd: PROXY_SRC, stdio: 'inherit' });
+  }
+}
+
+function spawnProxy(): ChildProcess {
+  const child = spawn(PROXY_BIN, ['--port', CONTROL_PORT], {
+    stdio: ['ignore', 'inherit', 'inherit'],
+    detached: false,
+  });
+
+  child.on('error', (err) => {
+    console.error(`Proxy process error: ${err.message}`);
+  });
+
+  process.on('exit', () => {
+    if (child.exitCode === null) {
+      child.kill();
+    }
+  });
+
+  return child;
+}
+
+async function ensureProxy(timeoutMs = 15000): Promise<void> {
+  if (_proxyEnsured) return;
+
+  // Check if proxy is already running (e.g. started externally)
+  try {
+    const resp = await fetch(`${PROXY_CONTROL_HOST}/health`);
+    if (resp.ok) {
+      _proxyEnsured = true;
+      return;
+    }
+  } catch {
+    // Not running — we'll start it
+  }
+
+  buildProxy();
+  _proxyProcess = spawnProxy();
+
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const resp = await fetch(`${controlUrl}/health`);
-      if (resp.ok) return;
+      const resp = await fetch(`${PROXY_CONTROL_HOST}/health`);
+      if (resp.ok) {
+        _proxyEnsured = true;
+        return;
+      }
     } catch {
       // Not ready yet
     }
     await new Promise((r) => setTimeout(r, 200));
   }
-  throw new Error(`Proxy not reachable at ${controlUrl} after ${timeoutMs}ms`);
+
+  _proxyProcess.kill();
+  _proxyProcess = null;
+  throw new Error(`Proxy failed to start within ${timeoutMs}ms`);
 }
 
-export { ProxySession, ProxyRule, ProxyEvent, ImperativeAction, createProxySession, waitForProxy, allocatePort };
+async function waitForProxy(timeoutMs = 15000): Promise<void> {
+  await ensureProxy(timeoutMs);
+}
+
+function stopProxy(): void {
+  if (_proxyProcess && _proxyProcess.exitCode === null) {
+    _proxyProcess.kill();
+    _proxyProcess = null;
+  }
+  _proxyEnsured = false;
+}
+
+export { ProxySession, ProxyRule, ProxyEvent, ImperativeAction, createProxySession, waitForProxy, ensureProxy, stopProxy, allocatePort };
