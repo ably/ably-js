@@ -143,4 +143,141 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
     expect(result.status.occupancy.metrics.publishers).to.equal(2);
     expect(result.status.occupancy.metrics.subscribers).to.equal(3);
   });
+
+  /**
+   * CHD2+CHS2+CHO2+CHM2 - status() response parses all ChannelMetrics fields
+   *
+   * Tests that status() parses the complete set of ChannelMetrics fields
+   * from the response, including all CHM2a-h attributes.
+   */
+  it('CHD2+CHS2+CHO2+CHM2 - status() response parses all ChannelMetrics fields', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, {
+          channelId: 'test-CHM2-full',
+          status: {
+            isActive: true,
+            occupancy: {
+              metrics: {
+                connections: 10,
+                presenceConnections: 5,
+                presenceMembers: 3,
+                presenceSubscribers: 4,
+                publishers: 6,
+                subscribers: 8,
+                objectPublishers: 2,
+                objectSubscribers: 1,
+              },
+            },
+          },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const ch = client.channels.get('test-CHM2-full');
+    const result = await ch.status();
+
+    // CHD2a: channelId
+    expect(result.channelId).to.equal('test-CHM2-full');
+
+    // CHD2b + CHS2a: status.isActive
+    expect(result.status).to.not.be.null;
+    expect(result.status.isActive).to.equal(true);
+
+    // CHS2b + CHO2a: occupancy.metrics
+    expect(result.status.occupancy).to.not.be.null;
+    expect(result.status.occupancy.metrics).to.not.be.null;
+
+    const metrics = result.status.occupancy.metrics;
+
+    // CHM2a: connections
+    expect(metrics.connections).to.equal(10);
+
+    // CHM2b: presenceConnections
+    expect(metrics.presenceConnections).to.equal(5);
+
+    // CHM2c: presenceMembers
+    expect(metrics.presenceMembers).to.equal(3);
+
+    // CHM2d: presenceSubscribers
+    expect(metrics.presenceSubscribers).to.equal(4);
+
+    // CHM2e: publishers
+    expect(metrics.publishers).to.equal(6);
+
+    // CHM2f: subscribers
+    expect(metrics.subscribers).to.equal(8);
+
+    // CHM2g: objectPublishers - not in ably-js ChannelMetrics type definition,
+    // but present on the runtime object since the JSON response is passed through as-is.
+    // DEVIATION: ably-js ChannelMetrics type (ably.d.ts) does not declare objectPublishers or objectSubscribers.
+    expect((metrics as any).objectPublishers).to.equal(2);
+
+    // CHM2h: objectSubscribers - same deviation as CHM2g above.
+    expect((metrics as any).objectSubscribers).to.equal(1);
+  });
+
+  /**
+   * CHM2 - status() response with zero/missing metric fields
+   *
+   * Tests that status() handles zero-valued and absent metric fields
+   * gracefully. Omitted fields (objectPublishers, objectSubscribers)
+   * simulate an older server that does not include these fields.
+   */
+  it('CHM2 - status() response with zero and missing metric fields', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        // Response omits objectPublishers and objectSubscribers (CHM2g, CHM2h)
+        // to simulate an older server that does not include these fields.
+        req.respond_with(200, {
+          channelId: 'test-CHM2-zeros',
+          status: {
+            isActive: false,
+            occupancy: {
+              metrics: {
+                connections: 0,
+                presenceConnections: 0,
+                presenceMembers: 0,
+                presenceSubscribers: 0,
+                publishers: 0,
+                subscribers: 0,
+              },
+            },
+          },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const ch = client.channels.get('test-CHM2-zeros');
+    const result = await ch.status();
+
+    // CHD2a: channelId
+    expect(result.channelId).to.equal('test-CHM2-zeros');
+
+    // CHS2a: isActive can be false
+    expect(result.status.isActive).to.equal(false);
+
+    const metrics = result.status.occupancy.metrics;
+
+    // CHM2a-f: explicit zero values are parsed correctly
+    expect(metrics.connections).to.equal(0);
+    expect(metrics.presenceConnections).to.equal(0);
+    expect(metrics.presenceMembers).to.equal(0);
+    expect(metrics.presenceSubscribers).to.equal(0);
+    expect(metrics.publishers).to.equal(0);
+    expect(metrics.subscribers).to.equal(0);
+
+    // CHM2g-h: omitted fields are undefined (not defaulted to 0).
+    // DEVIATION: The UTS spec expects missing fields to default to 0,
+    // but ably-js passes the JSON response through as-is without defaults,
+    // so omitted fields are undefined rather than 0.
+    expect((metrics as any).objectPublishers).to.equal(undefined);
+    expect((metrics as any).objectSubscribers).to.equal(undefined);
+  });
 });

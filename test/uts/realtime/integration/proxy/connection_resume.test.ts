@@ -1,7 +1,7 @@
 /**
- * UTS Proxy Integration: Connection Resume Tests
+ * UTS Proxy Integration: Connection Resume and Recovery Tests
  *
- * Spec points: RTN15a, RTN15b, RTN15c6, RTN15c7, RTN15h1, RTN15h3
+ * Spec points: RTN15a, RTN15b, RTN15c6, RTN15c7, RTN15h1, RTN15h3, RTN15j, RTN15g, RTN15g2, RTN19a, RTN19a2, RTN16d, RTN16k, RTN16l
  * Source: specification/uts/realtime/integration/proxy/connection_resume.md
  */
 
@@ -779,6 +779,200 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
       (e) => e.type === 'ws_frame' && e.direction === 'client_to_server' && e.message?.action === 15,
     );
     expect(messageFrames.length).to.be.at.least(2);
+
+    await closeAndWait(client);
+  });
+
+  /**
+   * RTN16d, RTN16k — Successful recovery preserves connectionId and updates connectionKey
+   *
+   * Phase 1: Connect through proxy, attach a channel, get recoveryKey, then
+   * forcibly close the transport (server keeps connection state alive).
+   * Phase 2: Create a NEW client with `recover: recoveryKey`, connect through
+   * a second proxy session.
+   * Verify: connectionId same, connectionKey updated, recover param in log.
+   */
+  it('RTN16d/RTN16k - successful recovery preserves connectionId and updates connectionKey', async function () {
+    // --- Phase 1: Establish initial connection and obtain recovery key ---
+    const session1 = await createProxySession({
+      rules: [],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client1 = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session1.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client1);
+
+    client1.connect();
+    await waitForState(client1, 'connected', 15000);
+
+    const originalConnectionId = client1.connection.id;
+    const originalConnectionKey = client1.connection.key;
+    expect(originalConnectionId).to.exist;
+    expect(originalConnectionKey).to.exist;
+
+    // Attach a channel so it appears in the recovery key
+    const channelName = uniqueChannelName('recovery-test');
+    const channel1 = client1.channels.get(channelName);
+    channel1.attach();
+    await waitForChannelState(channel1, 'attached', 15000);
+
+    // Get the recovery key
+    const recoveryKey = client1.connection.createRecoveryKey();
+    expect(recoveryKey).to.not.be.null;
+
+    // Forcibly close the WebSocket transport (server keeps connection state alive)
+    await session1.triggerAction({ type: 'close' });
+
+    // Wait for the client to detect the disconnect
+    await waitForState(client1, 'disconnected', 10000);
+
+    // Close client1 without allowing it to reconnect
+    client1.connection.close();
+    await waitForState(client1, 'closed', 10000);
+    await session1.close();
+
+    // --- Phase 2: Recover using the recovery key ---
+    session = await createProxySession({
+      rules: [],
+    });
+
+    const client2 = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+      recover: recoveryKey,
+    } as any);
+    trackClient(client2);
+
+    client2.connect();
+    await waitForState(client2, 'connected', 15000);
+
+    // RTN16d: Connection ID is preserved (same as original connection)
+    expect(client2.connection.id).to.equal(originalConnectionId);
+
+    // RTN16d: Connection key is updated (new key from server)
+    expect(client2.connection.key).to.exist;
+    expect(client2.connection.key).to.not.equal(originalConnectionKey);
+
+    // RTN16k: Verify the recover query parameter was sent via proxy log
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    expect(wsConnects.length).to.be.at.least(1);
+    expect(wsConnects[0].queryParams).to.exist;
+    expect(wsConnects[0].queryParams!['recover']).to.equal(originalConnectionKey);
+
+    // No resume param (this is recovery, not resume)
+    expect(
+      wsConnects[0].queryParams!['resume'] == null,
+    ).to.be.true;
+
+    // No error on successful recovery
+    expect(client2.connection.errorReason).to.be.null;
+
+    await closeAndWait(client2);
+  });
+
+  /**
+   * RTN16l — Recovery failure treated as fresh connection (per RTN15c7)
+   *
+   * Proxy replaces the first CONNECTED response with one that has a different
+   * connectionId and an error (code 80008), simulating the server rejecting
+   * the recovery attempt. SDK should handle it as a fresh connection.
+   */
+  it('RTN16l - recovery failure treated as fresh connection', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'ws_frame_to_client', action: 'CONNECTED', count: 1 },
+          action: {
+            type: 'replace',
+            message: {
+              action: 4,
+              connectionId: 'recovery-failed-new-id',
+              connectionKey: 'recovery-failed-new-key',
+              connectionDetails: {
+                connectionKey: 'recovery-failed-new-key',
+                clientId: null,
+                maxMessageSize: 65536,
+                maxInboundRate: 250,
+                maxOutboundRate: 100,
+                maxFrameSize: 524288,
+                serverId: 'test-server',
+                connectionStateTtl: 120000,
+                maxIdleInterval: 15000,
+              },
+              error: {
+                code: 80008,
+                statusCode: 400,
+                message: 'Unable to recover connection',
+              },
+            },
+          },
+          times: 1,
+          comment: 'RTN16l: Replace CONNECTED with recovery failure (new connectionId + error 80008)',
+        },
+      ],
+    });
+
+    // Fabricated recovery key — connectionKey doesn't need to be valid since
+    // the proxy will replace the server response anyway
+    const fabricatedRecoveryKey = JSON.stringify({
+      connectionKey: 'stale-old-key',
+      msgSerial: 99,
+      channelSerials: {
+        'old-channel': 'old-serial',
+      },
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+      recover: fabricatedRecoveryKey,
+    } as any);
+    trackClient(client);
+
+    // Connect with the fabricated recovery key
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    // RTN16l + RTN15c7: Connection got a new ID (recovery failed)
+    expect(client.connection.id).to.equal('recovery-failed-new-id');
+    expect(client.connection.key).to.equal('recovery-failed-new-key');
+
+    // RTN15c7: Error is set on the connection indicating recovery failure
+    expect(client.connection.errorReason).to.not.be.null;
+    expect(client.connection.errorReason.code).to.equal(80008);
+
+    // Connection is still CONNECTED (not FAILED — the server gave a new connection)
+    expect(client.connection.state).to.equal('connected');
+
+    // Verify the recover param was sent via proxy log
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    expect(wsConnects.length).to.be.at.least(1);
+    expect(wsConnects[0].queryParams).to.exist;
+    expect(wsConnects[0].queryParams!['recover']).to.equal('stale-old-key');
 
     await closeAndWait(client);
   });

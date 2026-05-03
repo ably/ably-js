@@ -1707,6 +1707,61 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   });
 
   /**
+   * RTN7e - Error passed to publish callback represents the reason for the state change
+   *
+   * Tests that the error passed to the publish callback contains the same
+   * reason that caused the connection state change (e.g. the ErrorInfo from
+   * a fatal ERROR ProtocolMessage).
+   */
+  it('RTN7e - error passed to publish callback represents the reason for the state change', async function () {
+    const { mock } = setupMock({
+      onMessage: (msg) => {
+        if (msg.action === 15) {
+          // Don't ACK — instead send a fatal error to force FAILED state
+          mock.active_connection!.send_to_client_and_close({
+            action: 9, // ERROR (connection-level)
+            error: { message: 'Connection closed due to admin action', code: 80019, statusCode: 400 },
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTN7e-error-reason', { attachOnSubscribe: false });
+    await channel.attach();
+
+    // Publish — server responds with fatal ERROR instead of ACK
+    const publishPromise = channel.publish('pending', 'data');
+
+    try {
+      await publishPromise;
+      expect.fail('Should have thrown');
+    } catch (err: any) {
+      // The error should represent the reason for the state change
+      expect(err).to.exist;
+      expect(err.code).to.equal(80019);
+      expect(err.statusCode).to.equal(400);
+      expect(err.message).to.equal('Connection closed due to admin action');
+    }
+
+    // Verify the connection entered FAILED with the matching errorReason
+    expect(client.connection.state).to.equal('failed');
+    expect(client.connection.errorReason).to.not.be.null;
+    expect(client.connection.errorReason!.code).to.equal(80019);
+    client.close();
+  });
+
+  /**
    * RTL6c4 - Publish fails when connection is SUSPENDED
    */
   it('RTL6c4 - publish fails when connection suspended', async function () {
