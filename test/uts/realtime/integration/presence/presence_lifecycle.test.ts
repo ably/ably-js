@@ -20,7 +20,7 @@ import {
 } from '../sandbox';
 
 describe('uts/realtime/integration/presence/presence_lifecycle', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();

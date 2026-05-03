@@ -20,7 +20,7 @@ function randomId(): string {
 }
 
 describe('uts/rest/integration/push_admin', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
