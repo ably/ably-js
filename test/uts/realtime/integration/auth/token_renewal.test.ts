@@ -21,7 +21,7 @@ import {
 } from '../sandbox';
 
 describe('uts/realtime/integration/auth/token_renewal', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();

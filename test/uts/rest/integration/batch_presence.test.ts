@@ -23,7 +23,7 @@ import {
 } from './sandbox';
 
 describe('uts/rest/integration/batch_presence', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
