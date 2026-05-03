@@ -17,6 +17,7 @@ import {
   connectAndWait,
   generateJWT,
   uniqueChannelName,
+  pollUntil,
 } from '../sandbox';
 import { createProxySession, waitForProxy, ProxySession } from '../helpers/proxy';
 
@@ -169,16 +170,21 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
     // Connection remains CONNECTED (attach timeout is channel-scoped)
     expect(client.connection.state).to.equal('connected');
 
-    // Proxy log confirms the ATTACH was suppressed (never forwarded to server)
+    // Proxy log confirms the ATTACH frames were received but suppressed by the rule.
+    // The log records frames before applying rules (ruleMatched indicates which rule fired).
     const log = await session.getLog();
-    const attachFramesToServer = log.filter(
-      (e) =>
+    const attachFrames = log.filter(
+      (e: any) =>
         e.type === 'ws_frame' &&
         e.direction === 'client_to_server' &&
         e.message?.action === 10 &&
         e.message?.channel === channelName,
     );
-    expect(attachFramesToServer.length).to.equal(0);
+    expect(attachFrames.length).to.be.at.least(1);
+    // All ATTACH frames should have been caught by the suppress rule
+    for (const frame of attachFrames) {
+      expect(frame.ruleMatched).to.not.be.null;
+    }
 
     await closeAndWait(client);
   });
@@ -513,6 +519,189 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
 
     // Connection remains CONNECTED (channel-scoped ERROR does not close connection)
     expect(client.connection.state).to.equal('connected');
+
+    await closeAndWait(client);
+  });
+
+  /**
+   * RTL12 -- ATTACHED with resumed=false on already-attached channel
+   *
+   * When the server sends an ATTACHED message for a channel that is already attached
+   * with resumed=false, the SDK emits an 'update' event (not 'attached') per RTL2g.
+   */
+  it('RTL12 - ATTACHED with resumed=false emits UPDATE not ATTACHED', async function () {
+    const channelName = uniqueChannelName('test-RTL12');
+
+    // Create proxy session with no rules (passthrough)
+    session = await createProxySession({
+      rules: [],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client);
+
+    const channel = client.channels.get(channelName);
+
+    // Connect and attach normally through proxy
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    await channel.attach();
+    expect(channel.state).to.equal('attached');
+
+    // Listen for 'update' and 'attached' events separately
+    const updateEvents: any[] = [];
+    const attachedEvents: any[] = [];
+    channel.on('update', (change: any) => {
+      updateEvents.push(change);
+    });
+    channel.on('attached', (change: any) => {
+      attachedEvents.push(change);
+    });
+
+    // Inject an ATTACHED message with resumed=false (flags: 0) and an error
+    await session.triggerAction({
+      type: 'inject_to_client',
+      message: {
+        action: 11,
+        channel: channelName,
+        flags: 0,
+        error: { code: 91001, statusCode: 500, message: 'Continuity lost' },
+      },
+    });
+
+    // Poll until the update event arrives
+    await pollUntil(() => updateEvents.length >= 1, { timeout: 10000 });
+
+    // Exactly one 'update' event emitted
+    expect(updateEvents.length).to.equal(1);
+    expect(updateEvents[0].current).to.equal('attached');
+    expect(updateEvents[0].previous).to.equal('attached');
+    expect(updateEvents[0].resumed).to.equal(false);
+    expect(updateEvents[0].reason.code).to.equal(91001);
+    expect(updateEvents[0].reason.statusCode).to.equal(500);
+
+    // No 'attached' event emitted (RTL2g: update, not attached)
+    expect(attachedEvents.length).to.equal(0);
+
+    // Channel remains attached, connection remains connected
+    expect(channel.state).to.equal('attached');
+    expect(client.connection.state).to.equal('connected');
+
+    await closeAndWait(client);
+  });
+
+  /**
+   * RTL3d -- Channels reattach after connection recovery
+   *
+   * After a transport disconnect, the SDK reconnects and automatically
+   * reattaches all previously-attached channels.
+   */
+  it('RTL3d - channels reattach after connection recovery', async function () {
+    const channelNameA = uniqueChannelName('test-RTL3d-a');
+    const channelNameB = uniqueChannelName('test-RTL3d-b');
+
+    // Create proxy session with no rules (passthrough)
+    session = await createProxySession({
+      rules: [],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client);
+
+    const channelA = client.channels.get(channelNameA);
+    const channelB = client.channels.get(channelNameB);
+
+    // Connect and attach both channels normally through proxy
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    await channelA.attach();
+    await channelB.attach();
+    expect(channelA.state).to.equal('attached');
+    expect(channelB.state).to.equal('attached');
+
+    // Record channel state changes from this point (clear any initial states)
+    const channelAStateChanges: string[] = [];
+    const channelBStateChanges: string[] = [];
+    channelA.on((change: any) => {
+      channelAStateChanges.push(change.current);
+    });
+    channelB.on((change: any) => {
+      channelBStateChanges.push(change.current);
+    });
+
+    // Trigger a transport disconnect via WebSocket close frame
+    await session.triggerAction({
+      type: 'close',
+    });
+
+    // Wait for connection to go disconnected first, then reconnect
+    await waitForState(client, 'disconnected', 15000);
+    await waitForState(client, 'connected', 30000);
+
+    // Wait for both channels to reach 'attached' state after recovery
+    await waitForChannelState(channelA, 'attached', 15000);
+    await waitForChannelState(channelB, 'attached', 15000);
+
+    // Both channels are in 'attached' state
+    expect(channelA.state).to.equal('attached');
+    expect(channelB.state).to.equal('attached');
+
+    // Both channel state change arrays include 'attaching' followed by 'attached'
+    expect(channelAStateChanges).to.include('attaching');
+    expect(channelAStateChanges).to.include('attached');
+    const aAttachingIdx = channelAStateChanges.indexOf('attaching');
+    const aAttachedIdx = channelAStateChanges.indexOf('attached');
+    expect(aAttachingIdx).to.be.lessThan(aAttachedIdx);
+
+    expect(channelBStateChanges).to.include('attaching');
+    expect(channelBStateChanges).to.include('attached');
+    const bAttachingIdx = channelBStateChanges.indexOf('attaching');
+    const bAttachedIdx = channelBStateChanges.indexOf('attached');
+    expect(bAttachingIdx).to.be.lessThan(bAttachedIdx);
+
+    // Connection is connected
+    expect(client.connection.state).to.equal('connected');
+
+    // Proxy log shows at least 2 ATTACH frames for each channel (initial + reattach)
+    const log = await session.getLog();
+    const attachFramesA = log.filter(
+      (e) =>
+        e.type === 'ws_frame' &&
+        e.direction === 'client_to_server' &&
+        e.message?.action === 10 &&
+        e.message?.channel === channelNameA,
+    );
+    const attachFramesB = log.filter(
+      (e) =>
+        e.type === 'ws_frame' &&
+        e.direction === 'client_to_server' &&
+        e.message?.action === 10 &&
+        e.message?.channel === channelNameB,
+    );
+    expect(attachFramesA.length).to.be.at.least(2);
+    expect(attachFramesB.length).to.be.at.least(2);
 
     await closeAndWait(client);
   });

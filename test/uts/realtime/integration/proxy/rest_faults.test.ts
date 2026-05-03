@@ -71,11 +71,11 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
     const restClient = new Ably.Rest({
       authCallback: (_params: any, cb: any) => {
         authCallbackCount++;
-        // Request token directly from sandbox (not through proxy)
         const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
-        innerRest.auth.requestToken(null, null, (err: any, token: any) => {
-          cb(err, token);
-        });
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
       },
       endpoint: 'localhost',
       port: session.proxyPort,
@@ -128,11 +128,11 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
 
     const restClient = new Ably.Rest({
       authCallback: (_params: any, cb: any) => {
-        // Request token directly from sandbox (not through proxy)
         const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
-        innerRest.auth.requestToken(null, null, (err: any, token: any) => {
-          cb(err, token);
-        });
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
       },
       endpoint: 'localhost',
       port: session.proxyPort,
