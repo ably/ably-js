@@ -35,6 +35,7 @@ async function provisionSandboxApp(): Promise<SandboxApp> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(testAppSetup.post_apps),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (!response.ok) {
@@ -57,10 +58,15 @@ async function provisionSandboxApp(): Promise<SandboxApp> {
 async function deleteSandboxApp(app: SandboxApp): Promise<void> {
   const url = `https://${SANDBOX_REST_HOST}/apps/${app.appId}`;
   const credentials = Buffer.from(app.keys[0].keyStr).toString('base64');
-  await fetch(url, {
-    method: 'DELETE',
-    headers: { Authorization: `Basic ${credentials}` },
-  });
+  try {
+    await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Basic ${credentials}` },
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch {
+    // Best-effort cleanup — sandbox apps expire automatically
+  }
 }
 
 /**
