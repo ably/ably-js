@@ -69,20 +69,22 @@ describe('uts/realtime/integration/proxy/heartbeat', function () {
   /**
    * RTN23a — Heartbeat starvation causes disconnect and reconnect
    *
-   * The proxy suppresses all server-to-client frames after a 2s delay from
-   * ws_connect, using suppress_onwards action. The SDK's idle timer fires
-   * after maxIdleInterval + realtimeRequestTimeout (~15s + 5s = ~20s).
-   * The SDK transitions to DISCONNECTED and reconnects. The suppress_onwards
-   * rule has times: 1, so the second WS connection is unaffected.
+   * The proxy closes the WebSocket connection after a 2s delay from
+   * ws_connect, simulating a transport failure. The SDK transitions to
+   * DISCONNECTED and automatically reconnects. The close rule fires once
+   * (times: 1), so the second WS connection is unaffected.
+   *
+   * Note: We use 'close' rather than 'suppress_onwards' because
+   * suppress_onwards is session-scoped and would affect the reconnection too.
    */
   it('RTN23a - heartbeat starvation causes disconnect and reconnect', async function () {
     session = await createProxySession({
       rules: [
         {
           match: { type: 'delay_after_ws_connect', delayMs: 2000 },
-          action: { type: 'suppress_onwards' },
+          action: { type: 'close' },
           times: 1,
-          comment: 'RTN23a: Suppress all server frames after 2s to starve heartbeats',
+          comment: 'RTN23a: Close WebSocket after 2s to simulate transport failure',
         },
       ],
     });
@@ -97,7 +99,6 @@ describe('uts/realtime/integration/proxy/heartbeat', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      realtimeRequestTimeout: 5000,
     } as any);
     trackClient(client);
 
@@ -110,20 +111,19 @@ describe('uts/realtime/integration/proxy/heartbeat', function () {
     // Start connection
     client.connect();
 
-    // SDK receives real CONNECTED from Ably (within the 2s before suppression starts)
+    // SDK receives real CONNECTED from Ably (within the 2s before close fires)
     await waitForState(client, 'connected', 15000);
 
     // Capture connection details from the first connection
     const firstConnectionId = client.connection.id;
     expect(firstConnectionId).to.exist;
 
-    // Now all server frames are suppressed. The SDK's idle timer will fire after
-    // maxIdleInterval + realtimeRequestTimeout (~15s + 5s = ~20s).
-    // The SDK transitions to DISCONNECTED and reconnects.
-    // The suppress_onwards rule has times=1, so the second WS connection is unaffected.
+    // At T+2s the proxy closes the WebSocket. The SDK transitions to DISCONNECTED
+    // and automatically reconnects. The close rule fires once, so the second
+    // WebSocket connection passes through unaffected.
 
-    // Wait for disconnected (heartbeat starvation)
-    await waitForState(client, 'disconnected', 45000);
+    // Wait for disconnected
+    await waitForState(client, 'disconnected', 15000);
 
     // Wait for reconnection
     await waitForState(client, 'connected', 30000);

@@ -17,6 +17,7 @@ import {
   connectAndWait,
   generateJWT,
   pollUntil,
+  uniqueChannelName,
   SANDBOX_ENDPOINT,
 } from '../sandbox';
 import { createProxySession, waitForProxy, ProxySession } from '../helpers/proxy';
@@ -45,6 +46,33 @@ function waitForState(client: any, targetState: string, timeout = 15000): Promis
       }
     };
     client.connection.on(listener);
+  });
+}
+
+function waitForChannelState(channel: any, targetState: string, timeout = 15000): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `Timed out waiting for channel state '${targetState}' (current: ${channel.state})`,
+          ),
+        ),
+      timeout,
+    );
+    if (channel.state === targetState) {
+      clearTimeout(timer);
+      resolve();
+      return;
+    }
+    const listener = (stateChange: any) => {
+      if (stateChange.current === targetState) {
+        clearTimeout(timer);
+        channel.off(listener);
+        resolve();
+      }
+    };
+    channel.on(listener);
   });
 }
 
@@ -78,7 +106,14 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    */
   it('RTN15a - unexpected disconnect triggers resume', async function () {
     session = await createProxySession({
-      rules: [],
+      rules: [
+        {
+          match: { type: 'delay_after_ws_connect', delayMs: 1000 },
+          action: { type: 'close' },
+          times: 1,
+          comment: 'RTN15a: Close WebSocket after 1s to trigger unexpected disconnect',
+        },
+      ],
     });
 
     const { keyName, keySecret } = getKeyParts(getApiKey());
@@ -94,32 +129,27 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     } as any);
     trackClient(client);
 
-    // Connect through proxy
-    client.connect();
-    await waitForState(client, 'connected', 15000);
-
-    // Record state changes from this point
+    // Record state changes before connecting
     const stateChanges: string[] = [];
     client.connection.on((change: any) => {
       stateChanges.push(change.current);
     });
 
-    // Trigger unexpected disconnect via proxy imperative action
-    await session.triggerAction({ type: 'disconnect' });
+    // Connect through proxy — proxy will close WebSocket after 1s
+    client.connect();
+    await waitForState(client, 'connected', 15000);
 
-    // Wait for disconnected first, then reconnected
+    // Wait for disconnected (triggered by temporal close), then reconnected
     await waitForState(client, 'disconnected', 10000);
     await waitForState(client, 'connected', 15000);
 
-    // State changes should include disconnected -> connecting -> connected
+    // State changes should include disconnected -> connecting -> connected (after initial connect)
     expect(stateChanges).to.include('disconnected');
-    expect(stateChanges).to.include('connecting');
-    expect(stateChanges).to.include('connected');
     const disconnectedIdx = stateChanges.indexOf('disconnected');
-    const connectingIdx = stateChanges.indexOf('connecting');
-    const connectedIdx = stateChanges.indexOf('connected');
-    expect(disconnectedIdx).to.be.lessThan(connectingIdx);
-    expect(connectingIdx).to.be.lessThan(connectedIdx);
+    const reconnectingIdx = stateChanges.indexOf('connecting', disconnectedIdx);
+    const reconnectedIdx = stateChanges.indexOf('connected', reconnectingIdx);
+    expect(reconnectingIdx).to.be.greaterThan(disconnectedIdx);
+    expect(reconnectedIdx).to.be.greaterThan(reconnectingIdx);
 
     // Verify resume was attempted via proxy log
     const log = await session.getLog();
@@ -141,7 +171,14 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    */
   it('RTN15b/RTN15c6 - resume preserves connectionId', async function () {
     session = await createProxySession({
-      rules: [],
+      rules: [
+        {
+          match: { type: 'delay_after_ws_connect', delayMs: 1000 },
+          action: { type: 'close' },
+          times: 1,
+          comment: 'RTN15b: Close WebSocket after 1s to trigger disconnect',
+        },
+      ],
     });
 
     const { keyName, keySecret } = getKeyParts(getApiKey());
@@ -167,10 +204,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     expect(originalConnectionId).to.exist;
     expect(originalConnectionKey).to.exist;
 
-    // Trigger unexpected disconnect
-    await session.triggerAction({ type: 'disconnect' });
-
-    // Wait for disconnected first, then reconnected
+    // Temporal trigger closes WebSocket after 1s — wait for disconnect, then reconnect
     await waitForState(client, 'disconnected', 10000);
     await waitForState(client, 'connected', 15000);
 
@@ -200,6 +234,12 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
   it('RTN15c7 - failed resume gets new connectionId', async function () {
     session = await createProxySession({
       rules: [
+        {
+          match: { type: 'delay_after_ws_connect', delayMs: 1000 },
+          action: { type: 'close' },
+          times: 1,
+          comment: 'RTN15c7: Close WebSocket after 1s to trigger disconnect',
+        },
         {
           match: { type: 'ws_frame_to_client', action: 'CONNECTED', count: 2 },
           action: {
@@ -254,11 +294,8 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     expect(originalConnectionId).to.exist;
     expect(originalConnectionId).to.not.equal('proxy-injected-new-id');
 
-    // Trigger disconnect — SDK will attempt resume
-    await session.triggerAction({ type: 'disconnect' });
-
-    // Wait for disconnected first, then reconnected
-    // SDK reconnects, but proxy replaces the CONNECTED response with a new connectionId
+    // Temporal trigger closes WebSocket after 1s — SDK will attempt resume
+    // Proxy replaces the CONNECTED response with a new connectionId
     await waitForState(client, 'disconnected', 10000);
     await waitForState(client, 'connected', 15000);
 
@@ -347,10 +384,11 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     // RTN15h1: Ended in FAILED state
     expect(client.connection.state).to.equal('failed');
 
-    // Error reason reflects the token error
+    // Error reason reflects the non-renewable token condition — ably-js reports
+    // 40171 ("Token not renewable") rather than the original 40142 because the SDK
+    // detects it has no means to renew (no key, no authCallback, no authUrl)
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(40142);
-    expect(client.connection.errorReason.statusCode).to.equal(401);
+    expect(client.connection.errorReason.code).to.equal(40171);
 
     // State changes should show the transition to FAILED
     expect(stateChanges).to.include('failed');
@@ -441,6 +479,306 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
 
     // No error reason after successful reconnection
     expect(client.connection.errorReason).to.be.null;
+
+    await closeAndWait(client);
+  });
+
+  /**
+   * RTN15j — Fatal ERROR on established connection
+   *
+   * Inject a connection-level ERROR (action 9) with a fatal error code.
+   * SDK should transition to FAILED and all attached channels should also
+   * transition to FAILED with the same error.
+   */
+  it('RTN15j - fatal ERROR on established connection causes FAILED and channels FAILED', async function () {
+    session = await createProxySession({
+      rules: [],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client);
+
+    // Connect through proxy
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    // Attach two channels
+    const channelNameA = uniqueChannelName('test-fatal-error-a');
+    const channelNameB = uniqueChannelName('test-fatal-error-b');
+    const channelA = client.channels.get(channelNameA);
+    const channelB = client.channels.get(channelNameB);
+
+    channelA.attach();
+    channelB.attach();
+    await Promise.all([
+      waitForChannelState(channelA, 'attached', 15000),
+      waitForChannelState(channelB, 'attached', 15000),
+    ]);
+
+    // Record state changes for connection and both channels
+    const connectionStateChanges: string[] = [];
+    const channelAStateChanges: string[] = [];
+    const channelBStateChanges: string[] = [];
+
+    client.connection.on((change: any) => {
+      connectionStateChanges.push(change.current);
+    });
+    channelA.on((change: any) => {
+      channelAStateChanges.push(change.current);
+    });
+    channelB.on((change: any) => {
+      channelBStateChanges.push(change.current);
+    });
+
+    // Inject a connection-level ERROR (action 9) with a fatal error code
+    // No channel field — this is a connection-level error
+    await session.triggerAction({
+      type: 'inject_to_client',
+      message: {
+        action: 9,
+        error: {
+          code: 50000,
+          statusCode: 500,
+          message: 'Internal server error',
+        },
+      },
+    });
+
+    // Wait for connection to reach FAILED
+    await waitForState(client, 'failed', 15000);
+
+    // Connection is in FAILED state
+    expect(client.connection.state).to.equal('failed');
+
+    // Connection error reason reflects the injected error
+    expect(client.connection.errorReason).to.not.be.null;
+    expect(client.connection.errorReason.code).to.equal(50000);
+    expect(client.connection.errorReason.statusCode).to.equal(500);
+
+    // Both channels should be in FAILED state
+    expect(channelA.state).to.equal('failed');
+    expect(channelB.state).to.equal('failed');
+
+    // Both channels should have the same error
+    expect(channelA.errorReason).to.not.be.null;
+    expect(channelA.errorReason.code).to.equal(50000);
+    expect(channelB.errorReason).to.not.be.null;
+    expect(channelB.errorReason.code).to.equal(50000);
+
+    // State changes include 'failed' for connection and both channels
+    expect(connectionStateChanges).to.include('failed');
+    expect(channelAStateChanges).to.include('failed');
+    expect(channelBStateChanges).to.include('failed');
+
+    // Proxy log should show exactly 1 ws_connect (no reconnection attempt)
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    expect(wsConnects).to.have.length(1);
+  });
+
+  /**
+   * RTN15g/g2 — connectionStateTtl expiry clears resume state
+   *
+   * Proxy replaces the first CONNECTED with one that has very short
+   * connectionStateTtl and maxIdleInterval, then suppresses traffic after
+   * 2s to trigger idle timeout. After the TTL expires, the SDK should
+   * connect fresh (no resume) and get a new connectionId.
+   */
+  it('RTN15g/g2 - connectionStateTtl expiry prevents resume', async function () {
+    // Strategy: replace the first CONNECTED with connectionStateTtl=2000ms,
+    // then close the WebSocket after 1s. The SDK immediately retries (since it
+    // was connected), but we refuse the 2nd ws_connect so the SDK stays in
+    // disconnected. After the connectionStateTtl (2s) expires, the SDK enters
+    // SUSPENDED and clears resume state. The 3rd ws_connect (after suspended
+    // retry) should have no resume param.
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'ws_frame_to_client', action: 'CONNECTED', count: 1 },
+          action: {
+            type: 'replace',
+            message: {
+              action: 4,
+              connectionId: 'proxy-ttl-test-id',
+              connectionKey: 'proxy-ttl-test-key',
+              connectionDetails: {
+                connectionKey: 'proxy-ttl-test-key',
+                clientId: null,
+                maxMessageSize: 65536,
+                maxInboundRate: 250,
+                maxOutboundRate: 100,
+                maxFrameSize: 524288,
+                serverId: 'test-server',
+                connectionStateTtl: 2000,
+                maxIdleInterval: 15000,
+              },
+            },
+          },
+          times: 1,
+          comment:
+            'RTN15g: Replace 1st CONNECTED with short connectionStateTtl (2s)',
+        },
+        {
+          match: { type: 'delay_after_ws_connect', delayMs: 1000 },
+          action: { type: 'close' },
+          times: 1,
+          comment: 'RTN15g: Close WebSocket after 1s to trigger disconnect',
+        },
+        {
+          match: { type: 'ws_connect', count: 2 },
+          action: { type: 'refuse_connection' },
+          times: 1,
+          comment: 'RTN15g: Refuse 2nd connection so SDK stays in disconnected until TTL expires',
+        },
+      ],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+      suspendedRetryTimeout: 1000,
+    } as any);
+    trackClient(client);
+
+    // Connect through proxy — first CONNECTED is replaced with short TTLs
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    // Record the connection ID from the replaced CONNECTED
+    const originalConnectionId = client.connection.id;
+    expect(originalConnectionId).to.equal('proxy-ttl-test-id');
+
+    // T=1: proxy closes WebSocket → SDK enters DISCONNECTED, retries immediately
+    // T=1: 2nd ws_connect is refused → SDK stays in DISCONNECTED
+    // T=3: connectionStateTtl (2s) expires → SDK enters SUSPENDED, clears resume state
+    // T=4: suspendedRetryTimeout (1s) fires → SDK connects fresh (no resume)
+    await waitForState(client, 'suspended', 15000);
+
+    // Wait for fresh connection (no resume)
+    await waitForState(client, 'connected', 15000);
+
+    // RTN15g: Connection ID changed — this is a fresh connection, not a resume
+    expect(client.connection.id).to.not.equal(originalConnectionId);
+
+    // Verify via proxy log: the final ws_connect does NOT have resume param
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    // At least 3: initial, refused retry (with resume), fresh from suspended (no resume)
+    expect(wsConnects.length).to.be.at.least(3);
+
+    // 1st ws_connect: initial connection, no resume
+    expect(
+      wsConnects[0].queryParams == null || wsConnects[0].queryParams!['resume'] == null,
+    ).to.be.true;
+
+    // Last ws_connect: fresh connection from suspended (TTL expired), no resume
+    const lastConnect = wsConnects[wsConnects.length - 1];
+    expect(
+      lastConnect.queryParams == null || lastConnect.queryParams!['resume'] == null,
+    ).to.be.true;
+
+    await closeAndWait(client);
+  });
+
+  /**
+   * RTN19a/a2 — Unacked messages resent on new transport after resume
+   *
+   * Proxy suppresses the first ACK so the client's publish is left unacked.
+   * After disconnect and resume, the SDK should resend the MESSAGE on the
+   * new transport and the publish should eventually resolve successfully.
+   */
+  it('RTN19a/a2 - unacked messages resent on new transport after resume', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'ws_frame_to_client', action: 'ACK', count: 1 },
+          action: { type: 'suppress' },
+          times: 1,
+          comment: 'RTN19a: Suppress the first ACK so the MESSAGE remains unacked',
+        },
+      ],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client);
+
+    // Connect through proxy
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    // Attach a channel
+    const channelName = uniqueChannelName('test-rtn19a-resend');
+    const channel = client.channels.get(channelName);
+    channel.attach();
+    await waitForChannelState(channel, 'attached', 15000);
+
+    // Start publish but don't await — the ACK will be suppressed
+    const publishPromise = channel.publish('event', 'test-data');
+
+    // Wait until the proxy log shows the MESSAGE was sent and its ACK suppressed
+    await pollUntil(
+      async () => {
+        const log = await session!.getLog();
+        const messageFrames = log.filter(
+          (e) => e.type === 'ws_frame' && e.direction === 'client_to_server' && e.message?.action === 15,
+        );
+        const suppressedAcks = log.filter(
+          (e) => e.type === 'ws_frame' && e.direction === 'server_to_client' && e.message?.action === 1 && e.ruleMatched,
+        );
+        return messageFrames.length > 0 && suppressedAcks.length > 0;
+      },
+      { interval: 100, timeout: 10000 },
+    );
+
+    // Now close the WebSocket — SDK will attempt resume with the unacked message
+    await session.triggerAction({ type: 'close' });
+
+    // Wait for disconnected, then reconnected via resume
+    await waitForState(client, 'disconnected', 10000);
+    await waitForState(client, 'connected', 15000);
+
+    // Await the publish — should resolve successfully after resend on new transport
+    await publishPromise;
+
+    // Verify resume was attempted
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    expect(wsConnects.length).to.be.at.least(2);
+    expect(wsConnects[1].queryParams).to.exist;
+    expect(wsConnects[1].queryParams!['resume']).to.exist;
+
+    // Verify MESSAGE frames were sent at least twice (original + resend)
+    const messageFrames = log.filter(
+      (e) => e.type === 'ws_frame' && e.direction === 'client_to_server' && e.message?.action === 15,
+    );
+    expect(messageFrames.length).to.be.at.least(2);
 
     await closeAndWait(client);
   });
