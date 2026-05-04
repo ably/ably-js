@@ -164,6 +164,67 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
   });
 
   /**
+   * RTN15a — Unexpected disconnect triggers resume (TCP close without close frame)
+   *
+   * Same as the test above, but the proxy closes the underlying TCP connection
+   * without sending a WebSocket close frame. The Node.js ws library detects
+   * the TCP FIN and fires its close event, so ably-js should transition to
+   * disconnected with minimal delay — identical to the close-frame case.
+   */
+  it('RTN15a - unexpected disconnect triggers resume (TCP close without close frame)', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'delay_after_ws_connect', delayMs: 1000 },
+          action: { type: 'disconnect' },
+          times: 1,
+          comment: 'RTN15a: Close TCP connection (no close frame) after 1s to trigger unexpected disconnect',
+        },
+      ],
+    });
+
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret }));
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      autoConnect: false,
+    } as any);
+    trackClient(client);
+
+    const stateChanges: string[] = [];
+    client.connection.on((change: any) => {
+      stateChanges.push(change.current);
+    });
+
+    client.connect();
+    await waitForState(client, 'connected', 15000);
+
+    await waitForState(client, 'disconnected', 10000);
+    await waitForState(client, 'connected', 15000);
+
+    expect(stateChanges).to.include('disconnected');
+    const disconnectedIdx = stateChanges.indexOf('disconnected');
+    const reconnectingIdx = stateChanges.indexOf('connecting', disconnectedIdx);
+    const reconnectedIdx = stateChanges.indexOf('connected', reconnectingIdx);
+    expect(reconnectingIdx).to.be.greaterThan(disconnectedIdx);
+    expect(reconnectedIdx).to.be.greaterThan(reconnectingIdx);
+
+    const log = await session.getLog();
+    const wsConnects = log.filter((e) => e.type === 'ws_connect');
+    expect(wsConnects.length).to.be.at.least(2);
+
+    expect(wsConnects[1].queryParams).to.exist;
+    expect(wsConnects[1].queryParams!['resume']).to.exist;
+
+    await closeAndWait(client);
+  });
+
+  /**
    * RTN15b, RTN15c6 — Resume preserves connectionId
    *
    * After unexpected disconnect and successful resume, the connection ID
