@@ -28,18 +28,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### update_events: RTN24 - connection.id/key not updated on UPDATE
-
-**Spec (RTN24)**: When a CONNECTED message is received while already CONNECTED, the connection details (including `connection.id` and `connection.key`) should be updated.
-
-**ably-js behavior**: ably-js does NOT update `connection.id` or `connection.key` on subsequent CONNECTED messages. Only internal connectionDetails (`maxIdleInterval`, `connectionStateTtl`, etc.) are overridden. `connection.id` and `connection.key` are only set during transport activation (initial connect or resume).
-
-**Root cause**: `activateTransport()` in `connectionmanager.ts` — id/key are set there, not in the CONNECTED message handler.
-
-**Test**: `RTN24 - ConnectionDetails updated on new CONNECTED message` — asserts `connection.id == 'connection-id-2'` per spec.
-
----
-
 ### presence_reentry: RTP17e - re-entry error message missing clientId
 
 **Spec (RTP17e)**: Failed re-entry should emit UPDATE with error code 91004 and message indicating the failure and clientId.

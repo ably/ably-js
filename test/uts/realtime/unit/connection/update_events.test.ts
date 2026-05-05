@@ -117,9 +117,13 @@ describe('uts/realtime/unit/connection/update_events', function () {
 
   /**
    * RTN24 - ConnectionDetails override
+   *
+   * connectionId is a top-level ProtocolMessage field, NOT inside
+   * connectionDetails, so RTN24's "connectionDetails must override stored
+   * details" does not apply to it. connection.id and connection.key stay
+   * the same; only internal connectionDetails fields are overridden.
    */
-  it('RTN24 - ConnectionDetails updated on new CONNECTED message', async function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't update connection.id on subsequent CONNECTED
+  it('RTN24 - ConnectionDetails overridden, connection.id unchanged', async function () {
     mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -152,12 +156,13 @@ describe('uts/realtime/unit/connection/update_events', function () {
       client.connection.once('update', (change: any) => resolve(change)),
     );
 
+    // Server sends CONNECTED with different connectionDetails but same
+    // connectionId (the server never changes it for an in-progress connection)
     mock.active_connection!.send_to_client({
       action: 4, // CONNECTED
-      connectionId: 'connection-id-2',
-      connectionKey: 'connection-key-2',
+      connectionId: 'connection-id-1',
       connectionDetails: {
-        connectionKey: 'connection-key-2',
+        connectionKey: 'connection-key-1',
         maxIdleInterval: 20000,
         connectionStateTtl: 120000,
         maxMessageSize: 32768,
@@ -167,9 +172,10 @@ describe('uts/realtime/unit/connection/update_events', function () {
 
     await updatePromise;
 
+    // connection.id unchanged (not inside connectionDetails)
     expect(client.connection.state).to.equal('connected');
-    expect(client.connection.id).to.equal('connection-id-2');
-    expect(client.connection.key).to.equal('connection-key-2');
+    expect(client.connection.id).to.equal('connection-id-1');
+    expect(client.connection.key).to.equal('connection-key-1');
 
     client.close();
   });
