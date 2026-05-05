@@ -276,16 +276,13 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
   });
 
   /**
-   * RSA4c1/RSA4c3 - authCallback error while CONNECTED
+   * RSA4c3 - authCallback error while CONNECTED
    *
-   * Per RSA4c3: connection should remain CONNECTED.
-   * Per RSA4c1: errorReason should be set with code 80019, statusCode 401,
-   * and cause set to the underlying error.
+   * Per RSA4c3: connection should remain CONNECTED. errorReason is NOT set —
+   * the connection is healthy, the existing token is still valid, and there is
+   * no state change to associate the error with (see specification#466).
    */
-  it('RSA4c1/RSA4c3 - authCallback error while CONNECTED sets errorReason', async function () {
-    // DEVIATION: see deviations.md — ably-js does not set errorReason (RSA4c1) on auth failure while CONNECTED
-    if (!process.env.RUN_DEVIATIONS) this.skip();
-
+  it('RSA4c3 - authCallback error while CONNECTED does not set errorReason', async function () {
     let authCallbackCount = 0;
 
     const mock = new MockWebSocket({
@@ -333,25 +330,20 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
     // Server requests re-authentication (RTN22)
     mock.active_connection!.send_to_client({ action: 17 }); // AUTH
 
-    // Wait for auth callback failure to propagate
+    // Wait for the auth callback to be called a second time (the failure)
     for (let i = 0; i < 10; i++) {
       await flushAsync();
-      if (client.connection.errorReason != null || stateChanges.length > 0) break;
+      if (authCallbackCount >= 2) break;
     }
 
     // RSA4c3: connection should remain CONNECTED
     expect(client.connection.state).to.equal('connected');
 
-    // No transitions away from connected
-    const nonConnected = stateChanges.filter((c: any) => c.current !== 'connected');
-    expect(nonConnected).to.have.length(0);
+    // No state changes at all — the auth failure is silently swallowed
+    expect(stateChanges).to.have.length(0);
 
-    // RSA4c1: errorReason has code 80019
-    expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason!.code).to.equal(80019);
-    expect(client.connection.errorReason!.statusCode).to.equal(401);
-    expect(client.connection.errorReason!.cause).to.not.be.null;
-    expect((client.connection.errorReason!.cause as any).code).to.equal(50000);
+    // errorReason is NOT set (see specification#466)
+    expect(client.connection.errorReason).to.be.null;
   });
 
   /**
