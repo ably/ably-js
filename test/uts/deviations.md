@@ -74,18 +74,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### revoke_tokens: RSA17c - response format pass-through
-
-**Spec (RSA17c)**: Client library should compute `successCount`, `failureCount`, and `results` from the server's raw array response.
-
-**ably-js behavior**: Passes through the server response body as-is. Also throws on HTTP 400 responses.
-
-**Tests**: `RSA17c - all success result`, `RSA17c_2 - mixed result normalised`, `RSA17c_3 - all failure normalised`, `TRF2_1 - failure details in results`.
-
-**Issue**: [#2201](https://github.com/ably/ably-js/issues/2201)
-
----
-
 ### client_id: RSA7b - auth.clientId not derived from TokenDetails (REST)
 
 **Spec (RSA7b)**: The clientId attribute of the Auth object should be derived from tokenDetails returned from auth requests.
@@ -167,18 +155,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 **Test**: `REC1b2 - endpoint as IPv6 address`.
 
 **Issue**: [#2198](https://github.com/ably/ably-js/issues/2198)
-
----
-
-### batch_presence: BAR2 / BGF2 / RSC24 - batch operations throw on HTTP 400
-
-**Spec (BAR2/BGF2/RSC24)**: Batch operations should return per-target results including mixed success/failure.
-
-**ably-js behavior**: Throws on HTTP 400 responses — the per-target result data is discarded.
-
-**Tests**: `BAR2_1 - mixed results normalised`, `BAR2_3 - all failure normalised`, `BGF2_1 - failure result normalised with error details`, `RSC24_Mixed_1 - mixed results normalised`.
-
-**Issue**: [#2201](https://github.com/ably/ably-js/issues/2201)
 
 ---
 

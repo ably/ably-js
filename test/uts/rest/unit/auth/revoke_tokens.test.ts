@@ -89,13 +89,19 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
 
   /**
    * RSA17c / BAR2 - All success result
+   *
+   * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
+   * results} directly — the SDK passes through the response.
    */
   it('RSA17c - all success result', async function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js passes through response; see #2201
-    const responseBody = [
-      { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
-      { target: 'clientId:bob', issuedBefore: 1700000000000, appliesAt: 1700000002000 },
-    ];
+    const responseBody = {
+      successCount: 2,
+      failureCount: 0,
+      results: [
+        { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
+        { target: 'clientId:bob', issuedBefore: 1700000000000, appliesAt: 1700000002000 },
+      ],
+    };
     installMockHttp(revokeMock(null, responseBody));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
@@ -132,18 +138,17 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17c_2 - Mixed success and failure result
    *
-   * Per spec: the SDK should normalise the HTTP 400 response containing
-   * {error, batchResponse} into {successCount, failureCount, results}.
+   * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
+   * results} directly with HTTP 200 — the SDK passes through the response.
    */
-  it('RSA17c_2 - mixed result normalised', async function () {
-    // DEVIATION: see deviations.md
-    if (!process.env.RUN_DEVIATIONS) this.skip();
+  it('RSA17c_2 - mixed result', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(400, {
-          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-          batchResponse: [
+        req.respond_with(200, {
+          successCount: 1,
+          failureCount: 1,
+          results: [
             { target: 'clientId:alice', issuedBefore: 1700000000000, appliesAt: 1700000001000 },
             { target: 'invalidType:abc', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
           ],
@@ -166,19 +171,15 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
 
   /**
    * RSA17c_3 - All failure result
-   *
-   * Per spec: the SDK should normalise the HTTP 400 response into
-   * {successCount: 0, failureCount: N, results}.
    */
-  it('RSA17c_3 - all failure normalised', async function () {
-    // DEVIATION: see deviations.md
-    if (!process.env.RUN_DEVIATIONS) this.skip();
+  it('RSA17c_3 - all failure', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(400, {
-          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-          batchResponse: [
+        req.respond_with(200, {
+          successCount: 0,
+          failureCount: 2,
+          results: [
             { target: 'invalidType:foo', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
             { target: 'invalidType:bar', error: { code: 40000, statusCode: 400, message: 'Invalid target type' } },
           ],
@@ -201,19 +202,15 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
 
   /**
    * TRF2_1 - Failure result with target and error details
-   *
-   * Per spec: the per-target error details should be accessible in the
-   * normalised response results.
    */
   it('TRF2_1 - failure details in results', async function () {
-    // DEVIATION: see deviations.md
-    if (!process.env.RUN_DEVIATIONS) this.skip();
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(400, {
-          error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-          batchResponse: [
+        req.respond_with(200, {
+          successCount: 0,
+          failureCount: 1,
+          results: [
             {
               target: 'invalidType:abc',
               error: { code: 40000, statusCode: 400, message: 'Invalid target type' },

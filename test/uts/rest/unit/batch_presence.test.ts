@@ -131,18 +131,17 @@ describe('uts/rest/unit/batch_presence', function () {
     /**
      * BAR2_1 - Mixed results with computed counts
      *
-     * Per spec: the SDK should normalise the HTTP 400 response containing
-     * {error, batchResponse} into {successCount, failureCount, results}.
+     * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
+     * results} directly with HTTP 200 — the SDK passes through the response.
      */
-    it('BAR2_1 - mixed results normalised', async function () {
-      // DEVIATION: see deviations.md
-      if (!process.env.RUN_DEVIATIONS) this.skip();
+    it('BAR2_1 - mixed results', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(400, {
-            error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-            batchResponse: [
+          req.respond_with(200, {
+            successCount: 3,
+            failureCount: 1,
+            results: [
               { channel: 'ch-1', presence: [] },
               { channel: 'ch-2', presence: [] },
               { channel: 'ch-3', presence: [] },
@@ -164,18 +163,17 @@ describe('uts/rest/unit/batch_presence', function () {
     /**
      * BAR2_3 - All failure
      *
-     * Per spec: the SDK should normalise the HTTP 400 response into
-     * {successCount: 0, failureCount: N, results}.
+     * With X-Ably-Version >= 3, the server returns the BatchResult envelope
+     * with HTTP 200 even when all results are failures.
      */
-    it('BAR2_3 - all failure normalised', async function () {
-      // DEVIATION: see deviations.md
-      if (!process.env.RUN_DEVIATIONS) this.skip();
+    it('BAR2_3 - all failure', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(400, {
-            error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-            batchResponse: [
+          req.respond_with(200, {
+            successCount: 0,
+            failureCount: 2,
+            results: [
               { channel: 'ch-a', error: { code: 40160, statusCode: 401, message: 'Not permitted' } },
               { channel: 'ch-b', error: { code: 40160, statusCode: 401, message: 'Not permitted' } },
             ],
@@ -275,19 +273,15 @@ describe('uts/rest/unit/batch_presence', function () {
   describe('BGF2 - BatchPresenceFailureResult structure', function () {
     /**
      * BGF2_1 - Failure result with error details
-     *
-     * Per spec: the SDK should normalise the HTTP 400 response so that
-     * per-channel failure results with error details are accessible.
      */
-    it('BGF2_1 - failure result normalised with error details', async function () {
-      // DEVIATION: see deviations.md
-      if (!process.env.RUN_DEVIATIONS) this.skip();
+    it('BGF2_1 - failure result with error details', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(400, {
-            error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-            batchResponse: [
+          req.respond_with(200, {
+            successCount: 0,
+            failureCount: 1,
+            results: [
               {
                 channel: 'restricted-channel',
                 error: {
@@ -320,19 +314,15 @@ describe('uts/rest/unit/batch_presence', function () {
   describe('Mixed results', function () {
     /**
      * RSC24_Mixed_1 - Mixed success and failure results
-     *
-     * Per spec: the SDK should normalise the batchResponse into per-channel
-     * success/failure results with computed counts.
      */
-    it('RSC24_Mixed_1 - mixed results normalised', async function () {
-      // DEVIATION: see deviations.md
-      if (!process.env.RUN_DEVIATIONS) this.skip();
+    it('RSC24_Mixed_1 - mixed success and failure results', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
-          req.respond_with(400, {
-            error: { code: 40020, statusCode: 400, message: 'Batched response includes errors' },
-            batchResponse: [
+          req.respond_with(200, {
+            successCount: 1,
+            failureCount: 1,
+            results: [
               {
                 channel: 'allowed-channel',
                 presence: [
