@@ -1,3 +1,4 @@
+import type { TokenParams } from '../../../../ably';
 /**
  * UTS: Auth Callback Tests
  *
@@ -6,23 +7,23 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
-function simpleMock(captured: any) {
+function simpleMock(captured: PendingRequest[]) {
   return new MockHttpClient({
-    onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-    onRequest: (req: any) => {
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
       captured.push(req);
       req.respond_with(200, []);
     },
   });
 }
 
-function authUrlMock(captured: any, tokenValue?: any) {
+function authUrlMock(captured: PendingRequest[], tokenValue?: string) {
   return new MockHttpClient({
-    onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-    onRequest: (req: any) => {
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
       captured.push(req);
       if (req.url.host === 'auth.example.com') {
         req.respond_with(200, tokenValue || 'authurl-token', { 'content-type': 'text/plain' });
@@ -42,13 +43,13 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8d - authCallback invoked for authentication
    */
   it('RSA8d - authCallback invoked for authentication', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let callbackInvoked = false;
 
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callbackInvoked = true;
         callback(null, 'callback-token');
       },
@@ -69,12 +70,12 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8d - authCallback returning JWT string
    */
   it('RSA8d - authCallback returning JWT string', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-jwt-payload';
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, jwt);
       },
     } as any);
@@ -93,11 +94,11 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8d - authCallback returning TokenRequest
    */
   it('RSA8d - authCallback returning TokenRequest', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         captured.push(req);
         if (req.path.match(/\/keys\/.*\/requestToken/)) {
           req.respond_with(200, {
@@ -113,7 +114,7 @@ describe('uts/rest/auth/auth_callback', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, {
           keyName: 'app.key',
           ttl: 3600000,
@@ -145,16 +146,16 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8d - authCallback receives TokenParams
    */
   it('RSA8d - authCallback receives TokenParams', async function () {
-    let receivedParams: any = null;
+    let receivedParams: TokenParams | null = null;
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => req.respond_with(200, []),
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, []),
     });
     installMockHttp(mock);
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         receivedParams = params;
         callback(null, 'test-token');
       },
@@ -166,11 +167,11 @@ describe('uts/rest/auth/auth_callback', function () {
     } as any);
 
     expect(receivedParams).to.not.be.null;
-    expect(receivedParams.clientId).to.equal('requested-client-id');
-    expect(receivedParams.ttl).to.equal(7200000);
+    expect(receivedParams!.clientId).to.equal('requested-client-id');
+    expect(receivedParams!.ttl).to.equal(7200000);
     // ably-js serializes capability as a JSON string
     const cap =
-      typeof receivedParams.capability === 'string' ? JSON.parse(receivedParams.capability) : receivedParams.capability;
+      typeof receivedParams!.capability === 'string' ? JSON.parse(receivedParams!.capability) : receivedParams!.capability;
     expect(cap).to.deep.equal({ channel1: ['publish'] });
   });
 
@@ -178,7 +179,7 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl invoked for authentication (GET)
    */
   it('RSA8c - authUrl invoked for authentication (GET)', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(authUrlMock(captured));
 
     const client = new Ably.Rest({
@@ -208,11 +209,11 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl with POST method
    */
   it('RSA8c - authUrl with POST method', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         captured.push(req);
         if (req.url.host === 'auth.example.com') {
           req.respond_with(200, 'authurl-token', { 'content-type': 'text/plain' });
@@ -241,7 +242,7 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl with custom headers
    */
   it('RSA8c - authUrl with custom headers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(authUrlMock(captured));
 
     const client = new Ably.Rest({
@@ -266,7 +267,7 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl with query params
    */
   it('RSA8c - authUrl with query params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(authUrlMock(captured));
 
     const client = new Ably.Rest({
@@ -291,7 +292,7 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl returning JWT string
    */
   it('RSA8c - authUrl returning JWT string', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const jwt = 'eyJhbGciOiJIUzI1NiJ9.jwt-body.signature';
     installMockHttp(authUrlMock(captured, jwt));
 
@@ -313,23 +314,23 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8d - authCallback error propagated
    */
   it('RSA8d - authCallback error propagated', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
-        callback(new Error('Authentication server unavailable'));
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
+        callback(new Error('Authentication server unavailable') as ErrorInfo);
       },
     } as any);
 
     try {
       await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(401);
       // UTS spec: error.message CONTAINS "Authentication server unavailable"
       // ably-js wraps the original error — check the message is preserved somewhere
-      const errorStr = String(error.message || error);
+      const errorStr = String((error as ErrorInfo).message || error);
       expect(errorStr).to.include('Authentication server unavailable');
     }
 
@@ -341,11 +342,11 @@ describe('uts/rest/auth/auth_callback', function () {
    * RSA8c - authUrl error propagated
    */
   it('RSA8c - authUrl error propagated', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         captured.push(req);
         if (req.url.host === 'auth.example.com') {
           req.respond_with(500, { error: 'Internal server error' });
@@ -363,10 +364,10 @@ describe('uts/rest/auth/auth_callback', function () {
     try {
       await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error: any) {
+    } catch (error) {
       // UTS spec: error.statusCode == 500 OR error.message CONTAINS "auth"
-      const hasExpectedStatus = error.statusCode === 500 || error.statusCode === 401;
-      const hasAuthMessage = String(error.message || '')
+      const hasExpectedStatus = (error as ErrorInfo).statusCode === 500 || (error as ErrorInfo).statusCode === 401;
+      const hasAuthMessage = String((error as ErrorInfo).message || '')
         .toLowerCase()
         .includes('auth');
       expect(hasExpectedStatus || hasAuthMessage).to.be.true;

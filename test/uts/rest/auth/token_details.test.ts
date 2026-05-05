@@ -1,3 +1,4 @@
+import type { TokenParams } from '../../../../ably';
 /**
  * UTS: Auth.tokenDetails Tests
  *
@@ -9,10 +10,10 @@ import { expect } from 'chai';
 import { MockHttpClient } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
-function simpleMock(captured?: any) {
+function simpleMock(captured?: PendingRequest[]) {
   return new MockHttpClient({
-    onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-    onRequest: (req: any) => {
+    onConnectionAttempt: (conn) => conn.respond_with_success(),
+    onRequest: (req) => {
       if (captured) captured.push(req);
       req.respond_with(200, []);
     },
@@ -31,7 +32,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, {
           token: 'callback-token-abc',
           expires: Date.now() + 3600000,
@@ -60,8 +61,8 @@ describe('uts/rest/auth/token_details', function () {
    */
   it('RSA16a - tokenDetails from requestToken', async function () {
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         if (req.path.match(/\/keys\/.*\/requestToken/)) {
           req.respond_with(200, {
             token: 'requested-token-xyz',
@@ -96,10 +97,10 @@ describe('uts/rest/auth/token_details', function () {
     expect(client.auth.tokenDetails).to.not.be.null;
     expect(client.auth.tokenDetails!.token).to.equal('standalone-token-string');
     // Other fields should be null/undefined since we only had the token string
-    expect(client.auth.tokenDetails!.expires).to.satisfy((v: any) => v === null || v === undefined);
-    expect(client.auth.tokenDetails!.issued).to.satisfy((v: any) => v === null || v === undefined);
-    expect(client.auth.tokenDetails!.clientId).to.satisfy((v: any) => v === null || v === undefined);
-    expect(client.auth.tokenDetails!.capability).to.satisfy((v: any) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.expires).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.issued).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.clientId).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.capability).to.satisfy((v: unknown) => v === null || v === undefined);
   });
 
   /**
@@ -109,7 +110,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, 'just-a-token-string');
       },
     } as any);
@@ -124,8 +125,8 @@ describe('uts/rest/auth/token_details', function () {
     expect(client.auth.tokenDetails).to.not.be.null;
     expect(client.auth.tokenDetails!.token).to.equal('just-a-token-string');
     // Other fields should be null/undefined
-    expect(client.auth.tokenDetails!.expires).to.satisfy((v: any) => v === null || v === undefined);
-    expect(client.auth.tokenDetails!.issued).to.satisfy((v: any) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.expires).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(client.auth.tokenDetails!.issued).to.satisfy((v: unknown) => v === null || v === undefined);
   });
 
   /**
@@ -157,7 +158,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         tokenCount++;
         callback(null, {
           token: 'token-v' + tokenCount,
@@ -192,8 +193,8 @@ describe('uts/rest/auth/token_details', function () {
     let tokenCount = 0;
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         requestCount++;
         if (requestCount === 1) {
           req.respond_with(401, {
@@ -207,7 +208,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         tokenCount++;
         callback(null, {
           token: 'token-v' + tokenCount,
@@ -246,8 +247,8 @@ describe('uts/rest/auth/token_details', function () {
     let requestCount = 0;
 
     const mock = new MockHttpClient({
-      onConnectionAttempt: (conn: any) => conn.respond_with_success(),
-      onRequest: (req: any) => {
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
         requestCount++;
         req.respond_with(401, {
           error: { code: 40142, statusCode: 401, message: 'Token expired' },
@@ -257,7 +258,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(mock);
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callbackCount++;
         if (callbackCount === 1) {
           callback(null, {
@@ -302,7 +303,7 @@ describe('uts/rest/auth/token_details', function () {
       /* ok */
     }
 
-    expect(client.auth.tokenDetails).to.satisfy((v: any) => v === null || v === undefined);
+    expect(client.auth.tokenDetails).to.satisfy((v: unknown) => v === null || v === undefined);
   });
 
   /**
@@ -312,13 +313,13 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, 'my-token');
       },
     } as any);
 
     // No requests made yet
-    expect(client.auth.tokenDetails).to.satisfy((v: any) => v === null || v === undefined);
+    expect(client.auth.tokenDetails).to.satisfy((v: unknown) => v === null || v === undefined);
   });
 
   /**
@@ -328,7 +329,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, {
           token: 'stable-token',
           expires: Date.now() + 3600000,
@@ -372,7 +373,7 @@ describe('uts/rest/auth/token_details', function () {
     installMockHttp(simpleMock());
 
     const client = new Ably.Rest({
-      authCallback: function (params: any, callback: any) {
+      authCallback: function (params: TokenParams, callback: (error: ErrorInfo | string | null, result?: unknown) => void) {
         callback(null, {
           token: 'capable-token',
           expires: Date.now() + 3600000,

@@ -8,8 +8,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../helpers';
+import { MockHttpClient, PendingRequest } from '../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/rest/batch_publish', function () {
   afterEach(function () {
@@ -22,7 +22,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('RSC22c - batchPublish sends POST to /messages', function () {
     it('RSC22c1 - single BatchPublishSpec sends POST to /messages', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -46,7 +46,7 @@ describe('uts/rest/batch_publish', function () {
       expect(captured[0].method.toUpperCase()).to.equal('POST');
       expect(captured[0].path).to.equal('/messages');
 
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       // Single spec is wrapped in an array by the SDK
       expect(body).to.be.an('array').with.lengthOf(1);
       expect(body[0].channels).to.deep.equal(['ch1']);
@@ -56,7 +56,7 @@ describe('uts/rest/batch_publish', function () {
     });
 
     it('RSC22c2 - array of BatchPublishSpecs sends POST to /messages', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -87,7 +87,7 @@ describe('uts/rest/batch_publish', function () {
       expect(captured[0].method.toUpperCase()).to.equal('POST');
       expect(captured[0].path).to.equal('/messages');
 
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body).to.be.an('array').with.lengthOf(2);
       expect(body[0].channels).to.deep.equal(['ch-a']);
       expect(body[0].messages[0].name).to.equal('e1');
@@ -197,7 +197,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('RSC22c7 - authentication', function () {
     it('RSC22c7 - basic auth header is included', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -475,10 +475,10 @@ describe('uts/rest/batch_publish', function () {
           channels: ['ch'],
           messages: [{ name: 'e', data: 'd' }],
         });
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
-        expect(err.code).to.equal(50000);
-        expect(err.statusCode).to.equal(500);
+        expect((err as ErrorInfo).code).to.equal(50000);
+        expect((err as ErrorInfo).statusCode).to.equal(500);
       }
       expect(threw).to.be.true;
     });
@@ -502,10 +502,10 @@ describe('uts/rest/batch_publish', function () {
           channels: ['ch'],
           messages: [{ name: 'e', data: 'd' }],
         });
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
-        expect(err.code).to.equal(40101);
-        expect(err.statusCode).to.equal(401);
+        expect((err as ErrorInfo).code).to.equal(40101);
+        expect((err as ErrorInfo).statusCode).to.equal(401);
       }
       expect(threw).to.be.true;
     });
@@ -517,7 +517,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('RSC22_Headers - request headers', function () {
     it('RSC22_Headers1 - standard headers included', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -553,7 +553,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('BSP - BatchPublishSpec structure', function () {
     it('BSP2a - channels is array of strings', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -579,13 +579,13 @@ describe('uts/rest/batch_publish', function () {
         messages: [{ name: 'e', data: 'd' }],
       });
 
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body[0].channels).to.be.an('array').with.lengthOf(3);
       expect(body[0].channels).to.deep.equal(['ch-a', 'ch-b', 'ch-c']);
     });
 
     it('BSP2b - messages is array of Message objects', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -610,7 +610,7 @@ describe('uts/rest/batch_publish', function () {
         ],
       });
 
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body[0].messages).to.be.an('array').with.lengthOf(2);
       expect(body[0].messages[0].name).to.equal('event1');
       expect(body[0].messages[0].data).to.equal('data1');
@@ -632,7 +632,7 @@ describe('uts/rest/batch_publish', function () {
     it('RSC22d - batch publish generates idempotent IDs', async function () {
       // DEVIATION: see deviations.md
       if (!process.env.RUN_DEVIATIONS) this.skip();
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -659,7 +659,7 @@ describe('uts/rest/batch_publish', function () {
       });
 
       expect(captured).to.have.length(1);
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body[0].messages[0]).to.have.property('id');
       expect(body[0].messages[0].id).to.match(/^.+:0$/);
     });
@@ -671,7 +671,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('RSC22_Error - edge cases', function () {
     it('RSC22_Error1 - empty channels array', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -691,16 +691,16 @@ describe('uts/rest/batch_publish', function () {
           channels: [],
           messages: [{ name: 'e', data: 'd' }],
         });
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
         // Either the SDK validates locally or the server rejects it
-        expect(err.code).to.be.a('number');
+        expect((err as ErrorInfo).code).to.be.a('number');
       }
 
       // Either an error is thrown or the request was made with the empty array
       if (!threw) {
         expect(captured).to.have.length(1);
-        const body = JSON.parse(captured[0].body);
+        const body = JSON.parse(captured[0].body!);
         expect(body[0].channels).to.deep.equal([]);
       }
     });
@@ -712,7 +712,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('RSC22c6 - encoding in batch messages', function () {
     it('RSC22c6 - JSON string data sent correctly in body', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -735,7 +735,7 @@ describe('uts/rest/batch_publish', function () {
       });
 
       expect(captured).to.have.length(1);
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body[0].messages[0].name).to.equal('event');
       // The data should be the JSON string as-is
       const parsedData = JSON.parse(body[0].messages[0].data);
@@ -749,7 +749,7 @@ describe('uts/rest/batch_publish', function () {
 
   describe('BSP - additional BatchPublishSpec tests', function () {
     it('BSP - single channel in BatchPublishSpec', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -772,7 +772,7 @@ describe('uts/rest/batch_publish', function () {
       });
 
       expect(captured).to.have.length(1);
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       // Single spec is wrapped in an array
       expect(body).to.be.an('array').with.lengthOf(1);
       expect(body[0].channels).to.deep.equal(['single-ch']);

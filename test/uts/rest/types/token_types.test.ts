@@ -103,7 +103,7 @@ describe('uts/rest/types/token_types', function () {
 
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
-    expect(tokenRequest.ttl).to.satisfy((v: any) => v === null || v === undefined || v === '');
+    expect(tokenRequest.ttl).to.satisfy((v: unknown) => v === null || v === undefined || v === '');
   });
 
   /**
@@ -115,7 +115,7 @@ describe('uts/rest/types/token_types', function () {
 
     const tokenRequest = await client.auth.createTokenRequest({}, null);
 
-    expect(tokenRequest.capability).to.satisfy((v: any) => v === null || v === undefined || v === '');
+    expect(tokenRequest.capability).to.satisfy((v: unknown) => v === null || v === undefined || v === '');
   });
 
   // --- TE1-TE6: TokenRequest attributes ---

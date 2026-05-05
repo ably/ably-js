@@ -9,7 +9,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
+import { MockHttpClient, PendingRequest } from '../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/rest/request_endpoint', function () {
@@ -24,7 +24,7 @@ describe('uts/rest/request_endpoint', function () {
    * sent to the default primary domain (main.realtime.ably.net).
    */
   it('RSC25 - default primary domain', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -48,7 +48,7 @@ describe('uts/rest/request_endpoint', function () {
    * must be sent to the corresponding domain.
    */
   it('RSC25 - custom endpoint', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -76,7 +76,7 @@ describe('uts/rest/request_endpoint', function () {
    * without host switching (absent any fallback triggering errors).
    */
   it('RSC25 - multiple requests use primary domain', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -105,7 +105,7 @@ describe('uts/rest/request_endpoint', function () {
    */
   it('RSC25 - primary tried before fallback', async function () {
     let requestCount = 0;
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -137,7 +137,7 @@ describe('uts/rest/request_endpoint', function () {
    * regardless of endpoint configuration.
    */
   it('RSC25 - request path preserved', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

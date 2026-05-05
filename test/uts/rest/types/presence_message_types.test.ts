@@ -210,9 +210,9 @@ describe('uts/rest/types/presence_message_types', function () {
 
     expect(pm.action).to.equal('present');
     // clientId, connectionId, data should be null or undefined
-    expect(pm.clientId).to.satisfy((v: any) => v === null || v === undefined);
-    expect(pm.connectionId).to.satisfy((v: any) => v === null || v === undefined);
-    expect(pm.data).to.satisfy((v: any) => v === null || v === undefined);
+    expect(pm.clientId).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(pm.connectionId).to.satisfy((v: unknown) => v === null || v === undefined);
+    expect(pm.data).to.satisfy((v: unknown) => v === null || v === undefined);
   });
 
   /**

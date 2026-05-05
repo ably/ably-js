@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 const Message = Ably.Rest.Message;
 
@@ -23,7 +23,7 @@ describe('uts/rest/channel/publish', function () {
    * to /channels/<channelName>/messages.
    */
   it('RSL1a - publish sends POST to correct path', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -48,7 +48,7 @@ describe('uts/rest/channel/publish', function () {
    * The POST body must contain the published message serialized as JSON.
    */
   it('RSL1b - publish body contains message', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -63,7 +63,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish('event', 'data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     // ably-js sends an array of messages
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
@@ -78,7 +78,7 @@ describe('uts/rest/channel/publish', function () {
    * POST request, with the body containing all messages.
    */
   it('RSL1c - publish array sends single request', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -97,7 +97,7 @@ describe('uts/rest/channel/publish', function () {
     ]);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(3);
     expect(body[0].name).to.equal('a');
@@ -113,7 +113,7 @@ describe('uts/rest/channel/publish', function () {
   it('RSL1e - null name omitted from body', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -128,7 +128,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish(null, 'data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect('name' in body[0]).to.be.false;
@@ -143,7 +143,7 @@ describe('uts/rest/channel/publish', function () {
   it('RSL1e - null data omitted from body', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -158,7 +158,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish('event', null);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].name).to.equal('event');
@@ -172,7 +172,7 @@ describe('uts/rest/channel/publish', function () {
    * with both name and data fields in the request body.
    */
   it('RSL1h - publish(name, data) two-arg form', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -187,7 +187,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish('my-event', 'my-data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].name).to.equal('my-event');
@@ -202,7 +202,7 @@ describe('uts/rest/channel/publish', function () {
    * maxMessageSize for deterministic testing.
    */
   it('RSL1i - message size limit exceeded', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -226,8 +226,8 @@ describe('uts/rest/channel/publish', function () {
     try {
       await ch.publish('event', largeData);
       expect.fail('Expected publish to throw due to message size limit');
-    } catch (error: any) {
-      expect(error.code).to.equal(40009);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40009);
     }
 
     // No HTTP request should have been made
@@ -240,7 +240,7 @@ describe('uts/rest/channel/publish', function () {
    * A message at or under the size limit should succeed.
    */
   it('RSL1i - message at size limit succeeds', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -270,7 +270,7 @@ describe('uts/rest/channel/publish', function () {
    * (id, clientId, extras), they must all appear in the request body.
    */
   it('RSL1j - all message attributes transmitted', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -294,7 +294,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish(msg);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].name).to.equal('e');
@@ -312,7 +312,7 @@ describe('uts/rest/channel/publish', function () {
    * clientId into the message body (ably-js behaviour for REST).
    */
   it('RSL1m1 - library clientId not auto-injected', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -331,7 +331,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish('event', 'data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0]).to.not.have.property('clientId');
@@ -344,7 +344,7 @@ describe('uts/rest/channel/publish', function () {
    * same clientId, it must be preserved in the request body.
    */
   it('RSL1m2 - explicit matching clientId preserved', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -365,7 +365,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish(msg);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].clientId).to.equal('lib-client');
@@ -378,7 +378,7 @@ describe('uts/rest/channel/publish', function () {
    * a clientId, it must be preserved in the request body.
    */
   it('RSL1m3 - unidentified client with message clientId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -395,7 +395,7 @@ describe('uts/rest/channel/publish', function () {
     await ch.publish(msg);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].clientId).to.equal('msg-client');
@@ -409,7 +409,7 @@ describe('uts/rest/channel/publish', function () {
    * null fields).
    */
   it('RSL1e - both name and data null', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -423,7 +423,7 @@ describe('uts/rest/channel/publish', function () {
     await client.channels.get('test').publish(null, null);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     // The message should be essentially empty (name and data are null/missing)
@@ -435,7 +435,7 @@ describe('uts/rest/channel/publish', function () {
    * Additional params passed to publish should appear as query parameters.
    */
   it('RSL1l - publish params as querystring', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

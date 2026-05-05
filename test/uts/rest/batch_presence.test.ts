@@ -9,8 +9,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../helpers';
+import { MockHttpClient, PendingRequest } from '../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/rest/batch_presence', function () {
   afterEach(function () {
@@ -23,7 +23,7 @@ describe('uts/rest/batch_presence', function () {
 
   describe('RSC24 - batchPresence sends GET to /presence', function () {
     it('RSC24_1 - sends GET request to /presence with channels query param', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -50,7 +50,7 @@ describe('uts/rest/batch_presence', function () {
     });
 
     it('RSC24_2 - single channel sends GET with single channel name', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -72,7 +72,7 @@ describe('uts/rest/batch_presence', function () {
     });
 
     it('RSC24_3 - channel names with special characters are comma-joined', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -389,10 +389,10 @@ describe('uts/rest/batch_presence', function () {
       let threw = false;
       try {
         await client.batchPresence(['any-channel']);
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
-        expect(err.code).to.equal(50000);
-        expect(err.statusCode).to.equal(500);
+        expect((err as ErrorInfo).code).to.equal(50000);
+        expect((err as ErrorInfo).statusCode).to.equal(500);
       }
       expect(threw).to.be.true;
     });
@@ -413,10 +413,10 @@ describe('uts/rest/batch_presence', function () {
       let threw = false;
       try {
         await client.batchPresence(['any-channel']);
-      } catch (err: any) {
+      } catch (err) {
         threw = true;
-        expect(err.code).to.equal(40101);
-        expect(err.statusCode).to.equal(401);
+        expect((err as ErrorInfo).code).to.equal(40101);
+        expect((err as ErrorInfo).statusCode).to.equal(401);
       }
       expect(threw).to.be.true;
     });
@@ -428,7 +428,7 @@ describe('uts/rest/batch_presence', function () {
 
   describe('RSC24_Auth - request authentication', function () {
     it('RSC24_Auth_1 - basic auth header is included', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {

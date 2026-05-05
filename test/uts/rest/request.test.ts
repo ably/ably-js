@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
+import { MockHttpClient, PendingRequest } from '../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/rest/request', function () {
@@ -23,7 +23,7 @@ describe('uts/rest/request', function () {
 
     methods.forEach(function (method) {
       it(`${method} request to /test`, async function () {
-        const captured: any[] = [];
+        const captured: PendingRequest[] = [];
         const mock = new MockHttpClient({
           onConnectionAttempt: (conn) => conn.respond_with_success(),
           onRequest: (req) => {
@@ -49,7 +49,7 @@ describe('uts/rest/request', function () {
 
   describe('RSC19f - Request details', function () {
     it('query params sent correctly', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -75,7 +75,7 @@ describe('uts/rest/request', function () {
     });
 
     it('custom headers included', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -97,7 +97,7 @@ describe('uts/rest/request', function () {
     });
 
     it('Basic auth header included automatically', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -121,7 +121,7 @@ describe('uts/rest/request', function () {
     });
 
     it('body encoding (JSON)', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -142,7 +142,7 @@ describe('uts/rest/request', function () {
       );
 
       expect(captured).to.have.length(1);
-      const body = JSON.parse(captured[0].body);
+      const body = JSON.parse(captured[0].body!);
       expect(body.name).to.equal('event');
       expect(body.data).to.equal('payload');
     });
@@ -379,7 +379,7 @@ describe('uts/rest/request', function () {
     });
 
     it('Token auth request uses Bearer authorization', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -391,7 +391,7 @@ describe('uts/rest/request', function () {
 
       const client = new Ably.Rest({
         useBinaryProtocol: false,
-        authCallback: (params: any, callback: any) => {
+        authCallback: (params, callback) => {
           callback(null, 'my-token');
         },
       });
@@ -409,7 +409,7 @@ describe('uts/rest/request', function () {
      * behavior: path is used as-is and the leading slash comes from the base URI.
      */
     it('Path normalization - path with leading slash', async function () {
-      const captured: any[] = [];
+      const captured: PendingRequest[] = [];
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
         onRequest: (req) => {
@@ -442,7 +442,7 @@ describe('uts/rest/request', function () {
       try {
         await client.request('GET', '/test', 3, null as any, null as any, null as any);
         expect.fail('Expected request to throw on connection refused');
-      } catch (error: any) {
+      } catch (error) {
         expect(error).to.exist;
       }
     });

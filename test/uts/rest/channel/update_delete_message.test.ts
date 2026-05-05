@@ -6,10 +6,10 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
-function msg(fields: any) {
+function msg(fields: Parameters<typeof Ably.Rest.Message.fromValues>[0]) {
   return Ably.Rest.Message.fromValues(fields);
 }
 
@@ -25,7 +25,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * with the message body containing action=1 (MESSAGE_UPDATE).
    */
   it('RSL15b - updateMessage sends PATCH', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -42,7 +42,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('patch');
     expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.action).to.equal(1);
     expect(body.name).to.equal('updated');
     expect(body.data).to.equal('new-data');
@@ -54,7 +54,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * deleteMessage must send a PATCH request with action=2 (MESSAGE_DELETE).
    */
   it('RSL15b - deleteMessage sends PATCH with action 2', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -71,7 +71,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('patch');
     expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.action).to.equal(2);
   });
 
@@ -81,7 +81,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * appendMessage must send a PATCH request with action=5 (MESSAGE_APPEND).
    */
   it('RSL15b - appendMessage sends PATCH with action 5', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -98,7 +98,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     expect(captured).to.have.length(1);
     expect(captured[0].method).to.equal('patch');
     expect(captured[0].path).to.equal('/channels/test-channel/messages/' + encodeURIComponent('msg-serial-1'));
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.action).to.equal(5);
   });
 
@@ -109,7 +109,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * a version field with clientId, description, and metadata from the operation.
    */
   it('RSL15b7 - version set with MessageOperation', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -128,7 +128,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.version).to.be.an('object');
     expect(body.version.clientId).to.equal('user1');
     expect(body.version.description).to.equal('fixed typo');
@@ -142,7 +142,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * include a version field.
    */
   it('RSL15b7 - version absent without operation', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -157,7 +157,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     await ch.updateMessage(msg({ serial: 's1', data: 'updated' }));
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.version).to.be.undefined;
   });
 
@@ -168,7 +168,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * passed in by the user.
    */
   it('RSL15c - does not mutate user-supplied message', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -196,7 +196,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * The resolved value must contain the versionSerial from the server response.
    */
   it('RSL15e - returns UpdateDeleteResult with versionSerial', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -220,7 +220,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * preserve it as null rather than converting to undefined.
    */
   it('RSL15e - null versionSerial preserved', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -243,7 +243,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * When params are provided, they must be sent as URL query parameters.
    */
   it('RSL15f - params sent as querystring', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -269,7 +269,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * appendMessage must all throw an error with code 40003.
    */
   it('RSL15a - serial required', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -286,24 +286,24 @@ describe('uts/rest/channel/update_delete_message', function () {
     try {
       await ch.updateMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected updateMessage to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40003);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40003);
     }
 
     // deleteMessage should throw
     try {
       await ch.deleteMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected deleteMessage to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40003);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40003);
     }
 
     // appendMessage should throw
     try {
       await ch.appendMessage(msg({ name: 'x', data: 'y' }));
       expect.fail('Expected appendMessage to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40003);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40003);
     }
 
     // No requests should have been made
@@ -316,7 +316,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * Object data must be JSON-encoded with an encoding field set to 'json'.
    */
   it('RSL15d - data encoded per RSL4', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -331,7 +331,7 @@ describe('uts/rest/channel/update_delete_message', function () {
     await ch.updateMessage(msg({ serial: 's1', data: { key: 'value' } }));
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(typeof body.data).to.equal('string');
     expect(body.encoding).to.equal('json');
   });
@@ -343,7 +343,7 @@ describe('uts/rest/channel/update_delete_message', function () {
    * special characters correctly.
    */
   it('RSL15b - serial URL-encoded', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

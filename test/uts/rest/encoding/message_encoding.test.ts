@@ -10,11 +10,11 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 function publishMock() {
-  const captured: any[] = [];
+  const captured: PendingRequest[] = [];
   const mock = new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -25,7 +25,7 @@ function publishMock() {
   return { mock, captured };
 }
 
-function historyMock(messages: any) {
+function historyMock(messages: unknown) {
   const mock = new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -52,9 +52,9 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', 'plain string data');
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].data).to.equal('plain string data');
-    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: unknown) => v === undefined || v === null);
   });
 
   /**
@@ -67,7 +67,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', { key: 'value', nested: { a: 1 } });
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].encoding).to.equal('json');
     expect(typeof body[0].data).to.equal('string');
     expect(JSON.parse(body[0].data)).to.deep.equal({ key: 'value', nested: { a: 1 } });
@@ -84,7 +84,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     const binaryData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe]);
     await client.channels.get('test').publish('event', binaryData);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].encoding).to.equal('base64');
     const decoded = Buffer.from(body[0].data, 'base64');
     expect(Buffer.compare(decoded, binaryData)).to.equal(0);
@@ -100,7 +100,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', [1, 2, 'three', { four: 4 }]);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].encoding).to.equal('json');
     expect(JSON.parse(body[0].data)).to.deep.equal([1, 2, 'three', { four: 4 }]);
   });
@@ -115,9 +115,9 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', null);
 
-    const body = JSON.parse(captured[0].body);
-    expect(body[0].data).to.satisfy((v: any) => v === undefined || v === null);
-    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
+    const body = JSON.parse(captured[0].body!);
+    expect(body[0].data).to.satisfy((v: unknown) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: unknown) => v === undefined || v === null);
   });
 
   /**
@@ -130,9 +130,9 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', '');
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].data).to.equal('');
-    expect(body[0].encoding).to.satisfy((v: any) => v === undefined || v === null);
+    expect(body[0].encoding).to.satisfy((v: unknown) => v === undefined || v === null);
   });
 
   /**
@@ -145,7 +145,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', []);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].encoding).to.equal('json');
     expect(JSON.parse(body[0].data)).to.deep.equal([]);
   });
@@ -160,7 +160,7 @@ describe('uts/rest/encoding/message_encoding', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish('event', {});
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body[0].encoding).to.equal('json');
     expect(JSON.parse(body[0].data)).to.deep.equal({});
   });
@@ -322,8 +322,8 @@ describe('uts/rest/encoding/message_encoding', function () {
     try {
       await client.channels.get('test').publish('event', 42);
       expect.fail('Expected publish to throw');
-    } catch (e: any) {
-      expect(e.code).to.equal(40013);
+    } catch (e) {
+      expect((e as ErrorInfo).code).to.equal(40013);
     }
   });
 
@@ -341,8 +341,8 @@ describe('uts/rest/encoding/message_encoding', function () {
     try {
       await client.channels.get('test').publish('event', true);
       expect.fail('Expected publish to throw');
-    } catch (e: any) {
-      expect(e.code).to.equal(40013);
+    } catch (e) {
+      expect((e as ErrorInfo).code).to.equal(40013);
     }
   });
 

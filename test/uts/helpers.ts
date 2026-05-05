@@ -14,6 +14,8 @@ import { DefaultRest } from '../../src/common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../src/common/lib/client/defaultrealtime';
 import ErrorInfo from '../../src/common/lib/types/errorinfo';
 import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../src/common/lib/types/protocolmessage';
+import { IPlatformHttpStatic } from '../../src/common/types/http';
+import { IPlatformConfig } from '../../src/common/types/IPlatformConfig';
 
 const Ably = {
   Rest: DefaultRest,
@@ -24,21 +26,23 @@ const Ably = {
 
 const Platform = DefaultRest.Platform;
 
+type Http = typeof Platform.Http; // = IPlatformHttpStatic
+
 // Saved originals for teardown
-let _savedHttp: any = null;
-let _savedWebSocket: any = null;
-let _savedSetTimeout: any = null;
-let _savedClearTimeout: any = null;
-let _savedNow: any = null;
+let _savedHttp: Http | null = null;
+let _savedWebSocket: IPlatformConfig['WebSocket'] | null = null;
+let _savedSetTimeout: IPlatformConfig['setTimeout'] | null = null;
+let _savedClearTimeout: IPlatformConfig['clearTimeout'] | null = null;
+let _savedNow: IPlatformConfig['now'] | null = null;
 
 // Tracked clients for cleanup — ensures timers are released even if a test crashes
-const _trackedClients: any[] = [];
+const _trackedClients: (DefaultRest | DefaultRealtime)[] = [];
 
 /**
  * Install a MockHttpClient as the platform HTTP implementation.
  * Call uninstallMockHttp() in afterEach to restore the original.
  */
-function installMockHttp(mockHttpClient: { asPlatformHttp(): any }): void {
+function installMockHttp(mockHttpClient: { asPlatformHttp(): IPlatformHttpStatic }): void {
   if (_savedHttp) throw new Error('Mock HTTP already installed — call uninstallMockHttp() first');
   _savedHttp = Platform.Http;
   Platform.Http = mockHttpClient.asPlatformHttp();
@@ -58,7 +62,7 @@ function uninstallMockHttp(): void {
  * Install a mock WebSocket constructor.
  * Call uninstallMockWebSocket() in afterEach to restore the original.
  */
-function installMockWebSocket(mockWsConstructor: any): void {
+function installMockWebSocket(mockWsConstructor: IPlatformConfig['WebSocket']): void {
   if (_savedWebSocket) throw new Error('Mock WebSocket already installed');
   _savedWebSocket = Platform.Config.WebSocket;
   Platform.Config.WebSocket = mockWsConstructor;
@@ -175,8 +179,8 @@ class FakeClock {
   uninstall(): void {
     if (_savedSetTimeout) {
       Platform.Config.setTimeout = _savedSetTimeout;
-      Platform.Config.clearTimeout = _savedClearTimeout;
-      Platform.Config.now = _savedNow;
+      Platform.Config.clearTimeout = _savedClearTimeout!;
+      Platform.Config.now = _savedNow!;
       _savedSetTimeout = null;
       _savedClearTimeout = null;
       _savedNow = null;
@@ -202,7 +206,7 @@ function enableFakeTimers(): FakeClock {
  * restoreAll() will close all tracked clients, preventing timer leaks
  * even if the test throws before reaching its own cleanup code.
  */
-function trackClient(client: any): void {
+function trackClient(client: DefaultRest | DefaultRealtime): void {
   _trackedClients.push(client);
 }
 
@@ -213,9 +217,9 @@ function restoreAll(): void {
   // Close all tracked clients first (before restoring mocks/timers)
   // so their internal timers are cancelled while mocks are still in place.
   while (_trackedClients.length > 0) {
-    const client = _trackedClients.pop();
+    const client = _trackedClients.pop()!;
     try {
-      if (typeof client.close === 'function') {
+      if (client instanceof DefaultRealtime) {
         client.close();
       }
     } catch (_) {
@@ -227,8 +231,8 @@ function restoreAll(): void {
   // Restore fake timers if installed
   if (_savedSetTimeout) {
     Platform.Config.setTimeout = _savedSetTimeout;
-    Platform.Config.clearTimeout = _savedClearTimeout;
-    Platform.Config.now = _savedNow;
+    Platform.Config.clearTimeout = _savedClearTimeout!;
+    Platform.Config.now = _savedNow!;
     _savedSetTimeout = null;
     _savedClearTimeout = null;
     _savedNow = null;
@@ -237,6 +241,7 @@ function restoreAll(): void {
 
 export {
   Ably,
+  ErrorInfo,
   Platform,
   installMockHttp,
   uninstallMockHttp,

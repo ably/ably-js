@@ -10,8 +10,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/types/paginated_result', function () {
   afterEach(function () {
@@ -105,7 +105,7 @@ describe('uts/rest/types/paginated_result', function () {
    * must include the cursor parameter from the Link header.
    */
   it('TG3 - next() fetches next page using Link header cursor', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -160,7 +160,7 @@ describe('uts/rest/types/paginated_result', function () {
    * The Link header must include rel="first" with ./messages? format.
    */
   it('TG4 - first() returns first page', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -261,7 +261,7 @@ describe('uts/rest/types/paginated_result', function () {
    * include the same Authorization header.
    */
   it('TG - pagination preserves auth credentials', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -302,7 +302,7 @@ describe('uts/rest/types/paginated_result', function () {
    * (X-Ably-Version and Ably-Agent).
    */
   it('TG - pagination includes standard Ably headers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
 
     const mock = new MockHttpClient({
@@ -376,9 +376,9 @@ describe('uts/rest/types/paginated_result', function () {
     try {
       await page1.next();
       expect.fail('Expected next() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(404);
-      expect(error.code).to.equal(40400);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(404);
+      expect((error as ErrorInfo).code).to.equal(40400);
     }
   });
 

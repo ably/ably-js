@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/channel/annotations', function () {
   afterEach(function () {
@@ -43,7 +43,7 @@ describe('uts/rest/channel/annotations', function () {
    * the messageSerial, type, and name fields.
    */
   it('RSAN1 - publish sends POST with ANNOTATION_CREATE', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -61,7 +61,7 @@ describe('uts/rest/channel/annotations', function () {
     expect(captured[0].method).to.equal('post');
     expect(captured[0].path).to.equal('/channels/test/messages/msg-serial-1/annotations');
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].action).to.equal(0); // ANNOTATION_CREATE
@@ -84,7 +84,7 @@ describe('uts/rest/channel/annotations', function () {
   it('RSAN1a3 - type required', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -102,8 +102,8 @@ describe('uts/rest/channel/annotations', function () {
     try {
       await ch.annotations.publish('msg-serial-1', { name: 'like' });
       expect.fail('Expected publish without type to throw with code 40003');
-    } catch (error: any) {
-      expect(error.code).to.equal(40003);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40003);
     }
   });
 
@@ -115,7 +115,7 @@ describe('uts/rest/channel/annotations', function () {
    * message encoding rules.
    */
   it('RSAN1c3 - data encoded per RSL4', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -130,7 +130,7 @@ describe('uts/rest/channel/annotations', function () {
     await ch.annotations.publish('msg-serial-1', { type: 'com.example.data', data: { key: 'value' } });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.have.length(1);
 
     // JSON data should be encoded as a string with encoding 'json'
@@ -152,7 +152,7 @@ describe('uts/rest/channel/annotations', function () {
   it('RSAN1c4 - idempotent ID generated', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -171,7 +171,7 @@ describe('uts/rest/channel/annotations', function () {
     await ch.annotations.publish('msg-serial-1', { type: 'com.example.reaction' });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.have.length(1);
 
     // Spec (RSAN1c4): annotation id MUST be auto-generated in <base64>:0 format.
@@ -192,7 +192,7 @@ describe('uts/rest/channel/annotations', function () {
    * be generated on the annotation.
    */
   it('RSAN1c4 - no ID when disabled', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -211,7 +211,7 @@ describe('uts/rest/channel/annotations', function () {
     await ch.annotations.publish('msg-serial-1', { type: 'com.example.reaction' });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.have.length(1);
     expect(body[0].id).to.be.undefined;
   });
@@ -223,7 +223,7 @@ describe('uts/rest/channel/annotations', function () {
    * action=1 (ANNOTATION_DELETE) to the correct endpoint.
    */
   it('RSAN2a - delete sends POST with ANNOTATION_DELETE', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -241,7 +241,7 @@ describe('uts/rest/channel/annotations', function () {
     expect(captured[0].method).to.equal('post');
     expect(captured[0].path).to.include('/messages/msg-serial-1/annotations');
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].action).to.equal(1); // ANNOTATION_DELETE
@@ -257,7 +257,7 @@ describe('uts/rest/channel/annotations', function () {
    * /channels/{channelName}/messages/{messageSerial}/annotations.
    */
   it('RSAN3b - get sends GET to correct path', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -364,7 +364,7 @@ describe('uts/rest/channel/annotations', function () {
    * query string parameters on the GET request.
    */
   it('RSAN3b - get passes params as querystring', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

@@ -16,8 +16,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/auth/token_renewal', function () {
   afterEach(function () {
@@ -35,7 +35,7 @@ describe('uts/rest/auth/token_renewal', function () {
     if (!process.env.RUN_DEVIATIONS) this.skip();
     let callbackCount = 0;
     let requestCount = 0;
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -146,9 +146,9 @@ describe('uts/rest/auth/token_renewal', function () {
     try {
       await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error: any) {
+    } catch (error) {
       // RSA4a2: client must indicate error with code 40171
-      expect(error.code).to.equal(40171);
+      expect((error as ErrorInfo).code).to.equal(40171);
     }
 
     // RSA4a2: only 1 request (no retry without renewal mechanism)
@@ -207,7 +207,7 @@ describe('uts/rest/auth/token_renewal', function () {
     if (!process.env.RUN_DEVIATIONS) this.skip();
     let callbackCount = 0;
     let requestCount = 0;
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -283,8 +283,8 @@ describe('uts/rest/auth/token_renewal', function () {
     try {
       await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(401);
     }
 
     expect(requestCount).to.equal(1);

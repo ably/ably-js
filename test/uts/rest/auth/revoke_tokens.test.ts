@@ -6,10 +6,10 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
-function revokeMock(captured: any, responseBody?: any) {
+function revokeMock(captured: PendingRequest[] | null, responseBody?: unknown) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -35,7 +35,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17g - POST to /keys/{keyName}/revokeTokens
    */
   it('RSA17g - sends POST to correct path', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
@@ -50,13 +50,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17b - Single target specifier
    */
   it('RSA17b - single specifier sent as targets array', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
     await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.targets).to.deep.equal(['clientId:alice']);
   });
 
@@ -64,7 +64,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17b - Multiple specifiers with different types
    */
   it('RSA17b - multiple specifiers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const responseBody = {
       successCount: 3,
       failureCount: 0,
@@ -83,7 +83,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
       { type: 'channel', value: 'secret' },
     ]);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.targets).to.deep.equal(['clientId:alice', 'revocationKey:group-1', 'channel:secret']);
   });
 
@@ -246,7 +246,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17d - Token auth client fails with 40162
    */
   it('RSA17d - token auth client fails with 40162', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ token: 'a.token.string' });
@@ -254,9 +254,9 @@ describe('uts/rest/auth/revoke_tokens', function () {
     try {
       await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
       expect.fail('Expected revokeTokens to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40162);
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40162);
+      expect((error as ErrorInfo).statusCode).to.equal(401);
     }
 
     // No HTTP request should have been made
@@ -267,7 +267,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17d - useTokenAuth flag also fails with 40162
    */
   it('RSA17d - useTokenAuth flag fails with 40162', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useTokenAuth: true });
@@ -275,9 +275,9 @@ describe('uts/rest/auth/revoke_tokens', function () {
     try {
       await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
       expect.fail('Expected revokeTokens to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40162);
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40162);
+      expect((error as ErrorInfo).statusCode).to.equal(401);
     }
 
     expect(captured).to.have.length(0);
@@ -287,13 +287,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17e - issuedBefore included when specified
    */
   it('RSA17e - issuedBefore included in request body', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
     await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }], { issuedBefore: 1699999000000 });
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.issuedBefore).to.equal(1699999000000);
   });
 
@@ -301,13 +301,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17e - issuedBefore omitted when not provided
    */
   it('RSA17e - issuedBefore omitted when not provided', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
     await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.not.have.property('issuedBefore');
   });
 
@@ -315,13 +315,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17f - allowReauthMargin included when true
    */
   it('RSA17f - allowReauthMargin included', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
     await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }], { allowReauthMargin: true });
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.allowReauthMargin).to.equal(true);
   });
 
@@ -329,13 +329,13 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17f - allowReauthMargin omitted when not provided
    */
   it('RSA17f - allowReauthMargin omitted when not provided', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
     await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.not.have.property('allowReauthMargin');
   });
 
@@ -343,7 +343,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17f - Both issuedBefore and allowReauthMargin together
    */
   it('RSA17f - both options together', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });
@@ -352,7 +352,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
       allowReauthMargin: true,
     });
 
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.targets).to.deep.equal(['clientId:alice']);
     expect(body.issuedBefore).to.equal(1699999000000);
     expect(body.allowReauthMargin).to.equal(true);
@@ -377,9 +377,9 @@ describe('uts/rest/auth/revoke_tokens', function () {
     try {
       await client.auth.revokeTokens([{ type: 'clientId', value: 'alice' }]);
       expect.fail('Expected revokeTokens to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(50000);
-      expect(error.statusCode).to.equal(500);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(50000);
+      expect((error as ErrorInfo).statusCode).to.equal(500);
     }
   });
 
@@ -387,7 +387,7 @@ describe('uts/rest/auth/revoke_tokens', function () {
    * RSA17 - Request uses Basic authentication
    */
   it('RSA17 - request uses Basic auth', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(revokeMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyName:keySecret', useBinaryProtocol: false });

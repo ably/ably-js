@@ -8,8 +8,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
-import { Ably, installMockHttp, enableFakeTimers, restoreAll } from '../helpers';
+import { MockHttpClient, PendingRequest } from '../mock_http';
+import { Ably, ErrorInfo, installMockHttp, enableFakeTimers, restoreAll } from '../helpers';
 
 describe('uts/rest/fallback', function () {
   afterEach(function () {
@@ -26,7 +26,7 @@ describe('uts/rest/fallback', function () {
    */
   it('RSC15l - 500 triggers fallback', async function () {
     let requestCount = 0;
-    const hosts: any[] = [];
+    const hosts: string[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -60,7 +60,7 @@ describe('uts/rest/fallback', function () {
    */
   it('RSC15l - connection refused triggers fallback', async function () {
     let connCount = 0;
-    const connHosts: any[] = [];
+    const connHosts: string[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => {
@@ -111,8 +111,8 @@ describe('uts/rest/fallback', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(400);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(400);
     }
 
     expect(requestCount).to.equal(1);
@@ -141,8 +141,8 @@ describe('uts/rest/fallback', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(500);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(500);
     }
 
     expect(requestCount).to.equal(1);
@@ -157,7 +157,7 @@ describe('uts/rest/fallback', function () {
    * be main.realtime.ably.net.
    */
   it('REC1a - default primary domain', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -181,7 +181,7 @@ describe('uts/rest/fallback', function () {
    * policy and the host becomes {endpoint}.realtime.ably.net.
    */
   it('REC1b4 - endpoint as routing policy', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -204,7 +204,7 @@ describe('uts/rest/fallback', function () {
    * When endpoint contains dots, it is treated as an explicit hostname.
    */
   it('REC1b2 - endpoint as explicit hostname', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -231,7 +231,7 @@ describe('uts/rest/fallback', function () {
    * The deprecated restHost option sets the REST host directly.
    */
   it('REC1d1 - restHost option', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -258,7 +258,7 @@ describe('uts/rest/fallback', function () {
    * The deprecated environment option maps to {environment}.realtime.ably.net.
    */
   it('REC1c2 - environment option', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -287,7 +287,7 @@ describe('uts/rest/fallback', function () {
    */
   it('REC2a2 - custom fallbackHosts', async function () {
     let requestCount = 0;
-    const hosts: any[] = [];
+    const hosts: string[] = [];
     const customFallbacks = ['fb1.example.com', 'fb2.example.com'];
 
     const mock = new MockHttpClient({
@@ -344,8 +344,8 @@ describe('uts/rest/fallback', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(500);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(500);
     }
 
     expect(requestCount).to.equal(1);
@@ -495,7 +495,7 @@ describe('uts/rest/fallback', function () {
    * cached fallback host instead of the primary host.
    */
   it('RSC15f - successful fallback host cached', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
     let fallbackHost: string | null = null;
 
@@ -578,8 +578,8 @@ describe('uts/rest/fallback', function () {
       try {
         await client.time();
         expect.fail('Expected time() to throw');
-      } catch (error: any) {
-        expect(error.statusCode).to.equal(statusCode);
+      } catch (error) {
+        expect((error as ErrorInfo).statusCode).to.equal(statusCode);
       }
 
       expect(requestCount).to.equal(1);
@@ -718,7 +718,7 @@ describe('uts/rest/fallback', function () {
   // ── Category D: Endpoint edge cases ───────────────────────────────
 
   it('REC1b2 - endpoint as localhost', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -738,7 +738,7 @@ describe('uts/rest/fallback', function () {
   it('REC1b2 - endpoint as IPv6 address', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -762,7 +762,7 @@ describe('uts/rest/fallback', function () {
   });
 
   it('REC1b3 - endpoint as nonprod routing policy', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -780,7 +780,7 @@ describe('uts/rest/fallback', function () {
   });
 
   it('REC1d - realtimeHost sets primary domain when restHost not set', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -807,8 +807,8 @@ describe('uts/rest/fallback', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', environment: 'production' } as any);
       expect.fail('Expected constructor to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40106);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40106);
     }
   });
 
@@ -816,8 +816,8 @@ describe('uts/rest/fallback', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', restHost: 'custom.host.com' } as any);
       expect.fail('Expected constructor to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40106);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40106);
     }
   });
 
@@ -825,8 +825,8 @@ describe('uts/rest/fallback', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', restHost: 'custom.host.com' } as any);
       expect.fail('Expected constructor to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40106);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40106);
     }
   });
 
@@ -834,13 +834,13 @@ describe('uts/rest/fallback', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', realtimeHost: 'custom.rt.com' } as any);
       expect.fail('Expected constructor to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40106);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40106);
     }
   });
 
   it('REC1d - restHost takes precedence over realtimeHost', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -885,8 +885,8 @@ describe('uts/rest/fallback', function () {
     try {
       await client.time();
       expect.fail('Expected time() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(500);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(500);
     }
 
     expect(requestCount).to.equal(1);
