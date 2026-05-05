@@ -1,7 +1,7 @@
 /**
  * UTS: Message Type Tests
  *
- * Spec points: TM1, TM2, TM3, TM4, TM5, TM2a, TM2b, TM2c, TM2d, TM2e, TM2f, TM2g, TM2h, TM2i
+ * Spec points: TM1, TM2, TM3, TM4, TM2a, TM2b, TM2c, TM2d, TM2e, TM2f, TM2g, TM2h, TM2i
  * Source: uts/test/rest/unit/types/message_types.md
  */
 
@@ -95,9 +95,9 @@ describe('uts/rest/unit/types/message_types', function () {
   });
 
   /**
-   * TM3 - deserialization from wire JSON via fromEncoded
+   * TM3 - fromEncoded deserializes wire message
    */
-  it('TM3 - deserialization from wire JSON', async function () {
+  it('TM3 - fromEncoded deserializes wire message', async function () {
     const msg = await Message.fromEncoded({
       name: 'test',
       data: 'hello',
@@ -118,27 +118,7 @@ describe('uts/rest/unit/types/message_types', function () {
   });
 
   /**
-   * TM2 - null/missing attributes are undefined
-   *
-   * When a Message is constructed with only partial fields, the
-   * unspecified attributes should be undefined (not defaulted).
-   */
-  it('TM2 - null/missing attributes are undefined', function () {
-    const msg = Message.fromValues({ name: 'test' });
-
-    expect(msg.name).to.equal('test');
-    expect(msg.data).to.be.undefined;
-    expect(msg.clientId).to.be.undefined;
-    expect(msg.connectionId).to.be.undefined;
-    expect(msg.id).to.be.undefined;
-    expect(msg.timestamp).to.be.undefined;
-  });
-
-  /**
    * TM3 - fromEncoded with all fields
-   *
-   * Verify that fromEncoded correctly deserializes a wire message
-   * containing all standard fields.
    */
   it('TM3 - fromEncoded with all fields', async function () {
     const msg = await Message.fromEncoded({
@@ -162,40 +142,64 @@ describe('uts/rest/unit/types/message_types', function () {
   });
 
   /**
-   * TM2 - binary data preserved
-   *
-   * When fromEncoded receives base64-encoded data with encoding 'base64',
-   * it should decode it to a binary type (Buffer or Uint8Array) and
-   * clear the encoding.
+   * TM3 - fromEncoded decodes base64 encoding
    */
-  it('TM2 - binary data preserved via base64 decoding', async function () {
+  it('TM3 - fromEncoded decodes base64 encoding', async function () {
     const msg = await Message.fromEncoded({
       data: 'SGVsbG8=',
       encoding: 'base64',
     });
 
-    // After decoding, data should be a Buffer or Uint8Array
     const isBinary = Buffer.isBuffer(msg.data) || msg.data instanceof Uint8Array;
     expect(isBinary).to.be.true;
-    // Encoding should be consumed (null) after decode
     expect(msg.encoding).to.be.null;
-    // Verify the decoded content is 'Hello'
     const text = Buffer.from(msg.data).toString('utf8');
     expect(text).to.equal('Hello');
   });
 
   /**
-   * TM4 - toJSON serialization
-   *
-   * If Message exposes a toJSON method, verify it returns an object
-   * with the expected name and data keys.
+   * TM2 - null/missing attributes are undefined
    */
-  it('TM4 - toJSON serialization', function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js Message doesn't expose toJSON()
-    const msg = Message.fromValues({ name: 'event', data: 'payload' });
+  it('TM2 - null/missing attributes are undefined', function () {
+    const msg = Message.fromValues({ name: 'test' });
 
-    const json = (msg as any).toJSON();
-    expect(json).to.have.property('name', 'event');
-    expect(json).to.have.property('data', 'payload');
+    expect(msg.name).to.equal('test');
+    expect(msg.data).to.be.undefined;
+    expect(msg.clientId).to.be.undefined;
+    expect(msg.connectionId).to.be.undefined;
+    expect(msg.id).to.be.undefined;
+    expect(msg.timestamp).to.be.undefined;
+  });
+
+  /**
+   * TM4 - constructor(name, data)
+   *
+   * TM4: Message has constructors constructor(name, data) and
+   * constructor(name, data, clientId). In ably-js this is Message.fromValues().
+   */
+  it('TM4 - constructor(name, data)', function () {
+    const msg = Message.fromValues({ name: 'event-name', data: 'payload' });
+    expect(msg.name).to.equal('event-name');
+    expect(msg.data).to.equal('payload');
+    expect(msg.clientId).to.be.undefined;
+  });
+
+  /**
+   * TM4 - constructor(name, data, clientId)
+   */
+  it('TM4 - constructor(name, data, clientId)', function () {
+    const msg = Message.fromValues({ name: 'event-name', data: 'payload', clientId: 'client-1' });
+    expect(msg.name).to.equal('event-name');
+    expect(msg.data).to.equal('payload');
+    expect(msg.clientId).to.equal('client-1');
+  });
+
+  /**
+   * TM4 - name and data are nullable
+   */
+  it('TM4 - name and data are nullable', function () {
+    const msg = Message.fromValues({});
+    expect(msg.name).to.be.undefined;
+    expect(msg.data).to.be.undefined;
   });
 });

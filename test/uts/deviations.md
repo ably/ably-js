@@ -38,16 +38,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### message_types: TM4 - toJSON not a method on Message
-
-**Spec (TM4)**: Message type must support serialization to JSON wire format via a `toJSON` method.
-
-**ably-js behavior**: `Message` instances do not expose a `toJSON` method. Serialization is handled internally.
-
-**Test**: `TM4 - toJSON serialization` — calls `msg.toJSON()`, which throws `TypeError: msg.toJSON is not a function`.
-
----
-
 ### client_options: RSC1b - wrong error code for missing credentials
 
 **Spec (RSC1b)**: Error code should be 40106.
