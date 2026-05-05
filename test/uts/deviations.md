@@ -134,13 +134,13 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### fallback: RSC15l / RSC15l4 - request timeout and CloudFront header
+### fallback: RSC15l4 - CloudFront Server header does not trigger fallback
 
-**Spec (RSC15l)**: Request-level timeouts should trigger fallback. **Spec (RSC15l4)**: `Server: CloudFront` header with status >= 400 should trigger fallback.
+**Spec (RSC15l4)**: A response with a `Server: CloudFront` header and HTTP status `>= 400` should trigger fallback.
 
-**ably-js behavior**: Only connection-level errors and HTTP 500-504 trigger fallback. `Server` header not inspected.
+**ably-js behavior**: `shouldFallback` only receives the error object, not response headers. The `Server` header is not inspected anywhere in the fallback decision path.
 
-**Tests**: `RSC15l - request timeout triggers fallback`, `RSC15l4 - CloudFront Server header triggers fallback`.
+**Test**: `RSC15l4 - CloudFront Server header triggers fallback`.
 
 **Issue**: [#2197](https://github.com/ably/ably-js/issues/2197)
 

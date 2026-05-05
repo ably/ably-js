@@ -127,7 +127,7 @@ class PendingRequest {
   /** Request times out after connection established */
   respond_with_timeout(): void {
     this._resolve!({
-      error: { code: 408, statusCode: 408, message: 'Request timed out' } as any,
+      error: { code: 'ETIMEDOUT', statusCode: 408, message: 'Request timed out' } as any,
       body: null,
       headers: {},
       unpacked: false,
@@ -318,6 +318,10 @@ class MockHttpClient {
           code === 'ECONNRESET' ||
           code === 'ENOTFOUND'
         ) {
+          return true;
+        }
+        // RSC15l2: request timeout (HTTP 408)
+        if (statusCode === 408) {
           return true;
         }
         return statusCode >= 500 && statusCode <= 504;

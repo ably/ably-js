@@ -589,8 +589,6 @@ describe('uts/rest/unit/fallback', function () {
   // ── Category B: Request timeout and CloudFront ────────────────────
 
   it('RSC15l - request timeout triggers fallback', async function () {
-    // DEVIATION: see deviations.md
-    if (!process.env.RUN_DEVIATIONS) this.skip();
     let connCount = 0;
     const connHosts: string[] = [];
     let requestCount = 0;
@@ -612,18 +610,12 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    // Spec: request-level timeout (after connection succeeds) MUST trigger fallback.
-    // DEVIATION: ably-js may not retry on request timeout. See deviations.md.
     const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
-    try {
-      const result = await client.time();
-      expect(result).to.equal(1234567890000);
-      expect(connCount).to.be.at.least(2);
-      expect(connHosts[0]).to.equal('main.realtime.ably.net');
-      expect(connHosts[1]).to.not.equal('main.realtime.ably.net');
-    } catch (e) {
-      expect.fail('Request timeout should trigger fallback, but ably-js threw: ' + (e as Error).message);
-    }
+    const result = await client.time();
+    expect(result).to.equal(1234567890000);
+    expect(connCount).to.be.at.least(2);
+    expect(connHosts[0]).to.equal('main.realtime.ably.net');
+    expect(connHosts[1]).to.not.equal('main.realtime.ably.net');
   });
 
   it('RSC15l4 - CloudFront Server header triggers fallback', async function () {
