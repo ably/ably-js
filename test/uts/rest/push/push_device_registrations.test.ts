@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/push/push_device_registrations', function () {
   afterEach(restoreAll);
@@ -19,7 +19,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * with the device details in the body.
    */
   it('RSH1b3 - save sends PUT to /push/deviceRegistrations/{id}', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -62,7 +62,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * formFactor, and push recipient fields.
    */
   it('RSH1b3 - save body contains device details', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -93,7 +93,7 @@ describe('uts/rest/push/push_device_registrations', function () {
     });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.id).to.equal('device-001');
     expect(body.clientId).to.equal('client-abc');
     expect(body.platform).to.equal('ios');
@@ -111,7 +111,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * get() issues a GET request to the device-specific endpoint.
    */
   it('RSH1b1 - get sends GET to /push/deviceRegistrations/{id}', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -181,7 +181,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * list() issues a GET request to the deviceRegistrations collection endpoint.
    */
   it('RSH1b2 - list sends GET to /push/deviceRegistrations', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -214,7 +214,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * returns only matching results.
    */
   it('RSH1b2 - list with params (deviceId filter)', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -282,7 +282,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * remove() issues a DELETE request to the device-specific endpoint.
    */
   it('RSH1b4 - remove sends DELETE to /push/deviceRegistrations/{id}', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -306,7 +306,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * remove() accepts a plain string deviceId (not just a DeviceDetails object).
    */
   it('RSH1b4 - remove accepts string deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -332,7 +332,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * with filter parameters as query params.
    */
   it('RSH1b5 - removeWhere sends DELETE to /push/deviceRegistrations with params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -373,8 +373,8 @@ describe('uts/rest/push/push_device_registrations', function () {
     try {
       await client.push.admin.deviceRegistrations.get('unknown-device');
       expect.fail('Expected get to throw');
-    } catch (err: any) {
-      expect(err.code).to.equal(40400);
+    } catch (err) {
+      expect((err as ErrorInfo).code).to.equal(40400);
     }
   });
 
@@ -385,7 +385,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * special characters are handled correctly.
    */
   it('RSH1b1 - get URL-encodes deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -413,7 +413,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * list() forwards the clientId parameter as a query parameter.
    */
   it('RSH1b2 - list with clientId filter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -444,7 +444,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * list() forwards the limit parameter as a query parameter.
    */
   it('RSH1b2 - list supports limit', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -497,8 +497,8 @@ describe('uts/rest/push/push_device_registrations', function () {
         },
       });
       expect.fail('Expected save to throw');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
+    } catch (err) {
+      expect((err as ErrorInfo).code).to.equal(40000);
     }
   });
 
@@ -509,7 +509,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * server returns a successful response.
    */
   it('RSH1b4 - remove nonexistent succeeds', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -534,7 +534,7 @@ describe('uts/rest/push/push_device_registrations', function () {
    * parameter in the DELETE request.
    */
   it('RSH1b5 - removeWhere with deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

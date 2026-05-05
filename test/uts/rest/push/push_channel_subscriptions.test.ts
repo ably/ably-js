@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/push/push_channel_subscriptions', function () {
   afterEach(restoreAll);
@@ -19,7 +19,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * with the subscription in the body.
    */
   it('RSH1c3 - save sends POST to /push/channelSubscriptions', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -51,7 +51,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * PushChannelSubscription object.
    */
   it('RSH1c3 - save body contains channel and subscription details', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -71,7 +71,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
     });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.channel).to.equal('my-channel');
     expect(body.deviceId).to.equal('device-001');
 
@@ -86,7 +86,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * list() issues a GET request to the channelSubscriptions endpoint.
    */
   it('RSH1c1 - list sends GET to /push/channelSubscriptions', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -111,7 +111,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * and returns matching subscriptions.
    */
   it('RSH1c1 - list with channel filter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -164,7 +164,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * endpoint with filter parameters as query params.
    */
   it('RSH1c5 - removeWhere sends DELETE to /push/channelSubscriptions', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -190,7 +190,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * filter params to delete matching subscriptions.
    */
   it('RSH1c5 - removeWhere with channel param', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -219,7 +219,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * listChannels() issues a GET request to the /push/channels endpoint.
    */
   it('RSH1c2 - listChannels sends GET to /push/channels', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -267,7 +267,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * listChannels() forwards the limit parameter as a query parameter.
    */
   it('RSH1c2 - listChannels with params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -292,7 +292,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * when both are provided.
    */
   it('RSH1c1 - list with deviceId and clientId filters', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -316,7 +316,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * list() forwards the limit parameter as a query parameter.
    */
   it('RSH1c1 - list supports limit', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -358,8 +358,8 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
         deviceId: 'device-001',
       });
       expect.fail('Expected save to throw');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
+    } catch (err) {
+      expect((err as ErrorInfo).code).to.equal(40000);
     }
   });
 
@@ -370,7 +370,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * endpoint with channel and deviceId as query parameters.
    */
   it('RSH1c4 - remove with deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -396,7 +396,7 @@ describe('uts/rest/push/push_channel_subscriptions', function () {
    * query parameter.
    */
   it('RSH1c5 - removeWhere with deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

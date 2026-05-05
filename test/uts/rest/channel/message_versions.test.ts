@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/channel/getMessageVersions', function () {
@@ -21,7 +21,7 @@ describe('uts/rest/channel/getMessageVersions', function () {
    * /channels/{channelName}/messages/{serial}/versions.
    */
   it('RSL14b - GET to correct path', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -108,7 +108,7 @@ describe('uts/rest/channel/getMessageVersions', function () {
    * as query string parameters on the request.
    */
   it('RSL14a - params as querystring', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

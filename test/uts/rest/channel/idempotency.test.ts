@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 const Message = Ably.Rest.Message;
@@ -35,7 +35,7 @@ describe('uts/rest/channel/idempotency', function () {
    * URL-safe base64 and <serial> starts at 0.
    */
   it('RSL1k2 - message ID format', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -54,7 +54,7 @@ describe('uts/rest/channel/idempotency', function () {
     await ch.publish('event', 'data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
 
@@ -79,7 +79,7 @@ describe('uts/rest/channel/idempotency', function () {
    * same base ID but have incrementing serial numbers starting from 0.
    */
   it('RSL1k2 - batch serial increments', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -102,7 +102,7 @@ describe('uts/rest/channel/idempotency', function () {
     ]);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(3);
 
@@ -126,7 +126,7 @@ describe('uts/rest/channel/idempotency', function () {
    * publishes are independently idempotent.
    */
   it('RSL1k3 - separate publishes get unique base IDs', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -146,8 +146,8 @@ describe('uts/rest/channel/idempotency', function () {
     await ch.publish('event2', 'data2');
 
     expect(captured).to.have.length(2);
-    const body1 = JSON.parse(captured[0].body);
-    const body2 = JSON.parse(captured[1].body);
+    const body1 = JSON.parse(captured[0].body!);
+    const body2 = JSON.parse(captured[1].body!);
 
     const base1 = body1[0].id.split(':')[0];
     const base2 = body2[0].id.split(':')[0];
@@ -161,7 +161,7 @@ describe('uts/rest/channel/idempotency', function () {
    * generate message IDs.
    */
   it('RSL1k3 - no ID when disabled', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -180,7 +180,7 @@ describe('uts/rest/channel/idempotency', function () {
     await ch.publish('event', 'data');
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].id).to.be.undefined;
@@ -193,7 +193,7 @@ describe('uts/rest/channel/idempotency', function () {
    * must preserve it and not overwrite it with a generated ID.
    */
   it('RSL1k - client-supplied ID preserved', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -214,7 +214,7 @@ describe('uts/rest/channel/idempotency', function () {
     await ch.publish(msg);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(1);
     expect(body[0].id).to.equal('my-custom-id');
@@ -229,7 +229,7 @@ describe('uts/rest/channel/idempotency', function () {
    * single request.
    */
   it('RSL1k2 - same ID on retry', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let requestCount = 0;
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -257,8 +257,8 @@ describe('uts/rest/channel/idempotency', function () {
 
     expect(captured).to.have.length(2);
 
-    const body1 = JSON.parse(captured[0].body);
-    const body2 = JSON.parse(captured[1].body);
+    const body1 = JSON.parse(captured[0].body!);
+    const body2 = JSON.parse(captured[1].body!);
     expect(body1[0].id).to.be.a('string');
     expect(body1[0].id).to.match(/^[A-Za-z0-9+/_-]+:0$/);
     expect(body2[0].id).to.equal(body1[0].id);
@@ -273,7 +273,7 @@ describe('uts/rest/channel/idempotency', function () {
    * remain without IDs.
    */
   it('RSL1k - mixed client and library IDs skips generation', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -297,7 +297,7 @@ describe('uts/rest/channel/idempotency', function () {
     await ch.publish([msg1, msg2, msg3]);
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body).to.be.an('array');
     expect(body).to.have.length(3);
 

@@ -26,8 +26,8 @@ describe('uts/rest/types/mutable_message_types', function () {
       'message.append',
     ];
 
-    actionStrings.forEach(function (actionStr: any) {
-      const msg = Ably.Rest.Message.fromValues({ action: actionStr });
+    actionStrings.forEach(function (actionStr: string) {
+      const msg = Ably.Rest.Message.fromValues({ action: actionStr as Parameters<typeof Ably.Rest.Message.fromValues>[0]['action'] });
       expect(msg.action).to.equal(actionStr);
     });
   });
@@ -161,7 +161,7 @@ describe('uts/rest/types/mutable_message_types', function () {
     expect(op.metadata.tool).to.equal('editor');
 
     // Empty operation
-    const emptyOp: any = {};
+    const emptyOp: Record<string, unknown> = {};
     expect(emptyOp.clientId).to.be.undefined;
     expect(emptyOp.description).to.be.undefined;
     expect(emptyOp.metadata).to.be.undefined;
@@ -183,7 +183,7 @@ describe('uts/rest/types/mutable_message_types', function () {
     expect(result2.versionSerial).to.be.null;
 
     // Missing versionSerial key
-    const result3: any = {};
+    const result3: Record<string, unknown> = {};
     expect(result3.versionSerial).to.be.undefined;
   });
 

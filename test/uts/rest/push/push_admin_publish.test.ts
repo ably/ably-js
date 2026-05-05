@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/push/push_admin_publish', function () {
   afterEach(restoreAll);
@@ -19,7 +19,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * with the recipient and data fields in the body.
    */
   it('RSH1a - publish sends POST to /push/publish', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -47,7 +47,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * fields (notification, data) merged at the top level.
    */
   it('RSH1a - body contains recipient and data', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -64,7 +64,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     );
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.recipient.transportType).to.equal('apns');
     expect(body.recipient.deviceToken).to.equal('foo');
     expect(body.notification.title).to.equal('Test');
@@ -77,7 +77,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * publish() works with a clientId-based recipient.
    */
   it('RSH1a - recipient as clientId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -91,7 +91,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     await client.push.admin.publish({ clientId: 'user-123' }, { data: { key: 'value' } });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.recipient.clientId).to.equal('user-123');
     expect(body.data.key).to.equal('value');
   });
@@ -102,7 +102,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * publish() works with a deviceId-based recipient.
    */
   it('RSH1a - recipient as deviceId', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -116,7 +116,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     await client.push.admin.publish({ deviceId: 'device-abc' }, { notification: { title: 'Device Push' } });
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.recipient.deviceId).to.equal('device-abc');
     expect(body.notification.title).to.equal('Device Push');
   });
@@ -128,7 +128,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * request body alongside the recipient.
    */
   it('RSH1a - data contains notification fields', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -148,7 +148,7 @@ describe('uts/rest/push/push_admin_publish', function () {
     );
 
     expect(captured).to.have.length(1);
-    const body = JSON.parse(captured[0].body);
+    const body = JSON.parse(captured[0].body!);
     expect(body.notification.title).to.equal('Alert');
     expect(body.notification.body).to.equal('Something happened');
     expect(body.data.eventType).to.equal('alert');
@@ -162,7 +162,7 @@ describe('uts/rest/push/push_admin_publish', function () {
    * for authentication.
    */
   it('RSH1a - auth header included', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -216,8 +216,8 @@ describe('uts/rest/push/push_admin_publish', function () {
     try {
       await client.push.admin.publish({ clientId: 'user-1' }, { notification: { title: 'Test' } });
       expect.fail('Expected publish to throw');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
+    } catch (err) {
+      expect((err as ErrorInfo).code).to.equal(40000);
     }
   });
 });

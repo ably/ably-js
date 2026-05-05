@@ -8,8 +8,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/presence/rest_presence', function () {
   afterEach(function () {
@@ -57,7 +57,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * presence.get() must send a GET request to /channels/{name}/presence.
    */
   it('RSP3a - get() sends GET to /channels/{name}/presence', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -156,7 +156,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({limit: 50}) must send limit=50 as a query parameter.
    */
   it('RSP3a1 - get() with limit param sends limit query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -180,7 +180,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({clientId: 'specific'}) must send clientId=specific as a query parameter.
    */
   it('RSP3a2 - get() with clientId filter sends clientId query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -204,7 +204,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * get({connectionId: 'conn123'}) must send connectionId=conn123 as a query parameter.
    */
   it('RSP3a3 - get() with connectionId filter sends connectionId query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -232,7 +232,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * presence.history() must send a GET request to /channels/{name}/presence/history.
    */
   it('RSP4a - history() sends GET to /channels/{name}/presence/history', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -289,7 +289,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({start: 1609459200000}) must send start=1609459200000 as a query parameter.
    */
   it('RSP4b1 - history() with start param sends start query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -313,7 +313,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({end: 1609545600000}) must send end=1609545600000 as a query parameter.
    */
   it('RSP4b1 - history() with end param sends end query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -337,7 +337,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({direction: 'forwards'}) must send direction=forwards as a query parameter.
    */
   it('RSP4b2 - history() with direction forwards sends direction query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -361,7 +361,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history({limit: 50}) must send limit=50 as a query parameter.
    */
   it('RSP4b3 - history() with limit param sends limit query parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -575,9 +575,9 @@ describe('uts/rest/presence/rest_presence', function () {
     try {
       await channel.presence.get({});
       expect.fail('Expected get() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(500);
-      expect(error.code).to.equal(50000);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(500);
+      expect((error as ErrorInfo).code).to.equal(50000);
     }
   });
 
@@ -636,7 +636,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * omit the limit param (server default) or send limit=100.
    */
   it('RSP3a1b - get() limit defaults to 100', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -668,7 +668,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * query parameters.
    */
   it('RSP3 - get() with combined filters sends all params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -699,7 +699,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * history() with both start and end must send both as query parameters.
    */
   it('RSP4b1c - history() with start and end combined sends both params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -730,7 +730,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * omit the limit param (server default) or send limit=100.
    */
   it('RSP4b3b - history() limit defaults to 100', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -762,7 +762,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * as query parameters.
    */
   it('RSP4 - history() with all parameters sends all params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -795,7 +795,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * must throw with the appropriate error code and statusCode.
    */
   it('RSP Error 2 - auth error on history() throws with error code', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -817,9 +817,9 @@ describe('uts/rest/presence/rest_presence', function () {
     try {
       await channel.presence.history({});
       expect.fail('Expected history() to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40101);
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40101);
+      expect((error as ErrorInfo).statusCode).to.equal(401);
     }
   });
 
@@ -834,7 +834,7 @@ describe('uts/rest/presence/rest_presence', function () {
    * in the request.
    */
   it('RSP Headers - get() includes standard headers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

@@ -6,10 +6,10 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
-function tokenRoutingMock(captured: any) {
+function tokenRoutingMock(captured: PendingRequest[]) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -37,7 +37,7 @@ describe('uts/rest/auth/authorize', function () {
    * RSA10a - authorize() obtains token with defaults
    */
   it('RSA10a - authorize() obtains token', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(tokenRoutingMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -61,7 +61,7 @@ describe('uts/rest/auth/authorize', function () {
    * RSA10b - authorize() with explicit tokenParams overrides defaults
    */
   it('RSA10b - tokenParams override defaults', async function () {
-    let callbackParams: any = null;
+    let callbackParams: TokenParams | null = null;
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -112,7 +112,7 @@ describe('uts/rest/auth/authorize', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
     // Before authorize
-    expect(client.auth.tokenDetails).to.satisfy((v: any) => v === null || v === undefined);
+    expect(client.auth.tokenDetails).to.satisfy((v: unknown) => v === null || v === undefined);
 
     const result = await client.auth.authorize();
 
@@ -187,7 +187,7 @@ describe('uts/rest/auth/authorize', function () {
    * RSA10k - authorize() with queryTime queries server time
    */
   it('RSA10k - queryTime queries server', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -241,9 +241,9 @@ describe('uts/rest/auth/authorize', function () {
     try {
       await client.auth.authorize();
       expect.fail('Expected authorize to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40100);
-      expect(error.statusCode).to.equal(401);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40100);
+      expect((error as ErrorInfo).statusCode).to.equal(401);
     }
   });
 
@@ -254,7 +254,7 @@ describe('uts/rest/auth/authorize', function () {
    * token requests (e.g. when the token expires and is re-acquired).
    */
   it('RSA10e - tokenParams saved for reuse', async function () {
-    const callbackInvocations: any[] = [];
+    const callbackInvocations: Record<string, unknown>[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -295,7 +295,7 @@ describe('uts/rest/auth/authorize', function () {
    * are provided to authorize().
    */
   it('RSA10i - key preserved after authorize with authOptions', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -341,8 +341,8 @@ describe('uts/rest/auth/authorize', function () {
     try {
       await client.auth.authorize(null, { key: 'different.key:secret' });
       expect.fail('Expected authorize to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40102);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40102);
     }
   });
 });

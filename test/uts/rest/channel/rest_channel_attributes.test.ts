@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/channel/rest_channel_attributes', function () {
@@ -50,7 +50,7 @@ describe('uts/rest/channel/rest_channel_attributes', function () {
    * /channels/<channelName>.
    */
   it('RSL8 - status sends GET to correct path', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -82,7 +82,7 @@ describe('uts/rest/channel/rest_channel_attributes', function () {
    * must be URL-encoded in the request path.
    */
   it('RSL8 - status URL encodes channel name', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

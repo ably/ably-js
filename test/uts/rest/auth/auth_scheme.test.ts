@@ -6,11 +6,11 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../helpers';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../../helpers';
 
 /** Standard mock that auto-succeeds and returns 200 */
-function simpleMock(captured: any) {
+function simpleMock(captured: PendingRequest[]) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -21,7 +21,7 @@ function simpleMock(captured: any) {
 }
 
 /** Mock that routes requestToken vs API requests */
-function tokenRoutingMock(captured: any, tokenValue?: any) {
+function tokenRoutingMock(captured: PendingRequest[], tokenValue?: string) {
   return new MockHttpClient({
     onConnectionAttempt: (conn) => conn.respond_with_success(),
     onRequest: (req) => {
@@ -49,7 +49,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - Basic auth with API key only
    */
   it('RSA4 - Basic auth with API key only', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -68,7 +68,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA3 - Token auth with explicit token string
    */
   it('RSA3 - Token auth with explicit token string', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ token: 'explicit-token-string' });
@@ -87,7 +87,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA3 - Token auth with TokenDetails
    */
   it('RSA3 - Token auth with TokenDetails', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
@@ -111,7 +111,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - useTokenAuth forces token auth
    */
   it('RSA4 - useTokenAuth forces token auth', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(tokenRoutingMock(captured, 'obtained-token'));
 
     const client = new Ably.Rest({
@@ -134,7 +134,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - authCallback triggers token auth
    */
   it('RSA4 - authCallback triggers token auth', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
@@ -157,7 +157,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA4 - authUrl triggers token auth
    */
   it('RSA4 - authUrl triggers token auth', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -193,14 +193,14 @@ describe('uts/rest/auth/auth_scheme', function () {
   it('RSC1b - Error when no auth method available', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     try {
       new Ably.Rest({});
       expect.fail('Should have thrown');
-    } catch (error: any) {
-      expect(error.code).to.equal(40106);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40106);
     }
 
     expect(captured).to.have.length(0);
@@ -214,7 +214,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * Note: RSA4b1 (local expiry detection) is optional.
    */
   it('RSA4a2 - Error when token expired and no renewal method', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
 
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -238,8 +238,8 @@ describe('uts/rest/auth/auth_scheme', function () {
     try {
       await client.stats({} as any);
       expect.fail('Expected request to throw');
-    } catch (error: any) {
-      expect(error.code).to.equal(40171);
+    } catch (error) {
+      expect((error as ErrorInfo).code).to.equal(40171);
     }
   });
 
@@ -247,7 +247,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA1 - Auth method priority (authCallback over key)
    */
   it('RSA1 - Auth method priority (authCallback over key)', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({
@@ -271,7 +271,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSA2, RSA11 - Basic auth header format
    */
   it('RSA2, RSA11 - Basic auth header format', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({ key: 'app123.key456:secretXYZ' });
@@ -290,7 +290,7 @@ describe('uts/rest/auth/auth_scheme', function () {
    * RSC18 - Token auth allowed over non-TLS
    */
   it('RSC18 - Token auth allowed over non-TLS', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     installMockHttp(simpleMock(captured));
 
     const client = new Ably.Rest({

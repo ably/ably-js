@@ -6,8 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../helpers';
+import { MockHttpClient, PendingRequest } from '../mock_http';
+import { Ably, ErrorInfo, installMockHttp, restoreAll } from '../helpers';
 
 describe('uts/rest/stats', function () {
   afterEach(function () {
@@ -21,7 +21,7 @@ describe('uts/rest/stats', function () {
    * PaginatedResult containing Stats objects.
    */
   it('RSC6a - stats() returns PaginatedResult with Stats objects', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -57,7 +57,7 @@ describe('uts/rest/stats', function () {
    * The stats endpoint must be accessed via GET /stats.
    */
   it('RSC6a - stats() sends GET /stats', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -82,7 +82,7 @@ describe('uts/rest/stats', function () {
    * valid credentials and standard Ably headers.
    */
   it('RSC6a - stats() sends authenticated request with standard headers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -113,7 +113,7 @@ describe('uts/rest/stats', function () {
    * (the server applies its own defaults).
    */
   it('RSC6a - stats() with no params sends no query params', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -146,7 +146,7 @@ describe('uts/rest/stats', function () {
    * since epoch.
    */
   it('RSC6b1 - stats() with start parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -170,7 +170,7 @@ describe('uts/rest/stats', function () {
    * since epoch.
    */
   it('RSC6b1 - stats() with end parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -193,7 +193,7 @@ describe('uts/rest/stats', function () {
    * Both start and end can be provided together. start must be <= end.
    */
   it('RSC6b1 - stats() with start and end parameters', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -218,7 +218,7 @@ describe('uts/rest/stats', function () {
    * to the REST API default (backwards).
    */
   it('RSC6b2 - stats() with direction parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -242,7 +242,7 @@ describe('uts/rest/stats', function () {
    * (letting the server apply the default) or sent as "backwards".
    */
   it('RSC6b2 - stats() direction defaults to backwards', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -267,7 +267,7 @@ describe('uts/rest/stats', function () {
    * to the REST API default (100).
    */
   it('RSC6b3 - stats() with limit parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -291,7 +291,7 @@ describe('uts/rest/stats', function () {
    * or sent as "100".
    */
   it('RSC6b3 - stats() limit defaults to 100', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -313,7 +313,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (minute)
    */
   it('RSC6b4 - stats() with unit=minute', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -334,7 +334,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (hour)
    */
   it('RSC6b4 - stats() with unit=hour', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -355,7 +355,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (day)
    */
   it('RSC6b4 - stats() with unit=day', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -376,7 +376,7 @@ describe('uts/rest/stats', function () {
    * RSC6b4 - stats() with unit parameter (month)
    */
   it('RSC6b4 - stats() with unit=month', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -400,7 +400,7 @@ describe('uts/rest/stats', function () {
    * or sent as "minute".
    */
   it('RSC6b4 - stats() unit defaults to minute', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -424,7 +424,7 @@ describe('uts/rest/stats', function () {
    * All query parameters can be used together in a single request.
    */
   it('RSC6b - stats() with all parameters combined', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -499,9 +499,9 @@ describe('uts/rest/stats', function () {
     try {
       await client.stats({} as any);
       expect.fail('Expected stats() to throw');
-    } catch (error: any) {
-      expect(error.statusCode).to.equal(401);
-      expect(error.code).to.equal(40100);
+    } catch (error) {
+      expect((error as ErrorInfo).statusCode).to.equal(401);
+      expect((error as ErrorInfo).code).to.equal(40100);
     }
   });
 
@@ -511,7 +511,7 @@ describe('uts/rest/stats', function () {
    * PaginatedResult supports navigation via Link headers (TG4, TG6).
    */
   it('RSC6a - stats() pagination with Link headers', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     let reqCount = 0;
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

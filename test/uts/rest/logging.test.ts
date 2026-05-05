@@ -44,7 +44,7 @@ describe('uts/rest/logging', function () {
   it('RSC2 - default log level filters non-error messages', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logHandler: function (msg, level) {
@@ -71,7 +71,7 @@ describe('uts/rest/logging', function () {
   it('TO3b - logLevel MICRO captures all messages', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logLevel: 4, // MICRO
@@ -103,7 +103,7 @@ describe('uts/rest/logging', function () {
   it('TO3c - custom logHandler receives messages with level', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logLevel: 4, // MICRO — capture everything
@@ -137,7 +137,7 @@ describe('uts/rest/logging', function () {
   it('RSC4 - logLevel NONE suppresses all messages', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logLevel: 0, // NONE
@@ -161,7 +161,7 @@ describe('uts/rest/logging', function () {
   it('TO3b - logLevel MINOR filters MICRO messages', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logLevel: 3, // MINOR
@@ -194,7 +194,7 @@ describe('uts/rest/logging', function () {
   it('TO3c2 - HTTP request logs contain URL details', async function () {
     setupMock();
 
-    const capturedLogs: any[] = [];
+    const capturedLogs: { msg: string; level: number }[] = [];
     const client = new Ably.Rest({
       key: 'app.key:secret',
       logLevel: 4, // MICRO

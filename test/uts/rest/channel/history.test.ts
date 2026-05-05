@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { MockHttpClient } from '../../mock_http';
+import { MockHttpClient, PendingRequest } from '../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../helpers';
 
 describe('uts/rest/channel/history', function () {
@@ -50,7 +50,7 @@ describe('uts/rest/channel/history', function () {
    * that filters messages to those published at or after that time.
    */
   it('RSL2b - history with start parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -75,7 +75,7 @@ describe('uts/rest/channel/history', function () {
    * that filters messages to those published at or before that time.
    */
   it('RSL2b - history with end parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -100,7 +100,7 @@ describe('uts/rest/channel/history', function () {
    * 'forwards' or 'backwards'.
    */
   it('RSL2b - history with direction parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -122,7 +122,7 @@ describe('uts/rest/channel/history', function () {
    * RSL2b - history with direction: backwards
    */
   it('RSL2b - history with direction backwards', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -147,7 +147,7 @@ describe('uts/rest/channel/history', function () {
    * (either omitted from the query or sent as 'backwards').
    */
   it('RSL2b1 - default direction is backwards', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -172,7 +172,7 @@ describe('uts/rest/channel/history', function () {
    * The limit parameter controls the maximum number of results returned.
    */
   it('RSL2b2 - limit parameter', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -197,7 +197,7 @@ describe('uts/rest/channel/history', function () {
    * (either omitted from the query or sent as '100').
    */
   it('RSL2b3 - default limit', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -223,7 +223,7 @@ describe('uts/rest/channel/history', function () {
    * URL-encoded in the request path.
    */
   it('RSL2 - URL encoding of channel name', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -247,7 +247,7 @@ describe('uts/rest/channel/history', function () {
    * RSL2 - History with combined time range (start and end)
    */
   it('RSL2 - history with start and end time range', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -269,7 +269,7 @@ describe('uts/rest/channel/history', function () {
    * RSL2 - URL encoding with colon in channel name
    */
   it('RSL2 - URL encoding with colon', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
@@ -290,7 +290,7 @@ describe('uts/rest/channel/history', function () {
    * RSL2 - URL encoding with slash in channel name
    */
   it('RSL2 - URL encoding with slash', async function () {
-    const captured: any[] = [];
+    const captured: PendingRequest[] = [];
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {

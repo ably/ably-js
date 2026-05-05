@@ -14,7 +14,7 @@ describe('uts/rest/types/error_types', function () {
    */
   it('TI1 - code attribute', function () {
     const error = new Ably.ErrorInfo('Bad request', 40000, 400);
-    expect(error.code).to.equal(40000);
+    expect((error as ErrorInfo).code).to.equal(40000);
   });
 
   /**
@@ -22,7 +22,7 @@ describe('uts/rest/types/error_types', function () {
    */
   it('TI2 - statusCode attribute', function () {
     const error = new Ably.ErrorInfo('Unauthorized', 40100, 401);
-    expect(error.statusCode).to.equal(401);
+    expect((error as ErrorInfo).statusCode).to.equal(401);
   });
 
   /**
@@ -30,7 +30,7 @@ describe('uts/rest/types/error_types', function () {
    */
   it('TI3 - message attribute', function () {
     const error = new Ably.ErrorInfo('Bad request: invalid parameter', 40000, 400);
-    expect(error.message).to.equal('Bad request: invalid parameter');
+    expect((error as ErrorInfo).message).to.equal('Bad request: invalid parameter');
   });
 
   /**
@@ -42,7 +42,7 @@ describe('uts/rest/types/error_types', function () {
       statusCode: 400,
       message: 'Bad request',
     });
-    expect(error.href).to.equal('https://help.ably.io/error/40000');
+    expect((error as ErrorInfo).href).to.equal('https://help.ably.io/error/40000');
   });
 
   /**
@@ -56,7 +56,7 @@ describe('uts/rest/types/error_types', function () {
       message: 'Timeout',
       cause: cause,
     } as any);
-    expect(error.cause).to.equal(cause);
+    expect((error as ErrorInfo).cause).to.equal(cause);
   });
 
   /**
@@ -77,10 +77,10 @@ describe('uts/rest/types/error_types', function () {
       message: 'Token expired',
     });
 
-    expect(error.code).to.equal(40100);
-    expect(error.statusCode).to.equal(401);
-    expect(error.message).to.equal('Token expired');
-    expect(error.href).to.equal('https://help.ably.io/error/40100');
+    expect((error as ErrorInfo).code).to.equal(40100);
+    expect((error as ErrorInfo).statusCode).to.equal(401);
+    expect((error as ErrorInfo).message).to.equal('Token expired');
+    expect((error as ErrorInfo).href).to.equal('https://help.ably.io/error/40100');
   });
 
   /**
@@ -102,8 +102,8 @@ describe('uts/rest/types/error_types', function () {
 
     for (const tc of cases) {
       const error = new Ably.ErrorInfo(tc.meaning, tc.code, tc.status);
-      expect(error.code).to.equal(tc.code);
-      expect(error.statusCode).to.equal(tc.status);
+      expect((error as ErrorInfo).code).to.equal(tc.code);
+      expect((error as ErrorInfo).statusCode).to.equal(tc.status);
     }
   });
 
@@ -152,9 +152,9 @@ describe('uts/rest/types/error_types', function () {
       href: 'https://help.ably.io/error/40300',
     } as any);
 
-    expect(error.code).to.equal(40300);
-    expect(error.statusCode).to.equal(403);
-    expect(error.message).to.equal('Forbidden: account disabled');
-    expect(error.href).to.equal('https://help.ably.io/error/40300');
+    expect((error as ErrorInfo).code).to.equal(40300);
+    expect((error as ErrorInfo).statusCode).to.equal(403);
+    expect((error as ErrorInfo).message).to.equal('Forbidden: account disabled');
+    expect((error as ErrorInfo).href).to.equal('https://help.ably.io/error/40300');
   });
 });

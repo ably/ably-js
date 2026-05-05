@@ -7,17 +7,20 @@
  * See: specification/uts/rest/unit/helpers/mock_http.md
  */
 
+import {
+  IPlatformHttpStatic,
+  RequestResult,
+  RequestResultError,
+  ErrnoException,
+  RequestBody,
+  RequestParams,
+} from '../../src/common/types/http';
+import HttpMethods from '../../src/common/constants/HttpMethods';
+import ErrorInfo from '../../src/common/lib/types/errorinfo';
+
 interface ConnectionResult {
   success: boolean;
-  error?: { code: string; statusCode: number; message: string };
-}
-
-interface RequestResult {
-  error: { message: string; code: number; statusCode: number } | null;
-  body: string | null;
-  headers: Record<string, string>;
-  unpacked: boolean;
-  statusCode: number;
+  error?: ErrnoException;
 }
 
 /**
@@ -50,17 +53,20 @@ class PendingConnection {
 
   /** Connection refused at network level */
   respond_with_refused(): void {
-    this._resolve!({ success: false, error: { code: 'ECONNREFUSED', statusCode: 500, message: 'Connection refused' } });
+    const err = Object.assign(new Error('Connection refused'), { code: 'ECONNREFUSED', statusCode: 500 }) as ErrnoException;
+    this._resolve!({ success: false, error: err });
   }
 
   /** Connection times out (unresponsive) */
   respond_with_timeout(): void {
-    this._resolve!({ success: false, error: { code: 'ETIMEDOUT', statusCode: 500, message: 'Connection timed out' } });
+    const err = Object.assign(new Error('Connection timed out'), { code: 'ETIMEDOUT', statusCode: 500 }) as ErrnoException;
+    this._resolve!({ success: false, error: err });
   }
 
   /** DNS resolution fails */
   respond_with_dns_error(): void {
-    this._resolve!({ success: false, error: { code: 'ENOTFOUND', statusCode: 500, message: 'DNS resolution failed' } });
+    const err = Object.assign(new Error('DNS resolution failed'), { code: 'ENOTFOUND', statusCode: 500 }) as ErrnoException;
+    this._resolve!({ success: false, error: err });
   }
 }
 
@@ -73,7 +79,7 @@ class PendingRequest {
   url: URL;
   path: string;
   headers: Record<string, string>;
-  body: any;
+  body: string | null; // always a text representation; Buffer/ArrayBuffer bodies are toString'd by the mock
   params: Record<string, string> | null;
   timestamp: number;
   _resolve: ((value: RequestResult) => void) | null;
@@ -83,14 +89,14 @@ class PendingRequest {
     method: string,
     uri: string,
     headers?: Record<string, string>,
-    body?: any,
+    body?: RequestBody | null,
     params?: Record<string, string> | null,
   ) {
     this.method = method;
     this.url = new URL(uri);
     this.path = this.url.pathname;
     this.headers = headers || {};
-    this.body = body;
+    this.body = body == null ? null : typeof body === 'string' ? body : body.toString();
     this.params = params || null;
     this.timestamp = Date.now();
     this._resolve = null;
@@ -100,19 +106,20 @@ class PendingRequest {
   }
 
   /** Respond with an HTTP response */
-  respond_with(status: number, body: any, headers?: Record<string, string>): void {
+  respond_with(status: number, body: unknown, headers?: Record<string, string>): void {
     const responseHeaders = headers || {};
     const isError = status >= 400;
     let error: RequestResult['error'] = null;
 
     if (isError) {
       // Extract error info from body if present
-      const errBody = typeof body === 'object' && body !== null && body.error ? body.error : null;
-      error = {
-        message: errBody ? errBody.message : `HTTP ${status}`,
-        code: errBody ? errBody.code : status * 100,
-        statusCode: errBody ? errBody.statusCode || status : status,
-      };
+      const bodyObj = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : null;
+      const errBody = (bodyObj?.error as { message?: string; code?: number; statusCode?: number } | null) ?? null;
+      error = new ErrorInfo(
+        errBody?.message ?? `HTTP ${status}`,
+        errBody?.code ?? status * 100,
+        errBody?.statusCode ?? status,
+      );
     }
 
     this._resolve!({
@@ -126,8 +133,10 @@ class PendingRequest {
 
   /** Request times out after connection established */
   respond_with_timeout(): void {
+    // code '408' (non-POSIX string) keeps shouldFallback() returning false
+    const err = Object.assign(new Error('Request timed out'), { code: '408', statusCode: 408 }) as ErrnoException;
     this._resolve!({
-      error: { code: 408, statusCode: 408, message: 'Request timed out' } as any,
+      error: err,
       body: null,
       headers: {},
       unpacked: false,
@@ -212,13 +221,13 @@ class MockHttpClient {
    * Returns an object conforming to IPlatformHttpStatic that can be assigned
    * to Platform.Http.
    */
-  asPlatformHttp(): any {
+  asPlatformHttp(): IPlatformHttpStatic {
     const mock = this;
 
     class MockPlatformHttp {
-      static methods = ['get', 'delete', 'post', 'put', 'patch'];
-      static methodsWithBody = ['post', 'put', 'patch'];
-      static methodsWithoutBody = ['get', 'delete'];
+      static methods: HttpMethods[] = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+      static methodsWithBody: HttpMethods[] = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+      static methodsWithoutBody: HttpMethods[] = [HttpMethods.Get, HttpMethods.Delete];
 
       supportsAuthHeaders: boolean;
       supportsLinkHeaders: boolean;
@@ -229,11 +238,11 @@ class MockHttpClient {
       }
 
       async doUri(
-        method: string,
+        method: HttpMethods,
         uri: string,
-        headers: Record<string, string>,
-        body: any,
-        params: Record<string, string>,
+        headers: Record<string, string> | null,
+        body: RequestBody | null,
+        params: RequestParams,
       ): Promise<RequestResult> {
         // Phase 1: Connection attempt
         let parsedUrl: URL;
@@ -252,7 +261,7 @@ class MockHttpClient {
           parsedUrl = new URL(fullUri);
         } catch (e) {
           return {
-            error: { message: 'Invalid URI: ' + uri, statusCode: 400, code: 40000 },
+            error: new ErrorInfo('Invalid URI: ' + uri, 40000, 400),
             body: null,
             headers: {},
             unpacked: false,
@@ -279,11 +288,11 @@ class MockHttpClient {
         const connResult = await conn._promise;
 
         if (!connResult.success) {
-          return { error: connResult.error as any, body: null, headers: {}, unpacked: false, statusCode: 0 };
+          return { error: connResult.error ?? null, body: null, headers: {}, unpacked: false, statusCode: 0 };
         }
 
         // Phase 2: HTTP request (use parsedUrl which includes params)
-        const req = new PendingRequest(method, parsedUrl.href, headers, body, params);
+        const req = new PendingRequest(method, parsedUrl.href, headers ?? undefined, body, params);
         mock.captured_requests.push(req);
 
         // Notify handler or waiter
@@ -302,13 +311,13 @@ class MockHttpClient {
       async checkConnectivity(): Promise<boolean> {
         // Perform the connectivity check via doUri (same as real implementation)
         const url = 'https://internet-up.ably-realtime.com/is-the-internet-up.txt';
-        const { error, body } = await this.doUri('get', url, {}, null, null as any);
+        const { error, body } = await this.doUri(HttpMethods.Get, url, {}, null, null);
         return !error && (body as string)?.toString().trim() === 'yes';
       }
 
-      shouldFallback(error: any): boolean {
+      shouldFallback(error: RequestResultError): boolean {
         if (!error) return false;
-        const code = error.code;
+        const code = (error as ErrnoException).code;
         const statusCode = error.statusCode;
         if (
           code === 'ECONNREFUSED' ||
@@ -320,11 +329,11 @@ class MockHttpClient {
         ) {
           return true;
         }
-        return statusCode >= 500 && statusCode <= 504;
+        return (statusCode ?? 0) >= 500 && (statusCode ?? 0) <= 504;
       }
     }
 
-    return MockPlatformHttp;
+    return MockPlatformHttp as unknown as IPlatformHttpStatic;
   }
 }
 
