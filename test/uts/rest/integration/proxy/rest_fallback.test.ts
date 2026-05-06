@@ -12,6 +12,7 @@ import {
   setupSandbox,
   teardownSandbox,
   getApiKey,
+  uniqueChannelName,
 } from '../../integration/sandbox';
 import { createProxySession, waitForProxy, ProxySession } from '../../../../uts/realtime/integration/helpers/proxy';
 
@@ -139,5 +140,296 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
     // First response was the injected 403 with CloudFront header
     const httpResponses = log.filter((e) => e.type === 'http_response');
     expect(httpResponses[0].status).to.equal(403);
+  });
+
+  /**
+   * Unreachable endpoint surfaces error correctly
+   *
+   * A Rest client pointed at a port with nothing listening should fail
+   * with a usable error object (not an unhandled crash).
+   */
+  it('Unreachable endpoint surfaces error correctly', async function () {
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      port: 19999,
+      tls: false,
+      useBinaryProtocol: false,
+    } as any);
+
+    let error: any;
+    try {
+      await restClient.time();
+      expect.fail('Expected time() to throw');
+    } catch (err: any) {
+      error = err;
+    }
+
+    // The error should have a statusCode or code property — i.e. it's a usable error, not an unhandled crash
+    expect(error).to.exist;
+    expect(error.statusCode || error.code).to.exist;
+  });
+
+  /**
+   * Connection drop mid-response retried on fallback
+   *
+   * The proxy drops the first /time request (http_drop). The SDK should
+   * retry on a fallback host and succeed.
+   */
+  it('Connection drop mid-response retried on fallback', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'http_request', pathContains: '/time' },
+          action: {
+            type: 'http_drop',
+          },
+          times: 1,
+          comment: 'Drop first /time request to trigger fallback retry',
+        },
+      ],
+    });
+
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      fallbackHosts: ['localhost'],
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+    } as any);
+
+    const result = await restClient.time();
+
+    expect(result).to.be.a('number');
+    expect(result).to.be.greaterThan(0);
+
+    // Proxy log should show at least two /time requests (initial drop + fallback retry)
+    const log = await session.getLog();
+    const timeRequests = log.filter((e) => e.type === 'http_request' && e.path && e.path.includes('/time'));
+    expect(timeRequests.length).to.be.at.least(2);
+  });
+
+  /**
+   * HTTP 503 with JSON error body — error parsed correctly
+   *
+   * The proxy returns a 503 with a structured Ably error body on the first
+   * /time request. With no fallbackHosts, the SDK should surface the error
+   * with code, statusCode, and message parsed from the body.
+   */
+  it('HTTP 503 with JSON error body - error parsed correctly', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'http_request', pathContains: '/time' },
+          action: {
+            type: 'http_respond',
+            status: 503,
+            body: { error: { code: 50300, statusCode: 503, message: 'Service temporarily unavailable' } },
+          },
+          times: 1,
+          comment: 'Return 503 with Ably error body on first /time request',
+        },
+      ],
+    });
+
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+    } as any);
+
+    let error: any;
+    try {
+      await restClient.time();
+      expect.fail('Expected time() to throw');
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error.code).to.equal(50300);
+    expect(error.statusCode).to.equal(503);
+    expect(error.message).to.include('Service temporarily unavailable');
+  });
+
+  /**
+   * HTTP 503 without error field in body — error synthesized from status
+   *
+   * The proxy returns a 503 with an empty body (no `error` field). The SDK
+   * should still produce a usable error with the correct statusCode.
+   */
+  it('HTTP 503 without error field in body - error synthesized from status', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'http_request', pathContains: '/time' },
+          action: {
+            type: 'http_respond',
+            status: 503,
+            body: {},
+          },
+          times: 1,
+          comment: 'Return 503 with empty body on first /time request',
+        },
+      ],
+    });
+
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+    } as any);
+
+    let error: any;
+    try {
+      await restClient.time();
+      expect.fail('Expected time() to throw');
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error).to.exist;
+    expect(error.statusCode).to.equal(503);
+  });
+
+  /**
+   * HTTP 403 with error body — not retried, error parsed
+   *
+   * The proxy returns a 403 with an Ably error body. Even with fallbackHosts
+   * configured, 403 is not a fallback-eligible status, so the SDK should NOT
+   * retry and should surface the error directly.
+   */
+  it('HTTP 403 with error body - not retried, error parsed', async function () {
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'http_request', pathContains: '/time' },
+          action: {
+            type: 'http_respond',
+            status: 403,
+            body: { error: { code: 40300, statusCode: 403, message: 'Forbidden' } },
+          },
+          times: 1,
+          comment: 'Return 403 with Ably error body on first /time request',
+        },
+      ],
+    });
+
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      fallbackHosts: ['localhost'],
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+    } as any);
+
+    let error: any;
+    try {
+      await restClient.time();
+      expect.fail('Expected time() to throw');
+    } catch (err: any) {
+      error = err;
+    }
+
+    expect(error.code).to.equal(40300);
+    expect(error.statusCode).to.equal(403);
+
+    // Proxy log should show exactly 1 /time request — 403 is not fallback-eligible, no retry
+    const log = await session.getLog();
+    const timeRequests = log.filter((e) => e.type === 'http_request' && e.path && e.path.includes('/time'));
+    expect(timeRequests.length).to.equal(1);
+  });
+
+  /**
+   * RSL1k4 — Idempotent publish retry deduplication
+   *
+   * Requires proxy support for response modification (forwarding the request
+   * to the server, then replacing the response sent back to the client).
+   * The current proxy only supports http_respond which intercepts BEFORE
+   * forwarding to the server, so the first publish would never reach the
+   * server and we cannot test deduplication.
+   */
+  it.skip('RSL1k4 - Idempotent publish retry deduplication', async function () {
+    // Requires proxy support for response modification (forwarding to server
+    // then replacing the response). Current proxy only supports http_respond
+    // which intercepts before forwarding, so the publish never reaches the
+    // server and retry deduplication cannot be tested end-to-end.
+
+    session = await createProxySession({
+      rules: [
+        {
+          match: { type: 'http_request', method: 'POST', pathContains: '/channels/' },
+          action: {
+            type: 'http_respond',
+            status: 503,
+            body: { error: { code: 50300, statusCode: 503, message: 'Service temporarily unavailable' } },
+          },
+          times: 1,
+          comment: 'RSL1k4: Return 503 on first publish to trigger retry',
+        },
+      ],
+    });
+
+    const restClient = new Ably.Rest({
+      authCallback: (_params: any, cb: any) => {
+        const innerRest = new Ably.Rest({ key: getApiKey(), endpoint: SANDBOX_ENDPOINT } as any);
+        innerRest.auth.requestToken().then(
+          (token: any) => cb(null, token),
+          (err: any) => cb(err, null),
+        );
+      },
+      endpoint: 'localhost',
+      fallbackHosts: ['localhost'],
+      port: session.proxyPort,
+      tls: false,
+      useBinaryProtocol: false,
+      idempotentRestPublishing: true,
+    } as any);
+
+    const channelName = uniqueChannelName('test-RSL1k4-idempotent');
+    const channel = restClient.channels.get(channelName);
+
+    // Publish — first attempt gets 503, SDK retries on fallback and succeeds
+    await channel.publish('test-msg', 'hello');
+
+    // History should contain exactly one copy of the message (deduplication)
+    const history = await channel.history();
+    const matches = history.items.filter((m: any) => m.name === 'test-msg');
+    expect(matches.length).to.equal(1);
   });
 });
