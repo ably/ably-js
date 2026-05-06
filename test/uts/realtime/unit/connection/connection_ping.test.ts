@@ -26,6 +26,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13a - Ping sends HEARTBEAT and returns round-trip duration
    */
+  // UTS: realtime/unit/RTN13a/ping-heartbeat-roundtrip-0
   it('RTN13a - ping sends HEARTBEAT and returns duration', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -65,6 +66,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13e - HEARTBEAT includes random id for disambiguation
    */
+  // UTS: realtime/unit/RTN13e/heartbeat-random-id-0
   it('RTN13e - sent HEARTBEAT includes id', function (done) {
     let capturedId: string | null = null;
 
@@ -107,6 +109,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13e - HEARTBEAT with no id is ignored as ping response
    */
+  // UTS: realtime/unit/RTN13e/no-id-heartbeat-ignored-1
   it('RTN13e - HEARTBEAT without id is ignored', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -146,6 +149,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13e - Multiple concurrent pings each get their own response
    */
+  // UTS: realtime/unit/RTN13e/concurrent-pings-unique-ids-2
   it('RTN13e - concurrent pings disambiguated by id', function (done) {
     const sentIds: string[] = [];
 
@@ -189,6 +193,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13c - Ping times out if no HEARTBEAT response
    */
+  // UTS: realtime/unit/RTN13c/deferred-ping-timeout-1
   it('RTN13c - ping timeout', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -234,6 +239,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13b - Ping errors in INITIALIZED state
    */
+  // UTS: realtime/unit/RTN13b/ping-error-initialized-0
   it('RTN13b - ping errors in INITIALIZED', async function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -256,6 +262,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13b - Ping errors in CLOSED state
    */
+  // UTS: realtime/unit/RTN13b/ping-error-closed-2
   it('RTN13b - ping errors in CLOSED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -297,6 +304,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13b - Ping errors in FAILED state
    */
+  // UTS: realtime/unit/RTN13b/deferred-ping-error-failed-4
   it('RTN13b - ping errors in FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -331,6 +339,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
   /**
    * RTN13b - Ping errors in SUSPENDED state
    */
+  // UTS: realtime/unit/RTN13b/deferred-ping-error-suspended-5
   it('RTN13b - ping errors in SUSPENDED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -382,6 +391,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    * is called, the ping is deferred until the connection reaches a state
    * that can resolve it."
    */
+  // UTS: realtime/unit/RTN13d/ping-deferred-connecting-0
   it('RTN13d - ping deferred from CONNECTING until CONNECTED', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js rejects immediately; see #2203
     const mock = new MockWebSocket({
@@ -430,6 +440,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    * Note: ably-js doesn't defer ping(), but the client auto-reconnects
    * before ping() is called here (connectivity check succeeds immediately).
    */
+  // UTS: realtime/unit/RTN13d/ping-deferred-disconnected-1
   it('RTN13d - ping succeeds after auto-reconnect from DISCONNECTED', async function () {
     let connectionAttemptCount = 0;
 
@@ -498,6 +509,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    *
    * Note: ably-js rejects ping() immediately in non-connected states.
    */
+  // UTS: realtime/unit/RTN13b/ping-error-failed-3
   it('RTN13b+d - ping from CONNECTING rejects on FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -538,6 +550,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    *
    * Note: ably-js rejects ping() immediately in non-connected states.
    */
+  // UTS: realtime/unit/RTN13b/deferred-ping-error-failed-4.1
   it('RTN13b+d - ping from DISCONNECTED rejects', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -591,6 +604,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    *
    * Note: ably-js rejects ping() immediately in non-connected states.
    */
+  // UTS: realtime/unit/RTN13c/ping-timeout-0
   it('RTN13c+d - ping from CONNECTING rejects immediately', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -643,6 +657,7 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
    * We listen on the connectionManager directly (which emits state
    * changes synchronously) to catch the CLOSING state and call ping().
    */
+  // UTS: realtime/unit/RTN13b/ping-error-suspended-1
   it('RTN13b - ping errors in CLOSING', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

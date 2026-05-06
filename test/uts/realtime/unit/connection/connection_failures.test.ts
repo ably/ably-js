@@ -25,6 +25,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15a - Unexpected transport disconnect triggers resume
    */
+  // UTS: realtime/unit/RTN15a/unexpected-transport-disconnect-0
   it('RTN15a - unexpected disconnect triggers resume', function (done) {
     let connectionAttemptCount = 0;
 
@@ -85,6 +86,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15b, RTN15c6 - Successful resume preserves connectionId, uses resume param
    */
+  // UTS: realtime/unit/RTN15b/successful-resume-0
   it('RTN15b, RTN15c6 - successful resume with connectionKey in URL', function (done) {
     let connectionAttemptCount = 0;
 
@@ -159,6 +161,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
    * Per spec: When connection is resumed, Connection.key may change and is
    * provided in CONNECTED message connectionDetails.
    */
+  // UTS: realtime/unit/RTN15e/connection-key-updated-0
   it('RTN15e - connection key updated on resume', function (done) {
     let connectionAttemptCount = 0;
 
@@ -228,6 +231,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
    * The error should be set as Connection#errorReason and as the reason
    * in the CONNECTED event.
    */
+  // UTS: realtime/unit/RTN15c7/failed-resume-new-id-0
   it('RTN15c7 - failed resume gets new connectionId', function (done) {
     let connectionAttemptCount = 0;
 
@@ -308,6 +312,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15g - Connection state cleared after connectionStateTtl (no resume)
    */
+  // UTS: realtime/unit/RTN15g/state-cleared-after-ttl-0
   it('RTN15g - no resume after connectionStateTtl expires', async function () {
     let connectionAttemptCount = 0;
 
@@ -397,6 +402,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15h1 - DISCONNECTED with token error, no means to renew → FAILED
    */
+  // UTS: realtime/unit/RTN15h1/token-error-no-renew-0
   it('RTN15h1 - token error without renewal causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -444,6 +450,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15h2 - DISCONNECTED with token error, renewable token → reconnect
    */
+  // UTS: realtime/unit/RTN15h2/token-error-renew-success-0
   it('RTN15h2 - token error with renewal reconnects', function (done) {
     let connectionAttemptCount = 0;
     let authCallbackCount = 0;
@@ -515,6 +522,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15h3 - DISCONNECTED with non-token error → immediate resume
    */
+  // UTS: realtime/unit/RTN15h3/non-token-error-resume-0
   it('RTN15h3 - non-token disconnect triggers resume', async function () {
     let connectionAttemptCount = 0;
 
@@ -593,6 +601,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15c4 - Fatal ERROR during resume → FAILED
    */
+  // UTS: realtime/unit/RTN15c4/fatal-error-during-resume-0
   it('RTN15c4 - fatal error during resume causes FAILED', function (done) {
     let connectionAttemptCount = 0;
 
@@ -652,6 +661,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15c5 - Token error during resume triggers renewal
    */
+  // UTS: realtime/unit/RTN15c5/token-error-during-resume-0
   it('RTN15c5 - token error during resume triggers renewal', function (done) {
     let connectionAttemptCount = 0;
     let authCallbackCount = 0;
@@ -727,6 +737,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   /**
    * RTN15j - ERROR with empty channel when CONNECTED → FAILED
    */
+  // UTS: realtime/unit/RTN15j/error-empty-channel-failed-0
   it('RTN15j - connection-level ERROR causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -776,6 +787,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
    * has the means to renew the token, but the token creation fails, the connection
    * must transition to the DISCONNECTED state and set Connection#errorReason.
    */
+  // UTS: realtime/unit/RTN15h2/token-error-renew-fails-1
   it('RTN15h2 - token error with renewal failure causes DISCONNECTED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/channel_error', function () {
   /**
    * RTL14 - Channel ERROR transitions ATTACHED channel to FAILED
    */
+  // UTS: realtime/unit/RTL14/attached-to-failed-0
   it('RTL14 - channel ERROR on attached channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -81,6 +82,7 @@ describe('uts/realtime/unit/channels/channel_error', function () {
   /**
    * RTL14 - Channel ERROR transitions ATTACHING channel to FAILED
    */
+  // UTS: realtime/unit/RTL14/attaching-to-failed-1
   it('RTL14 - channel ERROR on attaching channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -135,6 +137,7 @@ describe('uts/realtime/unit/channels/channel_error', function () {
   /**
    * RTL14 - Channel ERROR does not affect other channels
    */
+  // UTS: realtime/unit/RTL14/other-channels-unaffected-3
   it('RTL14 - channel ERROR isolated to target channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -194,6 +197,7 @@ describe('uts/realtime/unit/channels/channel_error', function () {
   /**
    * RTL14 - Channel ERROR completes pending detach with error
    */
+  // UTS: realtime/unit/RTL14/pending-detach-error-2
   it('RTL14 - channel ERROR during detach', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -262,6 +266,7 @@ describe('uts/realtime/unit/channels/channel_error', function () {
    * (channel in SUSPENDED state), the timer should be cancelled and the
    * channel should remain in FAILED state without retrying.
    */
+  // UTS: realtime/unit/RTL14/cancels-pending-timers-4
   it('RTL14 - channel ERROR cancels pending retry timer', async function () {
     let attachCount = 0;
 

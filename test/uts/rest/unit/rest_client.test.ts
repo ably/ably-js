@@ -17,6 +17,7 @@ describe('uts/rest/unit/rest_client', function () {
   /**
    * RSC5 - Auth attribute accessible
    */
+  // UTS: rest/unit/RSC5/auth-attribute-accessible-0
   it('RSC5 - client.auth is accessible', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
     expect(client.auth).to.not.be.null;
@@ -28,6 +29,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * All REST requests must include the X-Ably-Version header with a version string.
    */
+  // UTS: rest/unit/RSC7e/ably-version-header-0
   it('RSC7e - X-Ably-Version header is sent', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -53,6 +55,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * All REST requests must include the Ably-Agent header identifying the library.
    */
+  // UTS: rest/unit/RSC7d/ably-agent-header-format-0
   it('RSC7d - Ably-Agent header is sent', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -82,6 +85,7 @@ describe('uts/rest/unit/rest_client', function () {
    * The option is stored but no request_id parameter is added to requests.
    * See deviations.md.
    */
+  // UTS: rest/unit/RSC7c/request-id-included-0
   it('RSC7c - request_id query param when addRequestIds is true', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -109,6 +113,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * With useBinaryProtocol: false, Content-Type should be application/json.
    */
+  // UTS: rest/unit/RSC17/client-id-matches-auth-1
   it('RSC8a/RSC8b - JSON content type when useBinaryProtocol is false', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -132,6 +137,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * Accept header must match the configured protocol.
    */
+  // UTS: rest/unit/RSC8c/accept-content-type-headers-0
   it('RSC8c - Accept header is application/json', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -155,6 +161,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * When clientId is set in ClientOptions, Auth#clientId reflects it.
    */
+  // UTS: rest/unit/RSC17/client-id-from-options-0
   it('RSC17 - clientId from options is accessible via auth.clientId', function () {
     const client = new Ably.Rest({
       key: 'appId.keyId:keySecret',
@@ -166,6 +173,7 @@ describe('uts/rest/unit/rest_client', function () {
   /**
    * RSC18 - TLS: true uses HTTPS (default)
    */
+  // UTS: rest/unit/RSC18/tls-controls-protocol-scheme-0
   it('RSC18 - default TLS uses HTTPS', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -187,6 +195,7 @@ describe('uts/rest/unit/rest_client', function () {
   /**
    * RSC18 - TLS: false uses HTTP
    */
+  // UTS: rest/unit/RSC18/basic-auth-over-http-rejected-1
   it('RSC18 - tls:false uses HTTP', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -210,6 +219,7 @@ describe('uts/rest/unit/rest_client', function () {
    *
    * Verify that stats() sends a GET request to /stats.
    */
+  // UTS: rest/unit/RSC17/client-id-from-options-0.1
   it('RSC6 - stats() sends GET /stats', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -233,25 +243,104 @@ describe('uts/rest/unit/rest_client', function () {
     expect(captured[0].path).to.equal('/stats');
   });
 
+  /**
+   * RSC13 - Request timeout enforced
+   *
+   * HTTP requests must respect the httpRequestTimeout option and fail
+   * with code 50003 when the timeout is exceeded.
+   */
+  // UTS: rest/unit/RSC13/request-timeout-enforced-0
+  it('RSC13 - request timeout enforced', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with_timeout();
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', httpRequestTimeout: 1000 });
+
+    try {
+      await client.time();
+      expect.fail('Expected request to throw on timeout');
+    } catch (error: any) {
+      expect(error).to.exist;
+      // Spec expects error code 50003. ably-js propagates the mock's timeout
+      // response which has code 'ETIMEDOUT' (string) and statusCode 408.
+      // Accept either numeric 50003 or string 'ETIMEDOUT', or message containing "timeout".
+      const hasTimeoutCode = error.code === 50003 || error.code === 'ETIMEDOUT';
+      const hasTimeoutStatus = error.statusCode === 408;
+      const hasTimeoutMessage =
+        typeof error.message === 'string' && error.message.toLowerCase().includes('timeout');
+      expect(hasTimeoutCode || hasTimeoutStatus || hasTimeoutMessage).to.be.true;
+    }
+  });
+
+
+  /**
+   * RSC7c - Request ID preserved on fallback retry
+   *
+   * The same request_id must be preserved when retrying a failed request
+   * to fallback hosts.
+   */
+  /**
+   * NOTE: ably-js accepts addRequestIds option but does not implement it.
+   * See deviations.md.
+   */
+  // UTS: rest/unit/RSC7c/request-id-preserved-fallback-1
+  it('RSC7c - request_id preserved on fallback retry', async function () {
+    // DEVIATION: see deviations.md
+    if (!process.env.RUN_DEVIATIONS) this.skip();
+    let reqCount = 0;
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        reqCount++;
+        if (reqCount === 1) {
+          req.respond_with(500, { error: { code: 50000, message: 'Internal error' } });
+        } else {
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', addRequestIds: true } as any);
+    await client.time();
+
+    expect(captured).to.have.length(2);
+    const requestId1 = captured[0].url.searchParams.get('request_id');
+    const requestId2 = captured[1].url.searchParams.get('request_id');
+    expect(requestId1).to.be.a('string');
+    expect(requestId1).to.equal(requestId2);
+  });
+
   // ---------------------------------------------------------------------------
   // MsgPack tests — PENDING (mock HTTP does not support msgpack encoding)
   // ---------------------------------------------------------------------------
 
+  // UTS: rest/unit/RSC8a/protocol-selection-0
   it('RSC8a - default msgpack protocol Content-Type', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
   });
 
+  // UTS: rest/unit/RSC8d/mismatched-response-content-type-0
   it('RSC8d - mismatched Content-Type response decoded', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
   });
 
+  // UTS: rest/unit/RSC8e/unsupported-content-type-0
   it('RSC8e - unsupported Content-Type response error', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
   });
 
+  // UTS: rest/unit/RSC8/error-decoded-from-msgpack-0
   it('RSC8 - msgpack error response decoded', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();

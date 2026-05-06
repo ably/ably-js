@@ -72,6 +72,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    * must be keyed only by clientId. A second put for the same clientId but
    * different connectionId overwrites the first.
    */
+  // UTS: realtime/unit/RTP17h/keyed-by-clientid-0
   it('RTP17h - keyed by clientId, not memberKey', function () {
     const map = createLocalPresenceMap();
 
@@ -110,6 +111,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    * Any ENTER event with a connectionId matching the current client's
    * connectionId should be applied to the RTP17 presence map.
    */
+  // UTS: realtime/unit/RTP17b/enter-adds-to-map-0
   it('RTP17b - ENTER adds to map', function () {
     const map = createLocalPresenceMap();
 
@@ -137,6 +139,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    *
    * ENTER and UPDATE are interchangeable -- both add a member to the map.
    */
+  // UTS: realtime/unit/RTP17b/update-adds-to-map-1
   it('RTP17b - UPDATE with no prior entry adds to map', function () {
     const map = createLocalPresenceMap();
 
@@ -162,6 +165,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    *
    * A second ENTER for the same clientId overwrites the first.
    */
+  // UTS: realtime/unit/RTP17b/enter-overwrites-enter-2
   it('RTP17b - ENTER after ENTER overwrites', function () {
     const map = createLocalPresenceMap();
 
@@ -194,6 +198,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    *
    * UPDATE overwrites a prior ENTER for the same clientId.
    */
+  // UTS: realtime/unit/RTP17b/update-overwrites-enter-3
   it('RTP17b - UPDATE after ENTER overwrites', function () {
     const map = createLocalPresenceMap();
 
@@ -226,6 +231,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    *
    * Any PRESENT event with a matching connectionId should be applied.
    */
+  // UTS: realtime/unit/RTP17b/present-adds-to-map-4
   it('RTP17b - PRESENT adds to map', function () {
     const map = createLocalPresenceMap();
 
@@ -257,6 +263,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    * removes. The filtering of synthesized leaves must be done by the caller.
    * This test verifies that remove() works correctly for a non-synthesized leave.
    */
+  // UTS: realtime/unit/RTP17b/non-synthesized-leave-removes-5
   it('RTP17b - non-synthesized LEAVE removes from map', function () {
     const map = createLocalPresenceMap();
 
@@ -301,6 +308,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    * synthesized leave -- it will use timestamp comparison (RTP2b1) since the
    * connectionId is not a prefix of the id.
    */
+  // UTS: realtime/unit/RTP17b/synthesized-leave-ignored-6
   it('RTP17b - synthesized LEAVE behavior', function () {
     const map = createLocalPresenceMap();
 
@@ -340,6 +348,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    *
    * The local presence map can contain multiple members with different clientIds.
    */
+  // UTS: realtime/unit/RTP17/multiple-clientids-coexist-0
   it('RTP17 - multiple clientIds coexist', function () {
     const map = createLocalPresenceMap();
 
@@ -359,6 +368,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   /**
    * RTP17 - Remove one of multiple members
    */
+  // UTS: realtime/unit/RTP17/remove-one-of-multiple-1
   it('RTP17 - remove one of multiple members', function () {
     const map = createLocalPresenceMap();
 
@@ -378,6 +388,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
    * When the channel enters DETACHED or FAILED state, the internal PresenceMap
    * is cleared.
    */
+  // UTS: realtime/unit/RTP17/clear-resets-state-2
   it('RTP5a - clear() resets all state', function () {
     const map = createLocalPresenceMap();
 
@@ -396,6 +407,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   /**
    * RTP17 - Get returns undefined for unknown clientId
    */
+  // UTS: realtime/unit/RTP17/get-null-unknown-clientid-3
   it('RTP17 - get returns undefined for unknown clientId', function () {
     const map = createLocalPresenceMap();
 
@@ -407,6 +419,7 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   /**
    * RTP17 - Remove for unknown clientId is a no-op
    */
+  // UTS: realtime/unit/RTP17/remove-unknown-noop-4
   it('RTP17 - remove for unknown clientId is a no-op', function () {
     const map = createLocalPresenceMap();
 

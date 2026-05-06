@@ -25,6 +25,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3e - DISCONNECTED has no effect on ATTACHED channel
    */
+  // UTS: realtime/unit/RTL3e/disconnected-attached-noop-0
   it('RTL3e - DISCONNECTED does not affect attached channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -72,6 +73,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3a - FAILED connection transitions ATTACHED channel to FAILED
    */
+  // UTS: realtime/unit/RTL3a/other-states-unaffected-2
   it('RTL3a - FAILED connection → channel FAILED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -125,6 +127,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3a - INITIALIZED and DETACHED channels unaffected by FAILED connection
    */
+  // UTS: realtime/unit/RTL3a/failed-attached-to-failed-0
   it('RTL3a - non-attached channels unaffected by FAILED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -191,6 +194,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3b - CLOSED connection transitions ATTACHED channel to DETACHED
    */
+  // UTS: realtime/unit/RTL3b/closed-attached-to-detached-0
   it('RTL3b - CLOSED connection → channel DETACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -242,6 +246,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3c - SUSPENDED connection transitions ATTACHED channel to SUSPENDED
    */
+  // UTS: realtime/unit/RTL3c/suspended-attached-to-suspended-0
   it('RTL3c - SUSPENDED connection → channel SUSPENDED', async function () {
     let connectCount = 0;
 
@@ -318,6 +323,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3d, RTL4c1 - CONNECTED recovery re-attaches channels with channelSerial
    */
+  // UTS: realtime/unit/RTL3d/reattach-attached-with-serial-0
   it('RTL3d - reconnect re-attaches channels with channelSerial', async function () {
     let connectCount = 0;
     const capturedAttachMsgs: any[] = [];
@@ -377,6 +383,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3d - INITIALIZED and DETACHED channels NOT re-attached on reconnect
    */
+  // UTS: realtime/unit/RTL3d/init-detached-not-reattached-2
   it('RTL3d - initialized/detached channels not re-attached', async function () {
     let connectCount = 0;
     const attachedChannels: string[] = [];
@@ -449,6 +456,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3d - Multiple channels re-attached on reconnect
    */
+  // UTS: realtime/unit/RTL3d/multiple-channels-reattached-3
   it('RTL3d - multiple channels re-attached on reconnect', async function () {
     const attachedChannels: string[] = [];
 
@@ -514,6 +522,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3e - DISCONNECTED has no effect on ATTACHING channel
    */
+  // UTS: realtime/unit/RTL3e/disconnected-attaching-noop-1
   it('RTL3e - DISCONNECTED does not affect attaching channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -562,6 +571,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3b - CLOSED connection transitions ATTACHING channel to DETACHED
    */
+  // UTS: realtime/unit/RTL3b/closed-attaching-to-detached-1
   it('RTL3b - CLOSED connection transitions ATTACHING channel to DETACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -619,6 +629,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3a - FAILED connection transitions ATTACHING channel to FAILED
    */
+  // UTS: realtime/unit/RTL3a/failed-attaching-to-failed-1
   it('RTL3a - FAILED connection transitions ATTACHING channel to FAILED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -673,6 +684,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3c - SUSPENDED connection transitions ATTACHING channel to SUSPENDED
    */
+  // UTS: realtime/unit/RTL3c/suspended-attaching-to-suspended-1
   it('RTL3c - SUSPENDED connection transitions ATTACHING channel to SUSPENDED', async function () {
     const clock = enableFakeTimers();
 
@@ -741,6 +753,7 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
   /**
    * RTL3d - CONNECTED connection re-attaches SUSPENDED channels
    */
+  // UTS: realtime/unit/RTL3d/reattach-suspended-channels-1
   it('RTL3d - CONNECTED connection re-attaches SUSPENDED channels', async function () {
     const clock = enableFakeTimers();
     let attachCount = 0;

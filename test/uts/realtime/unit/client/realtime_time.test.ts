@@ -21,6 +21,7 @@ describe('uts/realtime/unit/client/realtime_time', function () {
    *
    * time() makes a GET request to /time and returns the server timestamp.
    */
+  // UTS: rest/unit/RSC16/returns-server-time-0.1
   it('RTC6a - time() returns server time', async function () {
     const serverTime = 1625000000000;
 

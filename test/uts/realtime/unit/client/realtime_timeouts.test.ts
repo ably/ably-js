@@ -47,6 +47,7 @@ describe('uts/realtime/unit/client/realtime_timeouts', function () {
   /**
    * RTC7 - default timeouts applied when not configured
    */
+  // UTS: realtime/unit/RTC7/default-timeouts-applied-3
   it('RTC7 - default timeouts', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -71,6 +72,7 @@ describe('uts/realtime/unit/client/realtime_timeouts', function () {
    * When the server does not respond to ATTACH within the custom timeout,
    * the channel should transition to SUSPENDED (RTL4f).
    */
+  // UTS: realtime/unit/RTC7/attach-request-timeout-0
   it('RTC7 - realtimeRequestTimeout on attach', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -129,6 +131,7 @@ describe('uts/realtime/unit/client/realtime_timeouts', function () {
    * When the server does not respond to DETACH within the custom timeout,
    * the channel should return to ATTACHED (RTL5f).
    */
+  // UTS: realtime/unit/RTC7/detach-request-timeout-1
   it('RTC7 - realtimeRequestTimeout on detach', async function () {
     let ignoreDetach = false;
 
@@ -199,6 +202,7 @@ describe('uts/realtime/unit/client/realtime_timeouts', function () {
    * After disconnect, RTN15a triggers an immediate retry. If that fails too,
    * the library waits disconnectedRetryTimeout before the next attempt.
    */
+  // UTS: realtime/unit/RTC7/disconnected-retry-timeout-2
   it('RTC7 - disconnectedRetryTimeout controls retry delay', async function () {
     let connectionAttemptCount = 0;
 

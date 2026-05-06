@@ -34,6 +34,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * of the PresenceMessage must not be present (implicitly uses the connection's
    * clientId).
    */
+  // UTS: realtime/unit/RTP8a/enter-sends-presence-enter-0
   it('RTP8a, RTP8c - enter sends PRESENCE with ENTER action', async function () {
     const channelName = 'test-RTP8a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -91,6 +92,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Optional data can be included when entering. Data will be encoded
    * and decoded as with normal messages.
    */
+  // UTS: realtime/unit/RTP8e/enter-with-data-0
   it('RTP8e - enter with data', async function () {
     const channelName = 'test-RTP8e-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -142,6 +144,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Implicitly attaches the RealtimeChannel if the channel is in the
    * INITIALIZED state.
    */
+  // UTS: realtime/unit/RTP8d/enter-implicitly-attaches-0
   it('RTP8d - enter implicitly attaches channel', async function () {
     const channelName = 'test-RTP8d-' + String(Math.random()).slice(2);
 
@@ -190,6 +193,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * If the channel is DETACHED or FAILED, the enter request results
    * in an error immediately.
    */
+  // UTS: realtime/unit/RTP8g/enter-detached-failed-errors-0
   it('RTP8g - enter on FAILED channel errors', async function () {
     const channelName = 'test-RTP8g-' + String(Math.random()).slice(2);
 
@@ -249,6 +253,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * If the connection is CONNECTED and the clientId is null (anonymous),
    * the enter request results in an error immediately.
    */
+  // UTS: realtime/unit/RTP8j/enter-null-clientid-errors-0
   it('RTP8j - enter with null clientId errors', async function () {
     const channelName = 'test-RTP8j-' + String(Math.random()).slice(2);
 
@@ -300,6 +305,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * with "Can't use '*' as a clientId as that string is reserved." rather than
    * at enter() time. This test validates that the error occurs at construction.
    */
+  // UTS: realtime/unit/RTP8j/enter-wildcard-clientid-errors-1
   it('RTP8j - enter with wildcard clientId errors', async function () {
     // ably-js rejects wildcard clientId at construction time
     try {
@@ -321,6 +327,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * If the Ably service determines that the client does not have
    * required presence permission, a NACK is sent resulting in an error.
    */
+  // UTS: realtime/unit/RTP8h/nack-presence-permission-denied-0
   it('RTP8h - NACK for missing presence permission', async function () {
     const channelName = 'test-RTP8h-' + String(Math.random()).slice(2);
 
@@ -376,6 +383,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Updates the data for the present member. A PRESENCE ProtocolMessage
    * with action UPDATE is sent. The clientId must not be present.
    */
+  // UTS: realtime/unit/RTP9a/update-sends-presence-update-0
   it('RTP9a, RTP9d - update sends PRESENCE with UPDATE action', async function () {
     const channelName = 'test-RTP9a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -429,6 +437,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Leaves this client from the channel. A PRESENCE ProtocolMessage
    * with action LEAVE is sent. The clientId must not be present.
    */
+  // UTS: realtime/unit/RTP10a/leave-sends-presence-leave-0
   it('RTP10a, RTP10c - leave sends PRESENCE with LEAVE action', async function () {
     const channelName = 'test-RTP10a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -480,6 +489,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    *
    * The data will be updated with the values provided when leaving.
    */
+  // UTS: realtime/unit/RTP10a/leave-with-data-1
   it('RTP10a - leave with data', async function () {
     const channelName = 'test-RTP10a-data-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -534,6 +544,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * key auth without clientId. enterClient() works with key auth and sends
    * the explicit clientId in each presence message.
    */
+  // UTS: realtime/unit/RTP14a/enterclient-on-behalf-0
   it('RTP14a - enterClient enters on behalf of another clientId', async function () {
     const channelName = 'test-RTP14a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -592,6 +603,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Performs update or leave for a given clientId. Functionally
    * equivalent to the corresponding enter, update, and leave methods.
    */
+  // UTS: realtime/unit/RTP15a/updateclient-leaveclient-0
   it('RTP15a - updateClient and leaveClient', async function () {
     const channelName = 'test-RTP15a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -653,6 +665,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * Implicitly attaches the RealtimeChannel if the channel is in the
    * INITIALIZED state.
    */
+  // UTS: realtime/unit/RTP15e/enterclient-implicitly-attaches-0
   it('RTP15e - enterClient implicitly attaches channel', async function () {
     const channelName = 'test-RTP15e-' + String(Math.random()).slice(2);
 
@@ -705,6 +718,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * clientIds via NACK. This test simulates a server NACK to validate the
    * error propagation path.
    */
+  // UTS: realtime/unit/RTP15f/enterclient-mismatched-clientid-0
   it('RTP15f - enterClient with mismatched clientId errors', async function () {
     const channelName = 'test-RTP15f-' + String(Math.random()).slice(2);
 
@@ -765,6 +779,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * If the channel is ATTACHED then presence messages are sent
    * immediately to the connection.
    */
+  // UTS: realtime/unit/RTP16a/presence-sent-when-attached-0
   it('RTP16a - presence message sent when channel is ATTACHED', async function () {
     const channelName = 'test-RTP16a-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -814,6 +829,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * true, presence messages are queued at channel level, sent once
    * channel becomes ATTACHED.
    */
+  // UTS: realtime/unit/RTP16b/presence-queued-when-attaching-0
   it('RTP16b - presence message queued when channel is ATTACHING', async function () {
     const channelName = 'test-RTP16b-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -877,6 +893,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * In any other case (channel not ATTACHED, ATTACHING, or INITIALIZED
    * with queueMessages) the operation should result in an error.
    */
+  // UTS: realtime/unit/RTP16c/presence-errors-other-states-0
   it('RTP16c - presence message errors in other channel states', async function () {
     const channelName = 'test-RTP16c-' + String(Math.random()).slice(2);
 
@@ -941,6 +958,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * plus enterClient()/leaveClient() for other users. enterClient with
    * the same clientId as the connection works in ably-js.
    */
+  // UTS: realtime/unit/RTP15c/enterclient-no-side-effects-0
   it('RTP15c - enterClient has no side effects on normal enter', async function () {
     const channelName = 'test-RTP15c-' + String(Math.random()).slice(2);
     const capturedPresence: any[] = [];
@@ -1014,6 +1032,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    *
    * Note: The spec says 250 but we use 50 as a practical test size.
    */
+  // UTS: realtime/unit/RTP4/bulk-enterclient-same-connection-0
   it('RTP4 - 50 members via enterClient (same connection)', async function () {
     this.timeout(30000);
     const channelName = 'test-RTP4-same-' + String(Math.random()).slice(2);
@@ -1150,6 +1169,7 @@ describe('uts/realtime/unit/presence/realtime_presence_enter', function () {
    * all members, then we set up client B with its own mock to observe presence
    * via SYNC delivery and verify via get().
    */
+  // UTS: realtime/unit/RTP4/bulk-enterclient-diff-connections-1
   it('RTP4 - 50 members via enterClient (different connections)', async function () {
     this.timeout(30000);
     const channelName = 'test-RTP4-diff-' + String(Math.random()).slice(2);

@@ -59,6 +59,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6i1 - Publish single message by name and data
    */
+  // UTS: realtime/unit/RTL6i1/publish-name-and-data-0
   it('RTL6i1 - publish single message by name and data', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -99,6 +100,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6i2 - Publish array of Message objects
    */
+  // UTS: realtime/unit/RTL6i2/publish-message-array-0
   it('RTL6i2 - publish array of messages in single ProtocolMessage', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -147,6 +149,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
    * Spec: "If any of the values are null, then key is not sent to Ably
    * i.e. a payload with a null value for data would be sent as { "name": "click" }"
    */
+  // UTS: realtime/unit/RTL6i3/null-fields-json-0
   it('RTL6i3 - null name/data fields handled correctly', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js includes null fields in wire JSON; see #2199
     const rawFrames: string[] = [];
@@ -205,8 +208,19 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   });
 
   /**
+   * RTL6i3 - Null fields omitted from msgpack wire encoding
+   *
+   * DEVIATION: ably-js does not support msgpack protocol
+   */
+  // UTS: realtime/unit/RTL6i3/null-fields-msgpack-1
+  it.skip('RTL6i3 - null fields omitted from msgpack wire encoding (msgpack not supported)', function () {
+    // DEVIATION: ably-js does not support msgpack protocol
+  });
+
+  /**
    * RTL6i1 - Publish Message object
    */
+  // UTS: realtime/unit/RTL6i1/publish-message-object-1
   it('RTL6i1 - publish Message object', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -246,6 +260,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c1 - Publish immediately when CONNECTED and channel ATTACHED
    */
+  // UTS: realtime/unit/RTL6c1/publish-when-attached-0
   it('RTL6c1 - publish immediately when connected and attached', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -287,6 +302,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c1 - Publish immediately when CONNECTED and channel INITIALIZED
    */
+  // UTS: realtime/unit/RTL6c1/publish-when-initialized-2
   it('RTL6c1 - publish immediately when connected and channel initialized', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -327,6 +343,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c5 - Publish does not trigger implicit attach
    */
+  // UTS: realtime/unit/RTL6c5/no-implicit-attach-0
   it('RTL6c5 - publish does not trigger implicit attach', async function () {
     let attachCount = 0;
     const { mock, captured } = setupMock({
@@ -368,6 +385,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c2 - Publish queued when connection is CONNECTING
    */
+  // UTS: realtime/unit/RTL6c2/queued-when-connecting-0
   it('RTL6c2 - publish queued when connecting', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -423,6 +441,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c2 - Publish queued when connection is INITIALIZED
    */
+  // UTS: realtime/unit/RTL6c2/queued-when-initialized-2
   it('RTL6c2 - publish queued when initialized', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -475,6 +494,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c2 - Publish queued when connection is DISCONNECTED
    */
+  // UTS: realtime/unit/RTL6c2/queued-when-disconnected-1
   it('RTL6c2 - publish queued when disconnected', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -537,6 +557,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c2 - Multiple queued messages sent in order
    */
+  // UTS: realtime/unit/RTL6c2/queued-messages-order-4
   it('RTL6c2 - multiple queued messages sent in order', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -588,6 +609,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c4 - Publish fails when connection is CLOSED
    */
+  // UTS: realtime/unit/RTL6c4/fails-conn-closed-1
   it('RTL6c4 - publish fails when connection closed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -630,6 +652,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c4 - Publish fails when connection is FAILED
    */
+  // UTS: realtime/unit/RTL6c4/fails-channel-failed-4
   it('RTL6c4 - publish fails when connection failed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -671,6 +694,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c4 - Publish fails when channel is FAILED
    */
+  // UTS: realtime/unit/RTL6c4/fails-conn-failed-2
   it('RTL6c4 - publish fails when channel failed', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -728,6 +752,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c2 - Publish fails when queueMessages is false and not connected
    */
+  // UTS: realtime/unit/RTL6c2/fails-no-queue-messages-3
   it('RTL6c2 - publish fails when queueMessages false and not connected', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -764,6 +789,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6j - Publish returns PublishResult with serials from ACK
    */
+  // UTS: realtime/unit/RTL6j/publish-result-serials-0
   it('RTL6j - PublishResult with serial from ACK', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -803,6 +829,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6j - Batch publish returns PublishResult with multiple serials
    */
+  // UTS: realtime/unit/RTL6j/batch-publish-serials-1
   it('RTL6j - batch PublishResult with multiple serials including null', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -844,6 +871,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6j - Sequential publishes get incrementing msgSerial
    */
+  // UTS: realtime/unit/RTL6j/incrementing-msg-serial-2
   it('RTL6j - sequential publishes get incrementing msgSerial', async function () {
     const serials: number[] = [];
     const { mock } = setupMock({
@@ -888,6 +916,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6j - NACK results in error
    */
+  // UTS: realtime/unit/RTL6j/nack-results-error-3
   it('RTL6j - NACK results in publish error', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -929,6 +958,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7e - Pending publishes fail when connection enters CLOSED
    */
+  // UTS: realtime/unit/RTN7e/pending-fail-closed-1
   it('RTN7e - pending publishes fail on connection closed', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -972,6 +1002,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7e - Pending publishes fail when connection enters FAILED
    */
+  // UTS: realtime/unit/RTN7e/pending-fail-failed-2
   it('RTN7e - pending publishes fail on connection failed', async function () {
     const { mock } = setupMock({
       onMessage: () => {
@@ -1014,6 +1045,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7e - Pending publishes fail when connection enters SUSPENDED
    */
+  // UTS: realtime/unit/RTN7e/pending-fail-suspended-0
   it('RTN7e - pending publishes fail on connection suspended', async function () {
     let firstConnect = true;
     const mock = new MockWebSocket({
@@ -1096,6 +1128,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7e - Multiple pending publishes all fail on state change
    */
+  // UTS: realtime/unit/RTN7e/multiple-pending-fail-3
   it('RTN7e - multiple pending publishes all fail on close', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -1137,6 +1170,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7d - New publish fails on DISCONNECTED when queueMessages is false
    */
+  // UTS: realtime/unit/RTN7d/fail-disconnected-no-queue-0
   it('RTN7d - new publish fails when disconnected with queueMessages false', async function () {
     const { mock } = setupMock();
     installMockWebSocket(mock.constructorFn);
@@ -1173,6 +1207,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN7d - Pending publishes survive DISCONNECTED when queueMessages is true
    */
+  // UTS: realtime/unit/RTN7d/survive-disconnected-queue-1
   it('RTN7d - pending survive disconnected with queueMessages true', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -1217,6 +1252,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN19a - Pending messages resent on new transport after disconnect
    */
+  // UTS: realtime/unit/RTN19a/resent-on-new-transport-0
   it('RTN19a - pending message resent on new transport', async function () {
     let connectCount = 0;
     const messagesPerConn: any[][] = [[], []];
@@ -1291,6 +1327,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN19a2 - Resent messages keep same msgSerial on successful resume
    */
+  // UTS: realtime/unit/RTN19a2/same-serial-on-resume-0
   it('RTN19a2 - resent messages keep msgSerial on successful resume', async function () {
     let connectCount = 0;
     const conn1Msgs: any[] = [];
@@ -1376,6 +1413,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN19a2 - Resent messages get new msgSerial on failed resume
    */
+  // UTS: realtime/unit/RTN19a2/new-serial-failed-resume-1
   it('RTN19a2 - resent messages get new msgSerial on failed resume', async function () {
     let connectCount = 0;
     const conn1Msgs: any[] = [];
@@ -1457,6 +1495,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN19b - Pending ATTACH resent on new transport after disconnect
    */
+  // UTS: realtime/unit/RTN19b/attach-resent-on-reconnect-0
   it('RTN19b - pending ATTACH resent after disconnect', async function () {
     let connectCount = 0;
     const attachMsgsPerConn: any[][] = [[], []];
@@ -1522,6 +1561,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTN19b - Pending DETACH resent on new transport after disconnect
    */
+  // UTS: realtime/unit/RTN19b/detach-resent-on-reconnect-1
   it('RTN19b - pending DETACH resent after disconnect', async function () {
     let connectCount = 0;
     const detachMsgsPerConn: any[][] = [[], []];
@@ -1589,6 +1629,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
    * Messages are sent immediately when the connection is CONNECTED and the
    * channel is in ATTACHING state (which is neither SUSPENDED nor FAILED).
    */
+  // UTS: realtime/unit/RTL6c1/publish-when-attaching-1
   it('RTL6c1 - publish immediately when connected and channel attaching', async function () {
     const capturedMessages: any[] = [];
 
@@ -1640,6 +1681,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c4 - Publish fails when channel is SUSPENDED
    */
+  // UTS: realtime/unit/RTL6c4/fails-conn-suspended-0
   it('RTL6c4 - publish fails when channel suspended', async function () {
     const clock = enableFakeTimers();
     const capturedMessages: any[] = [];
@@ -1713,6 +1755,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
    * reason that caused the connection state change (e.g. the ErrorInfo from
    * a fatal ERROR ProtocolMessage).
    */
+  // UTS: realtime/unit/RTN7e/error-represents-reason-4
   it('RTN7e - error passed to publish callback represents the reason for the state change', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -1764,6 +1807,7 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
   /**
    * RTL6c4 - Publish fails when connection is SUSPENDED
    */
+  // UTS: realtime/unit/RTL6c4/fails-channel-suspended-3
   it('RTL6c4 - publish fails when connection suspended', async function () {
     const clock = enableFakeTimers();
 

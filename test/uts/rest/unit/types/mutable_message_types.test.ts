@@ -16,6 +16,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * MESSAGE_DELETE (2), META (3), MESSAGE_SUMMARY (4), MESSAGE_APPEND (5).
    * In ably-js, application code uses string actions.
    */
+  // UTS: rest/unit/TM5/message-action-enum-values-0
   it('TM5 - MessageAction string values', function () {
     const actionStrings = [
       'message.create',
@@ -38,6 +39,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * Wire format uses numeric values (0-5). fromEncoded must decode
    * these to their string equivalents.
    */
+  // UTS: rest/unit/TM5/message-action-enum-values-0.1
   it('TM5 - MessageAction numeric wire values', async function () {
     const wireToString = [
       [0, 'message.create'],
@@ -63,6 +65,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    *
    * Message has an action attribute of type MessageAction.
    */
+  // UTS: rest/unit/TM2j/action-and-serial-fields-0
   it('TM2j - action attribute', function () {
     const msg = Ably.Rest.Message.fromValues({ action: 'message.update' });
     expect(msg.action).to.equal('message.update');
@@ -73,6 +76,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    *
    * Message has a serial attribute: an opaque string that uniquely identifies the message.
    */
+  // UTS: rest/unit/TM2j/action-and-serial-fields-0.1
   it('TM2r - serial attribute', function () {
     const msg = Ably.Rest.Message.fromValues({ serial: 'abc:0' });
     expect(msg.serial).to.equal('abc:0');
@@ -84,6 +88,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * Message.version is an object with serial, timestamp, clientId, description, metadata.
    * When decoded from wire via fromEncoded, expandFields populates version defaults.
    */
+  // UTS: rest/unit/TM2s/version-populated-from-wire-0
   it('TM2s - version object fields via fromEncoded', async function () {
     const msg = await Ably.Rest.Message.fromEncoded({
       serial: 'msg-serial-1',
@@ -111,6 +116,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    *
    * If version is absent, SDK initializes it with serial from TM2r and timestamp from TM2f.
    */
+  // UTS: rest/unit/TM2s1/version-defaults-from-message-0
   it('TM2s1, TM2s2 - version defaults from serial and timestamp', async function () {
     const msg = await Ably.Rest.Message.fromEncoded({
       serial: 'msg-serial-1',
@@ -131,6 +137,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    *
    * If annotations not set on wire, SDK sets it to an empty MessageAnnotations with empty summary.
    */
+  // UTS: rest/unit/TM2u/annotations-defaults-empty-0
   it('TM2u, TM8a - annotations defaults to empty', async function () {
     const msg = await Ably.Rest.Message.fromEncoded({
       serial: 'msg-serial-1',
@@ -148,6 +155,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * MessageOperation has clientId, description, metadata fields.
    * In ably-js these are plain objects (no MessageOperation class).
    */
+  // UTS: rest/unit/MOP2a/message-operation-fields-0
   it('MOP2a-c - MessageOperation fields', function () {
     const op = {
       clientId: 'user-1',
@@ -173,6 +181,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * UpdateDeleteResult contains versionSerial field.
    * In ably-js this is a plain object returned from update/delete operations.
    */
+  // UTS: rest/unit/UDR2a/update-delete-result-fields-0
   it('UDR1, UDR2a - UpdateDeleteResult versionSerial field', function () {
     // Non-null versionSerial
     const result1 = { versionSerial: 'version-serial-abc' };
@@ -194,6 +203,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    * name, type, data, count, serial, messageSerial, timestamp, extras fields.
    * AnnotationAction: annotation.create (wire 0), annotation.delete (wire 1).
    */
+  // UTS: rest/unit/TAN2/annotation-attributes-and-action-0
   it('TAN1, TAN2 - Annotation attributes via fromEncoded', async function () {
     const ann = await Ably.Rest.Annotation.fromEncoded({
       id: 'ann-id-1',
@@ -227,6 +237,7 @@ describe('uts/rest/unit/types/mutable_message_types', function () {
    *
    * Wire 0 = annotation.create, wire 1 = annotation.delete.
    */
+  // UTS: rest/unit/TAN2/annotation-attributes-and-action-0.1
   it('TAN2b - AnnotationAction wire values', async function () {
     const create = await Ably.Rest.Annotation.fromEncoded({ action: 0, data: 'a' });
     expect(create.action).to.equal('annotation.create');

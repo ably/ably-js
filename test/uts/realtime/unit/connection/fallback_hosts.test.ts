@@ -21,6 +21,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
   /**
    * RTN17i - Always prefer primary domain first
    */
+  // UTS: realtime/unit/RTN17i/prefer-primary-domain-0
   it('RTN17i - primary domain tried first', function (done) {
     const connectionHosts: string[] = [];
 
@@ -77,6 +78,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
   /**
    * RTN17f - Network errors trigger fallback host usage
    */
+  // UTS: realtime/unit/RTN17f/fallback-on-error-0
   it('RTN17f - connection refused triggers fallback', function (done) {
     const connectionHosts: string[] = [];
 
@@ -129,6 +131,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
   /**
    * RTN17f1 - DISCONNECTED with 5xx triggers fallback
    */
+  // UTS: realtime/unit/RTN17f1/disconnected-5xx-fallback-0
   it('RTN17f1 - DISCONNECTED with 503 triggers fallback', function (done) {
     const connectionHosts: string[] = [];
 
@@ -196,6 +199,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
    * DISCONNECTED (not immediate error), then retries. We verify only the primary
    * host was tried and no fallback hosts were used.
    */
+  // UTS: realtime/unit/RTN17g/empty-fallback-set-error-0
   it('RTN17g - custom host with no fallbacks does not try fallbacks', function (done) {
     const connectionHosts: string[] = [];
 
@@ -235,6 +239,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
   /**
    * RTN17h - Default fallback hosts match spec (REC2)
    */
+  // UTS: realtime/unit/RTN17h/fallback-domains-from-rec2-0
   it('RTN17h - uses default fallback hosts from REC2', function (done) {
     const connectionHosts: string[] = [];
 
@@ -287,6 +292,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
   /**
    * RTN17j - Connectivity check before fallback
    */
+  // UTS: realtime/unit/RTN17j/connectivity-check-before-fallback-0
   it('RTN17j - connectivity check performed before fallback', function (done) {
     const connectionHosts: string[] = [];
     const mock = new MockWebSocket({
@@ -343,6 +349,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
    * This test is inherently probabilistic. We run multiple iterations and check
    * that not all fallback host orders are identical.
    */
+  // UTS: realtime/unit/RTN17j/fallback-random-order-1
   it('RTN17j - fallback hosts tried in random order', function (done) {
     const fallbackOrders: string[][] = [];
     let iterationsCompleted = 0;
@@ -413,6 +420,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
    * Spec: If the realtime client is connected to a fallback host endpoint,
    * HTTP requests should first be attempted to the same datacenter.
    */
+  // UTS: realtime/unit/RTN17e/http-uses-same-fallback-0
   it('RTN17e - HTTP requests use same fallback host as realtime connection', async function () {
     const connectionHosts: string[] = [];
 

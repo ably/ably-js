@@ -45,6 +45,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4a - String data transmitted without encoding
    */
+  // UTS: rest/unit/RSL4a/string-data-no-encoding-0
   it('RSL4a - string data has no encoding', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -60,6 +61,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4b - JSON object serialized with encoding: "json"
    */
+  // UTS: rest/unit/RSL4b/json-object-encoding-0
   it('RSL4b - object data JSON-encoded', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -76,6 +78,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4c - Binary data base64-encoded with JSON protocol
    */
+  // UTS: rest/unit/RSL4c/binary-base64-json-protocol-0
   it('RSL4c - binary data base64-encoded for JSON protocol', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -93,6 +96,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4d - Array data JSON-encoded
    */
+  // UTS: rest/unit/RSL4d/array-json-encoding-0
   it('RSL4d - array data JSON-encoded', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -108,6 +112,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4 - Null data transmitted without encoding
    */
+  // UTS: rest/unit/RSL4/null-data-no-encoding-1
   it('RSL4 - null data has no encoding', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -123,6 +128,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4 - Empty string transmitted without encoding
    */
+  // UTS: rest/unit/RSL4/empty-string-no-encoding-4
   it('RSL4 - empty string has no encoding', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -138,6 +144,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4 - Empty array JSON-encoded
    */
+  // UTS: rest/unit/RSL4/empty-array-json-encoding-5
   it('RSL4 - empty array JSON-encoded', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -153,6 +160,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4 - Empty object JSON-encoded
    */
+  // UTS: rest/unit/RSL4/encoding-fixtures-ably-common-0
   it('RSL4 - empty object JSON-encoded', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -168,6 +176,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL4 - JSON protocol uses application/json content-type
    */
+  // UTS: rest/unit/RSL4/json-protocol-content-type-2
   it('RSL4 - JSON protocol content-type', async function () {
     const { mock, captured } = publishMock();
     installMockHttp(mock);
@@ -184,6 +193,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6a - Decode base64 data to binary
    */
+  // UTS: rest/unit/RSL6a/decode-base64-to-binary-0
   it('RSL6a - base64 decoded to Buffer', async function () {
     installMockHttp(
       historyMock([{ id: 'msg1', name: 'event', data: 'AAECAwQ=', encoding: 'base64', timestamp: 1234567890000 }]),
@@ -200,6 +210,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6a - Decode JSON string to native object
    */
+  // UTS: rest/unit/RSL6a/decode-json-to-object-1
   it('RSL6a - json decoded to object', async function () {
     installMockHttp(
       historyMock([
@@ -217,6 +228,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6a - Chained encoding json/base64 decoded in reverse order
    */
+  // UTS: rest/unit/RSL6a/decode-chained-encodings-2
   it('RSL6a - chained json/base64 decoded', async function () {
     // {"key":"value"} → base64 = eyJrZXkiOiJ2YWx1ZSJ9
     const base64OfJson = Buffer.from('{"key":"value"}').toString('base64');
@@ -237,6 +249,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6 - utf-8/base64 decoded to string
    */
+  // UTS: rest/unit/RSL6/decode-utf8-base64-data-2
   it('RSL6 - utf-8/base64 decoded to string', async function () {
     // "Hello World" → base64 = SGVsbG8gV29ybGQ=
     installMockHttp(
@@ -256,6 +269,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6 - Complex chained encoding json/utf-8/base64
    */
+  // UTS: rest/unit/RSL6/complex-chained-encoding-3
   it('RSL6 - json/utf-8/base64 fully decoded', async function () {
     const obj = { status: 'active', count: 5 };
     const base64Data = Buffer.from(JSON.stringify(obj)).toString('base64');
@@ -276,6 +290,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6b - Unrecognized encoding preserved
    */
+  // UTS: rest/unit/RSL6b/unrecognized-encoding-preserved-0
   it('RSL6b - unrecognized encoding preserved', async function () {
     // base64 of "encrypted-data"
     const base64Data = Buffer.from('encrypted-data').toString('base64');
@@ -298,6 +313,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   /**
    * RSL6a - String data without encoding passes through
    */
+  // UTS: rest/unit/RSL4a/string-data-no-encoding-0.1
   it('RSL6a - string data without encoding passes through', async function () {
     installMockHttp(historyMock([{ id: 'msg1', name: 'event', data: 'plain text', timestamp: 1234567890000 }]));
 
@@ -314,6 +330,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
    * Per RSL4a: payloads must be binary, strings, or objects capable of
    * JSON representation. Any other data type should result in an error.
    */
+  // UTS: rest/unit/RSL4a/number-type-rejected-1
   it('RSL4a - number data type rejected', async function () {
     const { mock } = publishMock();
     installMockHttp(mock);
@@ -333,6 +350,7 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
    * Per RSL4a: payloads must be binary, strings, or objects capable of
    * JSON representation. Any other data type should result in an error.
    */
+  // UTS: rest/unit/RSL4a/boolean-type-rejected-2
   it('RSL4a - boolean data type rejected', async function () {
     const { mock } = publishMock();
     installMockHttp(mock);
@@ -350,18 +368,26 @@ describe('uts/rest/unit/encoding/message_encoding', function () {
   // MsgPack tests — PENDING (mock HTTP does not support msgpack encoding)
   // ---------------------------------------------------------------------------
 
+  // UTS: rest/unit/RSL4c/binary-direct-msgpack-protocol-1
   it('RSL4c - binary data with msgpack protocol', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
   });
 
+  // UTS: rest/unit/RSL6/msgpack-binary-stays-binary-0
   it('RSL6 - msgpack bin type decoded to Buffer', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
   });
 
+  // UTS: rest/unit/RSL6/msgpack-string-stays-string-1
   it('RSL6 - msgpack str type decoded to string', function () {
     // PENDING: Requires mock msgpack encoding support. See deviations.md.
     this.skip();
+  });
+
+  // UTS: rest/unit/RSL4/msgpack-protocol-content-type-3
+  it.skip('RSL4 - msgpack protocol content type (msgpack not supported)', function () {
+    // DEVIATION: ably-js does not support msgpack protocol
   });
 });

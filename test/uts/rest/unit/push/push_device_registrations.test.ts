@@ -18,6 +18,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * save() issues a PUT request to the device-specific endpoint
    * with the device details in the body.
    */
+  // UTS: rest/unit/RSH1b3/save-put-device-details-0
   it('RSH1b3 - save sends PUT to /push/deviceRegistrations/{id}', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -61,6 +62,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * The PUT body must contain the device's id, clientId, platform,
    * formFactor, and push recipient fields.
    */
+  // UTS: rest/unit/RSH1b3/save-updates-existing-1
   it('RSH1b3 - save body contains device details', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -110,6 +112,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * get() issues a GET request to the device-specific endpoint.
    */
+  // UTS: rest/unit/RSH1b1/get-device-details-0.1
   it('RSH1b1 - get sends GET to /push/deviceRegistrations/{id}', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -145,6 +148,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * get() returns a DeviceDetails object with all the fields
    * from the server response.
    */
+  // UTS: rest/unit/RSH1b1/get-device-details-0
   it('RSH1b1 - get returns device object', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -180,6 +184,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * list() issues a GET request to the deviceRegistrations collection endpoint.
    */
+  // UTS: rest/unit/RSH1b2/list-filtered-by-deviceid-0.1
   it('RSH1b2 - list sends GET to /push/deviceRegistrations', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -213,6 +218,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * list() forwards the deviceId parameter as a query parameter and
    * returns only matching results.
    */
+  // UTS: rest/unit/RSH1b2/list-filtered-by-deviceid-0
   it('RSH1b2 - list with params (deviceId filter)', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -244,6 +250,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * list() returns a PaginatedResult containing DeviceDetails objects.
    */
+  // UTS: rest/unit/RSH1b2/list-filtered-by-deviceid-0.2
   it('RSH1b2 - list returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -281,6 +288,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * remove() issues a DELETE request to the device-specific endpoint.
    */
+  // UTS: rest/unit/RSH1b4/remove-delete-device-0
   it('RSH1b4 - remove sends DELETE to /push/deviceRegistrations/{id}', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -305,6 +313,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * remove() accepts a plain string deviceId (not just a DeviceDetails object).
    */
+  // UTS: rest/unit/RSH1b5/remove-where-no-match-succeeds-2
   it('RSH1b4 - remove accepts string deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -331,6 +340,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * removeWhere() issues a DELETE request to the collection endpoint
    * with filter parameters as query params.
    */
+  // UTS: rest/unit/RSH1b5/remove-where-clientid-0
   it('RSH1b5 - removeWhere sends DELETE to /push/deviceRegistrations with params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -357,6 +367,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * When the server returns a 404 for an unknown deviceId, get()
    * must propagate it as an exception with error code 40400.
    */
+  // UTS: rest/unit/RSH1b1/get-unknown-device-error-1
   it('RSH1b1 - get returns 404 for unknown device', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -384,6 +395,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * get() must URL-encode the deviceId in the request path so that
    * special characters are handled correctly.
    */
+  // UTS: rest/unit/RSH1b1/get-url-encodes-deviceid-2
   it('RSH1b1 - get URL-encodes deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -412,6 +424,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * list() forwards the clientId parameter as a query parameter.
    */
+  // UTS: rest/unit/RSH1b2/list-filtered-by-clientid-1
   it('RSH1b2 - list with clientId filter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -443,6 +456,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    *
    * list() forwards the limit parameter as a query parameter.
    */
+  // UTS: rest/unit/RSH1b2/list-with-limit-param-2
   it('RSH1b2 - list supports limit', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -474,6 +488,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * When the server returns an error response, save() must
    * propagate it as an exception with the correct error code.
    */
+  // UTS: rest/unit/RSH1b3/save-error-propagated-2
   it('RSH1b3 - save propagates server error', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -508,6 +523,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * remove() for a nonexistent device should not throw when the
    * server returns a successful response.
    */
+  // UTS: rest/unit/RSH1b4/remove-nonexistent-succeeds-1
   it('RSH1b4 - remove nonexistent succeeds', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -533,6 +549,7 @@ describe('uts/rest/unit/push/push_device_registrations', function () {
    * removeWhere() forwards the deviceId parameter as a query
    * parameter in the DELETE request.
    */
+  // UTS: rest/unit/RSH1b5/remove-where-deviceid-1
   it('RSH1b5 - removeWhere with deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

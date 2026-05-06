@@ -44,6 +44,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * The SDK should time out and retry on a fallback host (also routed
    * through the proxy, where the rule has expired after times:1).
    */
+  // UTS: rest/proxy/RSC15l2/timeout-triggers-fallback-0
   it('RSC15l2 - request timeout triggers fallback', async function () {
     session = await createProxySession({
       rules: [
@@ -93,6 +94,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * request. The SDK should treat this as a retryable server error and
    * retry on a fallback host.
    */
+  // UTS: rest/proxy/RSC15l4/cloudfront-header-fallback-0
   it('RSC15l4 - CloudFront Server header triggers fallback', async function () {
     // DEVIATION: see deviations.md — ably-js does not inspect the Server response header
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -148,6 +150,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * A Rest client pointed at a port with nothing listening should fail
    * with a usable error object (not an unhandled crash).
    */
+  // UTS: rest/proxy/RSC15l/unreachable-endpoint-error-0
   it('Unreachable endpoint surfaces error correctly', async function () {
     const restClient = new Ably.Rest({
       authCallback: (_params: any, cb: any) => {
@@ -182,6 +185,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * The proxy drops the first /time request (http_drop). The SDK should
    * retry on a fallback host and succeed.
    */
+  // UTS: rest/proxy/RSC15l/connection-drop-fallback-1
   it('Connection drop mid-response retried on fallback', async function () {
     session = await createProxySession({
       rules: [
@@ -229,6 +233,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * /time request. With no fallbackHosts, the SDK should surface the error
    * with code, statusCode, and message parsed from the body.
    */
+  // UTS: rest/proxy/RSC15l/http-5xx-json-error-parsed-0
   it('HTTP 503 with JSON error body - error parsed correctly', async function () {
     session = await createProxySession({
       rules: [
@@ -278,6 +283,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * The proxy returns a 503 with an empty body (no `error` field). The SDK
    * should still produce a usable error with the correct statusCode.
    */
+  // UTS: rest/proxy/RSC15l/http-5xx-no-json-synthesized-1
   it('HTTP 503 without error field in body - error synthesized from status', async function () {
     session = await createProxySession({
       rules: [
@@ -327,6 +333,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * configured, 403 is not a fallback-eligible status, so the SDK should NOT
    * retry and should surface the error directly.
    */
+  // UTS: rest/proxy/RSC15l/http-4xx-not-retried-0
   it('HTTP 403 with error body - not retried, error parsed', async function () {
     session = await createProxySession({
       rules: [
@@ -384,6 +391,7 @@ describe('uts/rest/integration/proxy/rest_fallback', function () {
    * forwarding to the server, so the first publish would never reach the
    * server and we cannot test deduplication.
    */
+  // UTS: rest/proxy/RSL1k4/idempotent-retry-dedup-0
   it.skip('RSL1k4 - Idempotent publish retry deduplication', async function () {
     // Requires proxy support for response modification (forwarding to server
     // then replacing the response). Current proxy only supports http_respond

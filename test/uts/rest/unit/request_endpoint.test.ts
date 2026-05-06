@@ -23,6 +23,7 @@ describe('uts/rest/unit/request_endpoint', function () {
    * When no endpoint configuration is provided, REST requests must be
    * sent to the default primary domain (main.realtime.ably.net).
    */
+  // UTS: rest/unit/RSC25/default-primary-domain-0
   it('RSC25 - default primary domain', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -47,6 +48,7 @@ describe('uts/rest/unit/request_endpoint', function () {
    * When a custom endpoint (e.g. 'sandbox') is configured, REST requests
    * must be sent to the corresponding domain.
    */
+  // UTS: rest/unit/RSC25/custom-endpoint-domain-1
   it('RSC25 - custom endpoint', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -75,6 +77,7 @@ describe('uts/rest/unit/request_endpoint', function () {
    * Successive requests should continue using the primary domain
    * without host switching (absent any fallback triggering errors).
    */
+  // UTS: rest/unit/RSC25/multiple-requests-primary-domain-2
   it('RSC25 - multiple requests use primary domain', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -103,6 +106,7 @@ describe('uts/rest/unit/request_endpoint', function () {
    * When the primary host fails with a 500 error, the client should
    * try the primary first, then fall back to a different host.
    */
+  // UTS: rest/unit/RSC25/primary-tried-before-fallback-3
   it('RSC25 - primary tried before fallback', async function () {
     let requestCount = 0;
     const captured: any[] = [];
@@ -136,6 +140,7 @@ describe('uts/rest/unit/request_endpoint', function () {
    * The request path and method must be correctly constructed
    * regardless of endpoint configuration.
    */
+  // UTS: rest/unit/RSC25/request-path-preserved-4
   it('RSC25 - request path preserved', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

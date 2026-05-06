@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/getMessageVersions', function () {
    * getMessageVersions(serial) must send a GET request to
    * /channels/{channelName}/messages/{serial}/versions.
    */
+  // UTS: rest/unit/RSL14b/get-correct-endpoint-0
   it('RSL14b - GET to correct path', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -54,6 +55,7 @@ describe('uts/rest/unit/channel/getMessageVersions', function () {
    * getMessageVersions must return a PaginatedResult containing
    * Message objects with version fields properly decoded.
    */
+  // UTS: rest/unit/RSL14c/returns-paginated-result-0
   it('RSL14c - returns PaginatedResult of Messages', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -107,6 +109,7 @@ describe('uts/rest/unit/channel/getMessageVersions', function () {
    * Additional params passed to getMessageVersions must be included
    * as query string parameters on the request.
    */
+  // UTS: rest/unit/RSL14a/params-as-querystring-0
   it('RSL14a - params as querystring', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

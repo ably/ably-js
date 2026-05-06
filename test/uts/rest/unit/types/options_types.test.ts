@@ -24,6 +24,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions defaults: tls
    */
+  // UTS: rest/unit/TO3/client-options-default-token-params-3
   it('TO3 - tls defaults to true', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -33,6 +34,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions defaults: useBinaryProtocol
    */
+  // UTS: rest/unit/TO3/client-options-auth-url-2
   it('TO3 - useBinaryProtocol defaults to true', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -42,6 +44,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions defaults: idempotentRestPublishing
    */
+  // UTS: rest/unit/TO/conflicting-options-validation-1
   it('TO3 - idempotentRestPublishing defaults to true', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -51,6 +54,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions defaults: maxMessageSize
    */
+  // UTS: rest/unit/TO/endpoint-affects-host-0
   it('TO3 - maxMessageSize defaults to 65536', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -60,6 +64,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions: setting values
    */
+  // UTS: rest/unit/TO3/client-options-custom-hosts-1
   it('TO3 - setting custom option values', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({
@@ -77,6 +82,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions: clientId accessible
    */
+  // UTS: rest/unit/TO3/client-options-attributes-0
   it('TO3 - clientId option', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({
@@ -89,6 +95,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO3 - ClientOptions: key is parsed into keyName and keySecret
    */
+  // UTS: rest/unit/TO3/client-options-attributes-0.1
   it('TO3 - key parsed into keyName and keySecret', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -99,6 +106,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * TO - No auth options provided
    */
+  // UTS: rest/unit/AO/auth-options-with-callback-0
   it('TO - error when no auth options provided', function () {
     installMockHttp(simpleMock());
     try {
@@ -112,6 +120,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * AO2 - AuthOptions attributes via authUrl
    */
+  // UTS: rest/unit/AO2/auth-options-attributes-0
   it('AO2 - authUrl and authMethod options', function () {
     installMockHttp(simpleMock());
     const client = new Ably.Rest({
@@ -125,6 +134,7 @@ describe('uts/rest/unit/types/options_types', function () {
   /**
    * AO2 - AuthOptions: authMethod defaults to GET
    */
+  // UTS: rest/unit/AO2/auth-options-attributes-0.1
   it('AO2 - authMethod defaults to GET', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();

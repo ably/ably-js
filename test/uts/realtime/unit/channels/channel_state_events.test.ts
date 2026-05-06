@@ -26,6 +26,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2b - Channel state attribute
    */
+  // UTS: realtime/unit/RTL2b/channel-state-attribute-0
   it('RTL2b - channel has state attribute', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -42,6 +43,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2b - Channel initial state is initialized
    */
+  // UTS: realtime/unit/RTL2b/initial-state-initialized-1
   it('RTL2b - initial state is initialized', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -58,6 +60,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2a - State change events emitted for every state change
    */
+  // UTS: realtime/unit/RTL2a/state-change-events-emitted-0
   it('RTL2a - state change events emitted', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -108,6 +111,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
    * Deviation: TH5 — ably-js ChannelStateChange has no `event` property.
    * The event name is available via `this.event` in the listener context.
    */
+  // UTS: realtime/unit/RTL2d/state-change-object-structure-0
   it('RTL2d, TH1, TH2 - ChannelStateChange structure', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -155,6 +159,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2d, TH3 - ChannelStateChange includes error reason when applicable
    */
+  // UTS: realtime/unit/RTL2d/state-change-error-reason-1
   it('RTL2d, TH3 - ChannelStateChange includes error reason', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -211,6 +216,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2 - Filtered event subscription
    */
+  // UTS: realtime/unit/RTL2/filtered-event-subscription-0
   it('RTL2 - filtered event subscription', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -259,6 +265,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
    * When an ATTACHED message is received while already attached and
    * the RESUMED flag is NOT set, an 'update' event is emitted.
    */
+  // UTS: realtime/unit/RTL2g/update-event-condition-change-0
   it('RTL2g - UPDATE event emitted', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -320,6 +327,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
    * When an UPDATE occurs, only the 'update' event is emitted, not
    * a duplicate 'attached' event.
    */
+  // UTS: realtime/unit/RTL2g/no-duplicate-state-events-1
   it('RTL2g - no duplicate attached events on UPDATE', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -380,6 +388,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2i, TH6 - hasBacklog flag in ChannelStateChange
    */
+  // UTS: realtime/unit/RTL2i/has-backlog-flag-true-0
   it('RTL2i, TH6 - hasBacklog true when flag present', async function () {
     const HAS_BACKLOG = 2; // 1 << 1
 
@@ -426,6 +435,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2i - hasBacklog false when flag not present
    */
+  // UTS: realtime/unit/RTL2i/has-backlog-flag-false-1
   it('RTL2i - hasBacklog false when flag not present', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -470,6 +480,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
   /**
    * RTL2d - resumed flag in ChannelStateChange
    */
+  // UTS: realtime/unit/RTL2d/resumed-flag-propagated-2
   it('RTL2d - resumed flag true when RESUMED set', async function () {
     const RESUMED = 4; // 1 << 2
 
@@ -519,6 +530,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
    * When a channel enters the FAILED state, errorReason should be
    * populated with the error from the server.
    */
+  // UTS: realtime/unit/RTL24/error-reason-populated-0
   it('channel errorReason populated when failed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -574,6 +586,7 @@ describe('uts/realtime/unit/channels/channel_state_events', function () {
    * Deviation: ably-js does NOT clear errorReason on successful re-attach.
    * This test documents the deviation.
    */
+  // UTS: realtime/unit/RTL4c/error-reason-cleared-attach-0
   it('RTL4c - errorReason after successful re-attach (deviation)', async function () {
     let attachCount = 0;
 

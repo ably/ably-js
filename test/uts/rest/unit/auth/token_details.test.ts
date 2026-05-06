@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockHttp, restoreAll } from '../../../helpers';
+import { Ably, installMockHttp, enableFakeTimers, restoreAll } from '../../../helpers';
 
 function simpleMock(captured?: any) {
   return new MockHttpClient({
@@ -27,6 +27,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16a - tokenDetails reflects token from authCallback
    */
+  // UTS: rest/unit/RSA16a/token-from-callback-0
   it('RSA16a - tokenDetails from authCallback', async function () {
     installMockHttp(simpleMock());
 
@@ -58,6 +59,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16a - tokenDetails reflects token from requestToken (authorize with key)
    */
+  // UTS: rest/unit/RSA16a/token-from-request-token-1
   it('RSA16a - tokenDetails from requestToken', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn: any) => conn.respond_with_success(),
@@ -88,6 +90,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16b - tokenDetails created from token string in ClientOptions
    */
+  // UTS: rest/unit/RSA16b/token-string-in-options-0
   it('RSA16b - tokenDetails from token string option', function () {
     installMockHttp(simpleMock());
 
@@ -105,6 +108,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16b - tokenDetails created from token string in authCallback
    */
+  // UTS: rest/unit/RSA16b/token-string-from-callback-1
   it('RSA16b - tokenDetails from token string authCallback', async function () {
     installMockHttp(simpleMock());
 
@@ -131,6 +135,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16c - tokenDetails set on instantiation with tokenDetails option
    */
+  // UTS: rest/unit/RSA16c/set-on-instantiation-0
   it('RSA16c - tokenDetails set on instantiation', function () {
     installMockHttp(simpleMock());
 
@@ -151,6 +156,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16c - tokenDetails updated after explicit authorize()
    */
+  // UTS: rest/unit/RSA16c/updated-after-authorize-1
   it('RSA16c - tokenDetails updated after authorize()', async function () {
     let tokenCount = 0;
 
@@ -182,11 +188,64 @@ describe('uts/rest/unit/auth/token_details', function () {
   });
 
   /**
+   * RSA16c - tokenDetails updated after library-initiated renewal on expiry
+   *
+   * When the token expires (client-side check) and a new request is made,
+   * the library proactively renews the token. tokenDetails should reflect
+   * the new token.
+   */
+  // UTS: rest/unit/RSA16c/updated-after-expiry-renewal-2
+  it('RSA16c - tokenDetails updated after expiry renewal', async function () {
+    const clock = enableFakeTimers();
+    let tokenCount = 0;
+
+    installMockHttp(simpleMock());
+
+    const client = new Ably.Rest({
+      authCallback: function (params: any, callback: any) {
+        tokenCount++;
+        callback(null, {
+          token: 'token-v' + tokenCount,
+          expires: clock.now + 1000,
+          issued: clock.now,
+          clientId: 'client-v' + tokenCount,
+        } as any);
+      },
+    } as any);
+
+    // RSA4b1: client-side expiry check requires serverTimeOffset to be set
+    (client as any).serverTimeOffset = 0;
+
+    // First request gets initial token
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
+    const firstToken = client.auth.tokenDetails;
+
+    // Advance time past token expiry
+    clock.tick(2000);
+
+    // Second request should trigger renewal due to client-side expiry check
+    try {
+      await client.stats({} as any);
+    } catch (e) {
+      /* ok */
+    }
+    const secondToken = client.auth.tokenDetails;
+
+    expect(firstToken!.token).to.equal('token-v1');
+    expect(secondToken!.token).to.equal('token-v2');
+  });
+
+  /**
    * RSA16c - tokenDetails updated after library-initiated renewal on 40142
    *
    * When a request fails with 40142 (token expired), the library renews
    * the token and tokenDetails should reflect the new token.
    */
+  // UTS: rest/unit/RSA16c/updated-after-40142-renewal-3
   it('RSA16c - tokenDetails updated after 40142 renewal', async function () {
     let requestCount = 0;
     let tokenCount = 0;
@@ -235,12 +294,13 @@ describe('uts/rest/unit/auth/token_details', function () {
   });
 
   /**
-   * RSA16d - tokenDetails null after failed renewal attempt
+   * RSA16d - tokenDetails null after token invalidation
    *
-   * When a token is invalidated and renewal fails, tokenDetails
-   * should reflect the failure state.
+   * When a token error occurs and renewal fails (authCallback errors),
+   * tokenDetails should be null.
    */
-  it('RSA16d - tokenDetails after failed renewal', async function () {
+  // UTS: rest/unit/RSA16d/null-after-invalidation-2
+  it('RSA16d - tokenDetails null after invalidation', async function () {
     this.timeout(5000);
     let callbackCount = 0;
     let requestCount = 0;
@@ -292,6 +352,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16d - tokenDetails null with basic auth
    */
+  // UTS: rest/unit/RSA16d/null-with-basic-auth-0
   it('RSA16d - tokenDetails null with basic auth', async function () {
     installMockHttp(simpleMock());
 
@@ -308,6 +369,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * RSA16d - tokenDetails null before first token obtained
    */
+  // UTS: rest/unit/RSA16d/null-before-token-obtained-1
   it('RSA16d - tokenDetails null before first token', function () {
     installMockHttp(simpleMock());
 
@@ -322,8 +384,24 @@ describe('uts/rest/unit/auth/token_details', function () {
   });
 
   /**
+   * RSA16d - tokenDetails null after switching from token auth to basic auth
+   *
+   * When authorize() is called with a key and useTokenAuth: false,
+   * the client switches to basic auth and tokenDetails becomes null.
+   */
+  // UTS: rest/unit/RSA16d/null-after-switch-to-basic-3
+  it.skip('RSA16d - tokenDetails null after switch to basic auth', function () {
+    // DEVIATION: ably-js's authorize() always performs token auth — it cannot
+    // switch to basic auth. Calling authorize(null, { useTokenAuth: false })
+    // throws "authOptions must include valid authentication parameters".
+    // The spec scenario (switching from token auth to basic auth mid-session)
+    // is not supported by ably-js.
+  });
+
+  /**
    * Edge case: tokenDetails preserved across multiple successful requests
    */
+  // UTS: rest/unit/RSA16a/preserved-across-requests-0
   it('tokenDetails preserved across requests', async function () {
     installMockHttp(simpleMock());
 
@@ -368,6 +446,7 @@ describe('uts/rest/unit/auth/token_details', function () {
   /**
    * Edge case: tokenDetails reflects capability from token
    */
+  // UTS: rest/unit/RSA16a/reflects-capability-1
   it('tokenDetails reflects capability', async function () {
     installMockHttp(simpleMock());
 

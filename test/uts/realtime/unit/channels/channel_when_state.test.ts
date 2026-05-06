@@ -23,6 +23,7 @@ describe('uts/realtime/unit/channels/channel_when_state', function () {
   /**
    * RTL25a - whenState resolves immediately if already in target state
    */
+  // UTS: realtime/unit/RTL25a/resolves-immediately-current-0
   it('RTL25a - whenState resolves immediately when in target state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -64,6 +65,7 @@ describe('uts/realtime/unit/channels/channel_when_state', function () {
   /**
    * RTL25b - whenState waits for state transition
    */
+  // UTS: realtime/unit/RTL25b/waits-for-state-change-0
   it('RTL25b - whenState waits for state then resolves', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -113,6 +115,7 @@ describe('uts/realtime/unit/channels/channel_when_state', function () {
   /**
    * RTL25b - whenState only fires once
    */
+  // UTS: realtime/unit/RTL25b/fires-once-only-1
   it('RTL25b - whenState is one-shot', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -180,6 +183,7 @@ describe('uts/realtime/unit/channels/channel_when_state', function () {
   /**
    * RTL25a - whenState for past state does NOT resolve
    */
+  // UTS: realtime/unit/RTL25a/past-state-does-not-resolve-1
   it('RTL25a - whenState for past state does not resolve', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

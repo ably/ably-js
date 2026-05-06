@@ -104,6 +104,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * (disconnected -> connecting -> connected) and that the 2nd ws_connect
    * has a `resume` query parameter.
    */
+  // UTS: realtime/proxy/RTN15a/disconnect-triggers-resume-0
   it('RTN15a - unexpected disconnect triggers resume', async function () {
     session = await createProxySession({
       rules: [
@@ -171,6 +172,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * the TCP FIN and fires its close event, so ably-js should transition to
    * disconnected with minimal delay — identical to the close-frame case.
    */
+  // UTS: realtime/proxy/RTN15a/tcp-close-triggers-resume-1
   it('RTN15a - unexpected disconnect triggers resume (TCP close without close frame)', async function () {
     session = await createProxySession({
       rules: [
@@ -230,6 +232,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * After unexpected disconnect and successful resume, the connection ID
    * remains the same and the resume query parameter contains the connection key.
    */
+  // UTS: realtime/proxy/RTN15b/resume-preserves-connid-0
   it('RTN15b/RTN15c6 - resume preserves connectionId', async function () {
     session = await createProxySession({
       rules: [
@@ -292,6 +295,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * a different connectionId and error code 80008. SDK should accept the new
    * connection identity and expose the error.
    */
+  // UTS: realtime/proxy/RTN15c7/failed-resume-new-connid-0
   it('RTN15c7 - failed resume gets new connectionId', async function () {
     session = await createProxySession({
       rules: [
@@ -391,6 +395,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * Client is configured with a token string only (no key, no authCallback)
    * so it cannot renew. SDK should transition to FAILED.
    */
+  // UTS: realtime/proxy/RTN15h1/token-error-nonrenewable-failed-0
   it('RTN15h1 - DISCONNECTED with token error and non-renewable token causes FAILED', async function () {
     session = await createProxySession({
       rules: [
@@ -464,6 +469,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * Rule fires once, so the reconnection attempt passes through cleanly.
    * SDK should reconnect and resume rather than transitioning to FAILED.
    */
+  // UTS: realtime/proxy/RTN15h3/non-token-error-reconnects-0
   it('RTN15h3 - DISCONNECTED with non-token error triggers reconnect', async function () {
     session = await createProxySession({
       rules: [
@@ -551,6 +557,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * SDK should transition to FAILED and all attached channels should also
    * transition to FAILED with the same error.
    */
+  // UTS: realtime/proxy/RTN15j/fatal-error-established-conn-0
   it('RTN15j - fatal ERROR on established connection causes FAILED and channels FAILED', async function () {
     session = await createProxySession({
       rules: [],
@@ -655,6 +662,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * 2s to trigger idle timeout. After the TTL expires, the SDK should
    * connect fresh (no resume) and get a new connectionId.
    */
+  // UTS: realtime/proxy/RTN15g/ttl-expiry-clears-resume-0
   it('RTN15g/g2 - connectionStateTtl expiry prevents resume', async function () {
     // Strategy: replace the first CONNECTED with connectionStateTtl=2000ms,
     // then close the WebSocket after 1s. The SDK immediately retries (since it
@@ -765,6 +773,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * After disconnect and resume, the SDK should resend the MESSAGE on the
    * new transport and the publish should eventually resolve successfully.
    */
+  // UTS: realtime/proxy/RTN19a/unacked-resent-on-resume-0
   it('RTN19a/a2 - unacked messages resent on new transport after resume', async function () {
     session = await createProxySession({
       rules: [
@@ -853,6 +862,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * a second proxy session.
    * Verify: connectionId same, connectionKey updated, recover param in log.
    */
+  // UTS: realtime/proxy/RTN16d/recovery-preserves-connid-0
   it('RTN16d/RTN16k - successful recovery preserves connectionId and updates connectionKey', async function () {
     // --- Phase 1: Establish initial connection and obtain recovery key ---
     const session1 = await createProxySession({
@@ -954,6 +964,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
    * connectionId and an error (code 80008), simulating the server rejecting
    * the recovery attempt. SDK should handle it as a fresh connection.
    */
+  // UTS: realtime/proxy/RTN16l/recovery-failure-fresh-conn-0
   it('RTN16l - recovery failure treated as fresh connection', async function () {
     session = await createProxySession({
       rules: [

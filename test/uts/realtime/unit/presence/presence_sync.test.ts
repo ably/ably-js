@@ -61,6 +61,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP18a - startSync sets syncInProgress
    */
+  // UTS: realtime/unit/RTP18a/startsync-sets-flag-0
   it('RTP18a - startSync sets syncInProgress', function () {
     const { map } = createPresenceMap();
 
@@ -72,6 +73,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP18b - endSync clears syncInProgress
    */
+  // UTS: realtime/unit/RTP18b/endsync-clears-flag-0
   it('RTP18b - endSync clears syncInProgress', function () {
     const { map } = createPresenceMap();
 
@@ -84,6 +86,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - Stale members get LEAVE events after sync
    */
+  // UTS: realtime/unit/RTP19/stale-members-leave-after-sync-0
   it('RTP19 - stale members get LEAVE events after sync', function () {
     const { map, mock } = createPresenceMap();
 
@@ -109,6 +112,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
    * the LEAVE event synthesis (setting id=null, timestamp=now) is done by
    * _synthesizeLeaves, not by endSync. We verify the residual member is passed.
    */
+  // UTS: realtime/unit/RTP19/synth-leave-null-id-timestamp-1
   it('RTP19 - synthesized LEAVE preserves original attributes', function () {
     const { map, mock } = createPresenceMap();
 
@@ -134,6 +138,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - Members updated during sync survive
    */
+  // UTS: realtime/unit/RTP19/updated-members-survive-sync-2
   it('RTP19 - members updated during sync survive', function () {
     const { map, mock } = createPresenceMap();
 
@@ -160,6 +165,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
    * DEVIATION: In ably-js, startSync() during an active sync is a no-op
    * (does not reset residualMembers). This test verifies ably-js behavior.
    */
+  // UTS: realtime/unit/RTP18a/new-sync-discards-previous-1
   it('RTP18a - new sync discards previous in-flight sync', function () {
     if (!process.env.RUN_DEVIATIONS) this.skip();
 
@@ -184,6 +190,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP18c - Single-message sync (no channelSerial)
    */
+  // UTS: realtime/unit/RTP18c/single-message-sync-0
   it('RTP18c - single-message sync', function () {
     const { map, mock } = createPresenceMap();
 
@@ -206,6 +213,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
    *
    * At the PresenceMap level: startSync() + endSync() with no puts.
    */
+  // UTS: realtime/unit/RTP19a/no-has-presence-clears-members-0
   it('RTP19a - ATTACHED without HAS_PRESENCE clears all members', function () {
     const { map, mock } = createPresenceMap();
 
@@ -239,6 +247,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
    * residualMembers, so bob remains in residuals and gets a synthesized LEAVE.
    * The core assertions (ABSENT storage, cleanup on endSync) still hold.
    */
+  // UTS: realtime/unit/RTP2h2a/leave-during-sync-absent-cleanup-0
   it('RTP2h2a - LEAVE during sync stored as ABSENT', function () {
     const { map, mock } = createPresenceMap();
 
@@ -268,6 +277,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - Empty map sync produces no leave events
    */
+  // UTS: realtime/unit/RTP19/empty-map-sync-no-leaves-3
   it('RTP19 - empty map sync produces no leave events', function () {
     const { map, mock } = createPresenceMap();
 
@@ -283,6 +293,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP18 - endSync without startSync is a no-op
    */
+  // UTS: realtime/unit/RTP18/endsync-without-startsync-noop-0
   it('RTP18 - endSync without startSync is a no-op', function () {
     const { map, mock } = createPresenceMap();
 
@@ -298,6 +309,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - Stale SYNC message still removes member from residuals
    */
+  // UTS: realtime/unit/RTP19/stale-sync-removes-from-residuals-4
   it('RTP19 - stale SYNC message still removes member from residuals', function () {
     const { map, mock } = createPresenceMap();
 
@@ -317,6 +329,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - PRESENCE echoes followed by SYNC preserves all members
    */
+  // UTS: realtime/unit/RTP19/presence-echoes-then-sync-preserves-5
   it('RTP19 - PRESENCE echoes followed by SYNC preserves all members', function () {
     const { map, mock } = createPresenceMap();
 
@@ -343,6 +356,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   /**
    * RTP19 - New member added during sync is not stale
    */
+  // UTS: realtime/unit/RTP19/new-member-during-sync-survives-6
   it('RTP19 - new member added during sync is not stale', function () {
     const { map, mock } = createPresenceMap();
 

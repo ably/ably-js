@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/history', function () {
    * The history() method must return a PaginatedResult containing
    * Message objects deserialized from the response.
    */
+  // UTS: rest/unit/RSL2a/returns-paginated-result-0
   it('RSL2a - history returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -49,6 +50,7 @@ describe('uts/rest/unit/channel/history', function () {
    * The start parameter is an optional timestamp (ms since epoch)
    * that filters messages to those published at or after that time.
    */
+  // UTS: rest/unit/RSL2b/query-parameters-0
   it('RSL2b - history with start parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -74,6 +76,7 @@ describe('uts/rest/unit/channel/history', function () {
    * The end parameter is an optional timestamp (ms since epoch)
    * that filters messages to those published at or before that time.
    */
+  // UTS: rest/unit/RSL2b/query-parameters-0.1
   it('RSL2b - history with end parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -99,6 +102,7 @@ describe('uts/rest/unit/channel/history', function () {
    * The direction parameter controls the ordering of results:
    * 'forwards' or 'backwards'.
    */
+  // UTS: rest/unit/RSL2b/query-parameters-0.2
   it('RSL2b - history with direction parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -121,6 +125,7 @@ describe('uts/rest/unit/channel/history', function () {
   /**
    * RSL2b - history with direction: backwards
    */
+  // UTS: rest/unit/RSL2b1/default-direction-backwards-0.1
   it('RSL2b - history with direction backwards', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -146,6 +151,7 @@ describe('uts/rest/unit/channel/history', function () {
    * When direction is not specified, it defaults to 'backwards'
    * (either omitted from the query or sent as 'backwards').
    */
+  // UTS: rest/unit/RSL2b1/default-direction-backwards-0
   it('RSL2b1 - default direction is backwards', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -171,6 +177,7 @@ describe('uts/rest/unit/channel/history', function () {
    *
    * The limit parameter controls the maximum number of results returned.
    */
+  // UTS: rest/unit/RSL2b2/limit-parameter-0
   it('RSL2b2 - limit parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -196,6 +203,7 @@ describe('uts/rest/unit/channel/history', function () {
    * When limit is not specified, it defaults to 100
    * (either omitted from the query or sent as '100').
    */
+  // UTS: rest/unit/RSL2b3/default-limit-hundred-0
   it('RSL2b3 - default limit', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -222,6 +230,7 @@ describe('uts/rest/unit/channel/history', function () {
    * Channel names containing special characters must be properly
    * URL-encoded in the request path.
    */
+  // UTS: rest/unit/RSL2/request-url-format-0
   it('RSL2 - URL encoding of channel name', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -246,6 +255,7 @@ describe('uts/rest/unit/channel/history', function () {
   /**
    * RSL2 - History with combined time range (start and end)
    */
+  // UTS: rest/unit/RSL2/history-time-range-1
   it('RSL2 - history with start and end time range', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -268,6 +278,7 @@ describe('uts/rest/unit/channel/history', function () {
   /**
    * RSL2 - URL encoding with colon in channel name
    */
+  // UTS: rest/unit/RSL2/request-url-format-0.1
   it('RSL2 - URL encoding with colon', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -289,6 +300,7 @@ describe('uts/rest/unit/channel/history', function () {
   /**
    * RSL2 - URL encoding with slash in channel name
    */
+  // UTS: rest/unit/RSL2/request-url-format-0.2
   it('RSL2 - URL encoding with slash', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

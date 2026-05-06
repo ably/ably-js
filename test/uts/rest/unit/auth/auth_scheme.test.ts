@@ -48,6 +48,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA4 - Basic auth with API key only
    */
+  // UTS: rest/unit/RSA4/basic-auth-key-only-0
   it('RSA4 - Basic auth with API key only', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -67,6 +68,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA3 - Token auth with explicit token string
    */
+  // UTS: rest/unit/RSA3/token-auth-explicit-token-0
   it('RSA3 - Token auth with explicit token string', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -86,6 +88,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA3 - Token auth with TokenDetails
    */
+  // UTS: rest/unit/RSA3/token-auth-token-details-1
   it('RSA3 - Token auth with TokenDetails', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -110,6 +113,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA4 - useTokenAuth forces token auth
    */
+  // UTS: rest/unit/RSA4/use-token-auth-forced-1
   it('RSA4 - useTokenAuth forces token auth', async function () {
     const captured: any[] = [];
     installMockHttp(tokenRoutingMock(captured, 'obtained-token'));
@@ -133,6 +137,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA4 - authCallback triggers token auth
    */
+  // UTS: rest/unit/RSA4/auth-callback-triggers-token-2
   it('RSA4 - authCallback triggers token auth', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -156,6 +161,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA4 - authUrl triggers token auth
    */
+  // UTS: rest/unit/RSA4/authurl-triggers-token-3
   it('RSA4 - authUrl triggers token auth', async function () {
     const captured: any[] = [];
 
@@ -190,6 +196,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSC1b - Error when no auth method available
    */
+  // UTS: rest/unit/RSC1b/no-auth-method-error-0
   it('RSC1b - Error when no auth method available', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -213,6 +220,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
    * there's no way to renew, the library should error with 40171.
    * Note: RSA4b1 (local expiry detection) is optional.
    */
+  // UTS: rest/unit/RSA4a2/expired-token-no-renewal-0
   it('RSA4a2 - Error when token expired and no renewal method', async function () {
     const captured: any[] = [];
 
@@ -246,6 +254,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA1 - Auth method priority (authCallback over key)
    */
+  // UTS: rest/unit/RSA1/token-auth-takes-precedence-0
   it('RSA1 - Auth method priority (authCallback over key)', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -270,6 +279,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSA2, RSA11 - Basic auth header format
    */
+  // UTS: rest/unit/RSA2/basic-auth-header-format-0
   it('RSA2, RSA11 - Basic auth header format', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -289,6 +299,7 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
   /**
    * RSC18 - Token auth allowed over non-TLS
    */
+  // UTS: rest/unit/RSC18/token-auth-over-non-tls-0
   it('RSC18 - Token auth allowed over non-TLS', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));

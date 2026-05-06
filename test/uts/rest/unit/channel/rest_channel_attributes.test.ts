@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * The channel object must expose its name via a name attribute,
    * including any namespace prefix.
    */
+  // UTS: rest/unit/RSL9/channel-name-attribute-0
   it('RSL9 - channel name attribute', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
 
@@ -36,6 +37,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * Calling setOptions with an empty options object must complete
    * successfully without throwing.
    */
+  // UTS: rest/unit/RSL7/setoptions-updates-options-0
   it('RSL7 - setOptions completes without error', async function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test-channel');
@@ -44,11 +46,28 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
   });
 
   /**
+   * RSL7 - setOptions stores channel options
+   *
+   * Calling setOptions with options stores them on the channel.
+   * The call should complete without error.
+   */
+  // UTS: rest/unit/RSL7/setoptions-stores-options-1
+  it('RSL7 - setOptions stores channel options', function () {
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test-RSL7-store');
+
+    // setOptions is synchronous in ably-js and returns void
+    channel.setOptions({});
+    // No error thrown — success
+  });
+
+  /**
    * RSL8 - status sends GET to correct path
    *
    * Calling status() on a channel sends a GET request to
    * /channels/<channelName>.
    */
+  // UTS: rest/unit/RSL8/status-get-correct-endpoint-0
   it('RSL8 - status sends GET to correct path', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -81,6 +100,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * Channel names containing special characters (colons, spaces, etc.)
    * must be URL-encoded in the request path.
    */
+  // UTS: rest/unit/RSL8/status-special-chars-encoded-1
   it('RSL8 - status URL encodes channel name', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -112,6 +132,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * The status() method returns a ChannelDetails object with channelId,
    * status.isActive, and status.occupancy.metrics fields.
    */
+  // UTS: rest/unit/RSL8a/status-returns-channel-details-0
   it('RSL8a - status returns ChannelDetails', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -150,6 +171,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * Tests that status() parses the complete set of ChannelMetrics fields
    * from the response, including all CHM2a-h attributes.
    */
+  // UTS: rest/unit/CHM2/parses-all-metrics-fields-0
   it('CHD2+CHS2+CHO2+CHM2 - status() response parses all ChannelMetrics fields', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -227,6 +249,7 @@ describe('uts/rest/unit/channel/rest_channel_attributes', function () {
    * gracefully. Omitted fields (objectPublishers, objectSubscribers)
    * simulate an older server that does not include these fields.
    */
+  // UTS: rest/unit/CHM2/zero-and-missing-metrics-1
   it('CHM2 - status() response with zero and missing metric fields', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

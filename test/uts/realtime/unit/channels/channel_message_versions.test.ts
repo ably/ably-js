@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/channel_message_versions', function () {
   /**
    * RTL31 - getMessageVersions delegates to REST endpoint
    */
+  // UTS: realtime/unit/RTL31/identical-to-rest-0
   it('RTL31 - getMessageVersions calls REST /messages/{serial}/versions', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

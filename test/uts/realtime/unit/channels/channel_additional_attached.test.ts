@@ -23,6 +23,7 @@ describe('uts/realtime/unit/channels/channel_additional_attached', function () {
   /**
    * RTL12 - Additional ATTACHED with resumed=false emits UPDATE with error
    */
+  // UTS: realtime/unit/RTL12/update-emits-with-error-0
   it('RTL12 - UPDATE emitted with error on non-resumed ATTACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -88,6 +89,7 @@ describe('uts/realtime/unit/channels/channel_additional_attached', function () {
   /**
    * RTL12 - Additional ATTACHED with resumed=true does NOT emit UPDATE
    */
+  // UTS: realtime/unit/RTL12/resumed-no-update-1
   it('RTL12 - no UPDATE on resumed ATTACHED', async function () {
     const RESUMED = 4; // 1 << 2
 
@@ -144,6 +146,7 @@ describe('uts/realtime/unit/channels/channel_additional_attached', function () {
   /**
    * RTL12 - Additional ATTACHED without error has null reason
    */
+  // UTS: realtime/unit/RTL12/no-error-null-reason-2
   it('RTL12 - UPDATE without error has null reason', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

@@ -18,6 +18,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason set on connection errors (FAILED state)
    */
+  // UTS: realtime/unit/RTN25/error-reason-on-failed-0.1
   it('RTN25 - errorReason set on fatal error', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -52,6 +53,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason on DISCONNECTED state
    */
+  // UTS: realtime/unit/RTN25/error-reason-disconnected-1
   it('RTN25 - errorReason set on DISCONNECTED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -87,6 +89,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason on SUSPENDED state
    */
+  // UTS: realtime/unit/RTN25/error-reason-suspended-2
   it('RTN25 - errorReason set on SUSPENDED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -133,6 +136,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
    * Per RTN14b: token ERROR during connection, no means to renew → RSA4a applies.
    * Per RSA4a2: transition to FAILED with error code 40171.
    */
+  // UTS: realtime/unit/RTN25/error-reason-token-error-3
   it('RTN25 - errorReason on token error (non-renewable)', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -164,6 +168,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason cleared on successful reconnection
    */
+  // UTS: realtime/unit/RTN25/error-reason-cleared-on-connect-4
   it('RTN25 - errorReason cleared on successful reconnect', function (done) {
     let connectionAttemptCount = 0;
 
@@ -218,6 +223,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason on protocol-level ERROR message
    */
+  // UTS: realtime/unit/RTN25/error-reason-protocol-error-5
   it('RTN25 - errorReason on protocol ERROR message', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -250,6 +256,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
   /**
    * RTN25 - errorReason propagated to ConnectionStateChange events
    */
+  // UTS: realtime/unit/RTN25/error-reason-in-state-change-6
   it('RTN25 - errorReason in ConnectionStateChange', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -291,6 +298,7 @@ describe('uts/realtime/unit/connection/error_reason', function () {
    * Connection#errorReason is set. This tests that errorReason captures the
    * token error details in this scenario.
    */
+  // UTS: realtime/unit/RTN25/error-reason-on-failed-0
   it('RTN25 - errorReason set on token error while connected (RTN15h1)', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

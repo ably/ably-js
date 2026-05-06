@@ -25,6 +25,7 @@ describe('uts/realtime/unit/connection/network_change', function () {
    * When CONNECTED, if the OS indicates that the underlying internet connection
    * is no longer available, the client should immediately transition to DISCONNECTED.
    */
+  // UTS: realtime/unit/RTN20a/network-loss-connected-disconnects-0
   it('RTN20a - network loss while connected triggers disconnected', function () {
     // ably-js Node.js does not subscribe to OS network change events (RTN20 is browser-only).
     // In the browser, ably-js uses window.addEventListener('online'/'offline') events,
@@ -38,6 +39,7 @@ describe('uts/realtime/unit/connection/network_change', function () {
    * When CONNECTING, if the OS indicates that the underlying internet connection
    * is no longer available, the client should immediately transition to DISCONNECTED.
    */
+  // UTS: realtime/unit/RTN20a/network-loss-connecting-disconnects-1
   it('RTN20a - network loss while connecting triggers disconnected', function () {
     // ably-js Node.js does not subscribe to OS network change events (RTN20 is browser-only).
     this.skip();
@@ -50,6 +52,7 @@ describe('uts/realtime/unit/connection/network_change', function () {
    * is now available, the client should immediately attempt to connect, bypassing
    * the disconnectedRetryTimeout timer.
    */
+  // UTS: realtime/unit/RTN20b/network-available-disconnected-connects-0
   it('RTN20b - network available while disconnected triggers immediate connect', function () {
     // ably-js Node.js does not subscribe to OS network change events (RTN20 is browser-only).
     this.skip();
@@ -62,6 +65,7 @@ describe('uts/realtime/unit/connection/network_change', function () {
    * is now available, the client should restart (abandon and retry) the pending
    * connection attempt.
    */
+  // UTS: realtime/unit/RTN20c/network-available-connecting-restarts-0
   it('RTN20c - network available while connecting restarts connection attempt', function () {
     // ably-js Node.js does not subscribe to OS network change events (RTN20 is browser-only).
     this.skip();

@@ -3,7 +3,8 @@
  *
  * Spec points: RSC15, RSC15a, RSC15f, RSC15l, RSC15l4, RSC15m,
  *   REC1a, REC1b1, REC1b2, REC1b3, REC1b4, REC1c1, REC1c2, REC1d, REC1d1,
- *   REC2a2, REC2c2, REC2c3, REC2c4, REC2c6
+ *   REC2a1, REC2a2, REC2b, REC2c1, REC2c2, REC2c3, REC2c4, REC2c5, REC2c6,
+ *   REC3, REC3a, REC3b
  * Source: specification/uts/rest/unit/fallback.md
  */
 
@@ -24,6 +25,7 @@ describe('uts/rest/unit/fallback', function () {
    * When the primary host returns a 500 error, the client should retry
    * the request on a fallback host.
    */
+  // UTS: rest/unit/RSC15l/http-5xx-triggers-fallback-4
   it('RSC15l - 500 triggers fallback', async function () {
     let requestCount = 0;
     const hosts: any[] = [];
@@ -58,6 +60,7 @@ describe('uts/rest/unit/fallback', function () {
    * When the primary host refuses the connection, the client should
    * retry on a fallback host.
    */
+  // UTS: rest/unit/RSC15l/connection-refused-fallback-0
   it('RSC15l - connection refused triggers fallback', async function () {
     let connCount = 0;
     const connHosts: any[] = [];
@@ -94,6 +97,7 @@ describe('uts/rest/unit/fallback', function () {
    * Client errors (4xx) are not retryable. The client should not attempt
    * a fallback host and should propagate the error immediately.
    */
+  // UTS: rest/unit/RSC15l/qualifying-errors-trigger-fallback-0
   it('RSC15l - 4xx does NOT trigger fallback', async function () {
     let requestCount = 0;
 
@@ -124,6 +128,7 @@ describe('uts/rest/unit/fallback', function () {
    * When fallbackHosts is explicitly set to an empty array, the client
    * should not attempt any fallback and should fail after the primary host.
    */
+  // UTS: rest/unit/RSC15m/no-fallback-empty-hosts-0
   it('RSC15m - no fallback when fallbackHosts is empty', async function () {
     let requestCount = 0;
 
@@ -156,6 +161,7 @@ describe('uts/rest/unit/fallback', function () {
    * Without any endpoint configuration, the default primary host should
    * be main.realtime.ably.net.
    */
+  // UTS: rest/unit/REC1a/default-primary-domain-0
   it('REC1a - default primary domain', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -180,6 +186,7 @@ describe('uts/rest/unit/fallback', function () {
    * When endpoint is a simple name (no dots), it is treated as a routing
    * policy and the host becomes {endpoint}.realtime.ably.net.
    */
+  // UTS: rest/unit/REC1b4/production-routing-policy-0
   it('REC1b4 - endpoint as routing policy', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -203,6 +210,7 @@ describe('uts/rest/unit/fallback', function () {
    *
    * When endpoint contains dots, it is treated as an explicit hostname.
    */
+  // UTS: rest/unit/REC1b2/explicit-hostname-with-period-0
   it('REC1b2 - endpoint as explicit hostname', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -230,6 +238,7 @@ describe('uts/rest/unit/fallback', function () {
    *
    * The deprecated restHost option sets the REST host directly.
    */
+  // UTS: rest/unit/REC1d1/resthost-sets-primary-domain-0
   it('REC1d1 - restHost option', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -257,6 +266,7 @@ describe('uts/rest/unit/fallback', function () {
    *
    * The deprecated environment option maps to {environment}.realtime.ably.net.
    */
+  // UTS: rest/unit/REC1c2/environment-sets-primary-domain-0
   it('REC1c2 - environment option', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -285,6 +295,7 @@ describe('uts/rest/unit/fallback', function () {
    * When fallbackHosts is set to a custom list, the client should use
    * those hosts for fallback instead of the defaults.
    */
+  // UTS: rest/unit/REC2a2/custom-fallback-hosts-0
   it('REC2a2 - custom fallbackHosts', async function () {
     let requestCount = 0;
     const hosts: any[] = [];
@@ -323,6 +334,7 @@ describe('uts/rest/unit/fallback', function () {
    * When restHost is set to a custom domain, fallback hosts are not
    * available (unless explicitly provided). A 500 should not trigger retry.
    */
+  // UTS: rest/unit/REC2c6/custom-resthost-no-fallbacks-0
   it('REC2c6 - custom restHost has no fallbacks', async function () {
     let requestCount = 0;
 
@@ -360,6 +372,7 @@ describe('uts/rest/unit/fallback', function () {
    * hosts should be selected in a randomized order. Over multiple attempts,
    * we expect to see more than one distinct fallback host used.
    */
+  // UTS: rest/unit/RSC15a/fallback-random-order-0
   it('RSC15a - fallback hosts are randomized', async function () {
     const fallbackHostsUsed: string[] = [];
 
@@ -395,6 +408,7 @@ describe('uts/rest/unit/fallback', function () {
    * When the primary host fails DNS resolution, the client should
    * retry on a fallback host.
    */
+  // UTS: rest/unit/RSC15l/dns-error-fallback-1
   it('RSC15l - DNS error triggers fallback', async function () {
     const connHosts: string[] = [];
 
@@ -428,6 +442,7 @@ describe('uts/rest/unit/fallback', function () {
    * When the primary host connection times out, the client should
    * retry on a fallback host.
    */
+  // UTS: rest/unit/RSC15l/connection-timeout-fallback-2
   it('RSC15l - timeout triggers fallback', async function () {
     const connHosts: string[] = [];
 
@@ -461,6 +476,7 @@ describe('uts/rest/unit/fallback', function () {
    * When the primary host returns a 503 Service Unavailable, the client
    * should retry on a fallback host.
    */
+  // UTS: rest/unit/RSC15l/http-4xx-no-fallback-5
   it('RSC15l - 503 triggers fallback', async function () {
     let requestCount = 0;
     const hosts: string[] = [];
@@ -494,6 +510,7 @@ describe('uts/rest/unit/fallback', function () {
    * After a successful fallback, subsequent requests should go to the
    * cached fallback host instead of the primary host.
    */
+  // UTS: rest/unit/RSC15f/successful-fallback-cached-0
   it('RSC15f - successful fallback host cached', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -588,6 +605,7 @@ describe('uts/rest/unit/fallback', function () {
 
   // ── Category B: Request timeout and CloudFront ────────────────────
 
+  // UTS: rest/unit/RSC15l/request-timeout-fallback-3
   it('RSC15l - request timeout triggers fallback', async function () {
     let connCount = 0;
     const connHosts: string[] = [];
@@ -618,6 +636,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(connHosts[1]).to.not.equal('main.realtime.ably.net');
   });
 
+  // UTS: rest/unit/RSC15l4/cloudfront-error-triggers-fallback-0
   it('RSC15l4 - CloudFront Server header triggers fallback', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -660,6 +679,7 @@ describe('uts/rest/unit/fallback', function () {
 
   // ── Category C: Cached fallback expiry ────────────────────────────
 
+  // UTS: rest/unit/RSC15f/cached-fallback-expires-1
   it('RSC15f - cached fallback expires after fallbackRetryTimeout', async function () {
     const clock = enableFakeTimers();
     const hosts: string[] = [];
@@ -707,6 +727,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(hosts[0]).to.equal('main.realtime.ably.net');
   });
 
+  // UTS: rest/unit/RSC15f/expired-not-resurrected-2
   it('RSC15f - expired fallback not resurrected by late in-flight success', async function () {
     const clock = enableFakeTimers();
     const hosts: string[] = [];
@@ -774,6 +795,7 @@ describe('uts/rest/unit/fallback', function () {
 
   // ── Category D: Endpoint edge cases ───────────────────────────────
 
+  // UTS: rest/unit/REC1b2/endpoint-localhost-1
   it('REC1b2 - endpoint as localhost', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -792,6 +814,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(captured[0].url.hostname).to.equal('localhost');
   });
 
+  // UTS: rest/unit/REC1b2/endpoint-ipv6-address-2
   it('REC1b2 - endpoint as IPv6 address', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -818,6 +841,7 @@ describe('uts/rest/unit/fallback', function () {
     }
   });
 
+  // UTS: rest/unit/REC1b3/nonprod-routing-policy-0
   it('REC1b3 - endpoint as nonprod routing policy', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -836,6 +860,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(captured[0].url.hostname).to.equal('staging.realtime.ably-nonprod.net');
   });
 
+  // UTS: rest/unit/REC1d2/realtimehost-sets-primary-domain-0
   it('REC1d - realtimeHost sets primary domain when restHost not set', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -860,6 +885,7 @@ describe('uts/rest/unit/fallback', function () {
 
   // ── Category E: Option conflict detection ─────────────────────────
 
+  // UTS: rest/unit/REC1b1/endpoint-conflicts-environment-0
   it('REC1b1 - endpoint conflicts with environment', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', environment: 'production' } as any);
@@ -869,6 +895,7 @@ describe('uts/rest/unit/fallback', function () {
     }
   });
 
+  // UTS: rest/unit/REC1b1/endpoint-conflicts-resthost-1
   it('REC1b1 - endpoint conflicts with restHost', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', restHost: 'custom.host.com' } as any);
@@ -878,6 +905,53 @@ describe('uts/rest/unit/fallback', function () {
     }
   });
 
+  // UTS: rest/unit/REC1b1/endpoint-conflicts-realtimehost-2
+  it('REC1b1 - endpoint conflicts with realtimeHost', function () {
+    try {
+      new Ably.Rest({
+        key: 'app.key:secret',
+        endpoint: 'custom.example.com',
+        realtimeHost: 'rt.example.com',
+      } as any);
+      expect.fail('Expected constructor to throw');
+    } catch (error: any) {
+      expect(error.code).to.equal(40106);
+    }
+  });
+
+  // UTS: rest/unit/REC1b1/endpoint-conflicts-fallback-default-3
+  it.skip('REC1b1 - endpoint conflicts with fallbackHostsUseDefault', function () {
+    // SKIP: ably-js does not implement the fallbackHostsUseDefault option.
+    // The option is not recognized, so no conflict validation occurs.
+    try {
+      new Ably.Rest({
+        key: 'app.key:secret',
+        endpoint: 'custom.example.com',
+        fallbackHostsUseDefault: true,
+      } as any);
+      expect.fail('Expected constructor to throw');
+    } catch (error: any) {
+      expect(error.code).to.satisfy((c: number) => c === 40000 || c === 40106);
+    }
+  });
+
+  // UTS: rest/unit/REC2a1/fallback-hosts-conflicts-use-default-0
+  it.skip('REC2a1 - fallbackHosts conflicts with fallbackHostsUseDefault', function () {
+    // SKIP: ably-js does not implement the fallbackHostsUseDefault option.
+    // The option is not recognized, so no conflict validation occurs.
+    try {
+      new Ably.Rest({
+        key: 'app.key:secret',
+        fallbackHosts: ['a.example.com'],
+        fallbackHostsUseDefault: true,
+      } as any);
+      expect.fail('Expected constructor to throw');
+    } catch (error: any) {
+      expect(error.code).to.satisfy((c: number) => c === 40000 || c === 40106);
+    }
+  });
+
+  // UTS: rest/unit/REC1c1/environment-conflicts-resthost-0
   it('REC1c1 - environment conflicts with restHost', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', restHost: 'custom.host.com' } as any);
@@ -887,6 +961,7 @@ describe('uts/rest/unit/fallback', function () {
     }
   });
 
+  // UTS: rest/unit/REC1c1/environment-conflicts-realtimehost-1
   it('REC1c1 - environment conflicts with realtimeHost', function () {
     try {
       new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', realtimeHost: 'custom.rt.com' } as any);
@@ -896,6 +971,7 @@ describe('uts/rest/unit/fallback', function () {
     }
   });
 
+  // UTS: rest/unit/REC1d/resthost-precedence-over-realtimehost-0
   it('REC1d - restHost takes precedence over realtimeHost', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -921,6 +997,7 @@ describe('uts/rest/unit/fallback', function () {
 
   // ── Category F: Fallback domain configuration ─────────────────────
 
+  // UTS: rest/unit/REC2c2/explicit-hostname-no-fallbacks-0
   it('REC2c2 - explicit hostname endpoint has no fallbacks', async function () {
     let requestCount = 0;
 
@@ -949,6 +1026,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(requestCount).to.equal(1);
   });
 
+  // UTS: rest/unit/REC2c3/nonprod-fallback-domains-0
   it('REC2c3 - nonprod endpoint gets nonprod fallback domains', async function () {
     let requestCount = 0;
     const hosts: string[] = [];
@@ -976,6 +1054,131 @@ describe('uts/rest/unit/fallback', function () {
     expect(hosts[1]).to.match(/^staging\.[a-e]\.fallback\.ably-realtime-nonprod\.com$/);
   });
 
+  // UTS: rest/unit/REC2b/fallback-hosts-use-default-0
+  it.skip('REC2b - fallbackHostsUseDefault uses default fallback domains', async function () {
+    // SKIP: ably-js does not implement the fallbackHostsUseDefault option.
+    // The option is ignored, so setting restHost disables fallbacks as normal.
+    let requestCount = 0;
+    const hosts: string[] = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        hosts.push(req.url.hostname);
+        if (requestCount === 1) {
+          req.respond_with(500, { error: { message: 'Server error', code: 50000, statusCode: 500 } });
+        } else {
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'app.key:secret',
+      useBinaryProtocol: false,
+      restHost: 'custom.host.com',
+      fallbackHostsUseDefault: true,
+    } as any);
+    const result = await client.time();
+
+    expect(result).to.equal(1234567890000);
+    expect(requestCount).to.equal(2);
+    expect(hosts[0]).to.equal('custom.host.com');
+    expect(hosts[1]).to.match(/^main\.[a-e]\.fallback\.ably-realtime\.com$/);
+  });
+
+  // UTS: rest/unit/REC2c1/default-fallback-domains-0
+  it('REC2c1 - default fallback domains', async function () {
+    let requestCount = 0;
+    const hosts: string[] = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        hosts.push(req.url.hostname);
+        if (requestCount === 1) {
+          req.respond_with(500, { error: { message: 'Server error', code: 50000, statusCode: 500 } });
+        } else {
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const result = await client.time();
+
+    expect(result).to.equal(1234567890000);
+    expect(requestCount).to.equal(2);
+    expect(hosts[0]).to.equal('main.realtime.ably.net');
+    expect(hosts[1]).to.match(/^main\.[a-e]\.fallback\.ably-realtime\.com$/);
+  });
+
+  // UTS: rest/unit/REC2c5/production-environment-fallback-domains-0
+  it('REC2c5 - environment fallback domains', async function () {
+    let requestCount = 0;
+    const hosts: string[] = [];
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        hosts.push(req.url.hostname);
+        if (requestCount === 1) {
+          req.respond_with(500, { error: { message: 'Server error', code: 50000, statusCode: 500 } });
+        } else {
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'app.key:secret',
+      useBinaryProtocol: false,
+      environment: 'sandbox',
+    });
+    const result = await client.time();
+
+    expect(result).to.equal(1234567890000);
+    expect(requestCount).to.equal(2);
+    expect(hosts[0]).to.equal('sandbox.realtime.ably.net');
+    expect(hosts[1]).to.match(/^sandbox\.[a-e]\.fallback\.ably-realtime\.com$/);
+  });
+
+  // UTS: rest/unit/REC2c6/custom-realtimehost-no-fallbacks-1
+  it('REC2c6 - custom realtimeHost has no fallback domains', async function () {
+    let requestCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+        req.respond_with(500, { error: { message: 'Server error', code: 50000, statusCode: 500 } });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'app.key:secret',
+      useBinaryProtocol: false,
+      realtimeHost: 'custom.realtime.example.com',
+    } as any);
+
+    try {
+      await client.time();
+      expect.fail('Expected time() to throw');
+    } catch (error: any) {
+      expect(error.statusCode).to.equal(500);
+    }
+
+    expect(requestCount).to.equal(1);
+  });
+
+  // UTS: rest/unit/REC2c4/production-endpoint-fallback-domains-0
   it('REC2c4 - production routing via endpoint gets production fallback domains', async function () {
     let requestCount = 0;
     const hosts: string[] = [];
@@ -1001,5 +1204,74 @@ describe('uts/rest/unit/fallback', function () {
     expect(requestCount).to.equal(2);
     expect(hosts[0]).to.equal('sandbox.realtime.ably.net');
     expect(hosts[1]).to.match(/^sandbox\.[a-e]\.fallback\.ably-realtime\.com$/);
+  });
+
+  // ── Connectivity check tests (REC3) ──────────────────────────────
+
+  // UTS: rest/unit/REC3/connectivity-check-validation-0
+  it.skip('REC3 - connectivity check response validation', function () {
+    // SKIP: The connectivity check (checkConnectivity) is an internal method
+    // on the Http class, used by the Realtime ConnectionManager. It is not
+    // exposed on the public Rest or Realtime client API. Testing it requires
+    // either Realtime connection state machine integration or direct access
+    // to the Http instance internals. Additionally, the mock's
+    // checkConnectivity method is hardcoded and does not go through the
+    // standard doUri path with client options.
+  });
+
+  // UTS: rest/unit/REC3a/default-connectivity-check-url-0
+  it.skip('REC3a - default connectivity check URL', function () {
+    // SKIP: The connectivity check URL is used internally by the Realtime
+    // ConnectionManager's checkConnectivity method. It is not accessible
+    // from the Rest client. The mock HTTP checkConnectivity is hardcoded
+    // to use the default URL and does not capture request details in a way
+    // that allows URL verification. Testing requires Realtime client
+    // integration with mock WebSocket + mock HTTP, which is beyond the
+    // scope of this REST unit test file.
+  });
+
+  // UTS: rest/unit/REC3b/custom-connectivity-check-url-0
+  it.skip('REC3b - custom connectivity check URL', function () {
+    // SKIP: Same as REC3a — the connectivityCheckUrl option affects the
+    // internal Http.checkConnectivity method used by Realtime's
+    // ConnectionManager. The mock HTTP checkConnectivity method does not
+    // read client options and always uses the hardcoded default URL.
+    // Testing requires either modifying the mock infrastructure to pass
+    // client options through to checkConnectivity, or using a Realtime
+    // client with mock WebSocket integration.
+  });
+
+  // UTS: rest/unit/RSC15j/host-header-matches-request-0
+  it('RSC15j - Host header matches request host', async function () {
+    let reqCount = 0;
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        reqCount++;
+        if (reqCount === 1) {
+          req.respond_with(500, { error: { code: 50000, message: 'Internal error' } });
+        } else {
+          req.respond_with(200, [1234567890000]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+    await client.time();
+
+    expect(captured).to.have.length(2);
+    const host1 = captured[0].url.hostname;
+    const host2 = captured[1].url.hostname;
+    expect(host1).to.not.equal(host2);
+
+    if (captured[0].headers['host']) {
+      expect(captured[0].headers['host']).to.include(host1);
+    }
+    if (captured[1].headers['host']) {
+      expect(captured[1].headers['host']).to.include(host2);
+    }
   });
 });

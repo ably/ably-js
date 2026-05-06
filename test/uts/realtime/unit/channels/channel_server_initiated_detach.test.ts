@@ -24,6 +24,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13a - Server DETACHED on ATTACHED channel triggers immediate reattach
    */
+  // UTS: realtime/unit/RTL13a/detaching-not-server-initiated-2
   it('RTL13a - server DETACHED on attached triggers reattach', async function () {
     let attachCount = 0;
 
@@ -93,6 +94,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13b - Server DETACHED while ATTACHING → SUSPENDED → automatic retry
    */
+  // UTS: realtime/unit/RTL13b/attaching-detached-to-suspended-1
   it('RTL13b - server DETACHED while attaching → suspended → retry', async function () {
     let attachCount = 0;
 
@@ -184,6 +186,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13b - Failed reattach → SUSPENDED → retry cycle
    */
+  // UTS: realtime/unit/RTL13b/failed-reattach-suspended-retry-0
   it('RTL13b - failed reattach cycles through suspended', async function () {
     let attachCount = 0;
 
@@ -278,6 +281,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13b - Repeated failures cycle indefinitely
    */
+  // UTS: realtime/unit/RTL13b/repeated-failure-cycle-2
   it('RTL13b - repeated failures cycle suspended → attaching', async function () {
     let attachCount = 0;
 
@@ -378,6 +382,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13c - Retry cancelled when connection is no longer CONNECTED
    */
+  // UTS: realtime/unit/RTL13c/retry-cancelled-disconnected-0
   it('RTL13c - retry cancelled when connection drops', async function () {
     let attachCount = 0;
     let connectCount = 0;
@@ -467,6 +472,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
   /**
    * RTL13 - DETACHED while DETACHING is normal detach flow (not reattach)
    */
+  // UTS: realtime/unit/RTL13a/attached-reattach-triggered-0
   it('RTL13 - DETACHED while detaching is normal detach', async function () {
     let attachCount = 0;
 
@@ -525,6 +531,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
    * and receives a server-initiated DETACHED, it should immediately attempt
    * to reattach.
    */
+  // UTS: realtime/unit/RTL13a/suspended-reattach-triggered-1
   it('RTL13a - server DETACHED on suspended triggers reattach', async function () {
     let attachCount = 0;
 

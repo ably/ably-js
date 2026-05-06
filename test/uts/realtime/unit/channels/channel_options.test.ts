@@ -26,6 +26,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * TB2 - ChannelOptions defaults
    */
+  // UTS: realtime/unit/TB2/channel-options-attributes-0
   it('TB2 - default channel options', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -46,6 +47,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * TB2c - ChannelOptions with params
    */
+  // UTS: realtime/unit/TB2c/options-with-params-0
   it('TB2c - channel options with params', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -65,6 +67,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * TB2d - ChannelOptions with modes
    */
+  // UTS: realtime/unit/TB2d/options-with-modes-0
   it('TB2d - channel options with modes', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -86,6 +89,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * TB4 - attachOnSubscribe defaults to true
    */
+  // UTS: realtime/unit/TB4/attach-on-subscribe-default-0
   it('TB4 - attachOnSubscribe default', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -109,6 +113,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS3b - Options set on new channel via channels.get()
    */
+  // UTS: realtime/unit/RTS3b/options-set-on-new-0
   it('RTS3b - options set on new channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -130,6 +135,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS3c - Options updated on existing channel (when no reattach needed)
    */
+  // UTS: realtime/unit/RTS3c/options-updated-existing-0
   it('RTS3c - options updated on existing channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -155,6 +161,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS3c1 - Error if options would trigger reattachment on attached channel
    */
+  // UTS: realtime/unit/RTS3c1/error-reattach-params-0
   it('RTS3c1 - error when options change on attached channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -201,6 +208,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTL16 - setOptions updates channel options
    */
+  // UTS: realtime/unit/RTL16/set-options-updates-0
   it('RTL16 - setOptions updates channel options', async function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -232,6 +240,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
    * stays in 'attached' during the reattach (deliberate: avoids RTL17 message
    * rejection). Test verifies attachCount instead of state transitions.
    */
+  // UTS: realtime/unit/RTL16a/triggers-reattach-0
   it('RTL16a - setOptions triggers reattachment when attached', async function () {
     let attachCount = 0;
     const mock = new MockWebSocket({
@@ -283,6 +292,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS5a - getDerived creates derived channel with filter
    */
+  // UTS: realtime/unit/RTS5a/creates-derived-channel-0
   it('RTS5a - getDerived creates derived channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -303,6 +313,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS5a1 - Derived channel filter is base64 encoded
    */
+  // UTS: realtime/unit/RTS5a1/filter-base64-encoded-0
   it('RTS5a1 - derived channel filter is base64 encoded', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -323,6 +334,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS5 - getDerived with options sets them on channel
    */
+  // UTS: realtime/unit/RTS5/get-derived-with-options-0
   it('RTS5 - getDerived with channel options', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -345,6 +357,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * DO2a - DeriveOptions filter attribute
    */
+  // UTS: realtime/unit/DO2a/filter-attribute-0
   it('DO2a - DeriveOptions filter attribute', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -369,6 +382,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
    * static withCipherKey constructor. This test verifies that providing a
    * cipher key through the ably-js pattern sets up cipher params.
    */
+  // UTS: realtime/unit/TB3/with-cipher-key-0
   it('TB3 - cipher key via channel options', async function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -397,6 +411,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
    * Changing modes on a channel that is in the attaching state should
    * throw error code 40000.
    */
+  // UTS: realtime/unit/RTS3c1/error-reattach-modes-1
   it('RTS3c1 - error when modes change on attaching channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -445,6 +460,7 @@ describe('uts/realtime/unit/channels/channel_options', function () {
   /**
    * RTS5a2 - Derived channel with params included in name
    */
+  // UTS: realtime/unit/RTS5a2/derived-with-params-0
   it('RTS5a2 - derived channel with params in name', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',

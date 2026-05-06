@@ -83,6 +83,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
    * Multiple messages in a ProtocolMessage where later messages are deltas
    * referencing earlier ones — works because processing is in array order.
    */
+  // UTS: realtime/unit/RTL21/ascending-index-order-0
   it('RTL21 - messages decoded in ascending index order', async function () {
     const channelName = 'test-RTL21';
     const received: any[] = [];
@@ -122,6 +123,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL19b - Non-delta message stores base payload
    */
+  // UTS: realtime/unit/RTL19b/stores-base-payload-0
   it('RTL19b - non-delta then delta succeeds', async function () {
     const channelName = 'test-RTL19b';
     const received: any[] = [];
@@ -161,6 +163,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL19c - Delta application result stored as new base payload (chained)
    */
+  // UTS: realtime/unit/RTL19c/delta-result-becomes-base-0
   it('RTL19c - chained deltas decode correctly', async function () {
     const channelName = 'test-RTL19c';
     const received: any[] = [];
@@ -213,6 +216,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL20 - Last message ID updated after successful decode
    */
+  // UTS: realtime/unit/RTL20/last-id-updated-on-decode-1
   it('RTL20 - last message ID updated correctly', async function () {
     const channelName = 'test-RTL20-id';
     const received: any[] = [];
@@ -258,6 +262,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL20 - Delta with mismatched base message ID triggers recovery
    */
+  // UTS: realtime/unit/RTL20/mismatched-id-triggers-recovery-0
   it('RTL20 - mismatched base ID triggers recovery', async function () {
     const channelName = 'test-RTL20-mismatch';
     const attachMessages: any[] = [];
@@ -321,6 +326,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * PC3 - No vcdiff plugin causes FAILED state
    */
+  // UTS: realtime/unit/PC3/no-plugin-fails-1
   it('PC3 - no vcdiff plugin causes channel FAILED', async function () {
     const channelName = 'test-PC3-no-plugin';
     const stateChanges: any[] = [];
@@ -368,6 +374,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL18 - Decode failure triggers recovery (RTL18a, RTL18b, RTL18c)
    */
+  // UTS: realtime/unit/RTL18/decode-failure-recovery-0
   it('RTL18 - decode failure triggers recovery', async function () {
     const channelName = 'test-RTL18-recovery';
     const received: any[] = [];
@@ -441,6 +448,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL18c - Recovery completes when server sends ATTACHED
    */
+  // UTS: realtime/unit/RTL18c/recovery-completes-on-attached-0
   it('RTL18c - recovery completes and new messages work', async function () {
     const channelName = 'test-RTL18c';
     const received: any[] = [];
@@ -518,6 +526,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * RTL18 - Only one recovery in progress at a time
    */
+  // UTS: realtime/unit/RTL18/single-recovery-at-time-1
   it('RTL18 - only one recovery at a time', async function () {
     const channelName = 'test-RTL18-single';
     const attachMessages: any[] = [];
@@ -592,6 +601,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
    * (e.g. "base64"), the SDK decodes the base64 before storing the base
    * payload for future delta application.
    */
+  // UTS: realtime/unit/RTL19a/base64-decoded-before-store-0
   it('RTL19a - base64 decoded before storing base payload', async function () {
     const channelName = 'test-RTL19a';
     const received: any[] = [];
@@ -655,6 +665,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
    * is the wire-form (JSON string), not the decoded object. This is critical
    * because the vcdiff delta is computed by the server against the wire-form.
    */
+  // UTS: realtime/unit/RTL19b/json-wire-form-base-1
   it('RTL19b - JSON-encoded non-delta stores wire-form base', async function () {
     const channelName = 'test-RTL19b-json';
     const received: any[] = [];
@@ -715,6 +726,7 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
   /**
    * PC3, PC3a - VCDiff plugin decodes delta messages
    */
+  // UTS: realtime/unit/PC3/vcdiff-plugin-decodes-0
   it('PC3 - vcdiff plugin called with correct arguments', async function () {
     const channelName = 'test-PC3';
     const received: any[] = [];

@@ -65,6 +65,7 @@ describe('uts/rest/integration/push_channels', function () {
    * register devices but does not return a deviceIdentityToken suitable for
    * push device auth (RSH6a). In Node.js there is no native push activation.
    */
+  // UTS: rest/integration/RSH7a/subscribe-unsubscribe-device-0
   it('RSH7a, RSH7c - subscribeDevice and unsubscribeDevice round-trip', function () {
     // RSH7 PushChannel device methods require push activation flow (RSH2)
     // which is not available in Node.js test environment
@@ -89,6 +90,7 @@ describe('uts/rest/integration/push_channels', function () {
    * API (as opposed to the admin API) require the server to recognize the
    * device context.
    */
+  // UTS: rest/integration/RSH7b/subscribe-unsubscribe-client-0
   it('RSH7b, RSH7d - subscribeClient and unsubscribeClient round-trip', function () {
     // RSH7 PushChannel client methods require Push plugin with device context
     // which is not available in Node.js test environment

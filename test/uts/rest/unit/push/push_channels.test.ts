@@ -57,6 +57,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * device's id and the channel name in the request body, and includes the
    * X-Ably-DeviceToken header for push device authentication (RSH6a).
    */
+  // UTS: rest/unit/RSH7a2/subscribe-device-post-0
   it('RSH7a2, RSH7a3 - subscribeDevice sends POST with deviceId, channel, and device auth header', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -106,6 +107,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * subscribeDevice() fails when the local device has no deviceIdentityToken
    * (i.e. the device isn't registered yet).
    */
+  // UTS: rest/unit/RSH7a1/subscribe-device-no-token-fails-0
   it('RSH7a1 - subscribeDevice fails if no deviceIdentityToken', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -151,6 +153,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * Deviation: ably-js uses client.auth.clientId (from ClientOptions.clientId),
    * not LocalDevice.clientId as the UTS spec describes.
    */
+  // UTS: rest/unit/RSH7b2/subscribe-client-post-0
   it('RSH7b2 - subscribeClient sends POST with clientId and channel name', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -194,6 +197,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    *
    * Deviation: ably-js checks client.auth.clientId, not LocalDevice.clientId.
    */
+  // UTS: rest/unit/RSH7b1/subscribe-client-no-clientid-fails-0
   it('RSH7b1 - subscribeClient fails if no clientId', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -233,6 +237,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * device's id and the channel name as query parameters, and includes the
    * X-Ably-DeviceToken header for push device authentication (RSH6a).
    */
+  // UTS: rest/unit/RSH7c2/unsubscribe-device-delete-0
   it('RSH7c2, RSH7c3 - unsubscribeDevice sends DELETE with deviceId, channel, and device auth header', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -276,6 +281,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    *
    * unsubscribeDevice() fails when the local device has no deviceIdentityToken.
    */
+  // UTS: rest/unit/RSH7c1/unsubscribe-device-no-token-fails-0
   it('RSH7c1 - unsubscribeDevice fails if no deviceIdentityToken', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -320,6 +326,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    *
    * Deviation: ably-js uses client.auth.clientId, not LocalDevice.clientId.
    */
+  // UTS: rest/unit/RSH7d2/unsubscribe-client-delete-0
   it('RSH7d2 - unsubscribeClient sends DELETE with clientId and channel name', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -357,6 +364,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    *
    * Deviation: ably-js checks client.auth.clientId, not LocalDevice.clientId.
    */
+  // UTS: rest/unit/RSH7d1/unsubscribe-client-no-clientid-fails-0
   it('RSH7d1 - unsubscribeClient fails if no clientId', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -398,6 +406,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * LocalDevice, but ably-js's implementation delegates to
    * push.admin.channelSubscriptions.list() with only {channel, concatFilters, ...params}.
    */
+  // UTS: rest/unit/RSH7e/list-subscriptions-with-filters-0
   it('RSH7e - listSubscriptions sends GET with channel, concatFilters, and user params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -456,6 +465,7 @@ describe('uts/rest/unit/push/push_channels', function () {
    * listSubscriptions() works with no extra params, still sending channel
    * and concatFilters.
    */
+  // UTS: rest/unit/RSH7e/list-subscriptions-omits-clientid-1
   it('RSH7e - listSubscriptions without additional params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

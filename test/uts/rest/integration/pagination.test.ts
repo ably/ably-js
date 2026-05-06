@@ -34,6 +34,7 @@ describe('uts/rest/integration/pagination', function () {
    * TG1: items contains array of results for current page.
    * TG2: hasNext() and isLast() indicate availability of more pages.
    */
+  // UTS: rest/integration/TG1/items-and-navigation-0
   it('TG1, TG2 - PaginatedResult items and navigation', async function () {
     const channelName = uniqueChannelName('pagination-basic');
 
@@ -77,6 +78,7 @@ describe('uts/rest/integration/pagination', function () {
    * Page 1: 5 items, page 2: 5 items, page 3: 2 items.
    * Verify no duplicate IDs across pages, total 12.
    */
+  // UTS: rest/integration/TG3/next-retrieves-page-0
   it('TG3 - next() retrieves subsequent pages', async function () {
     const channelName = uniqueChannelName('pagination-next');
 
@@ -127,6 +129,7 @@ describe('uts/rest/integration/pagination', function () {
    * Publish 10 messages, get page1 (limit 3), get page2 via next(),
    * get firstPage via page2.first(). firstPage items should match page1 items by id.
    */
+  // UTS: rest/integration/TG4/first-retrieves-page-0
   it('TG4 - first() retrieves first page', async function () {
     const channelName = uniqueChannelName('pagination-first');
 
@@ -169,6 +172,7 @@ describe('uts/rest/integration/pagination', function () {
    * Publish 25 messages, iterate through all pages with limit 7.
    * Collect all messages, verify total is 25, all event names present.
    */
+  // UTS: rest/integration/TG5/iterate-all-pages-0
   it('TG5 - iterate through all pages', async function () {
     const channelName = uniqueChannelName('pagination-iterate');
 
@@ -225,6 +229,7 @@ describe('uts/rest/integration/pagination', function () {
    * All items fit on one page. hasNext() false, isLast() true.
    * next() returns null or empty result.
    */
+  // UTS: rest/integration/TG3/next-last-page-null-1
   it('TG - next() on last page returns null', async function () {
     const channelName = uniqueChannelName('pagination-lastnext');
 

@@ -24,6 +24,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * updateMessage must send a PATCH request to /channels/<name>/messages/<serial>
    * with the message body containing action=1 (MESSAGE_UPDATE).
    */
+  // UTS: rest/unit/RSL15b/update-sends-patch-update-0
   it('RSL15b - updateMessage sends PATCH', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -53,6 +54,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    *
    * deleteMessage must send a PATCH request with action=2 (MESSAGE_DELETE).
    */
+  // UTS: rest/unit/RSL15b/delete-sends-patch-delete-1
   it('RSL15b - deleteMessage sends PATCH with action 2', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -80,6 +82,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    *
    * appendMessage must send a PATCH request with action=5 (MESSAGE_APPEND).
    */
+  // UTS: rest/unit/RSL15b/append-sends-patch-append-2
   it('RSL15b - appendMessage sends PATCH with action 5', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -108,6 +111,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * When an operation object is provided, the serialized body must include
    * a version field with clientId, description, and metadata from the operation.
    */
+  // UTS: rest/unit/RSL15b7/version-set-with-operation-0
   it('RSL15b7 - version set with MessageOperation', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -141,6 +145,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * When no operation object is provided, the serialized body must not
    * include a version field.
    */
+  // UTS: rest/unit/RSL15b7/version-absent-no-operation-1
   it('RSL15b7 - version absent without operation', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -167,6 +172,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * The update/delete methods must not modify the original message object
    * passed in by the user.
    */
+  // UTS: rest/unit/RSL15c/no-mutate-user-message-0
   it('RSL15c - does not mutate user-supplied message', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -195,6 +201,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    *
    * The resolved value must contain the versionSerial from the server response.
    */
+  // UTS: rest/unit/RSL15e/returns-update-delete-result-0
   it('RSL15e - returns UpdateDeleteResult with versionSerial', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -219,6 +226,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * When the server returns null for versionSerial, the client must
    * preserve it as null rather than converting to undefined.
    */
+  // UTS: rest/unit/RSL15e/null-version-serial-1
   it('RSL15e - null versionSerial preserved', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -242,6 +250,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    *
    * When params are provided, they must be sent as URL query parameters.
    */
+  // UTS: rest/unit/RSL15f/params-sent-as-querystring-0
   it('RSL15f - params sent as querystring', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -268,6 +277,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * If the message lacks a serial, updateMessage, deleteMessage, and
    * appendMessage must all throw an error with code 40003.
    */
+  // UTS: rest/unit/RSL15a/serial-required-throws-error-0
   it('RSL15a - serial required', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -315,6 +325,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    *
    * Object data must be JSON-encoded with an encoding field set to 'json'.
    */
+  // UTS: rest/unit/RSL15d/body-encoded-per-rsl4-0
   it('RSL15d - data encoded per RSL4', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -342,6 +353,7 @@ describe('uts/rest/unit/channel/update_delete_message', function () {
    * The serial must be URL-encoded in the request path to handle
    * special characters correctly.
    */
+  // UTS: rest/unit/RSL15b/serial-url-encoded-path-3
   it('RSL15b - serial URL-encoded', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

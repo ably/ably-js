@@ -75,6 +75,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * Use a PresenceMap to maintain a list of members present on a channel,
    * a map of memberKeys to presence messages.
    */
+  // UTS: realtime/unit/RTP2/basic-put-and-get-0
   it('RTP2 - basic put and get', function () {
     const map = createPresenceMap();
 
@@ -99,6 +100,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * When an ENTER, UPDATE, or PRESENT message is received, add to the
    * presence map with action set to PRESENT.
    */
+  // UTS: realtime/unit/RTP2d2/enter-stored-as-present-0
   it('RTP2d2 - ENTER stored as PRESENT', function () {
     const map = createPresenceMap();
 
@@ -122,6 +124,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * UPDATE messages are also stored with action PRESENT.
    */
+  // UTS: realtime/unit/RTP2d2/update-stored-as-present-1
   it('RTP2d2 - UPDATE stored as PRESENT', function () {
     const map = createPresenceMap();
 
@@ -155,6 +158,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * PRESENT messages (from SYNC) are stored with action PRESENT.
    */
+  // UTS: realtime/unit/RTP2d2/present-stored-as-present-2
   it('RTP2d2 - PRESENT stored as PRESENT', function () {
     const map = createPresenceMap();
 
@@ -183,6 +187,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * higher level (RealtimePresence), not inside PresenceMap.put().
    * This test verifies the ably-js behavior: put() returns true for accepted messages.
    */
+  // UTS: realtime/unit/RTP2d1/put-returns-original-action-0
   it('RTP2d1 - put returns true for accepted messages', function () {
     const map = createPresenceMap();
 
@@ -214,6 +219,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * When a LEAVE message is received and SYNC is NOT in progress,
    * emit LEAVE and delete from presence map.
    */
+  // UTS: realtime/unit/RTP2h1/leave-outside-sync-removes-0
   it('RTP2h1 - LEAVE outside sync removes member', function () {
     const map = createPresenceMap();
 
@@ -249,6 +255,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * If there is no matching memberKey in the map, there is nothing to remove.
    * In ably-js, remove() returns false when no existing item is found.
    */
+  // UTS: realtime/unit/RTP2h1/leave-nonexistent-returns-null-1
   it('RTP2h1 - LEAVE for non-existent member returns false', function () {
     const map = createPresenceMap();
 
@@ -274,6 +281,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * (i.e. remove returns null). In ably-js, the return is boolean indicating
    * whether an existing member was found.
    */
+  // UTS: realtime/unit/RTP2h2a/leave-during-sync-stores-absent-0
   it('RTP2h2a - LEAVE during sync stores as ABSENT', function () {
     const map = createPresenceMap();
 
@@ -314,6 +322,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * Additionally, residual members (present at start of sync but not seen during sync)
    * are also removed.
    */
+  // UTS: realtime/unit/RTP2h2b/absent-deleted-on-endsync-0
   it('RTP2h2b - ABSENT members deleted on endSync', function () {
     const map = createPresenceMap();
 
@@ -357,6 +366,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * split the id into connectionId:msgSerial:index and compare msgSerial
    * then index numerically. Larger values are newer.
    */
+  // UTS: realtime/unit/RTP2b2/newness-by-msgserial-index-0
   it('RTP2b2 - newness comparison by id (msgSerial:index)', function () {
     const map = createPresenceMap();
 
@@ -404,6 +414,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * When msgSerial values are equal, compare by index.
    */
+  // UTS: realtime/unit/RTP2b2/newness-by-index-same-serial-1
   it('RTP2b2 - newness comparison by index when msgSerial equal', function () {
     const map = createPresenceMap();
 
@@ -448,6 +459,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * of its id, compare by timestamp. This handles "synthesized leave" events
    * where the server generates a LEAVE on behalf of a disconnected client.
    */
+  // UTS: realtime/unit/RTP2b1/newness-by-timestamp-0
   it('RTP2b1 - newness comparison by timestamp (synthesized leave)', function () {
     const map = createPresenceMap();
 
@@ -480,6 +492,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * When comparing by timestamp, an older synthesized leave is rejected.
    */
+  // UTS: realtime/unit/RTP2b1/older-synth-leave-rejected-1
   it('RTP2b1 - synthesized leave rejected when older by timestamp', function () {
     const map = createPresenceMap();
 
@@ -512,6 +525,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * If timestamps are equal, the newly-incoming message is considered newer.
    */
+  // UTS: realtime/unit/RTP2b1a/equal-timestamps-incoming-wins-0
   it('RTP2b1a - equal timestamps: incoming message is newer', function () {
     const map = createPresenceMap();
 
@@ -544,6 +558,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * Presence events from a SYNC must be compared for newness
    * the same way as PRESENCE messages.
    */
+  // UTS: realtime/unit/RTP2c/sync-uses-same-newness-0
   it('RTP2c - SYNC messages use same newness comparison', function () {
     const map = createPresenceMap();
 
@@ -589,6 +604,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * The presence map maintains multiple members with different memberKeys.
    */
+  // UTS: realtime/unit/RTP2/multiple-members-coexist-1
   it('RTP2 - multiple members coexist', function () {
     const map = createPresenceMap();
 
@@ -608,6 +624,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * The values() method returns only PRESENT members.
    */
+  // UTS: realtime/unit/RTP2/values-excludes-absent-2
   it('RTP2 - values() excludes ABSENT members', function () {
     const map = createPresenceMap();
 
@@ -632,6 +649,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * Verifies that clear() removes all members and resets sync state.
    */
+  // UTS: realtime/unit/RTP2/clear-resets-state-3.1
   it('clear() resets all state', function () {
     const map = createPresenceMap();
 
@@ -652,6 +670,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * treated as residual and removed when sync completes. The PresenceMap
    * calls _synthesizeLeaves with these residual members.
    */
+  // UTS: realtime/unit/RTP2/multiple-members-coexist-1.1
   it('RTP2 - residual members removed on endSync', function () {
     const map = createPresenceMap();
 
@@ -691,6 +710,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * If they are not re-confirmed via put() during sync, they are removed
    * on endSync().
    */
+  // UTS: realtime/unit/RTP2/multiple-members-coexist-1.2
   it('RTP2 - startSync marks all current members as residual', function () {
     const map = createPresenceMap();
 
@@ -717,6 +737,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    * When a member is seen during sync (via put()), it is no longer
    * considered residual and will survive endSync().
    */
+  // UTS: realtime/unit/RTP2h2a/leave-during-sync-stores-absent-0.1
   it('RTP2 - put during sync removes member from residual tracking', function () {
     const map = createPresenceMap();
 
@@ -742,6 +763,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * Verifies that syncInProgress is true between startSync() and endSync().
    */
+  // UTS: realtime/unit/RTP2/clear-resets-state-3
   it('RTP2 - syncInProgress reflects sync state', function () {
     const map = createPresenceMap();
 
@@ -759,6 +781,7 @@ describe('uts/realtime/unit/presence/presence_map', function () {
    *
    * A LEAVE with an older id than the existing member is rejected.
    */
+  // UTS: realtime/unit/RTP2b1/older-synth-leave-rejected-1.1
   it('RTP2b2 - stale LEAVE is rejected', function () {
     const map = createPresenceMap();
 

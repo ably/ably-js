@@ -41,6 +41,7 @@ describe('uts/rest/unit/logging', function () {
    * error-level messages are emitted. Normal client construction and
    * time() calls produce MINOR/MICRO messages which should be filtered out.
    */
+  // UTS: rest/unit/RSC2/default-log-level-warn-0
   it('RSC2 - default log level filters non-error messages', async function () {
     setupMock();
 
@@ -68,6 +69,7 @@ describe('uts/rest/unit/logging', function () {
    * Setting logLevel to MICRO (4) should capture all log events
    * including MINOR and MICRO level messages.
    */
+  // UTS: rest/unit/TO3b/log-level-changeable-0
   it('TO3b - logLevel MICRO captures all messages', async function () {
     setupMock();
 
@@ -100,6 +102,7 @@ describe('uts/rest/unit/logging', function () {
    * A custom logHandler provided via ClientOptions receives a formatted
    * string message and a numeric level argument.
    */
+  // UTS: rest/unit/TO3c/custom-handler-structured-events-0
   it('TO3c - custom logHandler receives messages with level', async function () {
     setupMock();
 
@@ -134,6 +137,7 @@ describe('uts/rest/unit/logging', function () {
    * Setting logLevel to 0 (NONE) should prevent all log messages
    * from reaching the handler.
    */
+  // UTS: rest/unit/RSC2b/log-level-none-suppresses-all-0
   it('RSC4 - logLevel NONE suppresses all messages', async function () {
     setupMock();
 
@@ -158,6 +162,7 @@ describe('uts/rest/unit/logging', function () {
    * Intermediate log levels should filter correctly: MINOR captures
    * levels 1-3 but excludes MICRO (4).
    */
+  // UTS: rest/unit/TO3b/log-level-changeable-0.1
   it('TO3b - logLevel MINOR filters MICRO messages', async function () {
     setupMock();
 
@@ -191,6 +196,7 @@ describe('uts/rest/unit/logging', function () {
    * At MICRO level, HTTP operations emit log messages that contain
    * request details such as the URL/path being requested.
    */
+  // UTS: rest/unit/TO3c2/context-contains-expected-keys-0
   it('TO3c2 - HTTP request logs contain URL details', async function () {
     setupMock();
 

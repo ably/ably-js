@@ -24,6 +24,7 @@ describe('uts/realtime/unit/channels/channel_history', function () {
    * RestChannel#history. It supports start, end, direction, limit params
    * and returns a PaginatedResult containing Message objects.
    */
+  // UTS: realtime/unit/RTL10a/supports-rest-params-0
   it('RTL10a - history supports REST params and returns PaginatedResult', async function () {
     const captured: any[] = [];
     const mock = new MockWebSocket({
@@ -93,6 +94,7 @@ describe('uts/realtime/unit/channels/channel_history', function () {
   /**
    * RTL10b - untilAttach adds fromSerial query parameter
    */
+  // UTS: realtime/unit/RTL10b/adds-from-serial-0
   it('RTL10b - untilAttach adds from_serial param', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -152,6 +154,7 @@ describe('uts/realtime/unit/channels/channel_history', function () {
   /**
    * RTL10b - untilAttach errors when not attached
    */
+  // UTS: realtime/unit/RTL10b/errors-when-not-attached-1
   it('RTL10b - untilAttach throws when not attached', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

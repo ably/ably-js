@@ -57,6 +57,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTL26 - channel.annotations returns RealtimeAnnotations
    */
+  // UTS: realtime/unit/RTL26/annotations-attribute-type-0
   it('RTL26 - channel.annotations is available', function () {
     const mock = new MockWebSocket();
     installMockWebSocket(mock.constructorFn);
@@ -77,6 +78,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN1a, RTAN1c - publish sends ANNOTATION protocol message
    */
+  // UTS: realtime/unit/RTAN1a/publish-sends-annotation-0
   it('RTAN1a - publish sends ANNOTATION action', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg, conn) => {
@@ -124,6 +126,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN1d - publish resolves on ACK
    */
+  // UTS: realtime/unit/RTAN1d/publish-ack-nack-0.1
   it('RTAN1d - publish resolves on ACK', async function () {
     const { mock } = setupMock({
       onMessage: (msg, conn) => {
@@ -161,6 +164,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN1d - publish rejects on NACK
    */
+  // UTS: realtime/unit/RTAN1d/publish-ack-nack-0
   it('RTAN1d - publish rejects on NACK', async function () {
     const { mock } = setupMock({
       onMessage: (msg, conn) => {
@@ -202,6 +206,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN1b - publish fails in FAILED channel state
    */
+  // UTS: realtime/unit/RTAN1b/publish-channel-state-0
   it('RTAN1b - publish fails when channel is failed', async function () {
     const { mock } = setupMock();
     installMockWebSocket(mock.constructorFn);
@@ -241,6 +246,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN2a - delete sends ANNOTATION with annotation.delete action
    */
+  // UTS: realtime/unit/RTAN2a/delete-sends-annotation-0
   it('RTAN2a - delete sends ANNOTATION with delete action', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg, conn) => {
@@ -288,6 +294,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN4a, RTAN4b - subscribe delivers annotations from server
    */
+  // UTS: realtime/unit/RTAN4a/subscribe-delivers-annotations-0
   it('RTAN4a - subscribe delivers annotations', async function () {
     const { mock } = setupMock({ attachFlags: ANNOTATION_SUBSCRIBE });
     installMockWebSocket(mock.constructorFn);
@@ -335,6 +342,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN4c - subscribe with type filter
    */
+  // UTS: realtime/unit/RTAN4c/subscribe-type-filter-0
   it('RTAN4c - subscribe with type filter', async function () {
     const { mock } = setupMock({ attachFlags: ANNOTATION_SUBSCRIBE });
     installMockWebSocket(mock.constructorFn);
@@ -379,6 +387,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN4d - subscribe implicitly attaches channel
    */
+  // UTS: realtime/unit/RTAN4d/subscribe-implicit-attach-0
   it('RTAN4d - subscribe triggers implicit attach', async function () {
     let attachCount = 0;
     const mock = new MockWebSocket({
@@ -425,6 +434,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN4e - warns when ANNOTATION_SUBSCRIBE not granted
    */
+  // UTS: realtime/unit/RTAN4e/subscribe-warns-no-mode-0
   it('RTAN4e - throws when ANNOTATION_SUBSCRIBE not in mode', async function () {
     // Attach without ANNOTATION_SUBSCRIBE flag
     const { mock } = setupMock({ attachFlags: 0 });
@@ -456,6 +466,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN4e1 - no error when channel not attached with attachOnSubscribe=false
    */
+  // UTS: realtime/unit/RTAN4e1/no-warn-unattached-0
   it('RTAN4e1 - no error when not attached with attachOnSubscribe false', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -488,6 +499,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN5a - unsubscribe removes listener
    */
+  // UTS: realtime/unit/RTAN5a/unsubscribe-removes-listeners-0
   it('RTAN5a - unsubscribe removes listener', async function () {
     const { mock } = setupMock({ attachFlags: ANNOTATION_SUBSCRIBE });
     installMockWebSocket(mock.constructorFn);
@@ -536,6 +548,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
   /**
    * RTAN5a - unsubscribe with type removes only typed listener
    */
+  // UTS: realtime/unit/RTAN5a/unsubscribe-type-filter-1
   it('RTAN5a - unsubscribe with type filter', async function () {
     const { mock } = setupMock({ attachFlags: ANNOTATION_SUBSCRIBE });
     installMockWebSocket(mock.constructorFn);
@@ -599,6 +612,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
    *
    * Publishing an annotation without a type field should throw an error.
    */
+  // UTS: realtime/unit/RTAN1a/validates-type-required-1
   it('RTAN1a - publish validates type is required (deviation: ably-js does not validate type client-side)', async function () {
     const { mock } = setupMock({
       onMessage: (msg, conn) => {
@@ -654,6 +668,7 @@ describe('uts/realtime/unit/channels/channel_annotations', function () {
    * JSON data in an annotation should be encoded following message
    * encoding rules (serialized to string with encoding: "json").
    */
+  // UTS: realtime/unit/RTAN1a/encodes-data-json-2
   it('RTAN1a - publish encodes JSON data', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg, conn) => {

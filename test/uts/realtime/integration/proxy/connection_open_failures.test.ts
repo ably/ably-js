@@ -69,6 +69,7 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
   /**
    * RTN14a — Fatal error during connection open causes FAILED
    */
+  // UTS: realtime/proxy/RTN14a/fatal-connect-error-0
   it('RTN14a - fatal error during connection open causes FAILED', async function () {
     session = await createProxySession({
       rules: [
@@ -126,6 +127,7 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
   /**
    * RTN14b — Token error during connection, SDK renews and reconnects
    */
+  // UTS: realtime/proxy/RTN14b/token-error-renew-reconnect-0
   it('RTN14b - token error during connection triggers renewal and reconnect', async function () {
     session = await createProxySession({
       rules: [
@@ -188,6 +190,7 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
   /**
    * RTN14c — Connection timeout (no CONNECTED received)
    */
+  // UTS: realtime/proxy/RTN14c/connection-timeout-0
   it('RTN14c - connection timeout when CONNECTED is suppressed', async function () {
     session = await createProxySession({
       rules: [
@@ -239,6 +242,7 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
   /**
    * RTN14d — Retry after connection refused
    */
+  // UTS: realtime/proxy/RTN14d/retry-after-refused-0
   it('RTN14d - retry after connection refused', async function () {
     session = await createProxySession({
       rules: [
@@ -297,6 +301,7 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
   /**
    * RTN14g — Connection-level ERROR during open causes FAILED
    */
+  // UTS: realtime/proxy/RTN14g/server-error-causes-failed-0
   it('RTN14g - server error during connection open causes FAILED', async function () {
     session = await createProxySession({
       rules: [

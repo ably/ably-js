@@ -22,6 +22,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26a - whenState resolves immediately if already in state
    */
+  // UTS: realtime/unit/RTN26a/immediate-callback-current-state-0
   it('RTN26a - whenState resolves immediately for current state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -55,6 +56,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26b - whenState waits for state if not already in it
    */
+  // UTS: realtime/unit/RTN26b/deferred-callback-future-state-0
   it('RTN26b - whenState waits for target state', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -89,6 +91,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26b - whenState only fires once
    */
+  // UTS: realtime/unit/RTN26b/fires-only-once-1
   it('RTN26b - whenState only fires once across reconnection', async function () {
     let connectionAttemptCount = 0;
 
@@ -172,6 +175,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26a - Multiple whenState calls for same state
    */
+  // UTS: realtime/unit/RTN26a/multiple-whenstate-calls-1
   it('RTN26a - multiple whenState calls all resolve', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -203,6 +207,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26a - whenState does NOT fire for already-passed state
    */
+  // UTS: realtime/unit/RTN26a/no-fire-for-past-state-2
   it('RTN26a - whenState does not fire for past state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -234,6 +239,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
   /**
    * RTN26 - whenState with different states
    */
+  // UTS: realtime/unit/RTN26/whenstate-different-states-0
   it('RTN26 - whenState works across state transitions', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -284,6 +290,7 @@ describe('uts/realtime/unit/connection/when_state', function () {
    * Tests that whenState registered for 'closed' before closing the client
    * resolves with a ConnectionStateChange when the client transitions to closed.
    */
+  // UTS: realtime/unit/RTN26b/deferred-callback-future-state-0.1
   it('RTN26b - whenState waits for closed state', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

@@ -40,6 +40,7 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
    * The backoff coefficient for the nth retry is calculated as
    * min((n+2)/3, 2), producing the sequence [1, 4/3, 5/3, 2, 2, ...].
    */
+  // UTS: realtime/unit/RTB1a/backoff-coefficient-sequence-0
   it('RTB1a - backoff coefficient follows min((n+2)/3, 2)', function () {
     // Calculate backoff coefficients for retries 1 through 10
     const coefficients: number[] = [];
@@ -67,6 +68,7 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
    * The jitter coefficient is a random number between 0.8 and 1.0,
    * approximately uniformly distributed.
    */
+  // UTS: realtime/unit/RTB1b/jitter-coefficient-range-0
   it('RTB1b - jitter coefficient is between 0.8 and 1.0 with uniform distribution', function () {
     const sampleCount = 1000;
     const jitterValues: number[] = [];
@@ -101,6 +103,7 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
    * DISCONNECTED retries follows the formula:
    *   disconnectedRetryTimeout * min((n+2)/3, 2) * jitter(0.8-1.0)
    */
+  // UTS: realtime/unit/RTB1/disconnected-retry-delay-0
   it('RTB1 - DISCONNECTED retry delays follow backoff * jitter formula', async function () {
     let connectionAttemptCount = 0;
     const retryDelays: number[] = [];
@@ -210,6 +213,7 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
    * elapsed time between SUSPENDED and ATTACHING should match the expected
    * retry delay.
    */
+  // UTS: realtime/unit/RTB1/suspended-channel-retry-delay-1
   it('RTB1 - SUSPENDED channel retry timing follows backoff * jitter formula', async function () {
     const channelName = 'test-RTB1-channel';
     let connectionAttemptCount = 0;

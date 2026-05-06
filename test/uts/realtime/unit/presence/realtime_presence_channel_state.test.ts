@@ -26,6 +26,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * will perform a SYNC operation. After sync completes, presence.get() returns
    * the synced members.
    */
+  // UTS: realtime/unit/RTP1/has-presence-triggers-sync-0
   it('RTP1 - HAS_PRESENCE flag triggers sync', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -79,6 +80,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * If the flag is 0 or absent, the presence map should be considered in sync
    * immediately with no members.
    */
+  // UTS: realtime/unit/RTP1/no-has-presence-empty-1
   it('RTP1 - no HAS_PRESENCE flag means empty presence', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -123,6 +125,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * without a HAS_PRESENCE flag, emit a LEAVE event for each existing member and
    * remove all members from the PresenceMap.
    */
+  // UTS: realtime/unit/RTP1/no-has-presence-clears-existing-2
   it('RTP1, RTP19a - no HAS_PRESENCE clears existing members with LEAVE events', async function () {
     let connectionCount = 0;
     const mock = new MockWebSocket({
@@ -227,6 +230,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * immediately, and both the PresenceMap and internal PresenceMap are cleared.
    * LEAVE events should NOT be emitted when clearing.
    */
+  // UTS: realtime/unit/RTP5a/detached-clears-presence-maps-0
   it('RTP5a - DETACHED clears presence maps without LEAVE events', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -296,6 +300,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    *
    * Same as DETACHED -- FAILED state clears both maps, no LEAVE emitted.
    */
+  // UTS: realtime/unit/RTP5a/failed-clears-presence-maps-1
   it('RTP5a - FAILED clears presence maps without LEAVE events', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -370,6 +375,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * If a channel enters the ATTACHED state then all queued presence messages
    * will be sent immediately.
    */
+  // UTS: realtime/unit/RTP5b/attached-sends-queued-presence-0
   it('RTP5b - ATTACHED sends queued presence messages', async function () {
     const capturedPresence: any[] = [];
     const mock = new MockWebSocket({
@@ -442,6 +448,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * If the channel enters SUSPENDED, all queued presence messages fail
    * immediately, but the PresenceMap is maintained.
    */
+  // UTS: realtime/unit/RTP5f/suspended-maintains-presence-map-0
   it('RTP5f - SUSPENDED maintains presence map', async function () {
     let connectCount = 0;
 
@@ -539,6 +546,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * RealtimePresence#syncComplete is true if the initial SYNC operation has
    * completed for the members present on the channel.
    */
+  // UTS: realtime/unit/RTP13/sync-complete-attribute-0
   it('RTP13 - syncComplete attribute tracks sync state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -608,6 +616,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * Returns the RealtimePresence object for this channel. Same instance
    * returned each time.
    */
+  // UTS: realtime/unit/RTL9/presence-attribute-0
   it('RTL9, RTL9a - channel.presence returns RealtimePresence object', function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -640,6 +649,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    *
    * Getting channel.presence multiple times returns the exact same instance.
    */
+  // UTS: realtime/unit/RTL9/presence-attribute-0.1
   it('RTL9a - same presence object returned for same channel', function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -674,6 +684,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * ably-js successfully re-attaches and sends the presence message, which is
    * the correct behavior per RTP5b and RTP16b.
    */
+  // UTS: realtime/unit/RTL11/queued-presence-fail-detached-0
   it('RTL11 - presence on DETACHED channel triggers re-attach', async function () {
     const capturedPresence: any[] = [];
     const mock = new MockWebSocket({
@@ -742,6 +753,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    *
    * Presence actions queued while ATTACHING fail when channel goes SUSPENDED.
    */
+  // UTS: realtime/unit/RTL11/queued-presence-fail-suspended-1
   it('RTL11 - queued presence actions fail on SUSPENDED', async function () {
     let connectCount = 0;
     const capturedPresence: any[] = [];
@@ -846,6 +858,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    *
    * Presence actions queued while ATTACHING fail when channel goes FAILED.
    */
+  // UTS: realtime/unit/RTL11/queued-presence-fail-failed-2
   it('RTL11 - queued presence actions fail on FAILED', async function () {
     const capturedPresence: any[] = [];
     const mock = new MockWebSocket({
@@ -924,6 +937,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
    * A channel that becomes detached may still receive an ACK for messages
    * published on that channel.
    */
+  // UTS: realtime/unit/RTL11a/ack-nack-unaffected-by-state-0
   it('RTL11a - ACK/NACK unaffected by channel state changes', async function () {
     const capturedPresence: any[] = [];
     const mock = new MockWebSocket({

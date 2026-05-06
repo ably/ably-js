@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
   /**
    * TM2a - Message id populated from ProtocolMessage id and index
    */
+  // UTS: realtime/unit/TM2a/id-from-protocol-message-0
   it('TM2a - id derived from ProtocolMessage id:index', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -79,6 +80,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
   /**
    * TM2a - Message with existing id is not overwritten
    */
+  // UTS: realtime/unit/TM2a/existing-id-not-overwritten-1
   it('TM2a - existing id not overwritten', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -131,6 +133,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
   /**
    * TM2c - Message connectionId populated from ProtocolMessage
    */
+  // UTS: realtime/unit/TM2c/connectionid-from-protocol-0
   it('TM2c - connectionId from ProtocolMessage', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -183,6 +186,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
   /**
    * TM2f - Message timestamp populated from ProtocolMessage
    */
+  // UTS: realtime/unit/TM2f/timestamp-from-protocol-0
   it('TM2f - timestamp from ProtocolMessage', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -235,6 +239,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
   /**
    * TM2a, TM2c, TM2f - All fields populated together
    */
+  // UTS: realtime/unit/TM2a/all-fields-populated-together-3
   it('TM2a+c+f - all fields populated from ProtocolMessage', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -300,6 +305,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
    * When the ProtocolMessage itself has no id field, messages without
    * their own id should remain without one.
    */
+  // UTS: realtime/unit/TM2a/no-id-without-protocol-id-2
   it('TM2a - no id when ProtocolMessage has no id', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -359,6 +365,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
    * A message that already has its own connectionId should retain it,
    * not have it overwritten by the ProtocolMessage connectionId.
    */
+  // UTS: realtime/unit/TM2c/existing-connectionid-kept-1
   it('TM2c - existing connectionId not overwritten', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -415,6 +422,7 @@ describe('uts/realtime/unit/channels/message_field_population', function () {
    * A message that already has its own timestamp should retain it,
    * not have it overwritten by the ProtocolMessage timestamp.
    */
+  // UTS: realtime/unit/TM2f/existing-timestamp-kept-1
   it('TM2f - existing timestamp not overwritten', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

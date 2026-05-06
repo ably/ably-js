@@ -25,6 +25,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
   /**
    * RTN14a - Invalid API key causes FAILED state
    */
+  // UTS: realtime/unit/RTN14a/invalid-key-failed-0
   it('RTN14a - invalid API key causes FAILED state', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -59,6 +60,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
   /**
    * RTN14b - Token error with renewable token triggers renewal and retry
    */
+  // UTS: realtime/unit/RTN14b/token-renewal-fails-1
   it('RTN14b - token error with renewable token retries', function (done) {
     let connectionAttemptCount = 0;
 
@@ -114,6 +116,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
    * means to renew the token, the connection transitions to FAILED with
    * error code 40171.
    */
+  // UTS: realtime/unit/RSA4a/token-error-no-renewal-0
   it('RSA4a - token error without renewal causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -147,6 +150,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
    * Note: ably-js connectingTimeout = webSocketConnectTimeout + realtimeRequestTimeout.
    * Both must be configured short for this test.
    */
+  // UTS: realtime/unit/RTN14c/connection-timeout-0
   it('RTN14c - connection timeout causes DISCONNECTED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -192,6 +196,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
   /**
    * RTN14d - Retry after recoverable failure
    */
+  // UTS: realtime/unit/RTN14d/retry-recoverable-failure-0
   it('RTN14d - automatic retry after recoverable failure', async function () {
     let connectionAttemptCount = 0;
 
@@ -248,6 +253,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
   /**
    * RTN14e - DISCONNECTED → SUSPENDED after connectionStateTtl
    */
+  // UTS: realtime/unit/RTN14e/disconnected-to-suspended-0
   it('RTN14e - transitions to SUSPENDED after connectionStateTtl', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -290,6 +296,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
   /**
    * RTN14f - SUSPENDED state retries and eventually connects
    */
+  // UTS: realtime/unit/RTN14f/suspended-retries-indefinitely-0
   it('RTN14f - SUSPENDED retries and connects', async function () {
     let connectionAttemptCount = 0;
 
@@ -352,6 +359,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
    * Per spec: ERROR ProtocolMessage with empty channel received during connection
    * opening (before CONNECTED) transitions connection to FAILED.
    */
+  // UTS: realtime/unit/RTN14g/error-empty-channel-failed-0
   it('RTN14g - ERROR with empty channel causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -392,6 +400,7 @@ describe('uts/realtime/unit/connection/connection_open_failures', function () {
    * to another token error, then the connection transitions to DISCONNECTED and
    * Connection#errorReason is set.
    */
+  // UTS: realtime/unit/RTN14b/token-error-with-renewal-0
   it('RTN14b - token error with renewal failure causes DISCONNECTED', function (done) {
     let connectionAttemptCount = 0;
 

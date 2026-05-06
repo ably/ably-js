@@ -18,6 +18,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * save() issues a POST request to the channelSubscriptions endpoint
    * with the subscription in the body.
    */
+  // UTS: rest/unit/RSH1c3/save-post-subscription-0
   it('RSH1c3 - save sends POST to /push/channelSubscriptions', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -50,6 +51,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * deviceId or clientId. The response is parsed into a
    * PushChannelSubscription object.
    */
+  // UTS: rest/unit/RSH1c3/save-updates-existing-1
   it('RSH1c3 - save body contains channel and subscription details', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -85,6 +87,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    *
    * list() issues a GET request to the channelSubscriptions endpoint.
    */
+  // UTS: rest/unit/RSH1c4/remove-nonexistent-succeeds-2
   it('RSH1c1 - list sends GET to /push/channelSubscriptions', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -110,6 +113,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * list() forwards the channel parameter as a query parameter
    * and returns matching subscriptions.
    */
+  // UTS: rest/unit/RSH1c1/list-filtered-by-channel-0
   it('RSH1c1 - list with channel filter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -136,6 +140,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    *
    * list() returns a PaginatedResult containing PushChannelSubscription objects.
    */
+  // UTS: rest/unit/RSH1c1/list-filtered-by-channel-0.1
   it('RSH1c1 - list returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -163,6 +168,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * removeWhere() issues a DELETE request to the channelSubscriptions
    * endpoint with filter parameters as query params.
    */
+  // UTS: rest/unit/RSH1c5/remove-where-clientid-0
   it('RSH1c5 - removeWhere sends DELETE to /push/channelSubscriptions', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -189,6 +195,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * removeWhere() forwards the channel parameter along with other
    * filter params to delete matching subscriptions.
    */
+  // UTS: rest/unit/RSH1c5/remove-where-no-match-succeeds-2
   it('RSH1c5 - removeWhere with channel param', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -218,6 +225,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    *
    * listChannels() issues a GET request to the /push/channels endpoint.
    */
+  // UTS: rest/unit/RSH1c2/list-channels-with-limit-1
   it('RSH1c2 - listChannels sends GET to /push/channels', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -243,6 +251,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * listChannels() returns a PaginatedResult containing channel
    * name strings.
    */
+  // UTS: rest/unit/RSH1c2/list-channels-paginated-0
   it('RSH1c2 - listChannels returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -266,6 +275,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    *
    * listChannels() forwards the limit parameter as a query parameter.
    */
+  // UTS: rest/unit/RSH1c4/remove-delete-clientid-0
   it('RSH1c2 - listChannels with params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -291,6 +301,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * list() forwards both deviceId and clientId as query parameters
    * when both are provided.
    */
+  // UTS: rest/unit/RSH1c1/list-filtered-by-device-client-1
   it('RSH1c1 - list with deviceId and clientId filters', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -315,6 +326,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    *
    * list() forwards the limit parameter as a query parameter.
    */
+  // UTS: rest/unit/RSH1c1/list-with-limit-param-2
   it('RSH1c1 - list supports limit', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -339,6 +351,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * When the server returns an error response, save() must
    * propagate it as an exception with the correct error code.
    */
+  // UTS: rest/unit/RSH1c3/save-error-propagated-2
   it('RSH1c3 - save propagates server error', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -369,6 +382,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * remove() issues a DELETE request to the channelSubscriptions
    * endpoint with channel and deviceId as query parameters.
    */
+  // UTS: rest/unit/RSH1c4/remove-delete-deviceid-1
   it('RSH1c4 - remove with deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -395,6 +409,7 @@ describe('uts/rest/unit/push/push_channel_subscriptions', function () {
    * removeWhere() issues a DELETE request with deviceId as a
    * query parameter.
    */
+  // UTS: rest/unit/RSH1c5/remove-where-deviceid-1
   it('RSH1c5 - removeWhere with deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

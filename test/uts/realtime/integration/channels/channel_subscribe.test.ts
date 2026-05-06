@@ -33,6 +33,7 @@ describe('uts/realtime/integration/channels/channel_subscribe', function () {
   /**
    * RTL7a - Subscribe with no name filter receives all messages
    */
+  // UTS: realtime/integration/RTL7a/subscribe-all-messages-0
   it('RTL7a - subscribe with no name filter receives all messages', async function () {
     const channelName = uniqueChannelName('subscribe-all');
 
@@ -85,6 +86,7 @@ describe('uts/realtime/integration/channels/channel_subscribe', function () {
   /**
    * RTL7b - Subscribe with name filter receives only matching messages
    */
+  // UTS: realtime/integration/RTL7b/subscribe-filtered-by-name-0
   it('RTL7b - subscribe with name filter receives only matching messages', async function () {
     const channelName = uniqueChannelName('subscribe-filtered');
 
@@ -143,6 +145,7 @@ describe('uts/realtime/integration/channels/channel_subscribe', function () {
   /**
    * RTL7 - Bidirectional message flow
    */
+  // UTS: realtime/integration/RTL7/bidirectional-message-flow-0
   it('RTL7 - bidirectional message flow between two clients', async function () {
     const channelName = uniqueChannelName('subscribe-bidir');
 

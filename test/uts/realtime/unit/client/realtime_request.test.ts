@@ -20,6 +20,7 @@ describe('uts/realtime/unit/client/realtime_request', function () {
   /**
    * RTC9 / RSC19 - GET request
    */
+  // UTS: realtime/unit/RTC9/request-proxies-rest-0
   it('RTC9 - request() sends GET', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -46,6 +47,7 @@ describe('uts/realtime/unit/client/realtime_request', function () {
   /**
    * RTC9 / RSC19 - POST request with body
    */
+  // UTS: realtime/unit/RTC9/request-proxies-rest-0.1
   it('RTC9 - request() sends POST with body', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -74,6 +76,7 @@ describe('uts/realtime/unit/client/realtime_request', function () {
   /**
    * RTC9 / RSC19 - request() with query params
    */
+  // UTS: rest/unit/RSC19f1/version-param-sets-header-0
   it('RTC9 - request() passes query params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -105,6 +108,7 @@ describe('uts/realtime/unit/client/realtime_request', function () {
   /**
    * RTC9 / RSC19 - HttpPaginatedResponse structure
    */
+  // UTS: realtime/unit/RTC9/request-proxies-rest-0.2
   it('RTC9 - returns HttpPaginatedResponse', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -128,6 +132,7 @@ describe('uts/realtime/unit/client/realtime_request', function () {
   /**
    * RTC9 / RSC19 - Error response
    */
+  // UTS: rest/unit/RSC19d/empty-response-handling-8
   it('RTC9 - error response has correct fields', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

@@ -34,6 +34,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17g - POST to /keys/{keyName}/revokeTokens
    */
+  // UTS: rest/unit/RSA17g/sends-post-correct-path-0
   it('RSA17g - sends POST to correct path', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -49,6 +50,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17b - Single target specifier
    */
+  // UTS: rest/unit/RSA17b/single-specifier-targets-0
   it('RSA17b - single specifier sent as targets array', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -63,6 +65,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17b - Multiple specifiers with different types
    */
+  // UTS: rest/unit/RSA17b/multiple-specifier-types-1
   it('RSA17b - multiple specifiers', async function () {
     const captured: any[] = [];
     const responseBody = {
@@ -93,6 +96,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
    * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
    * results} directly — the SDK passes through the response.
    */
+  // UTS: rest/unit/RSA17c/all-success-result-0
   it('RSA17c - all success result', async function () {
     const responseBody = {
       successCount: 2,
@@ -118,6 +122,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * TRS2 - Success result attributes
    */
+  // UTS: rest/unit/TRS2/success-result-attributes-0
   it('TRS2 - success result has target, issuedBefore, appliesAt', async function () {
     const responseBody = {
       successCount: 1,
@@ -141,6 +146,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
    * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
    * results} directly with HTTP 200 — the SDK passes through the response.
    */
+  // UTS: rest/unit/RSA17c/mixed-success-failure-1
   it('RSA17c_2 - mixed result', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -172,6 +178,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17c_3 - All failure result
    */
+  // UTS: rest/unit/RSA17c/all-failure-result-2
   it('RSA17c_3 - all failure', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -203,6 +210,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * TRF2_1 - Failure result with target and error details
    */
+  // UTS: rest/unit/TRF2/failure-result-attributes-0
   it('TRF2_1 - failure details in results', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -234,6 +242,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17d - Token auth client fails with 40162
    */
+  // UTS: rest/unit/RSA17d/token-auth-revoke-rejected-0
   it('RSA17d - token auth client fails with 40162', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -255,6 +264,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17d - useTokenAuth flag also fails with 40162
    */
+  // UTS: rest/unit/RSA17d/use-token-auth-revoke-rejected-1
   it('RSA17d - useTokenAuth flag fails with 40162', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -275,6 +285,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17e - issuedBefore included when specified
    */
+  // UTS: rest/unit/RSA17e/issued-before-included-0
   it('RSA17e - issuedBefore included in request body', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -289,6 +300,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17e - issuedBefore omitted when not provided
    */
+  // UTS: rest/unit/RSA17e/issued-before-omitted-1
   it('RSA17e - issuedBefore omitted when not provided', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -303,6 +315,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17f - allowReauthMargin included when true
    */
+  // UTS: rest/unit/RSA17f/reauth-margin-included-0
   it('RSA17f - allowReauthMargin included', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -317,6 +330,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17f - allowReauthMargin omitted when not provided
    */
+  // UTS: rest/unit/RSA17f/reauth-margin-omitted-1
   it('RSA17f - allowReauthMargin omitted when not provided', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -331,6 +345,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17f - Both issuedBefore and allowReauthMargin together
    */
+  // UTS: rest/unit/RSA17f/both-options-together-2
   it('RSA17f - both options together', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));
@@ -350,6 +365,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17 - Server error propagated
    */
+  // UTS: rest/unit/RSA17/server-error-propagated-0
   it('RSA17 - server error propagated', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -375,6 +391,7 @@ describe('uts/rest/unit/auth/revoke_tokens', function () {
   /**
    * RSA17 - Request uses Basic authentication
    */
+  // UTS: rest/unit/RSA17/request-uses-basic-auth-0
   it('RSA17 - request uses Basic auth', async function () {
     const captured: any[] = [];
     installMockHttp(revokeMock(captured));

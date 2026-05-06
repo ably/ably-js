@@ -20,6 +20,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC2 - Connection attribute
    */
+  // UTS: realtime/unit/RTC2/connection-attribute-0
   it('RTC2 - client.connection is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
     trackClient(client);
@@ -34,6 +35,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC3 - Channels attribute
    */
+  // UTS: realtime/unit/RTC3/channels-attribute-0
   it('RTC3 - client.channels is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
     trackClient(client);
@@ -48,6 +50,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC4 - Auth attribute
    */
+  // UTS: realtime/unit/RTC4/auth-attribute-0
   it('RTC4 - client.auth is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
     trackClient(client);
@@ -60,6 +63,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC13 - Push attribute
    */
+  // UTS: realtime/unit/RTC13/push-attribute-0
   it('RTC13 - client.push is accessible', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
     trackClient(client);
@@ -72,6 +76,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC17 - clientId attribute
    */
+  // UTS: realtime/unit/RTC17/client-id-attribute-0
   it('RTC17 - clientId from options', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -88,6 +93,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1a_1 - echoMessages defaults to true
    */
+  // UTS: realtime/unit/RTC1a/echo-messages-option-0
   it('RTC1a - echoMessages default sends echo=true', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js omits echo param when true
     let echoParam: string | null = null;
@@ -109,6 +115,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1a_2 - echoMessages set to false
    */
+  // UTS: realtime/unit/RTC1a/echo-messages-option-0.1
   it('RTC1a - echoMessages false sends echo=false', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -135,6 +142,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1b_1 - autoConnect defaults to true
    */
+  // UTS: realtime/unit/RTC1b/auto-connect-option-0.1
   it('RTC1b - autoConnect defaults to true', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -157,6 +165,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1b_2 - autoConnect set to false
    */
+  // UTS: realtime/unit/RTC1b/auto-connect-option-0.2
   it('RTC1b - autoConnect false stays initialized', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: () => {
@@ -184,6 +193,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1b_3 - Explicit connect after autoConnect false
    */
+  // UTS: realtime/unit/RTC1b/auto-connect-option-0
   it('RTC1b - explicit connect after autoConnect false', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -215,6 +225,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1c_1 - recover string sent in connection request
    */
+  // UTS: realtime/unit/RTC1c/recover-option-0
   it('RTC1c - recover key sent in URL', function (done) {
     const recoveryKey = JSON.stringify({
       connectionKey: 'previous-connection-key',
@@ -246,6 +257,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1c_3 - Invalid recovery key handled gracefully
    */
+  // UTS: realtime/unit/RTC12/invalid-arguments-error-1
   it('RTC1c - invalid recovery key handled gracefully', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -274,6 +286,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1f_1 - transportParams included in connection URL
    */
+  // UTS: realtime/unit/RTC1f/transport-params-option-0
   it('RTC1f - transportParams in URL', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -300,6 +313,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1f_2 - transportParams with different value types
    */
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0
   it('RTC1f - transportParams value types stringified', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -333,6 +347,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC1f1 - transportParams override library defaults
    */
+  // UTS: realtime/unit/RTC1f/transport-params-option-0.1
   it('RTC1f1 - transportParams override defaults', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -361,6 +376,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC15a - connect() calls Connection#connect
    */
+  // UTS: realtime/unit/RTC15/connect-method-0
   it('RTC15 - connect() proxies to connection', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -390,6 +406,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RTC16a - close() calls Connection#close
    */
+  // UTS: realtime/unit/RTC16/close-method-0
   it('RTC16 - close() proxies to connection', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -425,6 +442,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * Standard query parameters present in connection URL
    */
+  // UTS: realtime/unit/RTC2/connection-attribute-0.1
   it('Standard query params in connection URL', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -457,6 +475,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * RSC18 - TLS setting affects WebSocket URL scheme
    */
+  // UTS: realtime/unit/RTC17/client-id-attribute-0.1
   it('RSC18 - TLS true uses wss://', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -479,6 +498,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
     });
   });
 
+  // UTS: realtime/unit/RTC17/client-id-attribute-0.2
   it('RSC18 - TLS false uses ws://', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -504,6 +524,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
   /**
    * useBinaryProtocol affects format query param
    */
+  // UTS: realtime/unit/RTC17/client-id-attribute-0.3
   it('useBinaryProtocol false sends format=json', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -525,6 +546,7 @@ describe('uts/realtime/unit/client/realtime_client', function () {
     });
   });
 
+  // UTS: realtime/unit/RTC17/client-id-attribute-0.4
   it('useBinaryProtocol true sends format=msgpack', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

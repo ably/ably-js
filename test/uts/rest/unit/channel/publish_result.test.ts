@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/publish_result', function () {
    * When a single message is published, the server responds with a
    * PublishResult containing a serials array with one entry.
    */
+  // UTS: rest/unit/RSL1n/publish-result-single-message-0
   it('RSL1n - single message returns PublishResult with serial', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -47,6 +48,7 @@ describe('uts/rest/unit/channel/publish_result', function () {
    * When multiple messages are published in a single call, the server
    * responds with a serials array containing one entry per message.
    */
+  // UTS: rest/unit/RSL1n/publish-result-batch-serials-1
   it('RSL1n - batch returns PublishResult with multiple serials', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -80,6 +82,7 @@ describe('uts/rest/unit/channel/publish_result', function () {
    * When the server conflates messages, it may return null for some
    * serials entries. The client must preserve these null values.
    */
+  // UTS: rest/unit/RSL1n/publish-result-null-serial-2
   it('RSL1n - null serial preserved (conflated)', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

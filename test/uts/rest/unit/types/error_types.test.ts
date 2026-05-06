@@ -12,6 +12,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI1 - code attribute
    */
+  // UTS: rest/unit/TI1/errorinfo-attributes-0
   it('TI1 - code attribute', function () {
     const error = new Ably.ErrorInfo('Bad request', 40000, 400);
     expect(error.code).to.equal(40000);
@@ -20,6 +21,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI2 - statusCode attribute
    */
+  // UTS: rest/unit/TI1/errorinfo-attributes-0.1
   it('TI2 - statusCode attribute', function () {
     const error = new Ably.ErrorInfo('Unauthorized', 40100, 401);
     expect(error.statusCode).to.equal(401);
@@ -28,6 +30,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI3 - message attribute
    */
+  // UTS: rest/unit/TI1/errorinfo-attributes-0.2
   it('TI3 - message attribute', function () {
     const error = new Ably.ErrorInfo('Bad request: invalid parameter', 40000, 400);
     expect(error.message).to.equal('Bad request: invalid parameter');
@@ -36,6 +39,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI4 - href attribute (auto-generated from code)
    */
+  // UTS: rest/unit/TI1/errorinfo-attributes-0.3
   it('TI4 - href attribute', function () {
     const error = Ably.ErrorInfo.fromValues({
       code: 40000,
@@ -48,6 +52,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI5 - cause attribute
    */
+  // UTS: rest/unit/TI1/errorinfo-attributes-0.4
   it('TI5 - cause attribute', function () {
     const cause = new Error('Network failure');
     const error = Ably.ErrorInfo.fromValues({
@@ -62,6 +67,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI - ErrorInfo is an Error instance
    */
+  // UTS: rest/unit/TI/errorinfo-from-json-0
   it('TI - ErrorInfo is an Error instance', function () {
     const error = new Ably.ErrorInfo('test', 40000, 400);
     expect(error).to.be.an.instanceOf(Error);
@@ -70,6 +76,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI - ErrorInfo from JSON-like object
    */
+  // UTS: rest/unit/TI/ably-exception-wraps-errorinfo-2
   it('TI - ErrorInfo from object', function () {
     const error = Ably.ErrorInfo.fromValues({
       code: 40100,
@@ -86,6 +93,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI - Common error codes
    */
+  // UTS: rest/unit/TI/common-error-codes-3
   it('TI - common error codes', function () {
     const cases = [
       { code: 40000, status: 400, meaning: 'Bad request' },
@@ -110,6 +118,7 @@ describe('uts/rest/unit/types/error_types', function () {
   /**
    * TI - Error string representation
    */
+  // UTS: rest/unit/TI/error-string-representation-4
   it('TI - string representation', function () {
     const error = new Ably.ErrorInfo('Unauthorized: token expired', 40100, 401);
     const str = error.toString();
@@ -123,6 +132,7 @@ describe('uts/rest/unit/types/error_types', function () {
    * When an ErrorInfo is created with a cause that is itself an ErrorInfo,
    * the cause's attributes should be accessible.
    */
+  // UTS: rest/unit/TI/errorinfo-nested-cause-1
   it('TI5 - nested error cause', function () {
     const inner = new Ably.ErrorInfo('inner', 40100, 401);
     const outer = Ably.ErrorInfo.fromValues({
@@ -144,6 +154,7 @@ describe('uts/rest/unit/types/error_types', function () {
    * Verify that an ErrorInfo constructed with code, statusCode, message,
    * and href exposes all properties correctly.
    */
+  // UTS: rest/unit/TI/error-equality-5
   it('TI - ErrorInfo with all attributes', function () {
     const error = Ably.ErrorInfo.fromValues({
       code: 40300,

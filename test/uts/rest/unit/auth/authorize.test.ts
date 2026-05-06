@@ -36,6 +36,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10a - authorize() obtains token with defaults
    */
+  // UTS: rest/unit/RSA10a/authorize-default-params-0
   it('RSA10a - authorize() obtains token', async function () {
     const captured: any[] = [];
     installMockHttp(tokenRoutingMock(captured));
@@ -60,6 +61,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10b - authorize() with explicit tokenParams overrides defaults
    */
+  // UTS: rest/unit/RSA10b/authorize-explicit-params-0
   it('RSA10b - tokenParams override defaults', async function () {
     let callbackParams: any = null;
 
@@ -90,6 +92,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10g - authorize() updates auth.tokenDetails
    */
+  // UTS: rest/unit/RSA10g/authorize-updates-token-details-0
   it('RSA10g - authorize() updates tokenDetails', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -124,6 +127,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10h - authorize() with new authCallback replaces old
    */
+  // UTS: rest/unit/RSA10h/authorize-replaces-auth-options-0
   it('RSA10h - authOptions replace stored options', async function () {
     let originalCalled = false;
     let newCalled = false;
@@ -155,6 +159,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10j - authorize() when already authorized gets new token
    */
+  // UTS: rest/unit/RSA10j/authorize-replaces-existing-token-0
   it('RSA10j - authorize() when already authorized', async function () {
     let tokenCount = 0;
 
@@ -186,6 +191,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10k - authorize() with queryTime queries server time
    */
+  // UTS: rest/unit/RSA10k/authorize-query-time-0
   it('RSA10k - queryTime queries server', async function () {
     const captured: any[] = [];
 
@@ -221,6 +227,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10l - authorize() error handling
    */
+  // UTS: rest/unit/RSA10l/authorize-error-propagated-0
   it('RSA10l - authorize() propagates errors', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -253,6 +260,7 @@ describe('uts/rest/unit/auth/authorize', function () {
    * tokenParams provided to authorize() are saved and reused on subsequent
    * token requests (e.g. when the token expires and is re-acquired).
    */
+  // UTS: rest/unit/RSA10e/authorize-saves-params-0
   it('RSA10e - tokenParams saved for reuse', async function () {
     const callbackInvocations: any[] = [];
 
@@ -294,6 +302,7 @@ describe('uts/rest/unit/auth/authorize', function () {
    * The API key from ClientOptions is preserved even when authOptions
    * are provided to authorize().
    */
+  // UTS: rest/unit/RSA10i/authorize-preserves-key-0
   it('RSA10i - key preserved after authorize with authOptions', async function () {
     const captured: any[] = [];
 
@@ -329,6 +338,7 @@ describe('uts/rest/unit/auth/authorize', function () {
   /**
    * RSA10a - authorize() with incompatible key throws 40102
    */
+  // UTS: rest/unit/RSA10a/authorize-default-params-0.1
   it('RSA10a - incompatible key in authOptions throws 40102', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

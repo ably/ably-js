@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/channel_get_message', function () {
   /**
    * RTL28 - getMessage delegates to REST endpoint
    */
+  // UTS: realtime/unit/RTL28/identical-to-rest-0
   it('RTL28 - getMessage calls REST /messages/{serial}', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

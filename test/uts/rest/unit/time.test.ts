@@ -22,6 +22,7 @@ describe('uts/rest/unit/time', function () {
    * The time() method retrieves the server time from the /time endpoint
    * and returns it as a timestamp.
    */
+  // UTS: rest/unit/RSC16/returns-server-time-0
   it('RSC16 - time() returns server time', async function () {
     const captured: any[] = [];
     const serverTimeMs = 1704067200000; // 2024-01-01 00:00:00 UTC
@@ -53,6 +54,7 @@ describe('uts/rest/unit/time', function () {
    *
    * The time request must be a GET request to /time with standard Ably headers.
    */
+  // UTS: rest/unit/RSC16/request-format-get-time-1
   it('RSC16 - time() request format', async function () {
     const captured: any[] = [];
 
@@ -92,6 +94,7 @@ describe('uts/rest/unit/time', function () {
    * The /time endpoint does not require authentication and should not send
    * an Authorization header, even when credentials are available.
    */
+  // UTS: rest/unit/RSC16/no-auth-required-2
   it('RSC16 - time() does not require authentication', async function () {
     const captured: any[] = [];
 
@@ -124,6 +127,7 @@ describe('uts/rest/unit/time', function () {
    * callable over HTTP (non-TLS). The RSC18 restriction (no basic auth
    * over non-TLS) does not apply because time() doesn't send authentication.
    */
+  // UTS: rest/unit/RSC16/works-without-tls-3
   it('RSC16 - time() works without TLS', async function () {
     const captured: any[] = [];
 
@@ -161,6 +165,7 @@ describe('uts/rest/unit/time', function () {
    *
    * Errors from the /time endpoint should be properly propagated to the caller.
    */
+  // UTS: rest/unit/RSC16/error-propagated-4
   it('RSC16 - time() error handling', async function () {
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
