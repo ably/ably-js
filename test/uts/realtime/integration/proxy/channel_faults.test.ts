@@ -102,6 +102,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * When the proxy suppresses ATTACH messages so the server never sees them,
    * the SDK's attach timer fires and the channel transitions to SUSPENDED.
    */
+  // UTS: realtime/proxy/RTL4f/attach-timeout-suppressed-0
   it('RTL4f - attach timeout when ATTACH is suppressed', async function () {
     const channelName = uniqueChannelName('test-RTL4f');
 
@@ -195,6 +196,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * When the proxy replaces the ATTACHED response with a channel-scoped ERROR,
    * the SDK transitions the channel to FAILED. Connection remains CONNECTED.
    */
+  // UTS: realtime/proxy/RTL14/channel-error-goes-failed-1
   it('RTL14 - error on attach causes channel FAILED', async function () {
     const channelName = uniqueChannelName('test-RTL14-error-on-attach');
 
@@ -283,6 +285,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * Two-phase test: first connect and attach normally with no rules,
    * then add a rule suppressing DETACH. The channel should revert to ATTACHED.
    */
+  // UTS: realtime/proxy/RTL5f/detach-timeout-suppressed-0
   it('RTL5f - detach timeout reverts channel to attached', async function () {
     const channelName = uniqueChannelName('test-RTL5f');
 
@@ -373,6 +376,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * Connect and attach normally, then inject a DETACHED message via triggerAction.
    * The SDK should automatically re-attach against the real server.
    */
+  // UTS: realtime/proxy/RTL13a/unsolicited-detach-reattach-0
   it('RTL13a - unsolicited DETACHED triggers automatic reattach', async function () {
     const channelName = uniqueChannelName('test-RTL13a');
 
@@ -456,6 +460,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * Connect and attach normally, then inject a channel-scoped ERROR via triggerAction.
    * The channel should transition to FAILED. Connection remains CONNECTED.
    */
+  // UTS: realtime/proxy/RTL14/error-on-attach-0
   it('RTL14 - injected channel ERROR causes FAILED', async function () {
     const channelName = uniqueChannelName('test-RTL14');
 
@@ -529,6 +534,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * When the server sends an ATTACHED message for a channel that is already attached
    * with resumed=false, the SDK emits an 'update' event (not 'attached') per RTL2g.
    */
+  // UTS: realtime/proxy/RTL12/attached-non-resumed-update-0
   it('RTL12 - ATTACHED with resumed=false emits UPDATE not ATTACHED', async function () {
     const channelName = uniqueChannelName('test-RTL12');
 
@@ -607,6 +613,7 @@ describe('uts/realtime/integration/proxy/channel_faults', function () {
    * After a transport disconnect, the SDK reconnects and automatically
    * reattaches all previously-attached channels.
    */
+  // UTS: realtime/proxy/RTL3d/channels-reattach-on-reconnect-0
   it('RTL3d - channels reattach after connection recovery', async function () {
     const channelNameA = uniqueChannelName('test-RTL3d-a');
     const channelNameB = uniqueChannelName('test-RTL3d-b');

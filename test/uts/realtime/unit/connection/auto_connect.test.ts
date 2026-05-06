@@ -17,6 +17,7 @@ describe('uts/realtime/unit/connection/auto_connect', function () {
   /**
    * RTN3 - autoConnect true initiates connection immediately
    */
+  // UTS: realtime/unit/RTN3/auto-connect-true-0
   it('RTN3 - autoConnect true initiates connection immediately', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -50,6 +51,7 @@ describe('uts/realtime/unit/connection/auto_connect', function () {
   /**
    * RTN3 - autoConnect false does not initiate connection
    */
+  // UTS: realtime/unit/RTN3/auto-connect-false-1
   it('RTN3 - autoConnect false does not initiate connection', async function () {
     let connectionAttempted = false;
 
@@ -80,6 +82,7 @@ describe('uts/realtime/unit/connection/auto_connect', function () {
   /**
    * RTN3 - explicit connect after autoConnect false
    */
+  // UTS: realtime/unit/RTN3/explicit-connect-after-false-2
   it('RTN3 - explicit connect after autoConnect false', function (done) {
     let connectionAttempted = false;
 

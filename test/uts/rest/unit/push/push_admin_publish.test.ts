@@ -18,6 +18,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * push.admin.publish() must issue a POST request to /push/publish
    * with the recipient and data fields in the body.
    */
+  // UTS: rest/unit/RSH1a/publish-post-push-publish-0
   it('RSH1a - publish sends POST to /push/publish', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -46,6 +47,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * The POST body must contain the recipient object and the payload
    * fields (notification, data) merged at the top level.
    */
+  // UTS: rest/unit/RSH1a/rejects-empty-recipient-3
   it('RSH1a - body contains recipient and data', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -76,6 +78,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    *
    * publish() works with a clientId-based recipient.
    */
+  // UTS: rest/unit/RSH1a/publish-clientid-recipient-1
   it('RSH1a - recipient as clientId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -101,6 +104,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    *
    * publish() works with a deviceId-based recipient.
    */
+  // UTS: rest/unit/RSH1a/publish-deviceid-recipient-2
   it('RSH1a - recipient as deviceId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -127,6 +131,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * The payload notification and data fields are included in the
    * request body alongside the recipient.
    */
+  // UTS: rest/unit/RSH1a/rejects-empty-data-4
   it('RSH1a - data contains notification fields', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -161,6 +166,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * The publish request must include an Authorization header
    * for authentication.
    */
+  // UTS: rest/unit/RSH1a/rejects-null-recipient-5
   it('RSH1a - auth header included', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -185,6 +191,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * The client.push property must exist and expose admin with
    * deviceRegistrations and channelSubscriptions sub-objects.
    */
+  // UTS: rest/unit/RSH1/push-admin-accessible-0
   it('RSH1 - client.push.admin exposes PushAdmin', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -200,6 +207,7 @@ describe('uts/rest/unit/push/push_admin_publish', function () {
    * When the server returns an error response, publish() must
    * propagate it as an exception with the correct error code.
    */
+  // UTS: rest/unit/RSH1a/server-error-propagated-6
   it('RSH1a - publish propagates server error', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

@@ -38,6 +38,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * the connection transitions to DISCONNECTED with an ErrorInfo having code 80019,
    * statusCode 401, and cause set to the underlying error.
    */
+  // UTS: realtime/unit/RSA4c2/callback-error-connecting-disconnected-0
   it('RSA4c1/RSA4c2 - authCallback error during CONNECTING transitions to DISCONNECTED', function (done) {
     let authCallbackCount = 0;
 
@@ -106,6 +107,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * When authCallback times out (exceeds realtimeRequestTimeout), the connection
    * transitions to DISCONNECTED with error code 80019.
    */
+  // UTS: realtime/unit/RSA4c2/callback-timeout-connecting-disconnected-1
   it('RSA4c1/RSA4c2 - authCallback timeout during CONNECTING transitions to DISCONNECTED', async function () {
     const clock = enableFakeTimers();
 
@@ -170,6 +172,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * set — the connection is healthy, the existing token is still valid, and there
    * is no state change to associate the error with (see specification#466).
    */
+  // UTS: realtime/unit/RSA4c3/callback-error-connected-stays-0
   it('RSA4c3 - authCallback error while CONNECTED does not set errorReason', async function () {
     let authCallbackCount = 0;
 
@@ -241,6 +244,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * A 403 from authCallback during initial connection is treated as fatal and causes
    * the connection to transition directly to FAILED (not DISCONNECTED).
    */
+  // UTS: realtime/unit/RSA4d/callback-403-connecting-failed-0
   it('RSA4d - authCallback 403 during CONNECTING transitions to FAILED', function (done) {
     let connectionAttempted = false;
 
@@ -314,6 +318,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * A 403 from authCallback during server-initiated reauth (RTN22) causes the
    * connection to transition from CONNECTED to FAILED, overriding RSA4c3.
    */
+  // UTS: realtime/unit/RSA4d/callback-403-reauth-failed-1
   it('RSA4d - authCallback 403 during reauth transitions CONNECTED to FAILED', function (done) {
     let authCallbackCount = 0;
 
@@ -375,6 +380,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * invalid format error per RSA4f, and the connection transitions to
    * DISCONNECTED with error code 80019 per RSA4c.
    */
+  // UTS: realtime/unit/RSA4f/callback-invalid-type-format-0
   it('RSA4f - authCallback returns invalid type transitions to DISCONNECTED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -430,6 +436,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * as an invalid format error per RSA4f and the connection transitions to
    * DISCONNECTED with error code 80019.
    */
+  // UTS: realtime/unit/RSA4f/callback-oversized-token-format-1
   it('RSA4f - authCallback returns oversized token transitions to DISCONNECTED', function (done) {
     // Generate a token string larger than 128KiB (131072 bytes)
     const oversizedToken = 'x'.repeat(131073);
@@ -486,6 +493,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
    * generic exception), the resulting request error has code 40170 and
    * statusCode 401.
    */
+  // UTS: realtime/unit/RSA4e/rest-callback-error-40170-0
   it('RSA4e - REST authCallback error produces error with code 40170', async function () {
     const mockHttp = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

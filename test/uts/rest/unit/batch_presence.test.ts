@@ -22,6 +22,7 @@ describe('uts/rest/unit/batch_presence', function () {
   // ---------------------------------------------------------------------------
 
   describe('RSC24 - batchPresence sends GET to /presence', function () {
+    // UTS: rest/unit/RSC24/get-presence-channels-param-0
     it('RSC24_1 - sends GET request to /presence with channels query param', async function () {
       const captured: any[] = [];
       const mock = new MockHttpClient({
@@ -49,6 +50,7 @@ describe('uts/rest/unit/batch_presence', function () {
       expect(captured[0].url.searchParams.get('channels')).to.equal('channel-a,channel-b');
     });
 
+    // UTS: rest/unit/RSC24/single-channel-param-0
     it('RSC24_2 - single channel sends GET with single channel name', async function () {
       const captured: any[] = [];
       const mock = new MockHttpClient({
@@ -71,6 +73,7 @@ describe('uts/rest/unit/batch_presence', function () {
       expect(captured[0].url.searchParams.get('channels')).to.equal('my-channel');
     });
 
+    // UTS: rest/unit/RSC24/special-chars-comma-joined-0
     it('RSC24_3 - channel names with special characters are comma-joined', async function () {
       const captured: any[] = [];
       const mock = new MockHttpClient({
@@ -104,6 +107,7 @@ describe('uts/rest/unit/batch_presence', function () {
   // ---------------------------------------------------------------------------
 
   describe('BAR2 - BatchPresenceResponse structure', function () {
+    // UTS: rest/unit/BAR2/all-success-counts-0
     it('BAR2_2 - all success', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -134,6 +138,7 @@ describe('uts/rest/unit/batch_presence', function () {
      * With X-Ably-Version >= 3, the server returns {successCount, failureCount,
      * results} directly with HTTP 200 — the SDK passes through the response.
      */
+    // UTS: rest/unit/BAR2/mixed-success-failure-counts-0
     it('BAR2_1 - mixed results', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -166,6 +171,7 @@ describe('uts/rest/unit/batch_presence', function () {
      * With X-Ably-Version >= 3, the server returns the BatchResult envelope
      * with HTTP 200 even when all results are failures.
      */
+    // UTS: rest/unit/BAR2/all-failure-counts-0
     it('BAR2_3 - all failure', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -196,6 +202,7 @@ describe('uts/rest/unit/batch_presence', function () {
   // ---------------------------------------------------------------------------
 
   describe('BGR2 - BatchPresenceSuccessResult structure', function () {
+    // UTS: rest/unit/BGR2/success-with-members-0
     it('BGR2_1 - success result with members present', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -244,6 +251,7 @@ describe('uts/rest/unit/batch_presence', function () {
       expect(success.presence[1].clientId).to.equal('client-2');
     });
 
+    // UTS: rest/unit/BGR2/success-empty-presence-0
     it('BGR2_2 - success result with empty presence (no members)', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -274,6 +282,7 @@ describe('uts/rest/unit/batch_presence', function () {
     /**
      * BGF2_1 - Failure result with error details
      */
+    // UTS: rest/unit/BGF2/failure-error-details-0
     it('BGF2_1 - failure result with error details', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -315,6 +324,7 @@ describe('uts/rest/unit/batch_presence', function () {
     /**
      * RSC24_Mixed_1 - Mixed success and failure results
      */
+    // UTS: rest/unit/RSC24/mixed-success-failure-results-0
     it('RSC24_Mixed_1 - mixed success and failure results', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -363,6 +373,7 @@ describe('uts/rest/unit/batch_presence', function () {
   // ---------------------------------------------------------------------------
 
   describe('Error handling', function () {
+    // UTS: rest/unit/RSC24/server-error-propagated-0
     it('RSC24_Error_1 - server error is propagated', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -387,6 +398,7 @@ describe('uts/rest/unit/batch_presence', function () {
       expect(threw).to.be.true;
     });
 
+    // UTS: rest/unit/RSC24/auth-error-propagated-0
     it('RSC24_Error_2 - authentication error is propagated', async function () {
       const mock = new MockHttpClient({
         onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -417,6 +429,7 @@ describe('uts/rest/unit/batch_presence', function () {
   // ---------------------------------------------------------------------------
 
   describe('RSC24_Auth - request authentication', function () {
+    // UTS: rest/unit/RSC24/uses-configured-auth-0
     it('RSC24_Auth_1 - basic auth header is included', async function () {
       const captured: any[] = [];
       const mock = new MockHttpClient({

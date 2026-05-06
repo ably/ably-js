@@ -21,6 +21,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * whenever the channel receives an ATTACHED ProtocolMessage, except
    * when already attached with RESUMED flag set.
    */
+  // UTS: realtime/unit/RTP17i/auto-reentry-on-attached-0
   it('RTP17i - automatic re-entry on ATTACHED (non-RESUMED)', async function () {
     const channelName = `test-RTP17i-${Date.now()}`;
     let connectionCount = 0;
@@ -141,6 +142,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * PresenceMessage with an ENTER action using the clientId, data,
    * and id attributes from that member.
    */
+  // UTS: realtime/unit/RTP17g/reentry-publishes-enter-with-data-0
   it('RTP17g - re-entry preserves clientId and data', async function () {
     const channelName = `test-RTP17g-${Date.now()}`;
     let connectionCount = 0;
@@ -273,6 +275,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * attribute of the stored member, the published PresenceMessage must
    * not have its id set.
    */
+  // UTS: realtime/unit/RTP17g1/reentry-omits-id-new-connid-0
   it('RTP17g1 - re-entry omits id when connectionId changed', async function () {
     const channelName = `test-RTP17g1-${Date.now()}`;
     let connectionCount = 0;
@@ -390,6 +393,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * Automatic re-entry is NOT performed when the channel is already
    * attached and the ProtocolMessage has the RESUMED bit flag set.
    */
+  // UTS: realtime/unit/RTP17i/no-reentry-with-resumed-flag-1
   it('RTP17i - no re-entry when ATTACHED with RESUMED flag', async function () {
     const channelName = `test-RTP17i-resumed-${Date.now()}`;
     const capturedPresence: any[] = [];
@@ -491,6 +495,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * event on the channel with resumed=true and reason set to ErrorInfo
    * with code 91004.
    */
+  // UTS: realtime/unit/RTP17e/failed-reentry-emits-update-error-0
   it('RTP17e - failed re-entry emits UPDATE with error', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js error message doesn't include clientId
     const channelName = `test-RTP17e-${Date.now()}`;
@@ -625,6 +630,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
    * the client has permission to subscribe. The member should be present
    * in the public presence set via get.
    */
+  // UTS: realtime/unit/RTP17a/server-publishes-without-subscribe-0
   it('RTP17a - server publishes member regardless of subscribe capability', async function () {
     const channelName = `test-RTP17a-${Date.now()}`;
 

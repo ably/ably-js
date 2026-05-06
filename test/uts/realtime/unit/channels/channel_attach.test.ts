@@ -27,6 +27,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4a - Attach when already attached is no-op
    */
+  // UTS: realtime/unit/RTL4a/already-attached-noop-0
   it('RTL4a - attach when already attached is no-op', async function () {
     let attachMessageCount = 0;
 
@@ -74,6 +75,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4h - Concurrent attach while attaching waits for completion
    */
+  // UTS: realtime/unit/RTL4h/attach-while-attaching-0
   it('RTL4h - concurrent attach while attaching', async function () {
     let attachMessageCount = 0;
     let pendingAttachChannel: string | null = null;
@@ -139,6 +141,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    *
    * Deviation: ably-js does NOT clear errorReason on successful re-attach.
    */
+  // UTS: realtime/unit/RTL4g/attach-from-failed-0
   it('RTL4g - attach from failed state', async function () {
     let attachCount = 0;
 
@@ -208,6 +211,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4b - Attach fails when connection is closed
    */
+  // UTS: realtime/unit/RTL4b/fails-connection-closed-0
   it('RTL4b - attach fails when connection closed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -252,6 +256,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4b - Attach fails when connection is failed
    */
+  // UTS: realtime/unit/RTL4b/fails-connection-failed-1
   it('RTL4b - attach fails when connection failed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -295,6 +300,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4b - Attach fails when connection is suspended
    */
+  // UTS: realtime/unit/RTL4b/fails-connection-suspended-2
   it('RTL4b - attach fails when connection suspended', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -351,6 +357,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4i - Attach queued when connection is connecting
    */
+  // UTS: realtime/unit/RTL4i/queued-while-connecting-0
   it('RTL4i - attach queued when connecting', async function () {
     let pendingConnection: any = null;
 
@@ -408,6 +415,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4c - Attach sends ATTACH message and transitions to attaching
    */
+  // UTS: realtime/unit/RTL4c/sends-attach-message-1
   it('RTL4c - ATTACH message sent, transitions to attaching', async function () {
     let capturedAttachMsg: any = null;
 
@@ -466,6 +474,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    * Note: Uses setOptions() to trigger reattach, since detach clears
    * channelSerial in ably-js.
    */
+  // UTS: realtime/unit/RTL4c1/includes-channel-serial-0
   it('RTL4c1 - ATTACH includes channelSerial on reattach', async function () {
     const capturedAttachMsgs: any[] = [];
 
@@ -518,6 +527,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4f - Attach times out and transitions to suspended
    */
+  // UTS: realtime/unit/RTL4f/timeout-to-suspended-0
   it('RTL4f - attach timeout transitions to suspended', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -576,6 +586,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4k - ATTACH includes params from ChannelOptions
    */
+  // UTS: realtime/unit/RTL4k/includes-channel-params-0
   it('RTL4k - ATTACH includes params', async function () {
     let capturedAttachMsg: any = null;
 
@@ -625,6 +636,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4l - ATTACH includes modes as flags
    */
+  // UTS: realtime/unit/RTL4l/modes-encoded-as-flags-0
   it('RTL4l - ATTACH includes modes as flags', async function () {
     const PUBLISH = 131072; // 1 << 17
     const SUBSCRIBE = 262144; // 1 << 18
@@ -677,6 +689,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   /**
    * RTL4m - Channel modes populated from ATTACHED response flags
    */
+  // UTS: realtime/unit/RTL4m/modes-from-attached-0
   it('RTL4m - modes populated from ATTACHED flags', async function () {
     const PUBLISH = 131072; // 1 << 17
     const SUBSCRIBE = 262144; // 1 << 18
@@ -730,6 +743,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    * so detach+reattach does NOT set ATTACH_RESUME. Instead, we test via
    * setOptions() reattach which preserves the flag.
    */
+  // UTS: realtime/unit/RTL4j/attach-resume-flag-0
   it('RTL4j - ATTACH_RESUME flag on reattach', async function () {
     const ATTACH_RESUME = 32; // 1 << 5
     const capturedAttachMsgs: any[] = [];
@@ -789,6 +803,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    * Calling attach while a detach is pending should wait for detach to
    * complete and then perform the attach.
    */
+  // UTS: realtime/unit/RTL4h/attach-while-detaching-1
   it('RTL4h - attach while detaching waits then attaches', async function () {
     const messagesFromClient: any[] = [];
     let pendingDetachChannel: string | null = null;
@@ -869,6 +884,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    * Deviation: ably-js does NOT clear errorReason on successful re-attach.
    * This test documents the deviation.
    */
+  // UTS: realtime/unit/RTL4c/clears-error-reason-0
   it('RTL4c - errorReason after successful reattach from suspended', async function () {
     const clock = enableFakeTimers();
 
@@ -963,6 +979,7 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
    * When a channel attach is queued while connecting, the ATTACH message
    * is sent and the channel attaches once the connection becomes CONNECTED.
    */
+  // UTS: realtime/unit/RTL4i/completes-on-connected-1
   it('RTL4i - attach completes when connection becomes connected', async function () {
     let attachMessageReceived = false;
     let pendingConnection: any = null;

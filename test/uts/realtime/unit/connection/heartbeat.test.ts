@@ -38,6 +38,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
    * (useProtocolHeartbeats=true), the client sends heartbeats=true
    * in the connection URL to request HEARTBEAT protocol messages.
    */
+  // UTS: realtime/unit/RTN23a/heartbeats-true-query-param-0
   it('RTN23a - heartbeats=true in connection URL when ping frames not observable', function (done) {
     const savedUseProtocolHeartbeats = Platform.Config.useProtocolHeartbeats;
     Platform.Config.useProtocolHeartbeats = true;
@@ -71,6 +72,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
    * ably-js Node.js can observe ping frames via ws library's 'ping' event,
    * so it sends heartbeats=false in the connection URL.
    */
+  // UTS: realtime/unit/RTN23b/heartbeats-false-query-param-0
   it('RTN23b - heartbeats=false in connection URL', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -100,6 +102,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23a/b - Disconnect after maxIdleInterval + realtimeRequestTimeout
    */
+  // UTS: realtime/unit/RTN23a/idle-timeout-reconnect-1
   it('RTN23a - disconnect after idle timeout', async function () {
     let connectionAttemptCount = 0;
     const stateChanges: string[] = [];
@@ -168,6 +171,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23a - HEARTBEAT protocol message resets idle timer
    */
+  // UTS: realtime/unit/RTN23a/heartbeat-resets-timer-2
   it('RTN23a - HEARTBEAT resets idle timer', async function () {
     let connectionAttemptCount = 0;
 
@@ -237,6 +241,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23a - Any protocol message resets idle timer
    */
+  // UTS: realtime/unit/RTN23a/any-message-resets-timer-3
   it('RTN23a - any message resets idle timer', async function () {
     let connectionAttemptCount = 0;
 
@@ -305,6 +310,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23a - Heartbeat timeout triggers immediate reconnection
    */
+  // UTS: realtime/unit/RTN23a/timeout-triggers-reconnect-4
   it('RTN23a - timeout triggers reconnection with state sequence', async function () {
     let connectionAttemptCount = 0;
     const stateChanges: string[] = [];
@@ -365,6 +371,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23a - Reconnection after timeout uses resume
    */
+  // UTS: realtime/unit/RTN23a/reconnect-uses-resume-5
   it('RTN23a - reconnection after timeout uses resume', async function () {
     let connectionAttemptCount = 0;
 
@@ -424,6 +431,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23b - Disconnect after idle timeout (no ping frames sent)
    */
+  // UTS: realtime/unit/RTN23b/multiple-pings-keep-alive-6
   it('RTN23b - disconnect when no ping frames received', async function () {
     let connectionAttemptCount = 0;
     const stateChanges: string[] = [];
@@ -482,6 +490,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23b - Ping frame resets idle timer
    */
+  // UTS: realtime/unit/RTN23b/ping-frame-resets-timer-2
   it('RTN23b - ping frame resets idle timer', async function () {
     let connectionAttemptCount = 0;
 
@@ -549,6 +558,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23b - Protocol messages also reset timer (not just ping frames)
    */
+  // UTS: realtime/unit/RTN23b/any-message-resets-timer-3
   it('RTN23b - protocol message resets idle timer', async function () {
     let connectionAttemptCount = 0;
 
@@ -637,6 +647,7 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   /**
    * RTN23b - Ping frame timeout triggers immediate reconnection with resume
    */
+  // UTS: realtime/unit/RTN23b/timeout-triggers-reconnect-4
   it('RTN23b - timeout triggers reconnection with resume', async function () {
     let connectionAttemptCount = 0;
     const stateChanges: string[] = [];
@@ -695,8 +706,75 @@ describe('uts/realtime/unit/connection/heartbeat', function () {
   });
 
   /**
+   * RTN23b - Reconnect after ping timeout uses resume
+   *
+   * When a connection drops due to ping frame timeout (no activity within
+   * maxIdleInterval + realtimeRequestTimeout), the reconnection attempt
+   * must include the resume query parameter set to the previous connection's
+   * connectionKey, enabling the server to resume the connection.
+   */
+  // UTS: realtime/unit/RTN23b/reconnect-uses-resume-5
+  it('RTN23b - reconnect after ping timeout uses resume', async function () {
+    let connectionAttemptCount = 0;
+
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        connectionAttemptCount++;
+        mock.active_connection = conn;
+        conn.respond_with_connected({
+          connectionId: `connection-id-${connectionAttemptCount}`,
+          connectionDetails: {
+            connectionKey: `connection-key-${connectionAttemptCount}`,
+            maxIdleInterval: 2000,
+            connectionStateTtl: 120000,
+          } as any,
+        });
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const httpMock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => req.respond_with(200, 'yes'),
+    });
+    installMockHttp(httpMock);
+
+    const clock = enableFakeTimers();
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      realtimeRequestTimeout: 1000,
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await pumpTimers(clock);
+
+    expect(client.connection.state).to.equal('connected');
+    expect(connectionAttemptCount).to.equal(1);
+
+    // Advance past ping timeout (maxIdleInterval + realtimeRequestTimeout = 3000ms)
+    await clock.tickAsync(3100);
+    await pumpTimers(clock);
+
+    expect(connectionAttemptCount).to.equal(2);
+
+    // First connection should not have resume
+    const firstUrl = mock.connect_attempts[0].url;
+    expect(firstUrl.searchParams.has('resume')).to.be.false;
+
+    // Second connection should include resume with first connectionKey
+    const secondUrl = mock.connect_attempts[1].url;
+    expect(secondUrl.searchParams.get('resume')).to.equal('connection-key-1');
+    client.close();
+  });
+
+  /**
    * RTN23b - Multiple ping frames keep connection alive
    */
+  // UTS: realtime/unit/RTN23b/idle-timeout-reconnect-1
   it('RTN23b - regular ping frames prevent timeout', async function () {
     let connectionAttemptCount = 0;
 

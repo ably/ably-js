@@ -27,6 +27,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * Calling authorize() while connected obtains a new token via the
    * authCallback and sends an AUTH protocol message containing the new token.
    */
+  // UTS: realtime/unit/RTC8a/authorize-connected-sends-auth-0
   it('RTC8a - authorize() on CONNECTED sends AUTH protocol message', async function () {
     let authCallbackCount = 0;
     const capturedAuthMessages: any[] = [];
@@ -99,6 +100,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * CONNECTED ProtocolMessage. The Connection should emit an UPDATE event
    * (not a CONNECTED state change) and connection details are updated.
    */
+  // UTS: realtime/unit/RTC8a1/successful-reauth-update-event-0
   it('RTC8a1 - successful reauth emits UPDATE event', async function () {
     let authCallbackCount = 0;
 
@@ -177,6 +179,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * After a successful reauth with reduced capabilities, the server sends
    * a channel-level ERROR that causes the affected channel to enter FAILED.
    */
+  // UTS: realtime/unit/RTC8a1/capability-downgrade-channel-failed-1
   it('RTC8a1 - capability downgrade causes channel FAILED', async function () {
     let authCallbackCount = 0;
     let authHandlerInstalled = false;
@@ -268,6 +271,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * If the authentication token change fails, Ably sends an ERROR
    * ProtocolMessage triggering the connection to transition to FAILED.
    */
+  // UTS: realtime/unit/RTC8a2/failed-reauth-connection-failed-0
   it('RTC8a2 - failed reauth transitions connection to FAILED', async function () {
     let authCallbackCount = 0;
 
@@ -337,6 +341,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * The promise returned by authorize() does not resolve until the server
    * responds to the AUTH message with CONNECTED or ERROR.
    */
+  // UTS: realtime/unit/RTC8a3/authorize-completes-after-response-0
   it('RTC8a3 - authorize() completes only after server response', async function () {
     let authCallbackCount = 0;
 
@@ -404,6 +409,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * are halted, and after obtaining a new token the library initiates a new
    * connection attempt using the new token.
    */
+  // UTS: realtime/unit/RTC8b/authorize-connecting-halts-attempt-0
   it('RTC8b - authorize() while CONNECTING halts current attempt', async function () {
     let authCallbackCount = 0;
     const capturedWsUrls: string[] = [];
@@ -462,6 +468,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * If the connection transitions to FAILED after authorize() is called
    * while CONNECTING, the authorize promise completes with an error.
    */
+  // UTS: realtime/unit/RTC8b1/authorize-connecting-fails-on-failed-0
   it('RTC8b1 - authorize() while CONNECTING fails on FAILED state', async function () {
     let authCallbackCount = 0;
 
@@ -517,6 +524,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * If the connection is in a non-connected state, after obtaining a token
    * the library should move to CONNECTING and initiate a connection.
    */
+  // UTS: realtime/unit/RTC8c/authorize-disconnected-initiates-connection-0
   it('RTC8c - authorize() from INITIALIZED initiates connection', async function () {
     let authCallbackCount = 0;
     const capturedWsUrls: string[] = [];
@@ -572,6 +580,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    * authorize() can recover a FAILED connection by obtaining a new token
    * and reconnecting.
    */
+  // UTS: realtime/unit/RTC8c/authorize-failed-initiates-connection-1
   it('RTC8c - authorize() from FAILED initiates connection', async function () {
     let authCallbackCount = 0;
     const capturedWsUrls: string[] = [];
@@ -641,6 +650,7 @@ describe('uts/realtime/unit/auth/realtime_authorize', function () {
    *
    * authorize() from CLOSED state opens a new connection.
    */
+  // UTS: realtime/unit/RTC8c/authorize-closed-initiates-connection-2
   it('RTC8c - authorize() from CLOSED initiates connection', async function () {
     let authCallbackCount = 0;
 

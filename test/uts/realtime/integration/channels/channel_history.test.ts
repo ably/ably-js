@@ -33,6 +33,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
   /**
    * RTL10d - History contains messages published by another client
    */
+  // UTS: realtime/integration/RTL10d/history-cross-client-0
   it('RTL10d - history contains messages from another client', async function () {
     const channelName = uniqueChannelName('history-RTL10d');
 

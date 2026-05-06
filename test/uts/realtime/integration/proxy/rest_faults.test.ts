@@ -50,6 +50,7 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
    * /channels/ (times: 1). The SDK should transparently renew the token via
    * authCallback and retry the request.
    */
+  // UTS: realtime/proxy/RSC10/token-renewal-on-401-0
   it('RSC10 - token renewal on HTTP 401 (40142)', async function () {
     session = await createProxySession({
       rules: [
@@ -110,6 +111,7 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
    * /channels/ (times: 1). Since endpoint='localhost' disables fallback hosts
    * (REC2c2), the SDK should return the error immediately without retrying.
    */
+  // UTS: realtime/proxy/RSC15m/http-503-no-fallback-0
   it('RSC15m / REC2c2 - HTTP 503 error with fallback hosts disabled', async function () {
     session = await createProxySession({
       rules: [
@@ -169,6 +171,7 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
    * No fault rules (pure passthrough). A Realtime client publishes through
    * the proxy, then a REST client retrieves via history through the proxy.
    */
+  // UTS: realtime/proxy/RTL6/publish-history-through-proxy-0
   it('RTL6 - end-to-end publish and history through proxy', async function () {
     session = await createProxySession({
       rules: [],

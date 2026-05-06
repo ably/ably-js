@@ -36,6 +36,7 @@ describe('uts/realtime/unit/connection/forwards_compatibility', function () {
    * A MESSAGE with extra ProtocolMessage-level fields should still deliver to
    * subscribers normally.
    */
+  // UTS: realtime/unit/RTF1/unrecognised-attributes-ignored-0
   it('RTF1 - ProtocolMessage with unrecognised attributes is deserialized without error', async function () {
     const channelName = 'test-RTF1-extra-attrs';
     const receivedMessages: any[] = [];
@@ -135,6 +136,7 @@ describe('uts/realtime/unit/connection/forwards_compatibility', function () {
    * Tests that the client does not crash or disconnect when receiving a
    * ProtocolMessage with an action value that is not defined in the current spec.
    */
+  // UTS: realtime/unit/RTF1/unknown-action-handled-1
   it('RTF1 - ProtocolMessage with unknown action enum value is handled gracefully', async function () {
     const stateChanges: string[] = [];
 
@@ -211,6 +213,7 @@ describe('uts/realtime/unit/connection/forwards_compatibility', function () {
    * Tests that a Message containing extra unknown fields is delivered to
    * subscribers without error, and the known fields are correctly parsed.
    */
+  // UTS: realtime/unit/RSF1/message-unrecognised-attrs-0
   it('RSF1 - Message with unrecognised attributes is deserialized without error', async function () {
     const channelName = 'test-RSF1-extra-attrs';
     const receivedMessages: any[] = [];

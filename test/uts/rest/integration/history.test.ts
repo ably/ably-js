@@ -30,6 +30,7 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2a - History returns published messages in backwards order (newest first)
    */
+  // UTS: rest/integration/RSL2a/history-returns-messages-0
   it('RSL2a - history returns published messages', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -72,6 +73,7 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b1 - History direction forwards returns messages oldest first
    */
+  // UTS: rest/integration/RSL2b1/history-direction-forwards-0
   it('RSL2b1 - history direction forwards', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -103,6 +105,7 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b2 - History limit parameter restricts number of returned messages
    */
+  // UTS: rest/integration/RSL2b2/history-limit-parameter-0
   it('RSL2b2 - history limit parameter', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -135,6 +138,7 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b3 - History time range parameters filter messages by timestamp
    */
+  // UTS: rest/integration/RSL2b3/history-time-range-0
   it('RSL2b3 - history time range parameters', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -200,6 +204,7 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2 - History on channel with no messages returns empty result
    */
+  // UTS: rest/integration/RSL2/history-empty-channel-0
   it('RSL2 - history on empty channel returns empty result', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),

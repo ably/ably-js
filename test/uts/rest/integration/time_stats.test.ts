@@ -32,6 +32,7 @@ describe('uts/rest/integration/time_stats', function () {
    * reasonably close to the client's local time (within 5 seconds, allowing
    * for network latency and minor clock differences).
    */
+  // UTS: rest/integration/RSC16/time-returns-server-time-0
   it('RSC16 - time() returns server time', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -57,6 +58,7 @@ describe('uts/rest/integration/time_stats', function () {
    * `stats()` returns a PaginatedResult containing application statistics.
    * Stats may be empty for a new sandbox app, but the call should succeed.
    */
+  // UTS: rest/integration/RSC6/stats-returns-result-0
   it('RSC6 - stats() returns a PaginatedResult', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -80,6 +82,7 @@ describe('uts/rest/integration/time_stats', function () {
    *
    * `stats()` supports `limit`, `direction`, and `unit` parameters.
    */
+  // UTS: rest/integration/RSC6/stats-with-parameters-1
   it('RSC6 - stats() with parameters', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),

@@ -25,6 +25,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * channel.history(null) returns PaginatedResult<Message> with correctly
    * deserialized Message objects.
    */
+  // UTS: rest/unit/TG1/paginated-result-items-0
   it('TG1 - items attribute contains correct messages', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -55,6 +56,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * When the response includes a Link header with rel="next",
    * hasNext() must return true and isLast() must return false.
    */
+  // UTS: rest/unit/TG2/has-next-is-last-0
   it('TG2 - hasNext true when Link header has rel="next"', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -80,6 +82,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * When the response has no Link header (or no rel="next"),
    * hasNext() must return false and isLast() must return true.
    */
+  // UTS: rest/unit/TG/link-header-parsing-1
   it('TG2 - hasNext false when no Link header', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -104,6 +107,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * must fetch the second page and return its items. The second request
    * must include the cursor parameter from the Link header.
    */
+  // UTS: rest/unit/TG3/next-fetches-next-page-0
   it('TG3 - next() fetches next page using Link header cursor', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -159,6 +163,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * After navigating to page 2, calling first() must return page 1.
    * The Link header must include rel="first" with ./messages? format.
    */
+  // UTS: rest/unit/TG4/first-returns-first-page-0
   it('TG4 - first() returns first page', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -210,6 +215,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * An empty response body (empty array) must yield items.length=0,
    * hasNext()=false, isLast()=true.
    */
+  // UTS: rest/unit/TG/empty-result-handling-0
   it('TG - empty result has zero items and isLast true', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -235,6 +241,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * When isLast() is true, calling next() must return null
    * (not an empty PaginatedResult).
    */
+  // UTS: rest/unit/TG/next-on-last-page-3
   it('TG - next() on last page returns null', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -260,6 +267,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * Both the initial request and the next() pagination request must
    * include the same Authorization header.
    */
+  // UTS: rest/unit/TG/pagination-preserves-auth-4
   it('TG - pagination preserves auth credentials', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -301,6 +309,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * The next() pagination request must include standard Ably headers
    * (X-Ably-Version and Ably-Agent).
    */
+  // UTS: rest/unit/TG/pagination-includes-headers-8
   it('TG - pagination includes standard Ably headers', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -342,6 +351,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * When the server returns an error on the next page request,
    * next() must throw with the appropriate error code and status.
    */
+  // UTS: rest/unit/TG/error-handling-on-next-9
   it('TG - error on next() throws with error code', async function () {
     let requestCount = 0;
 
@@ -388,6 +398,7 @@ describe('uts/rest/unit/types/paginated_result', function () {
    * When the server returns multiple items on a single page,
    * all items should be deserialized and accessible via result.items.
    */
+  // UTS: rest/unit/TG/multiple-link-relations-6
   it('TG - multiple results on a page', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -416,5 +427,125 @@ describe('uts/rest/unit/types/paginated_result', function () {
     expect(result.items[3].name).to.equal('e4');
     expect(result.items[4].name).to.equal('e5');
     expect(result.items[4].data).to.equal('d5');
+  });
+
+  /**
+   * TG - PaginatedResult type parameter
+   *
+   * PaginatedResult<T> must correctly type its items. At runtime, verify
+   * that items from channel.history() have Message properties (name, data).
+   */
+  // UTS: rest/unit/TG/type-parameter-items-2
+  it('TG - PaginatedResult type parameter', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, [{ id: 'msg1', name: 'event', data: 'test' }]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
+    const channel = client.channels.get('test');
+    const result = await channel.history(null);
+
+    expect(result.items).to.be.an('array');
+    expect(result.items).to.have.length(1);
+    // Items should be Message objects with expected properties
+    expect(result.items[0]).to.have.property('name', 'event');
+    expect(result.items[0]).to.have.property('data', 'test');
+    expect(result.items[0]).to.have.property('id', 'msg1');
+  });
+
+  /**
+   * TG - Pagination with relative URLs
+   *
+   * Link headers with relative URLs must be resolved relative to the
+   * base REST host. The next() request must target the correct host.
+   */
+  // UTS: rest/unit/TG/pagination-relative-urls-5
+  it('TG - pagination with relative URLs', async function () {
+    const captured: any[] = [];
+    let requestCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        requestCount++;
+
+        if (requestCount === 1) {
+          req.respond_with(200, [{ id: 'item1' }], {
+            Link: '<./messages?cursor=abc>; rel="next"',
+          });
+        } else {
+          req.respond_with(200, [{ id: 'item2' }]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      restHost: 'rest.ably.io',
+      useBinaryProtocol: false,
+    } as any);
+    const channel = client.channels.get('test');
+
+    const page1 = await channel.history(null);
+    expect(page1.hasNext()).to.be.true;
+
+    const page2 = await page1.next();
+    expect(page2).to.not.be.null;
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].id).to.equal('item2');
+
+    // Second request should resolve relative URL against the REST host
+    expect(captured).to.have.length(2);
+    expect(captured[1].url.host).to.equal('rest.ably.io');
+    expect(captured[1].url.searchParams.get('cursor')).to.equal('abc');
+  });
+
+  /**
+   * TG - Pagination with presence results
+   *
+   * Pagination must work identically for presence results as it does
+   * for message results. channel.presence.get() returns PaginatedResult
+   * with presence members.
+   */
+  // UTS: rest/unit/TG/pagination-presence-results-7
+  it('TG - pagination with presence results', async function () {
+    let requestCount = 0;
+
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        requestCount++;
+
+        if (requestCount === 1) {
+          req.respond_with(200, [{ action: 1, clientId: 'client1' }], {
+            Link: '<./presence?page=2>; rel="next"',
+          });
+        } else {
+          req.respond_with(200, [{ action: 1, clientId: 'client2' }]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false } as any);
+    const channel = client.channels.get('test');
+
+    const page1 = await channel.presence.get({} as any);
+    expect(page1.items).to.be.an('array');
+    expect(page1.items).to.have.length(1);
+    expect(page1.items[0].clientId).to.equal('client1');
+    expect(page1.hasNext()).to.be.true;
+
+    const page2 = await page1.next();
+    expect(page2).to.not.be.null;
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].clientId).to.equal('client2');
+    expect(page2!.hasNext()).to.be.false;
   });
 });

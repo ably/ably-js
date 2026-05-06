@@ -28,6 +28,7 @@ describe('uts/realtime/integration/connection/connection_failures', function () 
   /**
    * RTN14a - Invalid API key causes FAILED
    */
+  // UTS: realtime/integration/RTN14a/invalid-key-failed-0
   it('RTN14a - invalid API key causes FAILED', async function () {
     const client = new Ably.Realtime({
       key: 'invalid.key:secret',
@@ -59,6 +60,7 @@ describe('uts/realtime/integration/connection/connection_failures', function () 
   /**
    * RTN14g - Non-existent key causes FAILED
    */
+  // UTS: realtime/integration/RTN14g/revoked-key-failed-0
   it('RTN14g - non-existent key causes FAILED', async function () {
     const client = new Ably.Realtime({
       key: 'nonexistent.keyname:keysecret',

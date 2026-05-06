@@ -128,7 +128,7 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 **ably-js behavior**: The option is accepted but has no effect.
 
-**Test**: `RSC7c - request_id query param when addRequestIds is true`.
+**Tests**: `RSC7c - request_id query param when addRequestIds is true`, `RSC22_Headers2 - request_id included when addRequestIds enabled`.
 
 **Issue**: [#2196](https://github.com/ably/ably-js/issues/2196)
 

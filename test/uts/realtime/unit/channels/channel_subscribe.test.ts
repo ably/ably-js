@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7a - Subscribe with no name receives all messages
    */
+  // UTS: realtime/unit/RTL7a/subscribe-all-messages-0
   it('RTL7a - subscribe receives all messages', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -78,6 +79,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7b - Subscribe with name only receives matching messages
    */
+  // UTS: realtime/unit/RTL7b/name-filtered-subscribe-0
   it('RTL7b - name-filtered subscribe', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -134,6 +136,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7g - Subscribe triggers implicit attach
    */
+  // UTS: realtime/unit/RTL7g/implicit-attach-initialized-0
   it('RTL7g - subscribe triggers implicit attach', async function () {
     let attachCount = 0;
 
@@ -186,6 +189,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7h - Subscribe does not attach when attachOnSubscribe is false
    */
+  // UTS: realtime/unit/RTL7h/no-attach-on-subscribe-0
   it('RTL7h - subscribe without attach when attachOnSubscribe false', async function () {
     let attachCount = 0;
 
@@ -227,6 +231,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7g - Subscribe does not re-attach when already attached
    */
+  // UTS: realtime/unit/RTL7g/no-attach-when-attached-3
   it('RTL7g - subscribe does not re-attach when already attached', async function () {
     let attachCount = 0;
 
@@ -280,6 +285,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * vs server-side mechanism. ably-js uses server-side suppression via
    * echo=false URL parameter. Test verifies the parameter is set.
    */
+  // UTS: realtime/unit/RTL7f/no-echo-messages-0
   it('RTL7f - echoMessages false sets echo param in URL', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -309,6 +315,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL8a - Unsubscribe specific listener
    */
+  // UTS: realtime/unit/RTL8a/unsubscribe-specific-listener-0
   it('RTL8a - unsubscribe specific listener', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -376,6 +383,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL8b - Unsubscribe listener from specific name
    */
+  // UTS: realtime/unit/RTL8b/unsubscribe-named-listener-0
   it('RTL8b - unsubscribe from specific name', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -449,6 +457,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL8c - Unsubscribe with no args removes all listeners
    */
+  // UTS: realtime/unit/RTL8c/unsubscribe-all-listeners-0
   it('RTL8c - unsubscribe all', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -516,6 +525,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * Per spec: "No messages should be passed to subscribers if the channel
    * is in any state other than ATTACHED."
    */
+  // UTS: realtime/unit/RTL17/no-delivery-when-not-attached-0
   it('RTL17 - messages not delivered when channel is not ATTACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -567,6 +577,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7a - Subscribe receives multiple messages from a single ProtocolMessage
    */
+  // UTS: realtime/unit/RTL7a/multiple-messages-per-protocol-1
   it('RTL7a - subscribe receives multiple messages from single ProtocolMessage', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -625,6 +636,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7b - Multiple name-specific subscriptions are independent
    */
+  // UTS: realtime/unit/RTL7b/multiple-name-subscriptions-1
   it('RTL7b - multiple name-specific subscriptions are independent', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -688,6 +700,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7g - Subscribe triggers implicit attach from DETACHED state
    */
+  // UTS: realtime/unit/RTL7g/implicit-attach-detached-1
   it('RTL7g - subscribe triggers implicit attach from DETACHED state', async function () {
     let attachCount = 0;
 
@@ -749,6 +762,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7g - Listener registered even if implicit attach fails
    */
+  // UTS: realtime/unit/RTL7g/listener-registered-attach-fails-2
   it('RTL7g - listener registered even if implicit attach fails', async function () {
     let attachAttempts = 0;
 
@@ -824,6 +838,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL7g - Subscribe does not attach when already attaching
    */
+  // UTS: realtime/unit/RTL7g/no-attach-when-attaching-4
   it('RTL7g - subscribe does not attach when already attaching', async function () {
     let attachCount = 0;
 
@@ -875,6 +890,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * URL parameter. It does NOT filter messages client-side by connectionId.
    * This test verifies the URL parameter is set correctly.
    */
+  // UTS: realtime/unit/RTL7f/no-echo-messages-0.1
   it('RTL7f - echoMessages false sets echo param in URL', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -907,6 +923,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * Tests that subscribing with a MessageFilter specifying `name` delivers
    * only messages whose name matches the filter.
    */
+  // UTS: realtime/unit/RTL22a/filter-matching-name-0
   it('RTL22a - subscribe with name filter', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -986,6 +1003,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * Tests that subscribing with a MessageFilter specifying `refTimeserial`
    * delivers only messages whose `extras.ref.timeserial` matches.
    */
+  // UTS: realtime/unit/RTL22a/filter-matching-ref-timeserial-1
   it('RTL22a - subscribe with refTimeserial filter', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1072,6 +1090,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * RTL22b - Subscribe with MessageFilter isRef false delivers only
    * messages without extras.ref
    */
+  // UTS: realtime/unit/RTL22b/filter-isref-false-0
   it('RTL22b - subscribe with isRef false filter', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1162,6 +1181,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * Tests that when a MessageFilter specifies multiple criteria (name AND refType),
    * only messages matching ALL criteria are delivered.
    */
+  // UTS: realtime/unit/RTL22c/filter-multiple-criteria-0
   it('RTL22c - subscribe with multiple criteria filter (name + refType)', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1261,6 +1281,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
    * Tests that subscribing with a MessageFilter specifying `clientId` delivers
    * only messages whose clientId matches the filter value.
    */
+  // UTS: realtime/unit/RTL22a/filter-matching-clientid-2
   it('RTL22a+MFI2e - subscribe with clientId filter', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1336,6 +1357,7 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
   /**
    * RTL8a - Unsubscribe listener not currently subscribed is no-op
    */
+  // UTS: realtime/unit/RTL8a/unsubscribe-noop-not-subscribed-1
   it('RTL8a - unsubscribe non-subscribed listener is no-op', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

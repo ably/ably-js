@@ -27,6 +27,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
    * RTN16g, RTN16g1 - createRecoveryKey returns string with connectionKey, msgSerial,
    * and channel/channelSerial pairs (including unicode channel names)
    */
+  // UTS: realtime/unit/RTN16g/recovery-key-structure-0
   it('RTN16g, RTN16g1 - createRecoveryKey returns correct structure with unicode channel names', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -118,6 +119,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
   /**
    * RTN16g2 - createRecoveryKey returns null in inactive states and before first connect
    */
+  // UTS: realtime/unit/RTN16g2/recovery-key-null-inactive-0
   it('RTN16g2 - createRecoveryKey returns null before connect, in closing, and closed states', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -175,6 +177,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
   /**
    * RTN16g2 - createRecoveryKey returns null in FAILED state
    */
+  // UTS: realtime/unit/RTN16g2/recovery-key-null-inactive-0.1
   it('RTN16g2 - createRecoveryKey returns null in FAILED state', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -220,6 +223,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
   /**
    * RTN16g2 - createRecoveryKey returns null in SUSPENDED state
    */
+  // UTS: realtime/unit/RTN16g2/recovery-key-null-inactive-0.2
   it('RTN16g2 - createRecoveryKey returns null in SUSPENDED state', async function () {
     let connectionAttemptCount = 0;
 
@@ -296,6 +300,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
    * `recover` querystring param to the first WebSocket request. After successful
    * connection, subsequent reconnections use `resume` (not `recover`).
    */
+  // UTS: realtime/unit/RTN16k/recover-query-param-0
   it('RTN16k - recover option adds recover query param to first connection only', function (done) {
     let connectionAttemptCount = 0;
 
@@ -380,6 +385,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
    * initialize its internal msgSerial counter to the msgSerial component of
    * the recoveryKey.
    */
+  // UTS: realtime/unit/RTN16f/recover-initializes-msgserial-0
   it('RTN16f - recover option initializes msgSerial from recoveryKey', async function () {
     const capturedMessages: any[] = [];
 
@@ -461,6 +467,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
    * If the recovery key provided in the `recover` client option cannot be
    * deserialized, the connection proceeds as if no `recover` option was provided.
    */
+  // UTS: realtime/unit/RTN16f1/malformed-recovery-key-0
   it('RTN16f1 - malformed recoveryKey connects normally without recover param', function (done) {
     let connectionAttemptCount = 0;
 
@@ -517,6 +524,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
    * pair in the recoveryKey, the library instantiates a corresponding channel and sets
    * its channelSerial (RTL15b).
    */
+  // UTS: realtime/unit/RTN16j/recover-channel-serials-0
   it('RTN16j - channels from recoveryKey are instantiated with channelSerials', function (done) {
     const capturedMessages: any[] = [];
 

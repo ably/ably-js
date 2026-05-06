@@ -36,6 +36,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    * updateMessage() sends a MESSAGE ProtocolMessage with MESSAGE_UPDATE action.
    * Returns UpdateDeleteResult from ACK.
    */
+  // UTS: realtime/integration/RTL32/update-message-observed-0
   it('RTL32 - update message observed on subscriber', async function () {
     const channelName = uniqueChannelName('mutable:rt-update');
 
@@ -112,6 +113,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    *
    * deleteMessage() sends a MESSAGE ProtocolMessage with MESSAGE_DELETE action.
    */
+  // UTS: realtime/integration/RTL32/delete-message-observed-1
   it('RTL32 - delete message observed on subscriber', async function () {
     const channelName = uniqueChannelName('mutable:rt-delete');
 
@@ -177,6 +179,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    *
    * appendMessage() sends a MESSAGE ProtocolMessage with MESSAGE_APPEND action.
    */
+  // UTS: realtime/integration/RTL32/append-message-observed-2
   it('RTL32 - append message observed on subscriber', async function () {
     const channelName = uniqueChannelName('mutable:rt-append');
 
@@ -246,6 +249,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    *
    * Subscriber receives create -> update -> append -> delete in order.
    */
+  // UTS: realtime/integration/RTL32/full-mutation-lifecycle-3
   it('RTL32 - full mutation lifecycle', async function () {
     const channelName = uniqueChannelName('mutable:rt-lifecycle');
 
@@ -347,6 +351,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    * RTL28: RealtimeChannel#getMessage same as RestChannel#getMessage.
    * RTL31: RealtimeChannel#getMessageVersions same as RestChannel#getMessageVersions.
    */
+  // UTS: realtime/integration/RTL28/get-message-and-versions-0
   it('RTL28/RTL31 - getMessage and getMessageVersions', async function () {
     const channelName = uniqueChannelName('mutable:rt-get-versions');
 
@@ -414,6 +419,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    * RTAN2a: delete sends ANNOTATION_DELETE.
    * RTAN4b: annotations delivered to subscribers.
    */
+  // UTS: realtime/integration/RTAN1/annotation-publish-delete-0
   it('RTAN1/RTAN2/RTAN4 - annotation publish, subscribe, and delete', async function () {
     const channelName = uniqueChannelName('mutable:rt-annotations');
 
@@ -507,6 +513,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    *
    * Subscribe with a type filter delivers only annotations whose type matches.
    */
+  // UTS: realtime/integration/RTAN4c/annotation-type-filtering-0
   it('RTAN4c - annotation type filtering', async function () {
     const channelName = uniqueChannelName('mutable:rt-ann-filter');
 
@@ -597,6 +604,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
    *
    * Calling annotations.subscribe() on an unattached channel triggers implicit attach.
    */
+  // UTS: realtime/integration/RTAN4d/annotation-implicit-attach-0
   it('RTAN4d - annotation subscribe implicitly attaches channel', async function () {
     const channelName = uniqueChannelName('mutable:rt-ann-implicit-attach');
 

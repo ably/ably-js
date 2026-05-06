@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/getMessage', function () {
    * getMessage(serial) must send a GET request to
    * /channels/{channelName}/messages/{serial}.
    */
+  // UTS: rest/unit/RSL11b/get-correct-endpoint-0
   it('RSL11b - GET to correct path', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -51,6 +52,7 @@ describe('uts/rest/unit/channel/getMessage', function () {
    * getMessage must return a single Message object with all fields
    * decoded from the response body.
    */
+  // UTS: rest/unit/RSL11c/returns-decoded-message-0
   it('RSL11c - returns decoded Message', async function () {
     const responseBody = {
       id: 'msg-id-1',
@@ -93,6 +95,7 @@ describe('uts/rest/unit/channel/getMessage', function () {
    * When the serial contains characters that are not URL-safe,
    * getMessage must URL-encode the serial in the request path.
    */
+  // UTS: rest/unit/RSL11b/url-encodes-serial-1
   it('RSL11b - URL-encodes serial', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -126,6 +129,7 @@ describe('uts/rest/unit/channel/getMessage', function () {
    * getMessage must throw an error with code 40003 when called
    * with an empty serial string.
    */
+  // UTS: rest/unit/RSL11a/missing-serial-error-0
   it('RSL11a - empty serial throws 40003', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

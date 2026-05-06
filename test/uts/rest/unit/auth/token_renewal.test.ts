@@ -30,6 +30,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * When a request is rejected with 40142, the library obtains a new
    * token via authCallback and retries the request.
    */
+  // UTS: rest/unit/RSA4b/renewal-on-40142-0
   it('RSA4b - renewal on 40142 error', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -84,6 +85,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
   /**
    * RSA4b - Token renewal on 40140 error
    */
+  // UTS: rest/unit/RSA4b/renewal-on-40140-1
   it('RSA4b - renewal on 40140 error', async function () {
     let callbackCount = 0;
     let requestCount = 0;
@@ -126,6 +128,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * When the client has only a static token and no way to renew,
    * the error should be indicated with code 40171 (not retry).
    */
+  // UTS: rest/unit/RSA4a2/no-renewal-without-callback-0
   it('RSA4a2 - no renewal without callback', async function () {
     this.timeout(5000);
     let requestCount = 0;
@@ -158,6 +161,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
   /**
    * RSA4b - Renewal with authUrl
    */
+  // UTS: rest/unit/RSA4b/renewal-via-authurl-2
   it('RSA4b - renewal with authUrl', async function () {
     let authUrlCallCount = 0;
     let apiRequestCount = 0;
@@ -202,6 +206,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * Uses requestCount-based mocking to avoid triggering the ably-js
    * header-overwrite bug (see deviations.md).
    */
+  // UTS: rest/unit/RSC10/request-retried-after-renewal-0
   it('RSC10 - transparent retry after renewal', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -258,6 +263,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * Only errors with codes 40140-40149 trigger renewal. Other 401
    * errors (e.g. 40100) are propagated immediately.
    */
+  // UTS: rest/unit/RSC10b/non-token-401-no-renewal-0
   it('RSC10 - non-token 401 no renewal', async function () {
     let callbackCount = 0;
     let requestCount = 0;
@@ -302,6 +308,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * This test verifies the full flow: expired token → server rejection →
    * renewal → successful retry.
    */
+  // UTS: rest/unit/RSA4b1/preemptive-renewal-0
   it('RSA4b1 - renewal when expired token is rejected', async function () {
     let callbackCount = 0;
     let requestCount = 0;
@@ -360,6 +367,17 @@ describe('uts/rest/unit/auth/token_renewal', function () {
   });
 
   /**
+   * RSA4b - Token renewal with msgpack error response
+   *
+   * DEVIATION: ably-js does not support msgpack protocol
+   */
+  // UTS: rest/unit/RSA4b/renewal-msgpack-response-4
+  it.skip('RSA4b - token renewal with msgpack error response (msgpack not supported)', function () {
+    // DEVIATION: ably-js does not support msgpack protocol
+  });
+
+
+  /**
    * RSA4b - Renewal limit (max 1 retry per spec)
    *
    * If the renewed token is also rejected, the error should propagate.
@@ -369,6 +387,7 @@ describe('uts/rest/unit/auth/token_renewal', function () {
    * this causes an infinite loop. The authCallback caps retries to
    * prevent OOM. See deviations.md.
    */
+  // UTS: rest/unit/RSA4b/renewal-limit-no-loop-3
   it('RSA4b - renewal limit', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();

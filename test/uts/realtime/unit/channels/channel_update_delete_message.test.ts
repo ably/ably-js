@@ -49,6 +49,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32b, RTL32b1 - updateMessage sends MESSAGE with action=message.update
    */
+  // UTS: realtime/unit/RTL32b/update-message-action-0
   it('RTL32b - updateMessage sends correct wire format', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -96,6 +97,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32b, RTL32b1 - deleteMessage sends MESSAGE with action=message.delete
    */
+  // UTS: realtime/unit/RTL32b/delete-message-action-1
   it('RTL32b - deleteMessage sends correct wire format', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -137,6 +139,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32b, RTL32b1 - appendMessage sends MESSAGE with action=message.append
    */
+  // UTS: realtime/unit/RTL32b/append-message-action-2
   it('RTL32b - appendMessage sends correct wire format', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -182,6 +185,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32b2 - version field from MessageOperation
    */
+  // UTS: realtime/unit/RTL32b2/version-from-operation-0
   it('RTL32b2 - operation included as version field', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -226,6 +230,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32c - Does not mutate user Message
    */
+  // UTS: realtime/unit/RTL32c/no-message-mutation-0
   it('RTL32c - original message not mutated', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -268,6 +273,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32d - Returns UpdateDeleteResult with versionSerial from ACK
    */
+  // UTS: realtime/unit/RTL32d/ack-returns-result-0
   it('RTL32d - returns UpdateDeleteResult with versionSerial', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -306,6 +312,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32d - NACK returns error
    */
+  // UTS: realtime/unit/RTL32d/nack-returns-error-1
   it('RTL32d - NACK returns error', async function () {
     const { mock } = setupMock({
       onMessage: (msg) => {
@@ -346,6 +353,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32e - params sent in ProtocolMessage.params
    */
+  // UTS: realtime/unit/RTL32e/params-in-protocol-message-0
   it('RTL32e - params included in ProtocolMessage', async function () {
     const { mock, captured } = setupMock({
       onMessage: (msg) => {
@@ -384,6 +392,7 @@ describe('uts/realtime/unit/channels/channel_update_delete_message', function ()
   /**
    * RTL32a - Serial validation: empty serial throws
    */
+  // UTS: realtime/unit/RTL32a/serial-validation-required-0
   it('RTL32a - empty serial throws error', async function () {
     const { mock } = setupMock();
     installMockWebSocket(mock.constructorFn);

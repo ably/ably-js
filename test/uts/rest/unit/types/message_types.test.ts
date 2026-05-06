@@ -14,6 +14,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2a - id attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0
   it('TM2a - id attribute', function () {
     const msg = Message.fromValues({ id: 'msg-1' });
     expect(msg.id).to.equal('msg-1');
@@ -22,6 +23,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2b - name attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.1
   it('TM2b - name attribute', function () {
     const msg = Message.fromValues({ name: 'test' });
     expect(msg.name).to.equal('test');
@@ -30,6 +32,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2c - data attribute (string)
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.2
   it('TM2c - data attribute (string)', function () {
     const msg = Message.fromValues({ data: 'hello' });
     expect(msg.data).to.equal('hello');
@@ -38,6 +41,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2c - data attribute (object)
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.3
   it('TM2c - data attribute (object)', function () {
     const msg = Message.fromValues({ data: { key: 'value' } });
     expect(msg.data).to.deep.equal({ key: 'value' });
@@ -46,6 +50,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2d - clientId attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.4
   it('TM2d - clientId attribute', function () {
     const msg = Message.fromValues({ clientId: 'user-1' });
     expect(msg.clientId).to.equal('user-1');
@@ -54,6 +59,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2e - connectionId attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.5
   it('TM2e - connectionId attribute', function () {
     const msg = Message.fromValues({ connectionId: 'conn-1' });
     expect(msg.connectionId).to.equal('conn-1');
@@ -62,6 +68,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2f - timestamp attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.6
   it('TM2f - timestamp attribute', function () {
     const msg = Message.fromValues({ timestamp: 1234567890000 });
     expect(msg.timestamp).to.equal(1234567890000);
@@ -70,6 +77,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2g - encoding attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.7
   it('TM2g - encoding attribute', function () {
     const msg = Message.fromValues({ encoding: 'json' });
     expect(msg.encoding).to.equal('json');
@@ -78,6 +86,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2h - extras attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.8
   it('TM2h - extras attribute', function () {
     const msg = Message.fromValues({
       extras: { push: { notification: { title: 'Hi' } } },
@@ -89,6 +98,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2i - serial attribute
    */
+  // UTS: rest/unit/TM2a/message-attributes-0.9
   it('TM2i - serial attribute', function () {
     const msg = Message.fromValues({ serial: '01234567890:0' });
     expect(msg.serial).to.equal('01234567890:0');
@@ -97,6 +107,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM3 - fromEncoded deserializes wire message
    */
+  // UTS: rest/unit/TM3/from-encoded-deserialization-0
   it('TM3 - fromEncoded deserializes wire message', async function () {
     const msg = await Message.fromEncoded({
       name: 'test',
@@ -120,6 +131,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM3 - fromEncoded with all fields
    */
+  // UTS: rest/unit/TM/message-with-extras-1
   it('TM3 - fromEncoded with all fields', async function () {
     const msg = await Message.fromEncoded({
       id: 'id1',
@@ -144,6 +156,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM3 - fromEncoded decodes base64 encoding
    */
+  // UTS: rest/unit/TM3/from-encoded-decodes-encoding-1
   it('TM3 - fromEncoded decodes base64 encoding', async function () {
     const msg = await Message.fromEncoded({
       data: 'SGVsbG8=',
@@ -160,6 +173,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM2 - null/missing attributes are undefined
    */
+  // UTS: rest/unit/TM/null-missing-attributes-0
   it('TM2 - null/missing attributes are undefined', function () {
     const msg = Message.fromValues({ name: 'test' });
 
@@ -177,6 +191,7 @@ describe('uts/rest/unit/types/message_types', function () {
    * TM4: Message has constructors constructor(name, data) and
    * constructor(name, data, clientId). In ably-js this is Message.fromValues().
    */
+  // UTS: rest/unit/TM4/message-constructors-0
   it('TM4 - constructor(name, data)', function () {
     const msg = Message.fromValues({ name: 'event-name', data: 'payload' });
     expect(msg.name).to.equal('event-name');
@@ -187,6 +202,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM4 - constructor(name, data, clientId)
    */
+  // UTS: rest/unit/TM4/message-constructors-0.1
   it('TM4 - constructor(name, data, clientId)', function () {
     const msg = Message.fromValues({ name: 'event-name', data: 'payload', clientId: 'client-1' });
     expect(msg.name).to.equal('event-name');
@@ -197,6 +213,7 @@ describe('uts/rest/unit/types/message_types', function () {
   /**
    * TM4 - name and data are nullable
    */
+  // UTS: rest/unit/TM4/message-constructors-0.2
   it('TM4 - name and data are nullable', function () {
     const msg = Message.fromValues({});
     expect(msg.name).to.be.undefined;

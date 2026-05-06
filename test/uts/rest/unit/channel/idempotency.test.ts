@@ -21,6 +21,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    *
    * The idempotentRestPublishing option must default to true.
    */
+  // UTS: rest/unit/RSL1k1/idempotent-default-true-0
   it('RSL1k1 - idempotentRestPublishing defaults to true', function () {
     const client = new Ably.Rest({ key: 'a.b:c' });
     expect(client.options.idempotentRestPublishing).to.equal(true);
@@ -34,6 +35,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * <base64>:<serial>, where <base64> is at least 12 characters of
    * URL-safe base64 and <serial> starts at 0.
    */
+  // UTS: rest/unit/RSL1k2/message-id-format-0
   it('RSL1k2 - message ID format', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -78,6 +80,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * When publishing an array of messages, each message must share the
    * same base ID but have incrementing serial numbers starting from 0.
    */
+  // UTS: rest/unit/RSL1k2/serial-increments-batch-1
   it('RSL1k2 - batch serial increments', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -125,6 +128,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * Each separate publish call must generate a unique base ID so that
    * publishes are independently idempotent.
    */
+  // UTS: rest/unit/RSL1k3/unique-base-ids-0
   it('RSL1k3 - separate publishes get unique base IDs', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -160,6 +164,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * When idempotentRestPublishing is false, the library must NOT
    * generate message IDs.
    */
+  // UTS: rest/unit/RSL1k3/no-id-when-disabled-1
   it('RSL1k3 - no ID when disabled', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -192,6 +197,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * When a message is published with a client-supplied ID, the library
    * must preserve it and not overwrite it with a generated ID.
    */
+  // UTS: rest/unit/RSL1k/client-id-preserved-0
   it('RSL1k - client-supplied ID preserved', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -228,6 +234,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * If ably-js does not retry on 500, we verify the ID format on the
    * single request.
    */
+  // UTS: rest/unit/RSL1k2/same-id-on-retry-2
   it('RSL1k2 - same ID on retry', async function () {
     const captured: any[] = [];
     let requestCount = 0;
@@ -272,6 +279,7 @@ describe('uts/rest/unit/channel/idempotency', function () {
    * check). Client-supplied IDs are preserved; messages without IDs
    * remain without IDs.
    */
+  // UTS: rest/unit/RSL1k/mixed-ids-in-batch-1
   it('RSL1k - mixed client and library IDs skips generation', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

@@ -30,6 +30,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA5 - TTL is null when not specified
    */
+  // UTS: rest/unit/RSA5/ttl-null-when-unspecified-0
   it('RSA5 - TTL is null when not specified', async function () {
     setup();
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -42,6 +43,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA5b - Explicit TTL is preserved
    */
+  // UTS: rest/unit/RSA5b/explicit-ttl-preserved-0
   it('RSA5b - Explicit TTL is preserved', async function () {
     setup();
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -53,6 +55,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA5c - TTL from defaultTokenParams is used
    */
+  // UTS: rest/unit/RSA5c/ttl-from-default-params-0
   it('RSA5c - TTL from defaultTokenParams is used', async function () {
     setup();
     const client = new Ably.Rest({
@@ -67,6 +70,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA5d - Explicit TTL overrides defaultTokenParams
    */
+  // UTS: rest/unit/RSA5d/explicit-ttl-overrides-default-0
   it('RSA5d - Explicit TTL overrides defaultTokenParams', async function () {
     setup();
     const client = new Ably.Rest({
@@ -81,6 +85,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA6 - Capability is null when not specified
    */
+  // UTS: rest/unit/RSA6/capability-null-when-unspecified-0
   it('RSA6 - Capability is null when not specified', async function () {
     setup();
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -93,6 +98,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA6b - Explicit capability is preserved
    */
+  // UTS: rest/unit/RSA6b/explicit-capability-preserved-0
   it('RSA6b - Explicit capability is preserved', async function () {
     setup();
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
@@ -107,6 +113,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA6c - Capability from defaultTokenParams is used
    */
+  // UTS: rest/unit/RSA6c/capability-from-default-params-0
   it('RSA6c - Capability from defaultTokenParams is used', async function () {
     setup();
     const client = new Ably.Rest({
@@ -121,6 +128,7 @@ describe('uts/rest/unit/auth/token_request_params', function () {
   /**
    * RSA6d - Explicit capability overrides defaultTokenParams
    */
+  // UTS: rest/unit/RSA6d/explicit-capability-overrides-default-0
   it('RSA6d - Explicit capability overrides defaultTokenParams', async function () {
     setup();
     const client = new Ably.Rest({

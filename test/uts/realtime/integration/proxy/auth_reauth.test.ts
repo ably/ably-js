@@ -75,6 +75,7 @@ describe('uts/realtime/integration/proxy/auth_reauth', function () {
    * the SDK should invoke the authCallback to obtain a new token and send
    * an AUTH message back to the server, all without disrupting the connection.
    */
+  // UTS: realtime/proxy/RTN22/server-initiated-reauth-0
   it('RTN22/RTC8a - server-initiated AUTH triggers re-authentication', async function () {
     // 1. Create proxy session with no rules (passthrough)
     session = await createProxySession({

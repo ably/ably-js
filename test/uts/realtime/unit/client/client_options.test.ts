@@ -18,18 +18,21 @@ describe('uts/realtime/unit/client/client_options', function () {
   /**
    * RSC1a / RTC12 - API key string detected (contains :)
    */
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.1
   it('RSC1a - API key string (standard format)', function () {
     const client = new Ably.Realtime({ key: 'appId.keyId:keySecret', autoConnect: false });
     trackClient(client);
     expect(client.options.key).to.equal('appId.keyId:keySecret');
   });
 
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.2
   it('RSC1a - API key string (special chars)', function () {
     const client = new Ably.Realtime({ key: 'xVLyHw.A-pwh:5WEB4HEAT3pOqWp9', autoConnect: false });
     trackClient(client);
     expect(client.options.key).to.equal('xVLyHw.A-pwh:5WEB4HEAT3pOqWp9');
   });
 
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.3
   it('RSC1a - API key string (extended secret)', function () {
     const client = new Ably.Realtime({ key: 'xVLyHw.A-pwh:5WEB4HEAT3pOqWp9-the_rest', autoConnect: false });
     trackClient(client);
@@ -39,12 +42,14 @@ describe('uts/realtime/unit/client/client_options', function () {
   /**
    * RSC1c / RTC12 - Token string detected (no : before first .)
    */
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.4
   it('RSC1c - token string (opaque)', function () {
     const client = new Ably.Realtime({ token: 'abcdef1234567890', autoConnect: false });
     trackClient(client);
     expect(client.options.token).to.equal('abcdef1234567890');
   });
 
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.5
   it('RSC1c - token string (JWT format)', function () {
     const jwt =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
@@ -56,6 +61,7 @@ describe('uts/realtime/unit/client/client_options', function () {
   /**
    * RSC1b / RTC12 - No credentials raises error
    */
+  // UTS: realtime/unit/RTC12/invalid-arguments-error-1.1
   it('RSC1b - no credentials raises error', function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
@@ -66,6 +72,7 @@ describe('uts/realtime/unit/client/client_options', function () {
     }
   });
 
+  // UTS: realtime/unit/RTC12/invalid-arguments-error-1.2
   it('RSC1b - useTokenAuth without means raises error', function () {
     try {
       new Ably.Realtime({ useTokenAuth: true, autoConnect: false } as any);
@@ -75,6 +82,7 @@ describe('uts/realtime/unit/client/client_options', function () {
     }
   });
 
+  // UTS: realtime/unit/RTC12/invalid-arguments-error-1.3
   it('RSC1b - clientId alone raises error', function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
@@ -88,6 +96,7 @@ describe('uts/realtime/unit/client/client_options', function () {
   /**
    * RSC1 / RTC12 - ClientOptions object preserves values
    */
+  // UTS: realtime/unit/RTC12/constructor-string-detection-0.6
   it('RSC1 - ClientOptions values preserved', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',

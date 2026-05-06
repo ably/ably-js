@@ -26,6 +26,7 @@ describe('uts/realtime/unit/auth/token_expiry_non_renewable', function () {
    * or authUrl), an info-level log message with error code 40171 should be
    * emitted, including a help URL per TI5.
    */
+  // UTS: realtime/unit/RSA4a1/non-renewable-token-logs-warning-0
   it('RSA4a1 - non-renewable token logs info-level warning with code 40171', function () {
     const capturedLogMessages: Array<{ level: number; message: string }> = [];
 
@@ -73,6 +74,7 @@ describe('uts/realtime/unit/auth/token_expiry_non_renewable', function () {
    * and the client has no means to renew the token, the connection transitions
    * to FAILED with error code 40171.
    */
+  // UTS: realtime/unit/RSA4a2/token-error-non-renewable-failed-0
   it('RSA4a2 - server token error with non-renewable token transitions to FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -128,6 +130,7 @@ describe('uts/realtime/unit/auth/token_expiry_non_renewable', function () {
    * When a non-renewable token receives a token error, only one connection
    * attempt is made (no retry).
    */
+  // UTS: realtime/unit/RSA4a2/token-error-non-renewable-no-retry-1
   it('RSA4a2 - server token error with non-renewable token does not retry', function (done) {
     let connectionAttemptCount = 0;
 

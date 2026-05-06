@@ -32,6 +32,7 @@ describe('uts/realtime/integration/channels/channel_attach', function () {
   /**
    * RTL4c - Attach succeeds
    */
+  // UTS: realtime/integration/RTL4c/attach-succeeds-0
   it('RTL4c - attach succeeds', async function () {
     const channelName = uniqueChannelName('attach-RTL4c');
 
@@ -59,6 +60,7 @@ describe('uts/realtime/integration/channels/channel_attach', function () {
   /**
    * RTL5d - Detach succeeds
    */
+  // UTS: realtime/integration/RTL5d/detach-succeeds-0
   it('RTL5d - detach succeeds', async function () {
     const channelName = uniqueChannelName('detach-RTL5d');
 
@@ -86,6 +88,7 @@ describe('uts/realtime/integration/channels/channel_attach', function () {
   /**
    * RTL14 - Insufficient capability causes publish failure
    */
+  // UTS: realtime/integration/RTL14/insufficient-capability-failed-0
   it('RTL14 - publish with subscribe-only key fails with 40160', async function () {
     const channelName = uniqueChannelName('publish-not-allowed');
 

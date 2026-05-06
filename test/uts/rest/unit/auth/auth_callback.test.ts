@@ -41,6 +41,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8d - authCallback invoked for authentication
    */
+  // UTS: rest/unit/RSA8d/callback-invoked-for-auth-0
   it('RSA8d - authCallback invoked for authentication', async function () {
     const captured: any[] = [];
     let callbackInvoked = false;
@@ -68,6 +69,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8d - authCallback returning JWT string
    */
+  // UTS: rest/unit/RSA8d/callback-returns-jwt-1
   it('RSA8d - authCallback returning JWT string', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -92,6 +94,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8d - authCallback returning TokenRequest
    */
+  // UTS: rest/unit/RSA8d/callback-returns-token-request-2
   it('RSA8d - authCallback returning TokenRequest', async function () {
     const captured: any[] = [];
 
@@ -144,6 +147,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8d - authCallback receives TokenParams
    */
+  // UTS: rest/unit/RSA8d/callback-receives-token-params-3
   it('RSA8d - authCallback receives TokenParams', async function () {
     let receivedParams: any = null;
 
@@ -177,6 +181,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl invoked for authentication (GET)
    */
+  // UTS: rest/unit/RSA8c/authurl-invoked-for-auth-0
   it('RSA8c - authUrl invoked for authentication (GET)', async function () {
     const captured: any[] = [];
     installMockHttp(authUrlMock(captured));
@@ -207,6 +212,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl with POST method
    */
+  // UTS: rest/unit/RSA8c/authurl-post-method-1
   it('RSA8c - authUrl with POST method', async function () {
     const captured: any[] = [];
 
@@ -240,6 +246,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl with custom headers
    */
+  // UTS: rest/unit/RSA8c/authurl-custom-headers-2
   it('RSA8c - authUrl with custom headers', async function () {
     const captured: any[] = [];
     installMockHttp(authUrlMock(captured));
@@ -265,6 +272,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl with query params
    */
+  // UTS: rest/unit/RSA8c/authurl-query-params-3
   it('RSA8c - authUrl with query params', async function () {
     const captured: any[] = [];
     installMockHttp(authUrlMock(captured));
@@ -290,6 +298,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl returning JWT string
    */
+  // UTS: rest/unit/RSA8c/authurl-returns-jwt-4
   it('RSA8c - authUrl returning JWT string', async function () {
     const captured: any[] = [];
     const jwt = 'eyJhbGciOiJIUzI1NiJ9.jwt-body.signature';
@@ -312,6 +321,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8d - authCallback error propagated
    */
+  // UTS: rest/unit/RSA8d/callback-error-propagated-4
   it('RSA8d - authCallback error propagated', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -340,6 +350,7 @@ describe('uts/rest/unit/auth/auth_callback', function () {
   /**
    * RSA8c - authUrl error propagated
    */
+  // UTS: rest/unit/RSA8c/authurl-error-propagated-5
   it('RSA8c - authUrl error propagated', async function () {
     const captured: any[] = [];
 

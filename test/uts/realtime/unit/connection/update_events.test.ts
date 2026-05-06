@@ -49,6 +49,7 @@ describe('uts/realtime/unit/connection/update_events', function () {
   /**
    * RTN24 - CONNECTED while already CONNECTED emits UPDATE event, not CONNECTED
    */
+  // UTS: realtime/unit/RTN24/connected-emits-update-0
   it('RTN24 - CONNECTED while connected emits UPDATE not state change', function (done) {
     setupConnectedClient((client) => {
       const connectedEvents: any[] = [];
@@ -84,6 +85,7 @@ describe('uts/realtime/unit/connection/update_events', function () {
   /**
    * RTN24 - UPDATE event with error reason
    */
+  // UTS: realtime/unit/RTN24/update-event-with-error-1
   it('RTN24 - UPDATE event carries error reason', function (done) {
     setupConnectedClient((client) => {
       client.connection.on('update', (change: any) => {
@@ -123,6 +125,7 @@ describe('uts/realtime/unit/connection/update_events', function () {
    * details" does not apply to it. connection.id and connection.key stay
    * the same; only internal connectionDetails fields are overridden.
    */
+  // UTS: realtime/unit/RTN24/connection-details-override-2
   it('RTN24 - ConnectionDetails overridden, connection.id unchanged', async function () {
     mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -183,6 +186,7 @@ describe('uts/realtime/unit/connection/update_events', function () {
   /**
    * RTN24 - No duplicate CONNECTED event
    */
+  // UTS: realtime/unit/RTN24/no-duplicate-connected-event-3
   it('RTN24 - no duplicate CONNECTED state events', function (done) {
     setupConnectedClient((client) => {
       const connectedEvents: any[] = [];

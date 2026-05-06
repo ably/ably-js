@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai';
-import { Ably } from '../../../helpers';
+import { Ably, populateFieldsFromParent } from '../../../helpers';
 
 describe('uts/rest/unit/types/presence_message_types', function () {
   /**
@@ -15,6 +15,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    * PresenceAction enum: absent (0), present (1), enter (2), leave (3), update (4).
    * In ably-js, application code uses string actions.
    */
+  // UTS: rest/unit/TP2/presence-action-enum-values-0
   it('TP2 - PresenceAction values', function () {
     const actionStrings = ['absent', 'present', 'enter', 'leave', 'update'];
 
@@ -27,6 +28,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3a - id attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0
   it('TP3a - id attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ id: 'pm-1' });
     expect(pm.id).to.equal('pm-1');
@@ -35,6 +37,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3b - action attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.1
   it('TP3b - action attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ action: 'enter' });
     expect(pm.action).to.equal('enter');
@@ -43,6 +46,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3c - clientId attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.2
   it('TP3c - clientId attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ clientId: 'user-1' });
     expect(pm.clientId).to.equal('user-1');
@@ -51,6 +55,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3d - connectionId attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.3
   it('TP3d - connectionId attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ connectionId: 'conn-1' });
     expect(pm.connectionId).to.equal('conn-1');
@@ -59,6 +64,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3e - data attribute (string)
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.4
   it('TP3e - data attribute (string)', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ data: 'hello' });
     expect(pm.data).to.equal('hello');
@@ -67,6 +73,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3e - data attribute (object)
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.5
   it('TP3e - data attribute (object)', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ data: { key: 'val' } });
     expect(pm.data).to.deep.equal({ key: 'val' });
@@ -75,6 +82,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3f - encoding attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.6
   it('TP3f - encoding attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ encoding: 'json' });
     expect(pm.encoding).to.equal('json');
@@ -83,6 +91,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3g - timestamp attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.7
   it('TP3g - timestamp attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({ timestamp: 1234567890000 });
     expect(pm.timestamp).to.equal(1234567890000);
@@ -91,6 +100,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3i - extras attribute
    */
+  // UTS: rest/unit/TP3a/presence-message-attributes-0.8
   it('TP3i - extras attribute', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({
       extras: { headers: { 'x-custom': 'value' } },
@@ -105,6 +115,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    * and clientId ensuring multiple connected clients with the same clientId
    * are uniquely identifiable."
    */
+  // UTS: rest/unit/TP3h/member-key-combines-ids-0
   it('TP3h - memberKey format', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -130,6 +141,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    *
    * Wire format uses numeric action (2 = enter). fromEncoded decodes to string action.
    */
+  // UTS: rest/unit/TP3/presence-from-json-0
   it('TP3 - deserialization from wire via fromEncoded', async function () {
     const pm = await Ably.Rest.PresenceMessage.fromEncoded({
       action: 2,
@@ -145,6 +157,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
   /**
    * TP3 - wire numeric actions decode to correct strings
    */
+  // UTS: rest/unit/TP3/presence-to-json-2
   it('TP3 - all wire action values decode correctly', async function () {
     const expected = [
       { wire: 0, str: 'absent' },
@@ -168,6 +181,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    *
    * fromEncoded decodes data based on the encoding field.
    */
+  // UTS: rest/unit/TP4/from-encoded-presence-0
   it('TP4 - fromEncoded decodes json-encoded data', async function () {
     const pm = await Ably.Rest.PresenceMessage.fromEncoded({
       action: 2,
@@ -186,6 +200,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    *
    * Decodes an array of wire-format presence messages.
    */
+  // UTS: rest/unit/TP5/presence-message-size-0
   it('TP4 - fromEncodedArray', async function () {
     const messages = await Ably.Rest.PresenceMessage.fromEncodedArray([
       { action: 2, clientId: 'alice', data: 'hello' },
@@ -205,6 +220,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    * When fromEncoded receives a minimal presence message (only action),
    * unspecified attributes should be null or undefined.
    */
+  // UTS: rest/unit/TP3/null-attributes-omitted-3
   it('TP3 - null/missing attributes are undefined', async function () {
     const pm = await Ably.Rest.PresenceMessage.fromEncoded({ action: 1 });
 
@@ -221,6 +237,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    * When fromEncoded receives a presence message with a numeric timestamp,
    * it should be preserved as-is.
    */
+  // UTS: rest/unit/TP3/presence-encoded-data-from-json-1
   it('TP3 - timestamp as number', async function () {
     const pm = await Ably.Rest.PresenceMessage.fromEncoded({
       action: 1,
@@ -237,6 +254,7 @@ describe('uts/rest/unit/types/presence_message_types', function () {
    * Construct a PresenceMessage with data and verify it has all
    * the expected properties of a complete presence message.
    */
+  // UTS: rest/unit/TP3d/connectionid-from-protocol-message-0
   it('TP - presence message with data is a complete object', function () {
     const pm = Ably.Rest.PresenceMessage.fromValues({
       action: 'enter',
@@ -255,5 +273,54 @@ describe('uts/rest/unit/types/presence_message_types', function () {
     expect(pm.data).to.deep.equal({ status: 'online', role: 'admin' });
     expect(pm.timestamp).to.equal(1700000000000);
     expect(pm.id).to.equal('pm-full');
+  });
+
+  /**
+   * TP3a - id defaults from ProtocolMessage
+   *
+   * For Realtime messages without an id, the id should be set to
+   * protocolMsgId:index where index is the 0-based position in the
+   * presence array.
+   */
+  // UTS: rest/unit/TP3a/id-from-protocol-message-1
+  it('TP3a - id defaults from ProtocolMessage', function () {
+    const makeProtocolMessage = Ably.makeProtocolMessageFromDeserialized();
+    const protocolMsg = makeProtocolMessage({
+      action: 14, // PRESENCE
+      id: 'proto-msg-42',
+      presence: [
+        { action: 2, clientId: 'alice' },
+        { action: 2, clientId: 'bob' },
+      ],
+    });
+
+    // populateFieldsFromParent sets id = protocolMsgId:index on presence items
+    populateFieldsFromParent(protocolMsg);
+
+    expect(protocolMsg.presence).to.have.length(2);
+    expect(protocolMsg.presence![0].id).to.equal('proto-msg-42:0');
+    expect(protocolMsg.presence![1].id).to.equal('proto-msg-42:1');
+  });
+
+  /**
+   * TP3g - timestamp defaults from ProtocolMessage
+   *
+   * If timestamp is not present in a received presence message,
+   * it should be set to the timestamp of the encapsulating ProtocolMessage.
+   */
+  // UTS: rest/unit/TP3g/timestamp-from-protocol-message-0
+  it('TP3g - timestamp defaults from ProtocolMessage', function () {
+    const makeProtocolMessage = Ably.makeProtocolMessageFromDeserialized();
+    const protocolMsg = makeProtocolMessage({
+      action: 14, // PRESENCE
+      timestamp: 9999999,
+      presence: [{ action: 2, clientId: 'user-1' }],
+    });
+
+    // populateFieldsFromParent sets timestamp from ProtocolMessage
+    populateFieldsFromParent(protocolMsg);
+
+    expect(protocolMsg.presence).to.have.length(1);
+    expect(protocolMsg.presence![0].timestamp).to.equal(9999999);
   });
 });

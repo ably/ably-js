@@ -30,6 +30,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * The RestClient exposes a channels collection with a get() method
    * for obtaining RestChannel instances.
    */
+  // UTS: rest/unit/RSN1/channels-collection-accessible-0
   it('RSN1 - Channels collection accessible via RestClient', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -43,6 +44,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Before a channel is created, it should not appear in the collection.
    * After get() is called, it should be present.
    */
+  // UTS: rest/unit/RSN2/check-channel-exists-0
   it('RSN2 - Check channel existence', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -65,6 +67,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Multiple channels created via get() should all be iterable
    * through the channels.all property.
    */
+  // UTS: rest/unit/RSN2/iterate-channels-1
   it('RSN2 - Iterate through existing channels', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -86,6 +89,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Calling get() with a channel name that does not yet exist
    * creates a new RestChannel with the specified name.
    */
+  // UTS: rest/unit/RSN3a/get-creates-new-channel-0
   it('RSN3a - Get creates new channel if none exists', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -102,6 +106,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Calling get() with the same channel name returns the same
    * cached RestChannel instance (identity equality).
    */
+  // UTS: rest/unit/RSN3a/get-returns-existing-channel-1
   it('RSN3a - Get returns same instance for existing channel', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -117,6 +122,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Calling release() with a channel name removes that channel
    * from the internal cache, so it no longer appears in all.
    */
+  // UTS: rest/unit/RSN4a/release-removes-channel-0
   it('RSN4a - Release removes channel from collection', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -133,6 +139,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * Calling release() with a channel name that does not correspond
    * to an existing channel must return without error.
    */
+  // UTS: rest/unit/RSN4b/release-nonexistent-noop-0
   it('RSN4b - Release on non-existent channel is no-op', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -149,6 +156,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * After releasing a channel and calling get() again with the same name,
    * a new RestChannel instance is created (not the previously cached one).
    */
+  // UTS: rest/unit/RSN3a/get-after-release-new-instance-3
   it('RSN3a - Get after release creates new instance', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 
@@ -167,6 +175,7 @@ describe('uts/rest/unit/channels_collection', function () {
    * When get() is called with channelOptions, those options are applied
    * to the channel (either new or existing).
    */
+  // UTS: rest/unit/RSN3a/subscript-creates-or-returns-2
   it('RSN3c - Get with channelOptions updates options', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
 

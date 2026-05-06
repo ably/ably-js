@@ -27,6 +27,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA7a - clientId from ClientOptions
    */
+  // UTS: rest/unit/RSA7a/clientid-from-options-0
   it('RSA7a - clientId from ClientOptions', function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -45,6 +46,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * Per spec, clientId from TokenDetails passed at construction should be
    * accessible via auth.clientId.
    */
+  // UTS: rest/unit/RSA7b/clientid-from-token-details-0
   it('RSA7b - clientId from TokenDetails', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -68,6 +70,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * Per spec, clientId from TokenDetails returned by authCallback should
    * update auth.clientId after the first auth request.
    */
+  // UTS: rest/unit/RSA7b/clientid-from-callback-token-1
   it('RSA7b - clientId from authCallback TokenDetails', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -98,6 +101,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA7c - clientId null when unidentified
    */
+  // UTS: rest/unit/RSA7c/clientid-null-unidentified-0
   it('RSA7c - clientId null when unidentified', function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -110,6 +114,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA7c - clientId null with unidentified token
    */
+  // UTS: rest/unit/RSA7c/clientid-null-unidentified-token-1
   it('RSA7c - clientId null with unidentified token', function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -127,6 +132,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA12a - clientId passed to authCallback in TokenParams
    */
+  // UTS: rest/unit/RSA12a/clientid-passed-to-callback-0
   it('RSA12a - clientId passed to authCallback in TokenParams', async function () {
     let receivedParams: any = null;
 
@@ -157,6 +163,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA12b - clientId sent to authUrl as query param
    */
+  // UTS: rest/unit/RSA12b/clientid-sent-to-authurl-0
   it('RSA12b - clientId sent to authUrl', async function () {
     const captured: any[] = [];
 
@@ -196,6 +203,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * Per spec, auth.clientId should be updated when authorize() returns
    * a new token with a different clientId.
    */
+  // UTS: rest/unit/RSA7/clientid-updated-after-authorize-0
   it('RSA7 - clientId updated after authorize()', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -238,6 +246,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * Per spec, wildcard '*' clientId in TokenDetails should be preserved
    * and accessible via auth.clientId.
    */
+  // UTS: rest/unit/RSA12/wildcard-clientid-0
   it('RSA12 - Wildcard clientId', function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -261,6 +270,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * When ClientOptions.clientId is set but the token has no clientId,
    * the client should keep the explicit clientId from options.
    */
+  // UTS: rest/unit/RSA7/clientid-mismatch-error-1
   it('RSA7 - case 3: explicit clientId kept when token has none', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -297,6 +307,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * for REST clients — see deviations.md (RSA7b). This test documents
    * the expected behavior even though it currently fails.
    */
+  // UTS: rest/unit/RSA7/clientid-updated-after-authorize-0.1
   it('RSA7 - case 5: clientId inherited from token', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -329,6 +340,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA15a - Matching clientId succeeds
    */
+  // UTS: rest/unit/RSA15a/token-clientid-must-match-0
   it('RSA15a - Matching clientId succeeds', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -358,6 +370,7 @@ describe('uts/rest/unit/auth/client_id', function () {
    * Per spec, if ClientOptions.clientId and TokenDetails.clientId are both
    * non-wildcard and don't match, an error with code 40102 must be raised.
    */
+  // UTS: rest/unit/RSA15c/incompatible-clientid-error-0
   it('RSA15a - Mismatched clientId error (40102)', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
@@ -382,6 +395,7 @@ describe('uts/rest/unit/auth/client_id', function () {
   /**
    * RSA15b - Wildcard token clientId permits any ClientOptions clientId
    */
+  // UTS: rest/unit/RSA15b/wildcard-token-permits-any-0
   it('RSA15b - Wildcard token clientId permits any ClientOptions clientId', async function () {
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));

@@ -22,6 +22,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * Publishing a message on a channel must send a POST request
    * to /channels/<channelName>/messages.
    */
+  // UTS: rest/unit/RSL1a/publish-name-and-data-0
   it('RSL1a - publish sends POST to correct path', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -47,6 +48,7 @@ describe('uts/rest/unit/channel/publish', function () {
    *
    * The POST body must contain the published message serialized as JSON.
    */
+  // UTS: rest/unit/RSL1a/publish-name-and-data-0.1
   it('RSL1b - publish body contains message', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -77,6 +79,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * Publishing an array of messages must send them all in a single
    * POST request, with the body containing all messages.
    */
+  // UTS: rest/unit/RSL1a/publish-message-array-1
   it('RSL1c - publish array sends single request', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -110,6 +113,7 @@ describe('uts/rest/unit/channel/publish', function () {
    *
    * Per spec: "If any of the values are null, then key is not sent to Ably"
    */
+  // UTS: rest/unit/RSL1e/null-name-and-data-0.1
   it('RSL1e - null name omitted from body', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -140,6 +144,7 @@ describe('uts/rest/unit/channel/publish', function () {
    *
    * Per spec: "If any of the values are null, then key is not sent to Ably"
    */
+  // UTS: rest/unit/RSL1e/null-name-and-data-0.2
   it('RSL1e - null data omitted from body', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -171,6 +176,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * The two-argument publish(name, data) form must produce a message
    * with both name and data fields in the request body.
    */
+  // UTS: rest/unit/RSL1h/publish-signature-0
   it('RSL1h - publish(name, data) two-arg form', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -201,6 +207,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * fail with error code 40009 without sending a request. Uses explicit
    * maxMessageSize for deterministic testing.
    */
+  // UTS: rest/unit/RSL1i/message-size-limit-0
   it('RSL1i - message size limit exceeded', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -239,6 +246,7 @@ describe('uts/rest/unit/channel/publish', function () {
    *
    * A message at or under the size limit should succeed.
    */
+  // UTS: rest/unit/RSL1i/message-size-limit-0.1
   it('RSL1i - message at size limit succeeds', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -269,6 +277,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * When a message is constructed with all optional attributes
    * (id, clientId, extras), they must all appear in the request body.
    */
+  // UTS: rest/unit/RSL1j/all-attributes-transmitted-0
   it('RSL1j - all message attributes transmitted', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -311,6 +320,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * does not specify a clientId, the library must NOT auto-inject the
    * clientId into the message body (ably-js behaviour for REST).
    */
+  // UTS: rest/unit/RSL1m/clientid-not-injected-0
   it('RSL1m1 - library clientId not auto-injected', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -343,6 +353,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * When a client has a clientId and the message explicitly sets the
    * same clientId, it must be preserved in the request body.
    */
+  // UTS: rest/unit/RSL1m/clientid-not-injected-0.1
   it('RSL1m2 - explicit matching clientId preserved', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -377,6 +388,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * When a client has no clientId set but the message explicitly sets
    * a clientId, it must be preserved in the request body.
    */
+  // UTS: rest/unit/RSL1m/clientid-not-injected-0.2
   it('RSL1m3 - unidentified client with message clientId', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -408,6 +420,7 @@ describe('uts/rest/unit/channel/publish', function () {
    * The wire body should contain an empty message object (or one with
    * null fields).
    */
+  // UTS: rest/unit/RSL1e/null-name-and-data-0
   it('RSL1e - both name and data null', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -429,11 +442,13 @@ describe('uts/rest/unit/channel/publish', function () {
     // The message should be essentially empty (name and data are null/missing)
   });
 
+
   /**
    * RSL1l - Publish params passed as querystring
    *
    * Additional params passed to publish should appear as query parameters.
    */
+  // UTS: rest/unit/RSL1l/params-as-querystring-0
   it('RSL1l - publish params as querystring', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

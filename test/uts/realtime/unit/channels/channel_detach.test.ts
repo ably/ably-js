@@ -17,6 +17,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5a - Detach when initialized
    */
+  // UTS: realtime/unit/RTL5a/detach-initialized-noop-0
   it('RTL5a - detach from initialized state', async function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -36,6 +37,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5a - Detach when already detached is no-op
    */
+  // UTS: realtime/unit/RTL5a/detach-already-detached-noop-1
   it('RTL5a - detach when already detached is no-op', async function () {
     let detachMessageCount = 0;
 
@@ -91,6 +93,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5i - Concurrent detach while detaching waits for completion
    */
+  // UTS: realtime/unit/RTL5i/detach-while-detaching-0
   it('RTL5i - concurrent detach while detaching', async function () {
     let detachMessageCount = 0;
     let pendingDetachChannel: string | null = null;
@@ -161,6 +164,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5b - Detach from failed state results in error
    */
+  // UTS: realtime/unit/RTL5b/detach-failed-errors-0
   it('RTL5b - detach from failed state errors', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -219,6 +223,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5j - Detach from suspended transitions to detached immediately
    */
+  // UTS: realtime/unit/RTL5j/detach-suspended-to-detached-0
   it('RTL5j - detach from suspended is immediate', async function () {
     let detachMessageCount = 0;
 
@@ -282,6 +287,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5d - Normal detach flow
    */
+  // UTS: realtime/unit/RTL5d/normal-detach-flow-0
   it('RTL5d - normal detach flow', async function () {
     let capturedDetachMsg: any = null;
 
@@ -342,6 +348,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5f - Detach timeout returns to previous state
    */
+  // UTS: realtime/unit/RTL5f/timeout-returns-previous-state-0
   it('RTL5f - detach timeout returns to attached', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -408,6 +415,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5k - ATTACHED received while detaching sends new DETACH
    */
+  // UTS: realtime/unit/RTL5k/attached-while-detaching-0
   it('RTL5k - ATTACHED while detaching triggers new DETACH', async function () {
     let detachMessageCount = 0;
 
@@ -469,6 +477,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5l - Detach when connection not connected transitions immediately
    */
+  // UTS: realtime/unit/RTL5l/detach-not-connected-immediate-0
   it('RTL5l - detach when disconnected is immediate', async function () {
     let detachMessageCount = 0;
     let pendingConnection: any = null;
@@ -518,6 +527,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5l - Detach ATTACHED channel when connection disconnected
    */
+  // UTS: realtime/unit/RTL5l/detach-attached-when-disconnected-1
   it('RTL5l - detach attached channel when disconnected is immediate', async function () {
     let detachMessageCount = 0;
 
@@ -576,6 +586,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5 - Detach emits state change events
    */
+  // UTS: realtime/unit/RTL5/detach-state-change-events-0
   it('RTL5 - detach emits state change events', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -636,6 +647,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
    * Calling detach while an attach is pending should wait for the attach
    * to complete and then perform the detach.
    */
+  // UTS: realtime/unit/RTL5i/detach-while-attaching-1
   it('RTL5i - detach while attaching waits then detaches', async function () {
     const messagesFromClient: any[] = [];
 
@@ -706,6 +718,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
   /**
    * RTL5k - ATTACHED received while detached sends DETACH
    */
+  // UTS: realtime/unit/RTL5k/attached-while-detached-1
   it('RTL5k - ATTACHED while detached sends DETACH', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't send DETACH for unsolicited ATTACHED in detached state
     let detachMessageCount = 0;
@@ -775,6 +788,7 @@ describe('uts/realtime/unit/channels/channel_detach', function () {
    * This test specifically covers the case where a channel is ATTACHED
    * (not just ATTACHING) and connection drops to connecting.
    */
+  // UTS: realtime/unit/RTL5l/detach-attached-when-disconnected-1.1
   it('RTL5 - detach from attached when connection disconnected', async function () {
     let detachMessageCount = 0;
 

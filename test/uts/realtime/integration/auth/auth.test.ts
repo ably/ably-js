@@ -34,6 +34,7 @@ describe('uts/realtime/integration/auth/auth', function () {
   /**
    * RSA8 - Token auth on realtime connection
    */
+  // UTS: realtime/integration/RSA8/token-auth-connect-0
   it('RSA8 - JWT token auth connects successfully', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
@@ -59,6 +60,7 @@ describe('uts/realtime/integration/auth/auth', function () {
   /**
    * RTC8a - In-band reauthorization on CONNECTED client
    */
+  // UTS: realtime/integration/RTC8a/in-band-reauth-connected-0
   it('RTC8a - authorize on connected client does not disconnect', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
@@ -93,6 +95,7 @@ describe('uts/realtime/integration/auth/auth', function () {
   /**
    * RTC8c - authorize() from INITIALIZED initiates connection
    */
+  // UTS: realtime/integration/RTC8c/authorize-initiates-connection-0
   it('RTC8c - authorize from initialized state initiates connection', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
@@ -120,6 +123,7 @@ describe('uts/realtime/integration/auth/auth', function () {
   /**
    * RSA7 - Matching clientId succeeds
    */
+  // UTS: realtime/integration/RSA7/matching-clientid-succeeds-0
   it('RSA7 - matching clientId in JWT and options succeeds', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
     const testClientId = `test-client-${Math.random().toString(36).substring(2, 8)}`;
@@ -141,5 +145,44 @@ describe('uts/realtime/integration/auth/auth', function () {
     expect(client.auth.clientId).to.equal(testClientId);
 
     await closeAndWait(client);
+  });
+
+  /**
+   * RSA7 - Mismatched clientId in JWT and options fails
+   *
+   * When the clientId in the JWT token differs from the clientId in
+   * ClientOptions, the server rejects the connection.
+   */
+  // UTS: realtime/integration/RSA7/mismatched-clientid-fails-1
+  it('RSA7 - mismatched clientId fails', async function () {
+    const { keyName, keySecret } = getKeyParts(getApiKey());
+
+    const client = new Ably.Realtime({
+      authCallback: (_params: any, cb: any) => {
+        cb(null, generateJWT({ keyName, keySecret, clientId: 'token-client-id', ttl: 3600000 }));
+      },
+      clientId: 'wrong-client-id',
+      endpoint: SANDBOX_ENDPOINT,
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    try {
+      await connectAndWait(client);
+      expect.fail('Expected connection to fail');
+    } catch (error: any) {
+      expect(error.message).to.include('failed');
+    }
+
+    expect(client.connection.state).to.equal('failed');
+    expect(client.connection.errorReason).to.not.be.null;
+    expect(client.connection.errorReason.code).to.equal(40102);
+
+    try {
+      await closeAndWait(client);
+    } catch (e) {
+      /* ok — already failed */
+    }
   });
 });

@@ -27,6 +27,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * for the SYNC to be completed. A single-message sync has ATTACHED with
    * HAS_PRESENCE, followed by a SYNC with empty cursor.
    */
+  // UTS: realtime/unit/RTP11a/get-returns-members-single-sync-0
   it('RTP11a - get returns current members after single-message sync', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -97,6 +98,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * complete before returning. A multi-message sync has a non-empty cursor in
    * the first message and an empty cursor in the final message.
    */
+  // UTS: realtime/unit/RTP11a/get-waits-for-multi-sync-1
   it('RTP11a, RTP11c1 - get waits for multi-message sync', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -180,6 +182,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * When waitForSync is false, the known set of presence members is returned
    * immediately, which may be incomplete if the SYNC is not finished.
    */
+  // UTS: realtime/unit/RTP11c1/get-no-wait-returns-immediately-0
   it('RTP11c1 - get with waitForSync=false returns immediately', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -239,6 +242,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    *
    * clientId param filters members by the provided clientId.
    */
+  // UTS: realtime/unit/RTP11c2/get-filtered-by-clientid-0
   it('RTP11c2 - get filtered by clientId', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -293,6 +297,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    *
    * connectionId param filters members by the provided connectionId.
    */
+  // UTS: realtime/unit/RTP11c3/get-filtered-by-connectionid-0
   it('RTP11c3 - get filtered by connectionId', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -348,6 +353,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * Implicitly attaches the RealtimeChannel if the channel is in the
    * INITIALIZED state.
    */
+  // UTS: realtime/unit/RTP11b/get-implicitly-attaches-0
   it('RTP11b - get implicitly attaches channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -391,6 +397,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * If the RealtimeChannel is SUSPENDED, get will by default (or if
    * waitForSync is true) result in an error with code 91005.
    */
+  // UTS: realtime/unit/RTP11d/get-suspended-errors-default-0
   it('RTP11d - get on SUSPENDED channel errors by default', async function () {
     let connectCount = 0;
 
@@ -483,6 +490,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
    * If waitForSync is false on a SUSPENDED channel, return the members
    * currently in the PresenceMap.
    */
+  // UTS: realtime/unit/RTP11d/get-suspended-no-wait-returns-1
   it('RTP11d - get on SUSPENDED channel with waitForSync=false returns members', async function () {
     let connectCount = 0;
 

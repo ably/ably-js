@@ -19,6 +19,7 @@ describe('uts/realtime/unit/channels/channel_attributes', function () {
   /**
    * RTL23 - RealtimeChannel name attribute
    */
+  // UTS: realtime/unit/RTL23/name-attribute-0
   it('RTL23 - channel name attribute', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -38,6 +39,7 @@ describe('uts/realtime/unit/channels/channel_attributes', function () {
   /**
    * RTL24 - errorReason set on channel error
    */
+  // UTS: realtime/unit/RTL24/error-reason-channel-error-0
   it('RTL24 - errorReason set on channel ERROR', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -93,6 +95,7 @@ describe('uts/realtime/unit/channels/channel_attributes', function () {
   /**
    * RTL24 - errorReason set on attach failure
    */
+  // UTS: realtime/unit/RTL24/error-reason-attach-failure-1
   it('RTL24 - errorReason set on attach failure', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -147,6 +150,7 @@ describe('uts/realtime/unit/channels/channel_attributes', function () {
    * Per RTL4g: "If the channel is in the FAILED state, the attach request
    * sets its errorReason to null, and proceeds with a channel attach."
    */
+  // UTS: realtime/unit/RTL4c/error-cleared-on-attach-0
   it('RTL4g - errorReason cleared on re-attach from FAILED', async function () {
     // DEVIATION: see deviations.md — ably-js does not clear errorReason on successful re-attach (RTL4c)
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -221,6 +225,7 @@ describe('uts/realtime/unit/channels/channel_attributes', function () {
    * Per RTL4g: attach from FAILED clears errorReason. After re-attach and
    * detach, errorReason should remain null (detach does not set it).
    */
+  // UTS: realtime/unit/RTL4c/error-cleared-preserved-detach-1
   it('RTL4g - errorReason cleared on re-attach and detach', async function () {
     // DEVIATION: see deviations.md — ably-js does not clear errorReason on successful re-attach (RTL4c)
     if (!process.env.RUN_DEVIATIONS) this.skip();

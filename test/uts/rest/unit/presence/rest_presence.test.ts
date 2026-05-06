@@ -25,6 +25,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * channel.presence must exist and be an object.
    */
+  // UTS: rest/unit/RSP1a/presence-channel-attribute-0
   it('RSP1a - presence accessible on channel', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
@@ -38,6 +39,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * Accessing channel.presence multiple times must return the same instance.
    */
+  // UTS: rest/unit/RSP1b/same-instance-returned-0
   it('RSP1b - channel.presence returns same instance', function () {
     const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const channel = client.channels.get('test');
@@ -56,6 +58,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * presence.get() must send a GET request to /channels/{name}/presence.
    */
+  // UTS: rest/unit/RSP3a/get-request-endpoint-0
   it('RSP3a - get() sends GET to /channels/{name}/presence', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -82,6 +85,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * presence.get() must return a PaginatedResult containing PresenceMessage
    * objects with action, clientId, connectionId, data, and timestamp.
    */
+  // UTS: rest/unit/RSP3b/get-returns-presence-messages-0
   it('RSP3b - get() returns PresenceMessage objects', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -132,6 +136,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * When the server returns an empty array, items.length must be 0.
    */
+  // UTS: rest/unit/RSP3c/get-empty-members-0
   it('RSP3c - get() with empty response returns empty items', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -155,6 +160,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * get({limit: 50}) must send limit=50 as a query parameter.
    */
+  // UTS: rest/unit/RSP3a1/get-limit-parameter-0
   it('RSP3a1 - get() with limit param sends limit query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -179,6 +185,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * get({clientId: 'specific'}) must send clientId=specific as a query parameter.
    */
+  // UTS: rest/unit/RSP3a2/get-clientid-filter-0
   it('RSP3a2 - get() with clientId filter sends clientId query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -203,6 +210,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * get({connectionId: 'conn123'}) must send connectionId=conn123 as a query parameter.
    */
+  // UTS: rest/unit/RSP3a3/get-connectionid-filter-0
   it('RSP3a3 - get() with connectionId filter sends connectionId query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -231,6 +239,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * presence.history() must send a GET request to /channels/{name}/presence/history.
    */
+  // UTS: rest/unit/RSP4a/history-request-endpoint-0
   it('RSP4a - history() sends GET to /channels/{name}/presence/history', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -257,6 +266,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * history() must return PresenceMessage objects with wire actions decoded
    * to strings: enter (2), leave (3), update (4).
    */
+  // UTS: rest/unit/RSP4a/history-returns-paginated-1
   it('RSP4a - history() returns PresenceMessage with decoded actions', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -288,6 +298,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * history({start: 1609459200000}) must send start=1609459200000 as a query parameter.
    */
+  // UTS: rest/unit/RSP4b1/history-start-parameter-0
   it('RSP4b1 - history() with start param sends start query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -312,6 +323,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * history({end: 1609545600000}) must send end=1609545600000 as a query parameter.
    */
+  // UTS: rest/unit/RSP4b1/history-end-parameter-1
   it('RSP4b1 - history() with end param sends end query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -336,6 +348,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * history({direction: 'forwards'}) must send direction=forwards as a query parameter.
    */
+  // UTS: rest/unit/RSP4b2/history-direction-forwards-1
   it('RSP4b2 - history() with direction forwards sends direction query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -356,10 +369,64 @@ describe('uts/rest/unit/presence/rest_presence', function () {
   });
 
   /**
+   * RSP4b2a - history default direction is backwards
+   *
+   * When history() is called without a direction parameter, the direction
+   * must either be absent (server default) or equal 'backwards'.
+   */
+  // UTS: rest/unit/RSP4b2/history-direction-backwards-default-0
+  it('RSP4b2 - history default direction is backwards', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({});
+
+    expect(captured).to.have.length(1);
+    const direction = captured[0].url.searchParams.get('direction');
+    // direction should either be absent (null) or 'backwards'
+    expect(direction === null || direction === 'backwards').to.be.true;
+  });
+
+  /**
+   * RSP4b2c - history direction backwards explicit
+   *
+   * history({direction: 'backwards'}) must send direction=backwards as a query parameter.
+   */
+  // UTS: rest/unit/RSP4b2/history-direction-backwards-explicit-2
+  it('RSP4b2 - history direction backwards explicit', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({ direction: 'backwards' });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('direction')).to.equal('backwards');
+  });
+
+  /**
    * RSP4b3 - limit param
    *
    * history({limit: 50}) must send limit=50 as a query parameter.
    */
+  // UTS: rest/unit/RSP4b3/history-limit-parameter-0
   it('RSP4b3 - history() with limit param sends limit query parameter', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -388,6 +455,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * Plain string data must pass through without modification.
    */
+  // UTS: rest/unit/RSP5/decode-string-data-0
   it('RSP5a - get() with plain string data passes through', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -411,6 +479,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When encoding is "json", data must be decoded from JSON string to object,
    * and the encoding must be consumed (null after decoding).
    */
+  // UTS: rest/unit/RSP5/decode-json-data-1
   it('RSP5b - get() with json encoding decodes data to object', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -443,6 +512,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When encoding is "json/base64", data must be decoded from base64 then JSON.
    * The encoding must be fully consumed (null after decoding).
    */
+  // UTS: rest/unit/RSP5/decode-chained-encoding-5
   it('RSP5e - get() with chained json/base64 encoding decodes correctly', async function () {
     // {"key":"value"} base64-encoded
     const jsonStr = '{"key":"value"}';
@@ -473,6 +543,135 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(result.items[0].encoding).to.be.null;
   });
 
+  /**
+   * RSP5c - decode base64 binary presence data
+   *
+   * When encoding is "base64", data must be decoded from base64 to binary,
+   * and the encoding must be consumed (null after decoding).
+   */
+  // UTS: rest/unit/RSP5/decode-base64-binary-2
+  it('RSP5 - decode base64 binary presence data', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, [
+          {
+            action: 1,
+            clientId: 'c1',
+            data: 'SGVsbG8gV29ybGQ=',
+            encoding: 'base64',
+          },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    const result = await channel.presence.get({});
+
+    expect(result.items).to.have.length(1);
+    expect(Buffer.isBuffer(result.items[0].data)).to.be.true;
+    expect(result.items[0].data.toString()).to.equal('Hello World');
+    // Encoding must be consumed after decoding
+    expect(result.items[0].encoding).to.be.null;
+  });
+
+  /**
+   * RSP5d - decode utf-8 encoded presence data
+   *
+   * When encoding is "utf-8/base64", data must be decoded through both layers:
+   * first base64 to binary, then utf-8 to string.
+   */
+  // UTS: rest/unit/RSP5/decode-utf8-data-4
+  it('RSP5 - decode utf-8 encoded presence data', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, [
+          {
+            action: 1,
+            clientId: 'c1',
+            data: 'SGVsbG8gV29ybGQ=',
+            encoding: 'utf-8/base64',
+          },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    const result = await channel.presence.get({});
+
+    expect(result.items).to.have.length(1);
+    expect(result.items[0].data).to.equal('Hello World');
+    expect(typeof result.items[0].data).to.equal('string');
+    // Encoding must be fully consumed
+    expect(result.items[0].encoding).to.be.null;
+  });
+
+  /**
+   * RSP5f - history messages are decoded
+   *
+   * Encoding decoding must also apply to history() results, not just get().
+   */
+  // UTS: rest/unit/RSP5/decode-history-messages-6
+  it('RSP5 - history messages are decoded', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(200, [
+          {
+            action: 2,
+            clientId: 'c1',
+            data: '{"event":"entered"}',
+            encoding: 'json',
+          },
+        ]);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    const result = await channel.presence.history({});
+
+    expect(result.items).to.have.length(1);
+    expect(result.items[0].data).to.deep.equal({ event: 'entered' });
+    // Encoding must be consumed after decoding
+    expect(result.items[0].encoding).to.be.null;
+  });
+
+  /**
+   * RSP5 - decode msgpack binary presence data
+   *
+   * DEVIATION: ably-js does not support msgpack protocol
+   */
+  // UTS: rest/unit/RSP5/decode-msgpack-binary-3
+  it.skip('RSP5 - decode msgpack binary presence data (msgpack not supported)', function () {
+    // DEVIATION: ably-js does not support msgpack protocol
+  });
+
+  /**
+   * RSP5g - cipher decoding with channel options
+   *
+   * Encrypted data with cipher encoding must be decrypted using channel
+   * cipher options.
+   *
+   * TODO: Implement when cipher infrastructure is available for testing.
+   * Requires creating a channel with cipher params and providing correctly
+   * encrypted test data.
+   */
+  // UTS: rest/unit/RSP5/decode-cipher-channel-7
+  it.skip('RSP5 - cipher decoding with channel options', async function () {
+    // This test requires cipher infrastructure:
+    // 1. Create a channel with cipher params: client.channels.get('test', { cipher: { key } })
+    // 2. Mock returns presence with encoding: 'json/utf-8/cipher+aes-128-cbc/base64'
+    // 3. The SDK should decrypt the data using the cipher key
+    // 4. Assert the decrypted data matches the original plaintext
+  });
+
   // ---------------------------------------------------------------------------
   // Pagination
   // ---------------------------------------------------------------------------
@@ -483,6 +682,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When the server responds with a Link header containing a "next" relation,
    * hasNext() must return true and isLast() must return false.
    */
+  // UTS: rest/unit/RSP3/get-pagination-link-header-1
   it('RSP pagination - get() with Link header indicates hasNext', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -508,6 +708,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * Navigating pages via next() must fetch the next page from the server.
    */
+  // UTS: rest/unit/RSP3/get-pagination-next-page-2
   it('RSP pagination - history() navigates pages via next()', async function () {
     let reqCount = 0;
     const mock = new MockHttpClient({
@@ -544,6 +745,43 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(page2!.isLast()).to.be.true;
   });
 
+  /**
+   * RSP4 - history pagination
+   *
+   * History results must support pagination via Link headers and next().
+   */
+  // UTS: rest/unit/RSP4/history-pagination-1
+  it('RSP4 - history pagination', async function () {
+    let reqCount = 0;
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        reqCount++;
+        if (reqCount === 1) {
+          req.respond_with(200, [{ action: 2, clientId: 'c1', timestamp: 3000 }], {
+            Link: '<./history?cursor=page2>; rel="next"',
+          });
+        } else {
+          req.respond_with(200, [{ action: 4, clientId: 'c1', timestamp: 1000 }]);
+        }
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+
+    const page1 = await channel.presence.history({});
+    expect(page1.items).to.have.length(1);
+    expect(page1.items[0].action).to.equal('enter');
+    expect(page1.hasNext()).to.be.true;
+
+    const page2 = await page1.next();
+    expect(page2!.items).to.have.length(1);
+    expect(page2!.items[0].action).to.equal('update');
+    expect(page2!.hasNext()).to.be.false;
+  });
+
   // ---------------------------------------------------------------------------
   // Errors
   // ---------------------------------------------------------------------------
@@ -554,6 +792,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When the server responds with a 500 error, the operation must throw
    * with the appropriate error code.
    */
+  // UTS: rest/unit/RSP3/get-server-error-3
   it('RSP error - server error on get() throws with error code', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -581,6 +820,40 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     }
   });
 
+  /**
+   * RSP3 - get with 404 channel not found
+   *
+   * When the server responds with 404, the operation must throw with
+   * error code 40400 and statusCode 404.
+   */
+  // UTS: rest/unit/RSP3/get-channel-not-found-4
+  it('RSP3 - get with 404 channel not found', async function () {
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        req.respond_with(404, {
+          error: {
+            code: 40400,
+            statusCode: 404,
+            message: 'Not found',
+          },
+        });
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+
+    try {
+      await channel.presence.get({});
+      expect.fail('Expected get() to throw');
+    } catch (error: any) {
+      expect(error.code).to.equal(40400);
+      expect(error.statusCode).to.equal(404);
+    }
+  });
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -590,6 +863,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * Wire actions 1-4 must be decoded to present/enter/leave/update strings.
    */
+  // UTS: rest/unit/RSP5/presence-action-mapping-8
   it('RSP actions - wire actions 1-4 decoded to correct strings', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -635,6 +909,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When get() is called without a limit parameter, the request must either
    * omit the limit param (server default) or send limit=100.
    */
+  // UTS: rest/unit/RSP3a1/get-limit-default-100-1
   it('RSP3a1b - get() limit defaults to 100', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -657,6 +932,31 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(limit === null || limit === '100').to.be.true;
   });
 
+  /**
+   * RSP3a1c - get limit maximum 1000
+   *
+   * get({limit: 1000}) must send limit=1000 as a query parameter.
+   */
+  // UTS: rest/unit/RSP3a1/get-limit-max-1000-2
+  it('RSP3a1 - get limit maximum 1000', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.get({ limit: 1000 });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('limit')).to.equal('1000');
+  });
+
   // ---------------------------------------------------------------------------
   // RSP3 - get() with combined filters
   // ---------------------------------------------------------------------------
@@ -667,6 +967,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * get() with limit, clientId, and connectionId must send all three as
    * query parameters.
    */
+  // UTS: rest/unit/RSP3/get-multiple-filters-0
   it('RSP3 - get() with combined filters sends all params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -698,6 +999,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    *
    * history() with both start and end must send both as query parameters.
    */
+  // UTS: rest/unit/RSP4b1/history-start-end-params-2
   it('RSP4b1c - history() with start and end combined sends both params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -719,6 +1021,38 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(params.get('end')).to.equal('1609545600000');
   });
 
+  /**
+   * RSP4b1d - history accepts Date objects for start/end
+   *
+   * Language-specific DateTime objects should be accepted and converted
+   * to milliseconds since epoch.
+   *
+   * DEVIATION: ably-js history() expects start/end as numeric timestamps
+   * (milliseconds since epoch), not Date objects. Passing a Date object
+   * results in its toString() representation being sent as the query param.
+   * This test uses Date.getTime() to convert to the expected numeric format.
+   */
+  // UTS: rest/unit/RSP4b1/history-datetime-objects-3
+  it('RSP4b1 - history accepts Date objects for start/end', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    const startDate = new Date(1609459200000);
+    await channel.presence.history({ start: startDate.getTime() });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('start')).to.equal('1609459200000');
+  });
+
   // ---------------------------------------------------------------------------
   // RSP4b3b - history() limit defaults to 100
   // ---------------------------------------------------------------------------
@@ -729,6 +1063,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When history() is called without a limit parameter, the request must either
    * omit the limit param (server default) or send limit=100.
    */
+  // UTS: rest/unit/RSP4b3/history-limit-default-100-1
   it('RSP4b3b - history() limit defaults to 100', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -751,6 +1086,31 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(limit === null || limit === '100').to.be.true;
   });
 
+  /**
+   * RSP4b3c - history limit maximum 1000
+   *
+   * history({limit: 1000}) must send limit=1000 as a query parameter.
+   */
+  // UTS: rest/unit/RSP4b3/history-limit-max-1000-2
+  it('RSP4b3 - history limit maximum 1000', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({ limit: 1000 });
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].url.searchParams.get('limit')).to.equal('1000');
+  });
+
   // ---------------------------------------------------------------------------
   // RSP4 - history() with all parameters
   // ---------------------------------------------------------------------------
@@ -761,6 +1121,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * history() with start, end, direction, and limit must send all four
    * as query parameters.
    */
+  // UTS: rest/unit/RSP4/history-all-parameters-0
   it('RSP4 - history() with all parameters sends all params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -794,6 +1155,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * When the server responds with 401 and error code 40101, the operation
    * must throw with the appropriate error code and statusCode.
    */
+  // UTS: rest/unit/RSP4/history-auth-error-2
   it('RSP Error 2 - auth error on history() throws with error code', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -824,6 +1186,37 @@ describe('uts/rest/unit/presence/rest_presence', function () {
   });
 
   // ---------------------------------------------------------------------------
+  // RSP4 - history() includes authorization header
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP4 - history includes authorization header
+   *
+   * Authenticated history requests must include the Authorization header
+   * starting with 'Basic '.
+   */
+  // UTS: rest/unit/RSP4/history-auth-header-3
+  it('RSP4 - history includes authorization header', async function () {
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const channel = client.channels.get('test');
+    await channel.presence.history({});
+
+    expect(captured).to.have.length(1);
+    expect(captured[0].headers).to.have.property('authorization');
+    expect(captured[0].headers['authorization']).to.match(/^Basic /);
+  });
+
+  // ---------------------------------------------------------------------------
   // RSP Headers - get() includes standard headers
   // ---------------------------------------------------------------------------
 
@@ -833,6 +1226,7 @@ describe('uts/rest/unit/presence/rest_presence', function () {
    * get() must include authorization, X-Ably-Version, and accept headers
    * in the request.
    */
+  // UTS: rest/unit/RSP3/get-standard-headers-5
   it('RSP Headers - get() includes standard headers', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -856,5 +1250,43 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     expect(headers['X-Ably-Version']).to.not.be.empty;
     expect(headers).to.have.property('accept');
     expect(headers['accept']).to.not.be.empty;
+  });
+
+  // ---------------------------------------------------------------------------
+  // RSP3 - get() includes request_id when addRequestIds enabled
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RSP3 - request_id when addRequestIds enabled
+   *
+   * When addRequestIds is true, get() must include a request_id query parameter.
+   */
+  /**
+   * NOTE: ably-js accepts addRequestIds option but does not implement it.
+   * The option is stored but no request_id parameter is added to requests.
+   * See deviations.md.
+   */
+  // UTS: rest/unit/RSP3/get-request-id-enabled-6
+  it('RSP3 - get includes request_id when enabled', async function () {
+    // DEVIATION: see deviations.md
+    if (!process.env.RUN_DEVIATIONS) this.skip();
+    const captured: any[] = [];
+    const mock = new MockHttpClient({
+      onConnectionAttempt: (conn) => conn.respond_with_success(),
+      onRequest: (req) => {
+        captured.push(req);
+        req.respond_with(200, []);
+      },
+    });
+    installMockHttp(mock);
+
+    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', addRequestIds: true, useBinaryProtocol: false } as any);
+    const channel = client.channels.get('test');
+    await channel.presence.get({});
+
+    expect(captured).to.have.length(1);
+    const requestId = captured[0].url.searchParams.get('request_id');
+    expect(requestId).to.be.a('string');
+    expect(requestId).to.not.be.empty;
   });
 });

@@ -20,6 +20,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * Subscribe with a single listener argument subscribes a listener to
    * all presence messages.
    */
+  // UTS: realtime/unit/RTP6a/subscribe-all-presence-events-0
   it('RTP6a - subscribe to all presence events', async function () {
     const channelName = `test-RTP6a-${Date.now()}`;
 
@@ -107,6 +108,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * Subscribe with an action argument and a listener subscribes the
    * listener to receive only presence messages with that action.
    */
+  // UTS: realtime/unit/RTP6b/subscribe-filtered-by-action-0
   it('RTP6b - subscribe filtered by single action', async function () {
     const channelName = `test-RTP6b-${Date.now()}`;
 
@@ -180,6 +182,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    *
    * The action argument may also be an array of actions.
    */
+  // UTS: realtime/unit/RTP6b/subscribe-filtered-multiple-actions-1
   it('RTP6b - subscribe filtered by multiple actions', async function () {
     const channelName = `test-RTP6b-multi-${Date.now()}`;
 
@@ -244,6 +247,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * If the attachOnSubscribe channel option is true (default),
    * implicitly attach the RealtimeChannel.
    */
+  // UTS: realtime/unit/RTP6d/subscribe-implicitly-attaches-0
   it('RTP6d - subscribe implicitly attaches channel', async function () {
     const channelName = `test-RTP6d-${Date.now()}`;
     let attachCount = 0;
@@ -299,6 +303,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * If the attachOnSubscribe channel option is false, do not
    * implicitly attach.
    */
+  // UTS: realtime/unit/RTP6e/subscribe-no-attach-option-0
   it('RTP6e - subscribe with attachOnSubscribe=false does not attach', async function () {
     const channelName = `test-RTP6e-${Date.now()}`;
     let attachCount = 0;
@@ -346,6 +351,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    *
    * Unsubscribe with no arguments unsubscribes all listeners.
    */
+  // UTS: realtime/unit/RTP7c/unsubscribe-all-listeners-0
   it('RTP7c - unsubscribe all listeners', async function () {
     const channelName = `test-RTP7c-${Date.now()}`;
 
@@ -425,6 +431,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * Unsubscribe with a single listener argument unsubscribes that
    * specific listener.
    */
+  // UTS: realtime/unit/RTP7a/unsubscribe-specific-listener-0
   it('RTP7a - unsubscribe specific listener', async function () {
     const channelName = `test-RTP7a-${Date.now()}`;
 
@@ -492,6 +499,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * Unsubscribe with an action argument and a listener unsubscribes
    * the listener for that action only.
    */
+  // UTS: realtime/unit/RTP7b/unsubscribe-for-specific-action-0
   it('RTP7b - unsubscribe listener for specific action', async function () {
     const channelName = `test-RTP7b-${Date.now()}`;
 
@@ -559,6 +567,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    * Incoming presence messages are applied to the PresenceMap (RTP2)
    * before being emitted to subscribers.
    */
+  // UTS: realtime/unit/RTP6/presence-events-update-map-0
   it('RTP6 - presence events update the PresenceMap', async function () {
     const channelName = `test-RTP6-map-${Date.now()}`;
 
@@ -620,6 +629,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
    *
    * A PRESENCE ProtocolMessage may contain multiple PresenceMessages.
    */
+  // UTS: realtime/unit/RTP6/multiple-presence-in-single-message-1
   it('RTP6 - multiple presence messages in single ProtocolMessage', async function () {
     const channelName = `test-RTP6-batch-${Date.now()}`;
 

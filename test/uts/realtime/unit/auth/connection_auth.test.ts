@@ -20,6 +20,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * When authCallback is configured but no token is provided, the library must
    * obtain a token via the callback before opening the WebSocket connection.
    */
+  // UTS: realtime/unit/RTN2e/token-before-websocket-0
   it('RTN2e/RTN27b - token obtained before WebSocket connection', function (done) {
     let callbackInvoked = false;
     let callbackInvokedTime: number | null = null;
@@ -77,6 +78,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * If authCallback fails during initial token acquisition, the library
    * should NOT attempt to open a WebSocket connection.
    */
+  // UTS: realtime/unit/RTN2e/callback-error-prevents-connect-1
   it('RTN2e/RTN27b - authCallback error prevents connection attempt', function (done) {
     let connectionAttempted = false;
 
@@ -124,6 +126,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * When invoking authCallback, the library passes TokenParams that include
    * any configured clientId (per RSA12a).
    */
+  // UTS: realtime/unit/RTN2e/callback-params-include-clientid-2
   it('RTN2e - authCallback TokenParams include clientId', function (done) {
     let receivedParams: any = null;
 
@@ -168,6 +171,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * If a valid (non-expired) token exists from a previous authCallback invocation,
    * it should be reused for subsequent connection attempts.
    */
+  // UTS: realtime/unit/RTN2e/reuse-valid-token-3
   it('RTN2e - multiple connections reuse valid token', function (done) {
     let callbackCount = 0;
 
@@ -223,6 +227,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    *   RSA4c1: errorReason set with code 80019, statusCode 401, cause = underlying error
    *   RSA4c2: connection transitions to DISCONNECTED
    */
+  // UTS: realtime/unit/RSA4c2/callback-error-causes-disconnected-0
   it('RSA4c2 - authCallback error during CONNECTING causes DISCONNECTED', function (done) {
     let authCallbackCount = 0;
 
@@ -282,6 +287,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * the connection is healthy, the existing token is still valid, and there is
    * no state change to associate the error with (see specification#466).
    */
+  // UTS: realtime/unit/RSA4c3/callback-error-stays-connected-0
   it('RSA4c3 - authCallback error while CONNECTED does not set errorReason', async function () {
     let authCallbackCount = 0;
 
@@ -352,6 +358,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * Per RSA4d: if authCallback returns statusCode 403, the connection
    * transitions to FAILED with code 80019 and statusCode 403.
    */
+  // UTS: realtime/unit/RSA4d/callback-403-causes-failed-0
   it('RSA4d - authCallback 403 during CONNECTING causes FAILED', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -400,6 +407,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
    * Per RSA4d: 403 from authCallback during server-initiated reauth
    * causes FAILED, overriding RSA4c3's "stay CONNECTED" rule.
    */
+  // UTS: realtime/unit/RSA4d/callback-403-reauth-causes-failed-1
   it('RSA4d - authCallback 403 during reauth causes FAILED', function (done) {
     let authCallbackCount = 0;
 

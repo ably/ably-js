@@ -23,6 +23,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS1 - Channels collection accessible via RealtimeClient
    */
+  // UTS: realtime/unit/RTS1/channels-collection-accessible-0
   it('RTS1 - channels collection accessible via client.channels', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -44,6 +45,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
    *
    * Deviation: ably-js has no exists() method. Use `name in channels.all`.
    */
+  // UTS: realtime/unit/RTS2/channel-exists-check-0
   it('RTS2 - check channel existence', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -71,6 +73,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
    *
    * Deviation: ably-js has no channels.names — use Object.keys(channels.all).
    */
+  // UTS: realtime/unit/RTS2/iterate-channels-1
   it('RTS2 - iterate through existing channels', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -94,6 +97,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS3a - Get creates new channel if none exists
    */
+  // UTS: realtime/unit/RTS3a/get-creates-new-channel-0
   it('RTS3a - get creates new channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -112,6 +116,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS3a - Get returns existing channel (same reference)
    */
+  // UTS: realtime/unit/RTS3a/get-returns-existing-channel-1
   it('RTS3a - get returns same channel instance', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -131,6 +136,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS4a - Release removes channel from collection
    */
+  // UTS: realtime/unit/RTS4a/release-detaches-attached-2
   it('RTS4a - release removes channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -151,6 +157,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS4a - Release on non-existent channel is no-op
    */
+  // UTS: realtime/unit/RTS4a/release-nonexistent-noop-1
   it('RTS4a - release non-existent channel is no-op', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -171,6 +178,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
    * Per spec: "Detaches the channel and then releases the channel resource
    * i.e. it's deleted and can then be garbage collected"
    */
+  // UTS: realtime/unit/RTS4a/release-removes-channel-0
   it('RTS4a - release detaches and removes attached channel', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -225,6 +233,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   /**
    * RTS3a - Get after release creates new channel instance
    */
+  // UTS: realtime/unit/RTS3a/get-after-release-new-3
   it('RTS3a - get after release creates new instance', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
@@ -251,6 +260,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
    * This test verifies that channels.all[name] returns the same channel as
    * channels.get(name) after creation.
    */
+  // UTS: realtime/unit/RTS3a/subscript-operator-channel-2
   it('RTS3a - channels.all bracket access returns same channel', function () {
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',

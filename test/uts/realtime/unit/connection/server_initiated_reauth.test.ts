@@ -17,6 +17,7 @@ describe('uts/realtime/unit/connection/server_initiated_reauth', function () {
   /**
    * RTN22 - Server sends AUTH, client re-authenticates
    */
+  // UTS: realtime/unit/RTN22/server-auth-triggers-reauth-0
   it('RTN22 - server AUTH triggers client reauth', function (done) {
     let authCallbackCount = 0;
     const capturedAuthMessages: any[] = [];
@@ -95,6 +96,7 @@ describe('uts/realtime/unit/connection/server_initiated_reauth', function () {
   /**
    * RTN22 - Connection remains CONNECTED during server-initiated reauth
    */
+  // UTS: realtime/unit/RTN22/stays-connected-during-reauth-1
   it('RTN22 - connection stays CONNECTED during reauth', function (done) {
     let authCallbackCount = 0;
 
@@ -167,6 +169,7 @@ describe('uts/realtime/unit/connection/server_initiated_reauth', function () {
   /**
    * RTN22a - Forced disconnect on reauth failure
    */
+  // UTS: realtime/unit/RTN22a/forced-disconnect-reauth-failure-0
   it('RTN22a - forced disconnect with token error', function (done) {
     let authCallbackCount = 0;
 

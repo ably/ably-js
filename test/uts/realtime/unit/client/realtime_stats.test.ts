@@ -20,6 +20,7 @@ describe('uts/realtime/unit/client/realtime_stats', function () {
   /**
    * RTC5a - stats() sends GET /stats
    */
+  // UTS: realtime/unit/RTC5/stats-proxies-rest-0.1
   it('RTC5a - stats() sends GET /stats', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -48,6 +49,7 @@ describe('uts/realtime/unit/client/realtime_stats', function () {
   /**
    * RTC5b - stats() accepts params
    */
+  // UTS: realtime/unit/RTC5/stats-proxies-rest-0.2
   it('RTC5b - stats() passes query params', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -77,6 +79,7 @@ describe('uts/realtime/unit/client/realtime_stats', function () {
   /**
    * RTC5 - stats() returns PaginatedResult
    */
+  // UTS: realtime/unit/RTC5/stats-proxies-rest-0
   it('RTC5 - stats() returns PaginatedResult', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

@@ -33,6 +33,7 @@ describe('uts/realtime/integration/channels/channel_publish', function () {
   /**
    * RTL6, RSL4d2 - String data round-trip
    */
+  // UTS: realtime/integration/RTL6/string-data-roundtrip-0
   it('RTL6/RSL4d2 - string data round-trip', async function () {
     const channelName = uniqueChannelName('publish-string');
 
@@ -81,6 +82,7 @@ describe('uts/realtime/integration/channels/channel_publish', function () {
   /**
    * RTL6, RSL4d3 - JSON object data round-trip
    */
+  // UTS: realtime/integration/RTL6/json-data-roundtrip-1
   it('RTL6/RSL4d3 - JSON object data round-trip', async function () {
     const channelName = uniqueChannelName('publish-json');
 
@@ -132,6 +134,7 @@ describe('uts/realtime/integration/channels/channel_publish', function () {
   /**
    * RTL6, RSL4d1 - Binary data round-trip
    */
+  // UTS: realtime/integration/RTL6/binary-data-roundtrip-2
   it('RTL6/RSL4d1 - binary data round-trip', async function () {
     const channelName = uniqueChannelName('publish-binary');
 
@@ -182,6 +185,7 @@ describe('uts/realtime/integration/channels/channel_publish', function () {
   /**
    * RTL6f - connectionId matches publisher
    */
+  // UTS: realtime/integration/RTL6f/connectionid-matches-publisher-0
   it('RTL6f - connectionId matches publisher', async function () {
     const channelName = uniqueChannelName('publish-connid');
 
@@ -230,6 +234,7 @@ describe('uts/realtime/integration/channels/channel_publish', function () {
   /**
    * RSL6a2 - Message extras round-trip
    */
+  // UTS: realtime/integration/RSL6a2/message-extras-roundtrip-0
   it('RSL6a2 - message extras round-trip', async function () {
     const channelName = uniqueChannelName('pushenabled:publish-extras');
 

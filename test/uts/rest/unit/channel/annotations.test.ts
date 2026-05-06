@@ -20,6 +20,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * The channel must expose an annotations attribute that is an object
    * (specifically a RestAnnotations instance).
    */
+  // UTS: rest/unit/RSL10/annotations-attribute-type-0
   it('RSL10 - channel.annotations is accessible', function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -42,6 +43,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * with the annotation body containing action=0 (ANNOTATION_CREATE),
    * the messageSerial, type, and name fields.
    */
+  // UTS: rest/unit/RSAN1c6/publish-post-annotation-create-0
   it('RSAN1 - publish sends POST with ANNOTATION_CREATE', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -81,6 +83,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * requirement (RSAN1a3) as a known deviation — the publish succeeds
    * without a type instead of throwing.
    */
+  // UTS: rest/unit/RSAN1a3/publish-type-required-0
   it('RSAN1a3 - type required', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -114,6 +117,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * JSON string with the encoding field set to 'json', following RSL4
    * message encoding rules.
    */
+  // UTS: rest/unit/RSAN1c3/annotation-data-encoded-0
   it('RSAN1c3 - data encoded per RSL4', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -149,6 +153,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * annotations (only for messages via RestChannel.publish). This test
    * documents the spec requirement as a known deviation.
    */
+  // UTS: rest/unit/RSAN1c4/idempotent-id-not-generated-1
   it('RSAN1c4 - idempotent ID generated', async function () {
     // DEVIATION: see deviations.md
     if (!process.env.RUN_DEVIATIONS) this.skip();
@@ -191,6 +196,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * When idempotentRestPublishing is false, no idempotent ID should
    * be generated on the annotation.
    */
+  // UTS: rest/unit/RSAN1c4/idempotent-id-generated-0
   it('RSAN1c4 - no ID when disabled', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -222,6 +228,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * annotations.delete() must send a POST request with
    * action=1 (ANNOTATION_DELETE) to the correct endpoint.
    */
+  // UTS: rest/unit/RSAN1c6/publish-post-annotation-create-0.1
   it('RSAN2a - delete sends POST with ANNOTATION_DELETE', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -256,6 +263,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * annotations.get() must send a GET request to
    * /channels/{channelName}/messages/{messageSerial}/annotations.
    */
+  // UTS: rest/unit/RSL10/annotations-attribute-type-0.1
   it('RSAN3b - get sends GET to correct path', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({
@@ -293,6 +301,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * The response must be parsed into a PaginatedResult containing
    * Annotation objects with all expected fields decoded.
    */
+  // UTS: rest/unit/RSL10/annotations-attribute-type-0.2
   it('RSAN3c - get returns PaginatedResult with annotation fields', async function () {
     const mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
@@ -363,6 +372,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * Optional params passed to annotations.get() must be sent as
    * query string parameters on the GET request.
    */
+  // UTS: rest/unit/RSL10/annotations-attribute-type-0.3
   it('RSAN3b - get passes params as querystring', async function () {
     const captured: any[] = [];
     const mock = new MockHttpClient({

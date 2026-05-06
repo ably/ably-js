@@ -107,6 +107,7 @@ describe('uts/realtime/integration/proxy/presence_reentry', function () {
    * perspective the member never left), so we verify the SDK's behavior via the
    * proxy log rather than via a second client.
    */
+  // UTS: realtime/proxy/RTP17i/reenter-on-non-resumed-0
   it('RTP17i/RTP17g - automatic presence re-enter on non-resumed reattach', async function () {
     const channelName = uniqueChannelName('test-rtp17i');
 
@@ -198,6 +199,7 @@ describe('uts/realtime/integration/proxy/presence_reentry', function () {
    * non-resumed one (simulating channel state loss). The SDK should re-enter
    * presence. We verify via proxy log that the PRESENCE ENTER was sent.
    */
+  // UTS: realtime/proxy/RTP17i/reenter-after-disconnect-1
   it('RTP17i - presence re-enter after real disconnect', async function () {
     const channelName = uniqueChannelName('test-rtp17i-real');
 

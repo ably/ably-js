@@ -23,6 +23,7 @@ describe('uts/realtime/unit/time', function () {
   /**
    * RTC6a - time() returns server time (proxied from REST)
    */
+  // UTS: realtime/unit/RTC6/time-proxies-rest-0
   it('RTC6a - time() returns server time', async function () {
     const captured: any[] = [];
     const serverTimeMs = 1704067200000;
@@ -52,6 +53,7 @@ describe('uts/realtime/unit/time', function () {
   /**
    * RTC6a - time() request format (proxied from REST)
    */
+  // UTS: rest/unit/RSC16/request-format-get-time-1.1
   it('RTC6a - time() request format', async function () {
     const captured: any[] = [];
 
@@ -83,6 +85,7 @@ describe('uts/realtime/unit/time', function () {
   /**
    * RTC6a - time() does not require authentication (proxied from REST)
    */
+  // UTS: rest/unit/RSC16/no-auth-required-2.1
   it('RTC6a - time() does not require authentication', async function () {
     const captured: any[] = [];
 
@@ -109,6 +112,7 @@ describe('uts/realtime/unit/time', function () {
   /**
    * RTC6a - time() works without TLS (proxied from REST)
    */
+  // UTS: rest/unit/RSC16/works-without-tls-3.1
   it('RTC6a - time() works without TLS', async function () {
     const captured: any[] = [];
 
@@ -141,6 +145,7 @@ describe('uts/realtime/unit/time', function () {
   /**
    * RTC6a - time() error handling (proxied from REST)
    */
+  // UTS: realtime/unit/RTC6/time-proxies-rest-0.1
   it('RTC6a - time() error handling', async function () {
     mock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),

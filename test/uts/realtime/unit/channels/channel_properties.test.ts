@@ -20,6 +20,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15a - attachSerial updated from ATTACHED message
    */
+  // UTS: realtime/unit/RTL15a/attach-serial-server-reattach-1
   it('RTL15a - attachSerial from ATTACHED', async function () {
     let attachCount = 0;
 
@@ -76,6 +77,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15a - attachSerial updated on server-initiated reattach
    */
+  // UTS: realtime/unit/RTL15a/attach-serial-from-attached-0
   it('RTL15a - attachSerial updated on additional ATTACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -126,6 +128,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15b - channelSerial updated from ATTACHED message
    */
+  // UTS: realtime/unit/RTL15b/channel-serial-from-attached-0
   it('RTL15b - channelSerial from ATTACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -167,6 +170,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15b - channelSerial updated from MESSAGE and PRESENCE actions
    */
+  // UTS: realtime/unit/RTL15b/channel-serial-from-messages-1
   it('RTL15b - channelSerial updated from MESSAGE', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -216,6 +220,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15b1 - channelSerial cleared on DETACHED state
    */
+  // UTS: realtime/unit/RTL15b1/serial-cleared-detached-0
   it('RTL15b1 - channelSerial cleared on detach', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -266,6 +271,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15b1 - channelSerial cleared on FAILED state
    */
+  // UTS: realtime/unit/RTL15b1/serial-cleared-failed-2
   it('RTL15b1 - channelSerial cleared on failed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -316,6 +322,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   /**
    * RTL15b1 - channelSerial cleared on SUSPENDED state
    */
+  // UTS: realtime/unit/RTL15b1/serial-cleared-suspended-1
   it('RTL15b1 - channelSerial cleared on suspended', async function () {
     let attachCount = 0;
 
@@ -387,6 +394,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
    * Receiving a MESSAGE without a channelSerial should not clear or change
    * the existing channelSerial.
    */
+  // UTS: realtime/unit/RTL15b/serial-not-updated-empty-2
   it('RTL15b - channelSerial unchanged when not in message', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -444,6 +452,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
    * (RTL13a), so we verify the final channelSerial comes from the new
    * ATTACHED, not from the DETACHED message.
    */
+  // UTS: realtime/unit/RTL15b/serial-not-updated-irrelevant-3
   it('RTL15b - channelSerial not from irrelevant actions', async function () {
     let attachCount = 0;
 

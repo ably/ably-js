@@ -18,6 +18,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN8a - Connection ID is unset until connected
    */
+  // UTS: realtime/unit/RTN8a/id-unset-until-connected-0
   it('RTN8a - connection.id is null before connected', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -55,6 +56,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN9a - Connection key is unset until connected
    */
+  // UTS: realtime/unit/RTN9a/key-unset-until-connected-0
   it('RTN9a - connection.key is null before connected', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -91,6 +93,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN8b - Connection ID is unique per connection
    */
+  // UTS: realtime/unit/RTN8b/id-unique-per-connection-0
   it('RTN8b - connection.id is unique per client', function (done) {
     let connectionCount = 0;
 
@@ -141,6 +144,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN9b - Connection key is unique per connection
    */
+  // UTS: realtime/unit/RTN9b/key-unique-per-connection-0
   it('RTN9b - connection.key is unique per client', function (done) {
     let connectionCount = 0;
 
@@ -191,6 +195,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN8c - Connection ID is null in CLOSED state
    */
+  // UTS: realtime/unit/RTN8c/id-null-after-closed-0
   it('RTN8c - connection.id is null after close', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -237,6 +242,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN9c - Connection key is null in CLOSED state
    */
+  // UTS: realtime/unit/RTN9c/key-null-after-closed-0
   it('RTN9c - connection.key is null after close', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -283,6 +289,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN8c, RTN9c - ID and key null after FAILED
    */
+  // UTS: realtime/unit/RTN8c/id-key-null-after-failed-1
   it('RTN8c, RTN9c - id and key null in FAILED state', function (done) {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -313,6 +320,7 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   /**
    * RTN8c, RTN9c - ID and key null in SUSPENDED state
    */
+  // UTS: realtime/unit/RTN8c/id-key-null-after-suspended-2
   it('RTN8c, RTN9c - id and key null in SUSPENDED state', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {

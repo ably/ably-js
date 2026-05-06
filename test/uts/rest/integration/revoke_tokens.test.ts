@@ -39,6 +39,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
    * information. Revocation is verified via a Realtime client that gets
    * disconnected with error code 40141.
    */
+  // UTS: rest/integration/RSA17g/revoke-token-prevents-use-0
   it('RSA17g, RSA17b, RSA17c, TRS2 - token revocation prevents subsequent use', async function () {
     const clientId = 'revoke-client-' + Math.random().toString(36).substring(2, 10);
 
@@ -86,6 +87,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
    * with code 40162 and status code 401. This is a client-side check -- no
    * HTTP request is made to the server.
    */
+  // UTS: rest/integration/RSA17d/token-auth-revoke-rejected-0
   it('RSA17d - token auth client rejected', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey(4));
     const jwt = generateJWT({
@@ -117,6 +119,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
    * revoked. When allowReauthMargin is true, the revocation is delayed by
    * approximately 30 seconds to allow token renewal.
    */
+  // UTS: rest/integration/RSA17e/issued-before-reauth-margin-0
   it('RSA17e, RSA17f - issuedBefore and allowReauthMargin', async function () {
     const clientId = 'revoke-margin-client-' + Math.random().toString(36).substring(2, 10);
 
@@ -151,6 +154,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
    * An invalid target type produces a failure result with an ErrorInfo.
    * The valid revocation is verified via a Realtime client disconnect.
    */
+  // UTS: rest/integration/RSA17c/mixed-success-failure-0
   it('RSA17c, TRF2 - mixed success and failure', async function () {
     const clientId = 'revoke-mixed-client-' + Math.random().toString(36).substring(2, 10);
 

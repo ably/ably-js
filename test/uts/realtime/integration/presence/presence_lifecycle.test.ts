@@ -33,6 +33,7 @@ describe('uts/realtime/integration/presence/presence_lifecycle', function () {
   /**
    * RTP4, RTP6, RTP11a - Bulk enterClient observed on different connection
    */
+  // UTS: realtime/integration/RTP4/bulk-enter-observed-0
   it('RTP4/RTP6/RTP11a - bulk enterClient observed via subscribe and get', async function () {
     const channelName = uniqueChannelName('presence-bulk');
     const memberCount = 20;
@@ -95,6 +96,7 @@ describe('uts/realtime/integration/presence/presence_lifecycle', function () {
   /**
    * RTP8, RTP9, RTP10 - Enter, update, leave lifecycle
    */
+  // UTS: realtime/integration/RTP8/enter-update-leave-lifecycle-0
   it('RTP8/RTP9/RTP10 - enter, update, leave lifecycle observed on second connection', async function () {
     const channelName = uniqueChannelName('presence-lifecycle');
 

@@ -77,6 +77,7 @@ describe('uts/realtime/integration/proxy/heartbeat', function () {
    * Note: We use 'close' rather than 'suppress_onwards' because
    * suppress_onwards is session-scoped and would affect the reconnection too.
    */
+  // UTS: realtime/proxy/RTN23a/heartbeat-starvation-reconnect-0
   it('RTN23a - heartbeat starvation causes disconnect and reconnect', async function () {
     session = await createProxySession({
       rules: [

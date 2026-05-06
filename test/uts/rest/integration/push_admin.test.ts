@@ -40,6 +40,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Publishes a push notification to a clientId recipient. The sandbox
    * accepts the request even though no real device receives it.
    */
+  // UTS: rest/integration/RSH1a/push-publish-clientid-0
   it('RSH1a - publish to clientId recipient should not throw', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -62,6 +63,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * An empty recipient object should cause the server to return an error.
    */
+  // UTS: rest/integration/RSH1a/push-publish-invalid-recipient-1
   it('RSH1a - publish with empty recipient throws error', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -89,6 +91,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Saves a device registration, then retrieves it by ID and verifies
    * the returned fields.
    */
+  // UTS: rest/integration/RSH1b3/save-and-get-device-0
   it('RSH1b3, RSH1b1 - save and get device registration', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -129,6 +132,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Saving a device with the same ID but a different token should update
    * the existing registration.
    */
+  // UTS: rest/integration/RSH1b3/update-device-registration-1
   it('RSH1b3 - save updates existing device registration', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -174,6 +178,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * Retrieving a nonexistent device must return a 404 error.
    */
+  // UTS: rest/integration/RSH1b1/get-unknown-device-error-0
   it('RSH1b1 - get unknown device throws 404', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -194,6 +199,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Lists device registrations filtered by deviceId. The result should be
    * a PaginatedResult containing exactly the registered device.
    */
+  // UTS: rest/integration/RSH1b2/list-devices-filtered-0
   it('RSH1b2 - list device registrations filtered by deviceId', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -228,6 +234,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Registering 3 devices with the same clientId, then listing with limit=2
    * should return at most 2 items and indicate more pages are available.
    */
+  // UTS: rest/integration/RSH1b2/list-devices-pagination-1
   it('RSH1b2 - list supports pagination with limit', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // push admin API does not return Link headers for pagination; see ably/realtime#8380
     const client = new Ably.Rest({
@@ -273,6 +280,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * Saves a device, removes it, then verifies it is no longer retrievable.
    */
+  // UTS: rest/integration/RSH1b4/remove-device-0
   it('RSH1b4 - remove deletes device registration', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -308,6 +316,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * Removing a device that does not exist should not throw.
    */
+  // UTS: rest/integration/RSH1b4/remove-nonexistent-device-1
   it('RSH1b4 - remove nonexistent device does not throw', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -323,6 +332,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Registers two devices with the same clientId, removes them all via
    * removeWhere, then verifies none remain.
    */
+  // UTS: rest/integration/RSH1b5/remove-where-clientid-0
   it('RSH1b5 - removeWhere deletes devices by clientId', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -365,6 +375,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Registers a device, saves a channel subscription for it, then lists
    * subscriptions on that channel and verifies the subscription appears.
    */
+  // UTS: rest/integration/RSH1c3/save-and-list-subscriptions-0
   it('RSH1c3, RSH1c1 - save and list channel subscription by deviceId', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -421,6 +432,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * Saves a clientId-based channel subscription and verifies the response.
    */
+  // UTS: rest/integration/RSH1c3/save-subscription-clientid-1
   it('RSH1c3 - save channel subscription with clientId', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -452,6 +464,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Creates a clientId subscription, then verifies the channel appears
    * in the listChannels result.
    */
+  // UTS: rest/integration/RSH1c2/list-channels-with-subscriptions-0
   it('RSH1c2 - listChannels includes channel with active subscription', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -486,6 +499,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Creates a subscription, removes it, then verifies it no longer appears
    * in list results.
    */
+  // UTS: rest/integration/RSH1c4/remove-channel-subscription-0
   it('RSH1c4 - remove deletes channel subscription', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -520,6 +534,7 @@ describe('uts/rest/integration/push_admin', function () {
    *
    * Removing a subscription that does not exist should not throw.
    */
+  // UTS: rest/integration/RSH1c4/remove-nonexistent-subscription-1
   it('RSH1c4 - remove nonexistent subscription does not throw', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
@@ -538,6 +553,7 @@ describe('uts/rest/integration/push_admin', function () {
    * Creates subscriptions on two channels for the same clientId, removes
    * them all via removeWhere, then verifies none remain.
    */
+  // UTS: rest/integration/RSH1c5/remove-where-subscriptions-0
   it('RSH1c5 - removeWhere deletes subscriptions by clientId', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),

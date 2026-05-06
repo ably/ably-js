@@ -39,6 +39,7 @@ describe('uts/rest/integration/batch_presence', function () {
    * Enter members on two channels via Realtime, then query both channels
    * in a single batchPresence call via REST and verify the returned members.
    */
+  // UTS: rest/integration/RSC24/batch-presence-multiple-channels-0
   it('RSC24, BGR2 - batchPresence returns members across multiple channels', async function () {
     const channelAName = uniqueChannelName('batch-presence-a');
     const channelBName = uniqueChannelName('batch-presence-b');
@@ -109,6 +110,7 @@ describe('uts/rest/integration/batch_presence', function () {
    * an empty presence set. The test still validates the per-channel success vs
    * failure distinction.
    */
+  // UTS: rest/integration/RSC24/restricted-key-channel-failure-1
   it('RSC24, BGF2 - restricted key returns per-channel failure for unauthorized channels', async function () {
     // Use the fixed channel name matching keys[2] capability from ably-common
     const allowedChannel = 'channel6';
@@ -171,6 +173,7 @@ describe('uts/rest/integration/batch_presence', function () {
    * A channel with no presence members returns a success result with an empty
    * presence array (or no presence field, depending on server behaviour).
    */
+  // UTS: rest/integration/RSC24/empty-channel-presence-2
   it('RSC24 - batchPresence with empty channel returns empty presence array', async function () {
     const emptyChannel = uniqueChannelName('batch-empty');
     const populatedChannel = uniqueChannelName('batch-populated');

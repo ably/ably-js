@@ -34,6 +34,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Client can authenticate using an API key via HTTP Basic Auth.
    */
+  // UTS: rest/integration/RSA4/basic-auth-key-0
   it('RSA4 - basic auth with API key', async function () {
     const channelName = uniqueChannelName('test-RSA4');
 
@@ -53,6 +54,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Client can authenticate using a JWT token.
    */
+  // UTS: rest/integration/RSA8/token-auth-jwt-0
   it('RSA8 - token auth with JWT', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
@@ -80,6 +82,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Client can authenticate using an Ably native token obtained via requestToken().
    */
+  // UTS: rest/integration/RSA8/token-auth-native-1
   it('RSA8 - token auth with native token', async function () {
     const keyClient = new Ably.Rest({
       key: getApiKey(),
@@ -109,6 +112,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Client can use authCallback to obtain authentication via TokenRequest.
    */
+  // UTS: rest/integration/RSA8/auth-callback-token-request-2
   it('RSA8 - authCallback with TokenRequest', async function () {
     const tokenRequestClient = new Ably.Rest({
       key: getApiKey(),
@@ -140,6 +144,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Client can use authCallback to obtain JWT tokens dynamically.
    */
+  // UTS: rest/integration/RSA8/auth-callback-jwt-3
   it('RSA8 - authCallback with JWT', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
@@ -173,6 +178,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Server rejects requests with invalid API key credentials.
    */
+  // UTS: rest/integration/RSA4/invalid-credentials-rejected-1
   it('RSA4 - invalid credentials rejected', async function () {
     const channelName = uniqueChannelName('test-RSA4-invalid');
 
@@ -195,6 +201,7 @@ describe('uts/rest/integration/auth', function () {
    * When a REST request fails with a token error (40140-40149), the client
    * should automatically renew the token and retry the request.
    */
+  // UTS: rest/integration/RSC10/token-renewal-expired-jwt-0
   it('RSC10 - token renewal with expired JWT', async function () {
     if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js retry overwrites new auth header with stale one; see #2193
     const { keyName, keySecret } = getKeyParts(getApiKey());
@@ -247,6 +254,7 @@ describe('uts/rest/integration/auth', function () {
    *
    * Tokens with restricted capabilities should only allow the permitted operations.
    */
+  // UTS: rest/integration/RSA8/capability-restriction-4
   it('RSA8 - capability restriction', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
 
