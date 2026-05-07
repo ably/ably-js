@@ -45,7 +45,7 @@ describe('uts/rest/unit/request_endpoint', function () {
   /**
    * RSC25 - Custom endpoint used for requests
    *
-   * When a custom endpoint (e.g. 'sandbox') is configured, REST requests
+   * When a custom endpoint (e.g. 'test') is configured, REST requests
    * must be sent to the corresponding domain.
    */
   // UTS: rest/unit/RSC25/custom-endpoint-domain-1
@@ -63,12 +63,12 @@ describe('uts/rest/unit/request_endpoint', function () {
     const client = new Ably.Rest({
       key: 'app.key:secret',
       useBinaryProtocol: false,
-      endpoint: 'sandbox',
+      endpoint: 'test',
     });
     await client.time();
 
     expect(captured).to.have.length(1);
-    expect(captured[0].url.hostname).to.equal('sandbox.realtime.ably.net');
+    expect(captured[0].url.hostname).to.equal('test.realtime.ably.net');
   });
 
   /**

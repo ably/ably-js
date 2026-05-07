@@ -25,8 +25,8 @@ const PROXY_BIN = path.join(CACHE_DIR, 'uts-proxy');
 let _proxyProcess: ChildProcess | null = null;
 let _proxyEnsured = false;
 
-const SANDBOX_REALTIME_HOST = 'sandbox-realtime.ably.io';
-const SANDBOX_REST_HOST = 'sandbox-rest.ably.io';
+const SANDBOX_REALTIME_HOST = 'sandbox.realtime.ably-nonprod.net';
+const SANDBOX_REST_HOST = 'sandbox.realtime.ably-nonprod.net';
 
 let nextPort = 19000 + Math.floor(Math.random() * 1000);
 
@@ -137,7 +137,7 @@ class ProxySession {
 }
 
 interface CreateProxySessionOpts {
-  endpoint?: 'sandbox';
+  endpoint?: 'nonprod:sandbox';
   port?: number;
   rules?: ProxyRule[];
   timeoutMs?: number;
