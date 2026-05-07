@@ -198,11 +198,11 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'sandbox' });
+    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
     await client.time();
 
     expect(captured).to.have.length(1);
-    expect(captured[0].url.hostname).to.equal('sandbox.realtime.ably.net');
+    expect(captured[0].url.hostname).to.equal('test.realtime.ably.net');
   });
 
   /**
@@ -888,7 +888,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1b1/endpoint-conflicts-environment-0
   it('REC1b1 - endpoint conflicts with environment', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', environment: 'production' } as any);
+      new Ably.Rest({ key: 'app.key:secret', endpoint: 'test', environment: 'production' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -898,7 +898,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1b1/endpoint-conflicts-resthost-1
   it('REC1b1 - endpoint conflicts with restHost', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', endpoint: 'sandbox', restHost: 'custom.host.com' } as any);
+      new Ably.Rest({ key: 'app.key:secret', endpoint: 'test', restHost: 'custom.host.com' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -1197,13 +1197,13 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'sandbox' });
+    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
     expect(requestCount).to.equal(2);
-    expect(hosts[0]).to.equal('sandbox.realtime.ably.net');
-    expect(hosts[1]).to.match(/^sandbox\.[a-e]\.fallback\.ably-realtime\.com$/);
+    expect(hosts[0]).to.equal('test.realtime.ably.net');
+    expect(hosts[1]).to.match(/^test\.[a-e]\.fallback\.ably-realtime\.com$/);
   });
 
   // ── Connectivity check tests (REC3) ──────────────────────────────
