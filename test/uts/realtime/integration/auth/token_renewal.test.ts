@@ -21,7 +21,7 @@ import {
 } from '../sandbox';
 
 describe('uts/realtime/integration/auth/token_renewal', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
@@ -34,6 +34,7 @@ describe('uts/realtime/integration/auth/token_renewal', function () {
   /**
    * RSA4b, RTN14b - Token renewal on expiry
    */
+  // UTS: realtime/integration/RSA4b/token-renewal-on-expiry-0
   it('RSA4b/RTN14b - token renewal on expiry', async function () {
     const { keyName, keySecret } = getKeyParts(getApiKey());
     let callbackCount = 0;

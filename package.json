@@ -161,6 +161,7 @@
     "test:react": "vitest run",
     "test:package": "grunt test:package",
     "test:uts": "npm run build:node && mocha --no-config --require tsx/cjs 'test/uts/**/*.test.ts'",
+    "test:uts:unit": "npm run build:node && mocha --no-config --require tsx/cjs --ignore 'test/uts/**/proxy/**' --ignore 'test/uts/**/integration/**' 'test/uts/**/*.test.ts'",
     "concat": "grunt concat",
     "build": "grunt build:all && npm run build:react",
     "build:node": "grunt build:node",

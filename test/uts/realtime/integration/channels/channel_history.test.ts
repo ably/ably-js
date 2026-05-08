@@ -18,8 +18,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from '../sandbox';
+import { describeEachProtocol } from '../../../helpers/protocol_variants';
 
-describe('uts/realtime/integration/channels/channel_history', function () {
+describeEachProtocol('uts/realtime/integration/channels/channel_history', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -33,6 +34,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
   /**
    * RTL10d - History contains messages published by another client
    */
+  // UTS: realtime/integration/RTL10d/history-cross-client-0
   it('RTL10d - history contains messages from another client', async function () {
     const channelName = uniqueChannelName('history-RTL10d');
 
@@ -40,7 +42,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(publisher);
 
@@ -48,7 +50,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(subscriber);
 

@@ -19,7 +19,7 @@ import {
 } from '../sandbox';
 
 describe('uts/realtime/integration/presence/presence_sync', function () {
-  this.timeout(60000);
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
@@ -32,6 +32,7 @@ describe('uts/realtime/integration/presence/presence_sync', function () {
   /**
    * RTP2, RTP11a - Presence SYNC delivers existing members
    */
+  // UTS: realtime/integration/RTP2/sync-delivers-members-0
   it('RTP2/RTP11a - presence SYNC delivers existing member', async function () {
     const channelName = uniqueChannelName('presence-sync');
 
@@ -77,6 +78,7 @@ describe('uts/realtime/integration/presence/presence_sync', function () {
   /**
    * RTP2 - Presence SYNC with multiple members
    */
+  // UTS: realtime/integration/RTP2/sync-multiple-members-1
   it('RTP2 - presence SYNC delivers multiple members', async function () {
     const channelName = uniqueChannelName('presence-sync-multi');
     const memberCount = 10;

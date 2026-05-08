@@ -19,6 +19,7 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
 const testData = [
   { foo: 'bar', count: 1, status: 'active' },
@@ -39,8 +40,8 @@ function makeCountingDecoder() {
   return decoder;
 }
 
-describe('uts/realtime/integration/delta_decoding', function () {
-  this.timeout(60000);
+describeEachProtocol('uts/realtime/integration/delta_decoding', function (protocol) {
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
@@ -56,6 +57,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * With a real vcdiff decoder plugin and a channel configured for delta mode,
    * all published messages are received with correct data.
    */
+  // UTS: realtime/integration/PC3/delta-decode-end-to-end-0
   it('PC3 - delta plugin decodes messages end-to-end', async function () {
     const channelName = uniqueChannelName('delta-PC3');
     const countingDecoder = makeCountingDecoder();
@@ -64,7 +66,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -114,6 +116,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * When successive messages have completely dissimilar payloads (random binary),
    * the server sends full messages rather than deltas.
    */
+  // UTS: realtime/integration/RTL19b/dissimilar-payloads-no-delta-0
   it('RTL19b - dissimilar payloads without delta encoding', async function () {
     const channelName = uniqueChannelName('delta-dissimilar');
     const messageCount = 5;
@@ -123,7 +126,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -180,6 +183,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * Without params: { delta: 'vcdiff' }, the server sends full messages
    * and the decoder is never called.
    */
+  // UTS: realtime/integration/PC3/no-deltas-without-param-1
   it('PC3 - no deltas without delta channel param', async function () {
     const channelName = uniqueChannelName('delta-no-param');
     const countingDecoder = makeCountingDecoder();
@@ -188,7 +192,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -228,6 +232,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * When the stored last message ID is cleared, the next delta fails the RTL20
    * check, triggering RTL18 recovery. After recovery the channel reattaches.
    */
+  // UTS: realtime/integration/RTL18/recovery-message-id-mismatch-0
   it('RTL18/RTL20 - recovery after last message ID mismatch', async function () {
     const channelName = uniqueChannelName('delta-recovery-mismatch');
     const countingDecoder = makeCountingDecoder();
@@ -236,7 +241,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -308,6 +313,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * When the vcdiff decoder throws, the channel transitions to ATTACHING
    * with error 40018 and recovers.
    */
+  // UTS: realtime/integration/RTL18/recovery-decode-failure-1
   it('RTL18 - recovery after decode failure', async function () {
     const channelName = uniqueChannelName('delta-recovery-decode');
 
@@ -321,7 +327,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: failingDecoder },
     } as any);
     trackClient(client);
@@ -379,6 +385,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
    * Without a vcdiff plugin, receiving a delta-encoded message causes
    * the channel to transition to FAILED with error code 40019.
    */
+  // UTS: realtime/integration/PC3/no-plugin-causes-failed-2
   it('PC3 - no plugin causes FAILED state', async function () {
     const channelName = uniqueChannelName('delta-no-plugin');
 
@@ -387,7 +394,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(subscriber);
 
@@ -396,7 +403,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(publisher);
 

@@ -15,8 +15,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/publish', function () {
+describeEachProtocol('uts/rest/integration/publish', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -33,12 +34,14 @@ describe('uts/rest/integration/publish', function () {
    * Failed publish operations must indicate the error to the caller.
    * Publishing to a channel not in the restricted key's capability should fail.
    */
+  // UTS: rest/integration/RSL1d/publish-failure-error-0
   it('RSL1d - publish failure with restricted key returns error', async function () {
     const channelName = uniqueChannelName('forbidden-channel');
 
     const restrictedClient = new Ably.Rest({
       key: getApiKey(2), // per-channel capabilities
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const restrictedChannel = restrictedClient.channels.get(channelName);
@@ -57,10 +60,12 @@ describe('uts/rest/integration/publish', function () {
    *
    * Successful publish returns a PublishResult containing message serials.
    */
+  // UTS: rest/integration/RSL1n/publish-result-serials-0.1
   it('RSL1n - single message publish returns result with serial', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('test-serials');
@@ -74,10 +79,12 @@ describe('uts/rest/integration/publish', function () {
     expect((result.serials[0] as string).length).to.be.greaterThan(0);
   });
 
+  // UTS: rest/integration/RSL1n/publish-result-serials-0
   it('RSL1n - multiple message publish returns result with unique serials', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('test-serials-multi');
@@ -108,10 +115,12 @@ describe('uts/rest/integration/publish', function () {
    * Messages with client-supplied IDs are idempotent; duplicate IDs
    * don't create duplicate messages.
    */
+  // UTS: rest/integration/RSL1k5/idempotent-client-ids-0
   it('RSL1k5 - idempotent publish with client-supplied ID', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('idempotent-explicit');
@@ -144,10 +153,12 @@ describe('uts/rest/integration/publish', function () {
    * Additional publish params can be supplied and are transmitted to the server.
    * The _forceNack test param causes the server to reject the publish.
    */
+  // UTS: rest/integration/RSL1l1/publish-params-force-nack-0
   it('RSL1l1 - publish with _forceNack param is rejected', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('force-nack-test');
@@ -166,11 +177,13 @@ describe('uts/rest/integration/publish', function () {
    *
    * Server rejects messages where clientId doesn't match the authenticated client.
    */
+  // UTS: rest/integration/RSL1m4/clientid-mismatch-rejected-0
   it('RSL1m4 - clientId mismatch in message is rejected', async function () {
     // Create a token with a specific clientId
     const keyClient = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const tokenDetails = await keyClient.auth.requestToken({ clientId: 'authenticated-client-id' });
@@ -179,6 +192,7 @@ describe('uts/rest/integration/publish', function () {
     const tokenClient = new Ably.Rest({
       token: tokenDetails.token,
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('clientid-mismatch');

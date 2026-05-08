@@ -14,6 +14,7 @@ import { DefaultRest } from '../../src/common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../src/common/lib/client/defaultrealtime';
 import ErrorInfo from '../../src/common/lib/types/errorinfo';
 import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../src/common/lib/types/protocolmessage';
+import { populateFieldsFromParent } from '../../src/common/lib/types/basemessage';
 
 const Ably = {
   Rest: DefaultRest,
@@ -280,4 +281,5 @@ export {
   trackClient,
   restoreAll,
   flushAsync,
+  populateFieldsFromParent,
 };

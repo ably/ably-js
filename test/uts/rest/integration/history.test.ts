@@ -15,8 +15,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/history', function () {
+describeEachProtocol('uts/rest/integration/history', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -30,10 +31,12 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2a - History returns published messages in backwards order (newest first)
    */
+  // UTS: rest/integration/RSL2a/history-returns-messages-0
   it('RSL2a - history returns published messages', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-test-RSL2a');
@@ -72,10 +75,12 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b1 - History direction forwards returns messages oldest first
    */
+  // UTS: rest/integration/RSL2b1/history-direction-forwards-0
   it('RSL2b1 - history direction forwards', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-direction');
@@ -103,10 +108,12 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b2 - History limit parameter restricts number of returned messages
    */
+  // UTS: rest/integration/RSL2b2/history-limit-parameter-0
   it('RSL2b2 - history limit parameter', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-limit');
@@ -135,60 +142,66 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2b3 - History time range parameters filter messages by timestamp
    */
+  // UTS: rest/integration/RSL2b3/history-time-range-0
   it('RSL2b3 - history time range parameters', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-timerange');
     const channel = client.channels.get(channelName);
 
-    // Record start time
-    const timeBefore = Date.now();
-
-    // Publish some early messages
+    // Publish early messages
     await channel.publish('early1', 'e1');
     await channel.publish('early2', 'e2');
 
-    // Record middle time
-    const timeMiddle = Date.now();
+    // Small delay to ensure server timestamps differ between batches
+    await new Promise((r) => setTimeout(r, 2));
 
-    // Publish some late messages
+    // Publish late messages
     await channel.publish('late1', 'l1');
     await channel.publish('late2', 'l2');
 
-    // Record end time
-    const timeAfter = Date.now();
-
-    // Poll until all messages appear
-    await pollUntil(async () => {
+    // Poll until all messages appear and retrieve with timestamps
+    const allMessages: any[] = await pollUntil(async () => {
       const result = await channel.history();
-      return result.items.length === 4 ? result : null;
+      return result.items.length === 4 ? result.items : null;
     }, { interval: 500, timeout: 10000 });
 
-    // Query only early messages
+    // Use server-assigned timestamps to define the time boundary
+    const earlyTimestamps = allMessages
+      .filter((m: any) => m.name.startsWith('early'))
+      .map((m: any) => m.timestamp);
+    const lateTimestamps = allMessages
+      .filter((m: any) => m.name.startsWith('late'))
+      .map((m: any) => m.timestamp);
+
+    const maxEarlyTs = Math.max(...earlyTimestamps);
+    const minLateTs = Math.min(...lateTimestamps);
+
+    // The boundary is between the two batches
+    const timeBoundary = Math.floor((maxEarlyTs + minLateTs) / 2);
+
+    // Query only early messages (up to the boundary)
     const earlyHistory = await channel.history({
-      start: timeBefore,
-      end: timeMiddle,
+      start: maxEarlyTs - 1000,
+      end: timeBoundary,
     });
 
-    // Query only late messages
+    // Query only late messages (from the boundary onwards)
     const lateHistory = await channel.history({
-      start: timeMiddle,
-      end: timeAfter,
+      start: timeBoundary + 1,
+      end: minLateTs + 1000,
     });
 
-    // Due to timing precision, exact counts may vary
-    // The key test is that filtering by time range works
     expect(earlyHistory.items.length).to.be.at.least(1);
     expect(lateHistory.items.length).to.be.at.least(1);
 
-    // Early messages should contain "early" names
     const hasEarly = earlyHistory.items.some((msg: any) => msg.name.startsWith('early'));
     expect(hasEarly).to.be.true;
 
-    // Late messages should contain "late" names
     const hasLate = lateHistory.items.some((msg: any) => msg.name.startsWith('late'));
     expect(hasLate).to.be.true;
   });
@@ -196,10 +209,12 @@ describe('uts/rest/integration/history', function () {
   /**
    * RSL2 - History on channel with no messages returns empty result
    */
+  // UTS: rest/integration/RSL2/history-empty-channel-0
   it('RSL2 - history on empty channel returns empty result', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Use a fresh channel with no messages

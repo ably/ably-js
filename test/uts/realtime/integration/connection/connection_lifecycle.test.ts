@@ -31,6 +31,7 @@ describe('uts/realtime/integration/connection/connection_lifecycle', function ()
   /**
    * RTN4b, RTN21 - Successful connection establishment
    */
+  // UTS: realtime/integration/RTN4b/successful-connection-0
   it('RTN4b/RTN21 - successful connection establishment', async function () {
     const client = new Ably.Realtime({
       key: getApiKey(),
@@ -55,6 +56,7 @@ describe('uts/realtime/integration/connection/connection_lifecycle', function ()
   /**
    * RTN4c, RTN12, RTN12a - Graceful connection close
    */
+  // UTS: realtime/integration/RTN4c/graceful-close-0
   it('RTN4c/RTN12/RTN12a - graceful connection close', async function () {
     const client = new Ably.Realtime({
       key: getApiKey(),
@@ -83,6 +85,7 @@ describe('uts/realtime/integration/connection/connection_lifecycle', function ()
    * Uses two separate client instances because ably-js does not support
    * calling connect() on a client that has been closed.
    */
+  // UTS: realtime/integration/RTN11/connect-reconnect-cycle-0
   it('RTN11/RTN4b - connect, close, reconnect cycle', async function () {
     const client1 = new Ably.Realtime({
       key: getApiKey(),

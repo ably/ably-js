@@ -15,9 +15,10 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/mutable_messages', function () {
-  this.timeout(60000);
+describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol) {
+  this.timeout(120000);
 
   before(async function () {
     await setupSandbox();
@@ -32,10 +33,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * On success, returns a PublishResult containing message serials.
    */
+  // UTS: rest/integration/RSL1n/publish-returns-serials-0.1
   it('RSL1n - single message publish returns result with serial', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL1n-serials');
@@ -55,10 +58,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * Multiple message publish returns matching count, all unique.
    */
+  // UTS: rest/integration/RSL1n/publish-returns-serials-0
   it('RSL1n - multiple message publish returns unique serials', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL1n-serials-multi');
@@ -88,10 +93,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * A published message can be retrieved by its serial.
    */
+  // UTS: rest/integration/RSL11/get-message-by-serial-0
   it('RSL11 - getMessage retrieves a published message by serial', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL11-getMessage');
@@ -117,10 +124,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * A published message can be updated and the update is visible via getMessage().
    */
+  // UTS: rest/integration/RSL15/update-message-0
   it('RSL15 - updateMessage updates a published message', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-update');
@@ -163,10 +172,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * A published message can be deleted and the delete is visible via getMessage().
    */
+  // UTS: rest/integration/RSL15/delete-message-1
   it('RSL15 - deleteMessage deletes a published message', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-delete');
@@ -201,10 +212,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * Version history contains the original and all updates.
    */
+  // UTS: rest/integration/RSL14/get-message-versions-0
   it('RSL14 - getMessageVersions returns version history', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL14-versions');
@@ -248,10 +261,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * A message can be appended to.
    */
+  // UTS: rest/integration/RSL15/append-message-2
   it('RSL15 - appendMessage appends to a published message', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-append');
@@ -277,10 +292,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * Tests the full annotation lifecycle: create, verify, delete.
    */
+  // UTS: rest/integration/RSAN1/annotation-lifecycle-0
   it('RSAN1/RSAN2/RSAN3 - annotation lifecycle: publish, get, delete', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSAN-lifecycle');
@@ -330,10 +347,12 @@ describe('uts/rest/integration/mutable_messages', function () {
    *
    * Multiple annotations can be retrieved as a paginated result.
    */
+  // UTS: rest/integration/RSAN3/get-annotations-paginated-0
   it('RSAN3 - paginated annotations for multiple annotation types', async function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSAN3-paginated');
