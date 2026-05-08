@@ -15,8 +15,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/publish', function () {
+describeEachProtocol('uts/rest/integration/publish', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -40,6 +41,7 @@ describe('uts/rest/integration/publish', function () {
     const restrictedClient = new Ably.Rest({
       key: getApiKey(2), // per-channel capabilities
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const restrictedChannel = restrictedClient.channels.get(channelName);
@@ -63,6 +65,7 @@ describe('uts/rest/integration/publish', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('test-serials');
@@ -81,6 +84,7 @@ describe('uts/rest/integration/publish', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('test-serials-multi');
@@ -116,6 +120,7 @@ describe('uts/rest/integration/publish', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('idempotent-explicit');
@@ -153,6 +158,7 @@ describe('uts/rest/integration/publish', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('force-nack-test');
@@ -177,6 +183,7 @@ describe('uts/rest/integration/publish', function () {
     const keyClient = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const tokenDetails = await keyClient.auth.requestToken({ clientId: 'authenticated-client-id' });
@@ -185,6 +192,7 @@ describe('uts/rest/integration/publish', function () {
     const tokenClient = new Ably.Rest({
       token: tokenDetails.token,
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('clientid-mismatch');

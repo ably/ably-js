@@ -18,8 +18,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from '../sandbox';
+import { describeEachProtocol } from '../../../helpers/protocol_variants';
 
-describe('uts/realtime/integration/channels/channel_history', function () {
+describeEachProtocol('uts/realtime/integration/channels/channel_history', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -41,7 +42,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(publisher);
 
@@ -49,7 +50,7 @@ describe('uts/realtime/integration/channels/channel_history', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(subscriber);
 

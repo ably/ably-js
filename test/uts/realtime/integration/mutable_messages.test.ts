@@ -18,8 +18,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/realtime/integration/mutable_messages', function () {
+describeEachProtocol('uts/realtime/integration/mutable_messages', function (protocol) {
   this.timeout(120000);
 
   before(async function () {
@@ -44,7 +45,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -52,7 +53,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -121,7 +122,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -129,7 +130,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -187,7 +188,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -195,7 +196,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -257,7 +258,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -265,7 +266,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -359,7 +360,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(client);
 
@@ -427,7 +428,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -435,7 +436,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -521,7 +522,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientA);
 
@@ -529,7 +530,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(clientB);
 
@@ -612,7 +613,7 @@ describe('uts/realtime/integration/mutable_messages', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(client);
 

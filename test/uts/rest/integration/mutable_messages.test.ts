@@ -15,8 +15,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/mutable_messages', function () {
+describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol) {
   this.timeout(120000);
 
   before(async function () {
@@ -37,6 +38,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL1n-serials');
@@ -61,6 +63,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL1n-serials-multi');
@@ -95,6 +98,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL11-getMessage');
@@ -125,6 +129,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-update');
@@ -172,6 +177,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-delete');
@@ -211,6 +217,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL14-versions');
@@ -259,6 +266,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSL15-append');
@@ -289,6 +297,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSAN-lifecycle');
@@ -343,6 +352,7 @@ describe('uts/rest/integration/mutable_messages', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('mutable:test-RSAN3-paginated');
