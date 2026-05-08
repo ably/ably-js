@@ -19,6 +19,7 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
 const testData = [
   { foo: 'bar', count: 1, status: 'active' },
@@ -39,7 +40,7 @@ function makeCountingDecoder() {
   return decoder;
 }
 
-describe('uts/realtime/integration/delta_decoding', function () {
+describeEachProtocol('uts/realtime/integration/delta_decoding', function (protocol) {
   this.timeout(120000);
 
   before(async function () {
@@ -65,7 +66,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -125,7 +126,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -191,7 +192,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -240,7 +241,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: countingDecoder },
     } as any);
     trackClient(client);
@@ -326,7 +327,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { vcdiff: failingDecoder },
     } as any);
     trackClient(client);
@@ -393,7 +394,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(subscriber);
 
@@ -402,7 +403,7 @@ describe('uts/realtime/integration/delta_decoding', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(publisher);
 

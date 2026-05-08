@@ -21,8 +21,9 @@ import {
   closeAndWait,
   uniqueChannelName,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/batch_presence', function () {
+describeEachProtocol('uts/rest/integration/batch_presence', function (protocol) {
   this.timeout(120000);
 
   before(async function () {
@@ -49,7 +50,7 @@ describe('uts/rest/integration/batch_presence', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
     await connectAndWait(realtime);
@@ -67,7 +68,7 @@ describe('uts/rest/integration/batch_presence', function () {
     const rest = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const result = await rest.batchPresence([channelAName, channelBName]);
@@ -121,7 +122,7 @@ describe('uts/rest/integration/batch_presence', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
     await connectAndWait(realtime);
@@ -142,7 +143,7 @@ describe('uts/rest/integration/batch_presence', function () {
     const restrictedRest = new Ably.Rest({
       key: getApiKey(2),
       endpoint: SANDBOX_ENDPOINT,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const result = await restrictedRest.batchPresence([allowedChannel, deniedChannel]);
@@ -183,7 +184,7 @@ describe('uts/rest/integration/batch_presence', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
     await connectAndWait(realtime);
@@ -196,7 +197,7 @@ describe('uts/rest/integration/batch_presence', function () {
     const rest = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const result = await rest.batchPresence([emptyChannel, populatedChannel]);

@@ -15,8 +15,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/history', function () {
+describeEachProtocol('uts/rest/integration/history', function (protocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -35,6 +36,7 @@ describe('uts/rest/integration/history', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-test-RSL2a');
@@ -78,6 +80,7 @@ describe('uts/rest/integration/history', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-direction');
@@ -110,6 +113,7 @@ describe('uts/rest/integration/history', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-limit');
@@ -143,6 +147,7 @@ describe('uts/rest/integration/history', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('history-timerange');
@@ -209,6 +214,7 @@ describe('uts/rest/integration/history', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Use a fresh channel with no messages

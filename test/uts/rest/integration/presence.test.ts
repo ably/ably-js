@@ -18,8 +18,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from './sandbox';
+import { describeEachProtocol } from '../../helpers/protocol_variants';
 
-describe('uts/rest/integration/presence', function () {
+describeEachProtocol('uts/rest/integration/presence', function (protocol) {
   this.timeout(120000);
 
   before(async function () {
@@ -44,6 +45,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -69,6 +71,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -94,6 +97,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -120,6 +124,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -143,6 +148,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -164,6 +170,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channelName = uniqueChannelName('presence-empty');
@@ -193,6 +200,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Use realtime client to generate presence history
@@ -201,7 +209,7 @@ describe('uts/rest/integration/presence', function () {
       endpoint: SANDBOX_ENDPOINT,
       clientId: 'test-client',
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
 
@@ -246,6 +254,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Record time before any presence events
@@ -257,7 +266,7 @@ describe('uts/rest/integration/presence', function () {
       endpoint: SANDBOX_ENDPOINT,
       clientId: 'time-test-client',
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
 
@@ -302,6 +311,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Generate ordered presence events
@@ -310,7 +320,7 @@ describe('uts/rest/integration/presence', function () {
       endpoint: SANDBOX_ENDPOINT,
       clientId: 'direction-client',
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
 
@@ -357,6 +367,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Generate multiple presence events
@@ -365,7 +376,7 @@ describe('uts/rest/integration/presence', function () {
       endpoint: SANDBOX_ENDPOINT,
       clientId: 'limit-client',
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
 
@@ -415,6 +426,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -435,6 +447,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures');
@@ -455,6 +468,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     const channel = client.channels.get('persisted:presence_fixtures', {
@@ -481,6 +495,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // Generate presence event with JSON data
@@ -489,7 +504,7 @@ describe('uts/rest/integration/presence', function () {
       endpoint: SANDBOX_ENDPOINT,
       clientId: 'decode-client',
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
     });
     trackClient(realtime);
 
@@ -530,6 +545,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // The fixture channel has multiple members
@@ -570,6 +586,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: 'invalid.key:secret',
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     try {
@@ -592,6 +609,7 @@ describe('uts/rest/integration/presence', function () {
     const client = new Ably.Rest({
       key: getApiKey(3),
       endpoint: SANDBOX_ENDPOINT,
+      useBinaryProtocol: protocol === 'msgpack',
     });
 
     // This should work - subscribe capability is sufficient for presence.get
