@@ -213,7 +213,7 @@ export default function AblyClientProvider({ children }) {
     return () => { ably.close(); };
   }, []);
 
-  if (!client) return <>{children}</>;
+  if (!client) return <div>Loading...</div>;
 
   return (
     <AblyProvider client={client}>
