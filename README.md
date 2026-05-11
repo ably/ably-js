@@ -198,7 +198,7 @@ Even for `use client` components, Next.js may execute them on the server during 
 To prevent server-side connections, create the Ably client inside a `useEffect` hook so it only runs in the browser:
 
 ```tsx
-'use client'
+'use client';
 
 import { useEffect, useState } from 'react';
 import * as Ably from 'ably';
@@ -210,16 +210,14 @@ export default function AblyClientProvider({ children }) {
   useEffect(() => {
     const ably = new Ably.Realtime({ authUrl: '/token', authMethod: 'POST', clientId: 'demo' });
     setClient(ably);
-    return () => { ably.close(); };
+    return () => {
+      ably.close();
+    };
   }, []);
 
   if (!client) return <div>Loading...</div>;
 
-  return (
-    <AblyProvider client={client}>
-      {children}
-    </AblyProvider>
-  );
+  return <AblyProvider client={client}>{children}</AblyProvider>;
 }
 ```
 
@@ -268,7 +266,7 @@ If you encounter an error such as `connection limit exceeded` during development
 Create the Ably client inside a `useEffect` hook to prevent it from connecting when rendered on the server:
 
 ```tsx
-'use client'
+'use client';
 
 import { useEffect, useState } from 'react';
 import * as Ably from 'ably';
@@ -279,7 +277,9 @@ export default function MyComponent() {
   useEffect(() => {
     const ably = new Ably.Realtime({ authUrl: '/token', authMethod: 'POST', clientId: 'demo' });
     setClient(ably);
-    return () => { ably.close(); };
+    return () => {
+      ably.close();
+    };
   }, []);
 
   if (!client) return <div>Loading...</div>;
