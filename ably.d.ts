@@ -2422,6 +2422,27 @@ export declare interface RestAnnotations {
    */
   publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param message - The message which has an annotation that you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param messageSerial - The serial field of the message which has an annotation that
+   * you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
    * Get all annotations for a given message (as a paginated result)
    *
    * @param message - The message to get annotations for.
