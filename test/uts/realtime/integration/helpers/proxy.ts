@@ -14,7 +14,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { pipeline } from 'stream/promises';
 
-const PROXY_VERSION = 'v0.1.0';
+const PROXY_VERSION = 'v0.2.0';
 const PROXY_REPO = 'ably/uts-proxy';
 
 const CONTROL_PORT = process.env.PROXY_CONTROL_PORT || '9100';
@@ -27,12 +27,6 @@ let _proxyEnsured = false;
 
 const SANDBOX_REALTIME_HOST = 'sandbox.realtime.ably-nonprod.net';
 const SANDBOX_REST_HOST = 'sandbox.realtime.ably-nonprod.net';
-
-let nextPort = 19000 + Math.floor(Math.random() * 1000);
-
-function allocatePort(): number {
-  return nextPort++;
-}
 
 interface ProxyRule {
   match: {
@@ -144,7 +138,6 @@ interface CreateProxySessionOpts {
 }
 
 async function createProxySession(opts: CreateProxySessionOpts = {}): Promise<ProxySession> {
-  const port = opts.port || allocatePort();
   const controlUrl = PROXY_CONTROL_HOST;
 
   const target = {
@@ -154,9 +147,11 @@ async function createProxySession(opts: CreateProxySessionOpts = {}): Promise<Pr
 
   const body: Record<string, any> = {
     target,
-    port,
     rules: opts.rules || [],
   };
+  if (opts.port) {
+    body.port = opts.port;
+  }
   if (opts.timeoutMs) {
     body.timeoutMs = opts.timeoutMs;
   }
@@ -173,20 +168,22 @@ async function createProxySession(opts: CreateProxySessionOpts = {}): Promise<Pr
   }
 
   const data = await resp.json();
-  return new ProxySession(data.sessionId, 'localhost', port, controlUrl);
+  const proxyPort = data.proxy?.port || opts.port;
+  return new ProxySession(data.sessionId, 'localhost', proxyPort, controlUrl);
 }
 
 const CHECKSUMS: Record<string, string> = {
-  'uts-proxy_darwin_amd64.tar.gz': 'eb8abf5eec7f7137cf9e7cb6ab6f45fd162303c242b4567ab9e354c4b9a4a4ff',
-  'uts-proxy_darwin_arm64.tar.gz': '845da80af7d5b1daacbdf30b34aff6ca1b2bb88c708065bdc5d9a636baf32a1f',
-  'uts-proxy_linux_amd64.tar.gz': '79f444c23362cc277d163deb243dc16063c74665ff63b8bd3e56789b9d9610c7',
-  'uts-proxy_linux_arm64.tar.gz': '7357e4605f19451d83bb419ee959537d6e95ca74b766721eae006d4171371030',
+  'uts-proxy_0.2.0_darwin_amd64.tar.gz': '4abc4bd0682b61d53889c3ad3b240b44cf942878ed9fb04e8912a48070d2666d',
+  'uts-proxy_0.2.0_darwin_arm64.tar.gz': '2b95cdb5659988f54ad3d413c713f94f944e3b0014011aba2e339b9537c59b2f',
+  'uts-proxy_0.2.0_linux_amd64.tar.gz': 'aa6d536101ebc3bfa6870ca4cfb75be1947360dc5c1c77d7a8536baa1fee7caa',
+  'uts-proxy_0.2.0_linux_arm64.tar.gz': 'c8f9363ae579508004727175a098bd0b73518ee3f08cf9071b0c372f8199767a',
 };
 
 function assetName(): string {
   const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
   const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-  return `uts-proxy_${platform}_${arch}.tar.gz`;
+  const version = PROXY_VERSION.replace(/^v/, '');
+  return `uts-proxy_${version}_${platform}_${arch}.tar.gz`;
 }
 
 async function downloadProxy(): Promise<void> {
@@ -291,4 +288,4 @@ function stopProxy(): void {
   _proxyEnsured = false;
 }
 
-export { ProxySession, ProxyRule, ProxyEvent, ImperativeAction, createProxySession, waitForProxy, ensureProxy, stopProxy, allocatePort };
+export { ProxySession, ProxyRule, ProxyEvent, ImperativeAction, createProxySession, waitForProxy, ensureProxy, stopProxy };
