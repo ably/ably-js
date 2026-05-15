@@ -644,6 +644,7 @@ class ConnectionManager extends EventEmitter {
     this.activeProtocol = new Protocol(transport);
     this.host = transport.params.host;
 
+    const prevConnId = this.connectionId;
     const connectionKey = connectionDetails.connectionKey;
     if (connectionKey && this.connectionKey != connectionKey) {
       this.setConnection(connectionId, connectionDetails, !!error);
@@ -673,6 +674,19 @@ class ConnectionManager extends EventEmitter {
         this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, error));
       }
     } else {
+      if (existingState.state === this.states.disconnected.state) {
+        const resumed = prevConnId === connectionId;
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_MINOR,
+          'ConnectionManager.activateTransport()',
+          'Connection ' +
+            (resumed ? 'resumed' : 'reestablished') +
+            ' after disconnection; connectionId: ' +
+            connectionId +
+            (prevConnId && !resumed ? ' (previously: ' + prevConnId + ')' : ''),
+        );
+      }
       this.notifyState({ state: 'connected', error: error });
       this.errorReason = this.realtime.connection.errorReason = error || null;
     }
@@ -876,7 +890,13 @@ class ConnectionManager extends EventEmitter {
         this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.checkConnectionStateFreshness()',
-        'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state',
+        'Last known activity from Ably was ' +
+          sinceLast +
+          'ms ago (exceeds freshness threshold of ' +
+          (this.connectionStateTtl + (this.maxIdleInterval as number)) +
+          'ms); discarding connection state. ' +
+          'A new connection will be established and channels will reattach' +
+          (this.connectionId ? '; connectionId: ' + this.connectionId : ''),
       );
       this.clearConnection();
       this.states.connecting.failState = 'suspended';
