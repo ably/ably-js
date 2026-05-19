@@ -18,6 +18,7 @@ import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
+import { Path } from './path';
 import { RealtimeObject } from './realtimeobject';
 import { RootBatchContext } from './rootbatchcontext';
 
@@ -27,12 +28,12 @@ import { RootBatchContext } from './rootbatchcontext';
  */
 export class DefaultPathObject implements AnyPathObject {
   private _client: BaseClient;
-  private _path: string[];
+  private _path: Path;
 
   constructor(
     private _realtimeObject: RealtimeObject,
     private _root: LiveMap,
-    path: string[],
+    path: Path,
     parent?: DefaultPathObject,
   ) {
     this._client = this._realtimeObject.getClient();
@@ -139,7 +140,7 @@ export class DefaultPathObject implements AnyPathObject {
     // (based on https://github.com/ably/ably-js/pull/2037/files), like Safari before 16.4.
     // See full list https://caniuse.com/?search=negative%20lookbehind.
     // So instead we do splitting manually.
-    const pathAsArray: string[] = [];
+    const pathAsArray: Path = [];
     let currentSegment = '';
     let escaping = false;
     for (const char of path) {
@@ -436,7 +437,7 @@ export class DefaultPathObject implements AnyPathObject {
     }
   }
 
-  private _resolvePath(path: string[]): Value {
+  private _resolvePath(path: Path): Value {
     let current: Value = this._root;
 
     for (let i = 0; i < path.length; i++) {
@@ -478,7 +479,7 @@ export class DefaultPathObject implements AnyPathObject {
     return undefined;
   }
 
-  private _escapePath(path: string[]): string[] {
+  private _escapePath(path: Path): Path {
     return path.map((x) => x.replace(/\./g, '\\.'));
   }
 }
