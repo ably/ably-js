@@ -5591,6 +5591,64 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
         },
 
         {
+          description:
+            'PathObject.subscribe() fires once per path when the same object is referenced from multiple paths',
+          action: async (ctx) => {
+            const { entryPathObject, entryInstance, objectsHelper, channel } = ctx;
+
+            // Inject ObjectMessages directly because the Realtime public API doesn't expose a way to
+            // alias the same underlying object at multiple paths.
+            // Create a single counter and reference it from two keys on root, so it has two full paths.
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+            const keyAUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterA');
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'counterA', data: { objectId: counterId } })],
+            });
+            await keyAUpdatedPromise;
+            const keyBUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterB');
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'counterB', data: { objectId: counterId } })],
+            });
+            await keyBUpdatedPromise;
+
+            // subscribe at root with unlimited depth — the increment below should be reported once per path
+            const receivedPaths = [];
+            entryPathObject.subscribe((event) => {
+              receivedPaths.push(event.object.path());
+            });
+
+            // a single COUNTER_INC op produces a single LiveObjectUpdate on a single counter object,
+            // but that counter is reachable from two paths, so the subscription should fire twice
+            const counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('counterA'));
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 3, 0),
+              siteCode: 'aaa',
+              state: [objectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
+            });
+            await counterUpdatedPromise;
+
+            expect(receivedPaths).to.have.lengthOf(2, 'Check one event was received per path');
+            expect(receivedPaths.slice().sort()).to.deep.equal(
+              ['counterA', 'counterB'],
+              'Check events were received at both paths',
+            );
+          },
+        },
+
+        {
           description: 'PathObject.subscribe() on LiveCounter path receives increment/decrement events',
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
