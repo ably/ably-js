@@ -22,12 +22,16 @@ export interface SubscriptionEntry {
  * Event data that LiveObjects provide when notifying of changes
  */
 export interface PathEvent {
-  /** The path where the event occurred */
-  path: Path;
+  /**
+   * Candidate paths for surfacing this event to subscriptions. For a given
+   * subscription, the first candidate path it covers is used as the path of
+   * `event.object` passed to its listener. The caller is responsible for
+   * ordering this array so that the preferred path comes first when more
+   * than one is covered.
+   */
+  candidatePaths: Path[];
   /** Object message that caused this event */
   message?: ObjectMessage;
-  /** Whether this event should bubble up to parent paths. Defaults to true if not specified. */
-  bubbles?: boolean;
 }
 
 /**
@@ -87,28 +91,24 @@ export class PathObjectSubscriptionRegister {
   }
 
   /**
-   * Notifies all matching subscriptions about an event that occurred at the specified path(s).
-   *
-   * @param events - Array of path events to process
+   * Dispatches a {@link PathEvent} to subscriptions. Each subscription that
+   * covers any of the event's {@link PathEvent.candidatePaths} receives at
+   * most one notification, at the first covered path.
    */
-  notifyPathEvents(events: PathEvent[]): void {
-    for (const event of events) {
-      this._processEvent(event);
-    }
-  }
-
-  /**
-   * Processes a single path event and calls all matching subscription listeners.
-   */
-  private _processEvent(event: PathEvent): void {
+  notifyPathEvent(event: PathEvent): void {
     for (const subscription of this._subscriptions.values()) {
-      if (!this._shouldNotifySubscription(subscription, event)) {
+      const chosenCoveredPath = event.candidatePaths.find((path) => this._subscriptionCoversPath(subscription, path));
+      if (chosenCoveredPath === undefined) {
         continue;
       }
 
       try {
         const subscriptionEvent: PathObjectSubscriptionEvent = {
-          object: new DefaultPathObject(this._realtimeObject, this._realtimeObject.getPool().getRoot(), event.path),
+          object: new DefaultPathObject(
+            this._realtimeObject,
+            this._realtimeObject.getPool().getRoot(),
+            chosenCoveredPath,
+          ),
           message: event.message?.toUserFacingMessage(this._realtimeObject.getChannel()),
         };
 
@@ -118,27 +118,23 @@ export class PathObjectSubscriptionRegister {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MINOR,
-          'PathObjectSubscriptionRegister._processEvent()',
-          `Error in PathObject subscription listener; path=${JSON.stringify(event.path)}, error=${error}`,
+          'PathObjectSubscriptionRegister.notifyPathEvent()',
+          `Error in PathObject subscription listener; path=${JSON.stringify(chosenCoveredPath)}, error=${error}`,
         );
       }
     }
   }
 
   /**
-   * Determines if a subscription should be notified about an event at the given path.
-   * Implements depth-based filtering logic and bubbling control.
+   * Returns true if the given path falls within the area covered by the
+   * subscription — that is, it starts with the subscription's path, and
+   * extends it by at most `depth − 1` further segments.
    *
-   * Depth examples (when event.bubbles is true):
-   * - subscription at ["users"] with depth=undefined: matches ["users"], ["users", "emma"], ["users", "emma", "visits"], etc.
-   * - subscription at ["users"] with depth=1: matches ["users"] only
-   * - subscription at ["users"] with depth=2: matches ["users"], ["users", "emma"] only
-   * - subscription at ["users"] with depth=3: matches ["users"], ["users", "emma"], ["users", "emma", "visits"] only
-   *
-   * Non-bubbling examples (when event.bubbles is false):
-   * - Event at ["users", "emma"] with bubbles=false:
-   *   - subscription at ["users"]: NOT triggered (no bubbling to parent)
-   *   - subscription at ["users", "emma"]: triggered (exact path match)
+   * Coverage examples:
+   * - subscription at ["users"] with depth=undefined: covers ["users"], ["users", "emma"], ["users", "emma", "visits"], etc.
+   * - subscription at ["users"] with depth=1: covers ["users"] only
+   * - subscription at ["users"] with depth=2: covers ["users"], ["users", "emma"] only
+   * - subscription at ["users"] with depth=3: covers ["users"], ["users", "emma"], ["users", "emma", "visits"] only
    *
    * The depth calculation is: eventPath.length - subscriptionPath.length + 1
    * This means:
@@ -146,18 +142,11 @@ export class PathObjectSubscriptionRegister {
    * - One level deeper (["users"] -> ["users", "emma"]): 2 - 1 + 1 = 2 (depth=2)
    * - Two levels deeper (["users"] -> ["users", "emma", "visits"]): 3 - 1 + 1 = 3 (depth=3)
    */
-  private _shouldNotifySubscription(subscription: SubscriptionEntry, event: PathEvent): boolean {
+  private _subscriptionCoversPath(subscription: SubscriptionEntry, eventPath: Path): boolean {
     const subPath = subscription.path;
-    const eventPath = event.path;
     const depth = subscription.options.depth;
-    const bubbles = event.bubbles !== false; // Default to true if not specified
 
-    // If event doesn't bubble, only match exact paths
-    if (!bubbles) {
-      return this._pathsAreEqual(eventPath, subPath);
-    }
-
-    // Otherwise check if the event path starts with the subscription path
+    // Check if the event path starts with the subscription path
     if (!this._pathStartsWith(eventPath, subPath)) {
       return false;
     }
@@ -193,16 +182,5 @@ export class PathObjectSubscriptionRegister {
     }
 
     return true;
-  }
-
-  /**
-   * Checks if two paths are exactly equal.
-   *
-   * @param path1 - First path to compare
-   * @param path2 - Second path to compare
-   * @returns true if paths are exactly equal
-   */
-  private _pathsAreEqual(path1: Path, path2: Path): boolean {
-    return this._client.Utils.arrEquals(path1, path2);
   }
 }
