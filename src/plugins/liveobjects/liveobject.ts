@@ -299,40 +299,44 @@ export abstract class LiveObject<
 
   /**
    * Notifies path-based subscriptions about changes to this object.
-   * For LiveMapUpdate events, also creates non-bubbling events for each updated key.
+   * For LiveMapUpdate events, each updated key also contributes a candidate
+   * path one segment deeper than this object's own path.
    */
   private _notifyPathSubscriptions(update: TUpdate): void {
-    const paths = this.getFullPaths();
+    const pathsToThis = this.getFullPaths();
 
-    if (paths.length === 0) {
+    if (pathsToThis.length === 0) {
       // No paths to this object, skip notification
       return;
     }
 
     // Do not expose object sync messages as they do not represent a single operation on an object
     const operationObjectMessage = update.objectMessage?.isOperationMessage() ? update.objectMessage : undefined;
-    const pathEvents: PathEvent[] = paths.map((path) => ({
-      path,
-      message: operationObjectMessage,
-      bubbles: true,
-    }));
 
-    // For LiveMapUpdate, also create non-bubbling events for each updated key
-    if (update._type === 'LiveMapUpdate') {
-      const updatedKeys = Object.keys(update.update);
+    // Call notifyPathEvent() once for each path-to-this. Since
+    // notifyPathEvent() emits at most one event on each subscription, this
+    // means that we emit at most one event per path-to-this.
+    for (const pathToThis of pathsToThis) {
+      const priorityOrderedCandidatePaths: Path[] = [pathToThis];
 
-      for (const key of updatedKeys) {
-        for (const basePath of paths) {
-          pathEvents.push({
-            path: [...basePath, key],
-            message: operationObjectMessage,
-            bubbles: false,
-          });
+      // For LiveMapUpdate, also add a candidate path per updated key. We insert these after
+      // pathToThis so that notifyPathEvent() picks pathToThis in the case where a given subscription
+      // covers multiple candidate paths (that is, we favour the shorter path).
+      if (update._type === 'LiveMapUpdate') {
+        const updatedKeys = Object.keys(update.update);
+
+        for (const key of updatedKeys) {
+          priorityOrderedCandidatePaths.push([...pathToThis, key]);
         }
       }
-    }
 
-    this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvents(pathEvents);
+      const pathEvent: PathEvent = {
+        priorityOrderedCandidatePaths,
+        message: operationObjectMessage,
+      };
+
+      this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvent(pathEvent);
+    }
   }
 
   private _isNoopUpdate(update: TUpdate | LiveObjectUpdateNoop): update is LiveObjectUpdateNoop {
