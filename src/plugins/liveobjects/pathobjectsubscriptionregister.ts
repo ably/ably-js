@@ -2,6 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type { EventCallback, Subscription } from '../../../ably';
 import type { PathObjectSubscriptionEvent, PathObjectSubscriptionOptions } from '../../../liveobjects';
 import { ObjectMessage } from './objectmessage';
+import { Path } from './path';
 import { DefaultPathObject } from './pathobject';
 import { RealtimeObject } from './realtimeobject';
 
@@ -14,7 +15,7 @@ export interface SubscriptionEntry {
   /** The subscription options including depth */
   options: PathObjectSubscriptionOptions;
   /** The path this subscription is registered for */
-  path: string[];
+  path: Path;
 }
 
 /**
@@ -22,7 +23,7 @@ export interface SubscriptionEntry {
  */
 export interface PathEvent {
   /** The path where the event occurred */
-  path: string[];
+  path: Path;
   /** Object message that caused this event */
   message?: ObjectMessage;
   /** Whether this event should bubble up to parent paths. Defaults to true if not specified. */
@@ -53,7 +54,7 @@ export class PathObjectSubscriptionRegister {
    * @returns Unsubscribe function
    */
   subscribe(
-    path: string[],
+    path: Path,
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options: PathObjectSubscriptionOptions,
   ): Subscription {
@@ -180,7 +181,7 @@ export class PathObjectSubscriptionRegister {
    * @param subscriptionPath - The path that was subscribed to
    * @returns true if eventPath starts with subscriptionPath
    */
-  private _pathStartsWith(eventPath: string[], subscriptionPath: string[]): boolean {
+  private _pathStartsWith(eventPath: Path, subscriptionPath: Path): boolean {
     if (subscriptionPath.length > eventPath.length) {
       return false;
     }
@@ -201,7 +202,7 @@ export class PathObjectSubscriptionRegister {
    * @param path2 - Second path to compare
    * @returns true if paths are exactly equal
    */
-  private _pathsAreEqual(path1: string[], path2: string[]): boolean {
+  private _pathsAreEqual(path1: Path, path2: Path): boolean {
     return this._client.Utils.arrEquals(path1, path2);
   }
 }

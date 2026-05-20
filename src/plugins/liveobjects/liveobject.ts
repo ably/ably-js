@@ -4,6 +4,7 @@ import type { EventCallback, Subscription } from '../../../ably';
 import { ROOT_OBJECT_ID } from './constants';
 import { InstanceEvent } from './instance';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
+import { Path } from './path';
 import { PathEvent } from './pathobjectsubscriptionregister';
 import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
 
@@ -204,10 +205,10 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  getFullPaths(): string[][] {
-    const paths: string[][] = [];
+  getFullPaths(): Path[] {
+    const paths: Path[] = [];
 
-    const stack: { obj: LiveObject; currentPath: string[]; visited: Set<LiveObject> }[] = [
+    const stack: { obj: LiveObject; currentPath: Path; visited: Set<LiveObject> }[] = [
       { obj: this, currentPath: [], visited: new Set() },
     ];
 
