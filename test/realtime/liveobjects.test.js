@@ -10049,6 +10049,61 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             expect(counter.value()).to.equal(15, 'Check counter reflects both operations');
           }, client);
         });
+
+        /**
+         * Documents a latent bug surfaced while reviewing the spec change in
+         * https://github.com/ably/specification/pull/427#discussion_r3282783130.
+         *
+         * The TypeScript declaration of the public `ObjectMessage` type declares `id` and
+         * `timestamp` as non-optional (they're force-unwrapped via `id!` / `timestamp!` in
+         * `WireObjectMessage.toUserFacingMessage`). For wire-received messages this is fine
+         * — the realtime system backfills both (spec OM2a, OM2e).
+         *
+         * For the local-echo / synthetic-inbound path (RTO20d) however, the SDK builds the
+         * synthetic message by spreading the outbound `ObjectMessage` and only adding
+         * `serial` + `siteCode` (see `realtimeobject.ts`'s `publishAndApply`). The outbound
+         * builders (`LiveCounter.createCounterIncMessage`, `LiveMap.createMapSetMessage`,
+         * etc.) never set `id` or `timestamp`, so the synthetic message — and therefore the
+         * public `ObjectMessage` delivered to local-echo subscribers — has both fields
+         * `undefined` at runtime, despite the declared type.
+         */
+        it('local-echo subscription event has undefined id and timestamp despite the declared non-optional type', async function () {
+          const helper = this.test.helper;
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+            const channelName = 'local-echo-id-timestamp-undefined';
+            const channel = client.channels.get(channelName, channelOptionsWithObjectModes());
+
+            await channel.attach();
+            const root = await channel.object.get();
+
+            await root.set('counter', LiveCounter.create(0));
+            const counter = root.get('counter');
+
+            const receivedEvents = [];
+            counter.subscribe((event) => {
+              receivedEvents.push(event);
+            });
+
+            // hold the wire echo so the only subscription event we observe comes from
+            // the local-echo / synthetic-inbound apply-on-ACK path (RTO20d)
+            createEchoInterceptor(helper, client);
+
+            await counter.increment(1);
+
+            expect(receivedEvents.length).to.equal(1, 'Check exactly one local-echo subscription event fired');
+            const message = receivedEvents[0].message;
+            expect(message, 'Check subscription event has a message').to.exist;
+            expect(message.operation?.action).to.equal(
+              'counter.inc',
+              'Check the event corresponds to the local-echo COUNTER_INC',
+            );
+            expect(message.id, 'Check message.id is undefined despite declared non-optional type').to.be.undefined;
+            expect(message.timestamp, 'Check message.timestamp is undefined despite declared non-optional type').to
+              .be.undefined;
+          }, client);
+        });
       });
     });
 
