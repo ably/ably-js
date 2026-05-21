@@ -1643,5 +1643,41 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         });
       };
     });
+
+    /**
+     * v1-style trailing-callback shape on Auth.{authorize, requestToken,
+     * createTokenRequest} throws synchronously with a steering ErrorInfo.
+     */
+    [
+      { method: 'authorize', invoke: (auth) => auth.authorize(null, null, () => {}) },
+      { method: 'requestToken', invoke: (auth) => auth.requestToken(null, null, () => {}) },
+      { method: 'createTokenRequest', invoke: (auth) => auth.createTokenRequest(null, null, () => {}) },
+    ].forEach(function (testCase) {
+      it('v1_callback_auth_' + testCase.method + '_throws_synchronously', function (done) {
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime();
+
+        try {
+          testCase.invoke(realtime.auth);
+          helper.closeAndFinish(
+            done,
+            realtime,
+            new Error('expected auth.' + testCase.method + '() to throw on v1 callback shape'),
+          );
+        } catch (err) {
+          try {
+            expect(err.code).to.equal(40000);
+            expect(err.message).to.contain('v1 callback signature');
+            expect(err.message).to.contain('no longer supported');
+            expect(err.hint).to.be.a('string');
+            expect(err.hint).to.contain('Remove the trailing callback');
+            expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
+            helper.closeAndFinish(done, realtime);
+          } catch (assertionErr) {
+            helper.closeAndFinish(done, realtime, assertionErr);
+          }
+        }
+      });
+    });
   });
 });
