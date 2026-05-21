@@ -250,7 +250,15 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  async publish(...args: any[]): Promise<API.PublishResult> {
+  publish(...args: any[]): Promise<API.PublishResult> {
+    // Detect a v1-shape trailing callback synchronously, before the async body
+    // starts — agents pasting v1 patterns need the throw to surface at the call
+    // site, not as an unobserved Promise rejection.
+    Utils.detectV1Callback(args, 0);
+    return this._publishImpl(args);
+  }
+
+  private async _publishImpl(args: any[]): Promise<API.PublishResult> {
     const first = args[0],
       second = args[1];
     let messages: Message[];
@@ -453,7 +461,12 @@ class RealtimeChannel extends EventEmitter {
     this.send(msg);
   }
 
-  async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
+  subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
+    Utils.detectV1Callback(args, 2);
+    return this._subscribeImpl(args);
+  }
+
+  private async _subscribeImpl(args: unknown[]): Promise<ChannelStateChange | null> {
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     if (this.state === 'failed') {
@@ -476,6 +489,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
+    Utils.detectV1Callback(args, 2);
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
@@ -985,7 +999,12 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  history = async function (
+  history = function (this: RealtimeChannel, ...args: any[]): Promise<PaginatedResult<Message>> {
+    Utils.detectV1Callback(args, 0);
+    return this._historyImpl(args[0]);
+  } as any;
+
+  private _historyImpl = async function (
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
   ): Promise<PaginatedResult<Message>> {

@@ -3,6 +3,7 @@ import ConnectionManager from '../transport/connectionmanager';
 import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
+import * as Utils from '../util/utils';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
 import BaseRealtime from './baserealtime';
 import Platform from 'common/platform';
@@ -46,7 +47,12 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
-  async ping(): Promise<number> {
+  ping(...args: any[]): Promise<number> {
+    Utils.detectV1Callback(args, 0);
+    return this._pingImpl();
+  }
+
+  private async _pingImpl(): Promise<number> {
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'Connection.ping()', '');
     return this.connectionManager.ping();
   }

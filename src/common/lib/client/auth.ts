@@ -254,7 +254,12 @@ class Auth {
    */
   async authorize(tokenParams: API.TokenParams | null, authOptions: AuthOptions | null): Promise<API.TokenDetails>;
 
-  async authorize(
+  authorize(...args: any[]): Promise<API.TokenDetails> {
+    Utils.detectV1Callback(args, 0);
+    return this._authorizeImpl(args[0], args[1]);
+  }
+
+  private async _authorizeImpl(
     tokenParams?: Record<string, any> | null,
     authOptions?: AuthOptions | null,
   ): Promise<API.TokenDetails> {
@@ -390,7 +395,15 @@ class Auth {
    */
   async requestToken(tokenParams: API.TokenParams | null, authOptions: AuthOptions): Promise<API.TokenDetails>;
 
-  async requestToken(tokenParams?: API.TokenParams | null, authOptions?: AuthOptions): Promise<API.TokenDetails> {
+  requestToken(...args: any[]): Promise<API.TokenDetails> {
+    Utils.detectV1Callback(args, 0);
+    return this._requestTokenImpl(args[0], args[1]);
+  }
+
+  private async _requestTokenImpl(
+    tokenParams?: API.TokenParams | null,
+    authOptions?: AuthOptions,
+  ): Promise<API.TokenDetails> {
     /* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
     const resolvedAuthOptions = authOptions || this.authOptions;
     const resolvedTokenParams = tokenParams || Utils.copy(this.tokenParams);
@@ -744,7 +757,15 @@ class Auth {
    * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
    *                  the system will be queried for a time value to use.
    */
-  async createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any): Promise<API.TokenRequest> {
+  createTokenRequest(...args: any[]): Promise<API.TokenRequest> {
+    Utils.detectV1Callback(args, 0);
+    return this._createTokenRequestImpl(args[0], args[1]);
+  }
+
+  private async _createTokenRequestImpl(
+    tokenParams: API.TokenParams | null,
+    authOptions: any,
+  ): Promise<API.TokenRequest> {
     /* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
     authOptions = authOptions || this.authOptions;
     tokenParams = tokenParams || Utils.copy<API.TokenParams>(this.tokenParams);
