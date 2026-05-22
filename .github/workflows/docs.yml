@@ -10,9 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      deployments: write
-      id-token: write
     steps:
       - uses: actions/checkout@v3
 
@@ -26,6 +23,28 @@ jobs:
 
       - name: Build Documentation
         run: npm run docs
+
+      - name: Upload typedoc artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: typedoc-generated
+          path: typedoc/generated
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download typedoc artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: typedoc-generated
+          path: typedoc/generated
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
