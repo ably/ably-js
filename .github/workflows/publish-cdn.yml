@@ -28,4 +28,6 @@ jobs:
         with:
           node-version: 20.x
       - run: npm ci
-      - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}
+      - env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: node scripts/cdn_deploy.js --skipCheckout --tag="$VERSION"
