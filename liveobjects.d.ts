@@ -2034,7 +2034,7 @@ export interface ObjectMessage {
   /**
    * Unique ID assigned by Ably to this object message.
    */
-  id: string;
+  id?: string;
   /**
    * The client ID of the publisher of this object message (if any).
    */
@@ -2046,7 +2046,7 @@ export interface ObjectMessage {
   /**
    * Timestamp of when the object message was received by Ably, as milliseconds since the Unix epoch.
    */
-  timestamp: number;
+  timestamp?: number;
   /**
    * The name of the channel the object message was published to.
    */

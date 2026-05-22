@@ -729,10 +729,10 @@ export class ObjectMessage {
 
   toUserFacingMessage(channel: RealtimeChannel): ObjectsApi.ObjectMessage {
     return {
-      id: this.id!,
+      id: this.id,
       clientId: this.clientId,
       connectionId: this.connectionId,
-      timestamp: this.timestamp!,
+      timestamp: this.timestamp,
       channel: channel.name,
       // we expose only operation messages to users, so operation field is always present
       operation: toUserFacingObjectOperation(this.operation!),
