@@ -7,11 +7,16 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          persist-credentials: false
 
       - name: Use Node.js 20.x
         uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
@@ -35,10 +40,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       deployments: write
       id-token: write
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          persist-credentials: false
 
       - name: Download typedoc artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
