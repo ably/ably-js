@@ -11,4 +11,5 @@ jobs:
     uses: ably/features/.github/workflows/sdk-features.yml@main
     with:
       repository-name: ably-js
-    secrets: inherit
+    secrets:
+      ABLY_AWS_ACCOUNT_ID_SDK: ${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}
