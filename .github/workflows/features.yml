@@ -8,6 +8,9 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      id-token: write
     uses: ably/features/.github/workflows/sdk-features.yml@6b3fc7a8ede2ebdd7a6325314f3a96c6466f1453 # main
     with:
       repository-name: ably-js
