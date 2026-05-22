@@ -14,7 +14,7 @@ jobs:
       matrix:
         node-version: [16.x, 18.x, 20.x]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
         with:
           submodules: 'recursive'
       - name: Reconfigure git to use HTTP authentication
@@ -22,7 +22,7 @@ jobs:
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
@@ -32,7 +32,7 @@ jobs:
       - name: Generate private API usage reports
         run: npm run process-private-api-data private-api-usage/*.json
       - name: Save private API usage data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: private-api-usage-${{ matrix.node-version }}
           path: |
@@ -40,7 +40,7 @@ jobs:
             private-api-usage-reports
       - name: Upload test results
         if: always()
-        uses: ably/test-observability-action@v1
+        uses: ably/test-observability-action@5b61d9c59f356b83426cab1b8243dd8bf03c1bea # v1
         with:
           server-auth: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
           path: './junit'

@@ -10,14 +10,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      deployments: write
-      id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
 
       - name: Use Node.js 20.x
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
         with:
           node-version: 20.x
 
@@ -27,15 +24,37 @@ jobs:
       - name: Build Documentation
         run: npm run docs
 
+      - name: Upload typedoc artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: typedoc-generated
+          path: typedoc/generated
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+
+      - name: Download typedoc artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: typedoc-generated
+          path: typedoc/generated
+
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1
         with:
           aws-region: eu-west-2
           role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-js
           role-session-name: '${{ github.run_id }}-${{ github.run_number }}'
 
       - name: Upload Documentation
-        uses: ably/sdk-upload-action@v1
+        uses: ably/sdk-upload-action@8c6179796fc7ee8fc9bb28d5223ffef005b985cc # v1
         with:
           sourcePath: typedoc/generated
           githubToken: ${{ secrets.GITHUB_TOKEN }}
