@@ -182,15 +182,6 @@ export abstract class LiveObject<
   }
 
   /**
-   * Remove all parent references for a specific parent (when parent is being deleted or cleared).
-   *
-   * @internal
-   */
-  removeParentReferenceAll(parent: LiveObject): void {
-    this._parentReferences.delete(parent);
-  }
-
-  /**
    * Clears all parent references for this object.
    *
    * @internal
