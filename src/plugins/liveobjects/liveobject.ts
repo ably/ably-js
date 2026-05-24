@@ -7,6 +7,7 @@ import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
 import { Path } from './path';
 import { PathEvent } from './pathobjectsubscriptionregister';
 import { ObjectsOperationSource, RealtimeObject } from './realtimeobject';
+import type { LiveMap } from './livemap';
 
 export enum LiveObjectSubscriptionEvent {
   updated = 'updated',
@@ -52,7 +53,7 @@ export abstract class LiveObject<
    * Track parent references - which LiveMap objects contain this object and at which keys.
    * Multiple parents can reference the same object, so we use a Map of parent to Set of keys for efficient lookups.
    */
-  private _parentReferences: Map<LiveObject, Set<string>>;
+  private _parentReferences: Map<LiveMap, Set<string>>;
 
   protected constructor(
     protected _realtimeObject: RealtimeObject,
@@ -66,7 +67,7 @@ export abstract class LiveObject<
     this._siteTimeserials = {};
     this._createOperationIsMerged = false;
     this._tombstone = false;
-    this._parentReferences = new Map<LiveObject, Set<string>>();
+    this._parentReferences = new Map<LiveMap, Set<string>>();
   }
 
   subscribe(listener: EventCallback<InstanceEvent>): Subscription {
@@ -154,7 +155,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  addParentReference(parent: LiveObject, key: string): void {
+  addParentReference(parent: LiveMap, key: string): void {
     const keys = this._parentReferences.get(parent);
 
     if (keys) {
@@ -169,7 +170,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  removeParentReference(parent: LiveObject, key: string): void {
+  removeParentReference(parent: LiveMap, key: string): void {
     const keys = this._parentReferences.get(parent);
 
     if (keys) {
