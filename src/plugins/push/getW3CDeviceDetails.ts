@@ -28,17 +28,19 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
   const permission = await Notification.requestPermission();
 
   if (permission !== 'granted') {
-    machine.handleEvent(
-      new GettingPushDeviceDetailsFailed(new ErrorInfo('User denied permission to send notifications', 400, 40000)),
-    );
+    const err = new ErrorInfo('User denied permission to send notifications', 400, 40000);
+    err.hint =
+      'The browser denied the Notification permission prompt. The user must accept notifications before push activation can complete; surface a UI explaining the value before requesting again.';
+    machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
     return;
   }
 
   const swUrl = machine.client.options.pushServiceWorkerUrl;
   if (!swUrl) {
-    machine.handleEvent(
-      new GettingPushDeviceDetailsFailed(new ErrorInfo('Missing ClientOptions.pushServiceWorkerUrl', 400, 40000)),
-    );
+    const err = new ErrorInfo('Missing ClientOptions.pushServiceWorkerUrl', 400, 40000);
+    err.hint =
+      'Set ClientOptions.pushServiceWorkerUrl to the path of your service worker (e.g. "/ably-push-sw.js") so the SDK can register it for web push.';
+    machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
     return;
   }
 

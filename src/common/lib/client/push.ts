@@ -37,11 +37,19 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        {
+          const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+          err.hint =
+            'Push activation is only supported on browsers with the Push API (Chrome/Firefox/Edge/Safari) and on iOS/Android via the native SDKs. Use Push admin (publish to a device/clientId) from server contexts.';
+          reject(err);
+        }
         return;
       }
       if (this.stateMachine.activatedCallback) {
-        reject(new ErrorInfo('Activation already in progress', 40000, 400));
+        const err = new ErrorInfo('Activation already in progress', 40000, 400);
+        err.hint =
+          'Await the in-flight push.activate() before calling it again. Concurrent activations are not supported.';
+        reject(err);
         return;
       }
       this.stateMachine.activatedCallback = (err: ErrorInfo) => {
@@ -65,11 +73,19 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        {
+          const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+          err.hint =
+            'Push activation is only supported on browsers with the Push API (Chrome/Firefox/Edge/Safari) and on iOS/Android via the native SDKs. Use Push admin (publish to a device/clientId) from server contexts.';
+          reject(err);
+        }
         return;
       }
       if (this.stateMachine.deactivatedCallback) {
-        reject(new ErrorInfo('Deactivation already in progress', 40000, 400));
+        const err = new ErrorInfo('Deactivation already in progress', 40000, 400);
+        err.hint =
+          'Await the in-flight push.deactivate() before calling it again. Concurrent deactivations are not supported.';
+        reject(err);
         return;
       }
       this.stateMachine.deactivatedCallback = (err: ErrorInfo) => {
@@ -264,11 +280,14 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
         40000,
         400,
       );
+      err.hint =
+        'Pass either the device id string returned from push.activate(), or the DeviceDetails object (with a non-empty .id field).';
+      throw err;
     }
 
     Utils.mixin(headers, client.options.headers);
@@ -317,11 +336,14 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
         40000,
         400,
       );
+      err.hint =
+        'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.';
+      throw err;
     }
 
     Utils.mixin(headers, client.options.headers);
