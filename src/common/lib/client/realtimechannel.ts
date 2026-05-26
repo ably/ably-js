@@ -51,7 +51,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
         !channelModes.includes(String.prototype.toUpperCase.call(currentMode))
       ) {
         const err = new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
-        err.hint = `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}.`;
+        err.hint = `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server also enforces this — your token/API-key capability must permit the requested modes on this channel, otherwise the subsequent attach is rejected. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`;
         return err;
       }
     }
@@ -287,7 +287,7 @@ class RealtimeChannel extends EventEmitter {
         40013,
         400,
       );
-      err.hint = 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.';
+      err.hint = 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
     const maxMessageSize = this.client.options.maxMessageSize;
@@ -1160,7 +1160,7 @@ class RealtimeChannel extends EventEmitter {
         400,
       );
       err.hint =
-        'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. Also confirm the namespace enables message annotations/updates/deletes in the Ably dashboard.';
+        'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.';
       throw err;
     }
 

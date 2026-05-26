@@ -40,7 +40,7 @@ class Push {
         {
           const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
           err.hint =
-            'Push activation is only supported on browsers with the Push API (Chrome/Firefox/Edge/Safari) and on iOS/Android via the native SDKs. Use Push admin (publish to a device/clientId) from server contexts.';
+            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
           reject(err);
         }
         return;
@@ -76,7 +76,7 @@ class Push {
         {
           const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
           err.hint =
-            'Push activation is only supported on browsers with the Push API (Chrome/Firefox/Edge/Safari) and on iOS/Android via the native SDKs. Use Push admin (publish to a device/clientId) from server contexts.';
+            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
           reject(err);
         }
         return;
