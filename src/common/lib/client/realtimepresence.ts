@@ -64,7 +64,7 @@ class RealtimePresence extends EventEmitter {
     if (isAnonymousOrWildcard(this)) {
       const err = new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
       err.hint =
-        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(clientId, data).';
+        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
@@ -79,7 +79,7 @@ class RealtimePresence extends EventEmitter {
     if (isAnonymousOrWildcard(this)) {
       const err = new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
       err.hint =
-        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(clientId, data).';
+        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
@@ -161,7 +161,7 @@ class RealtimePresence extends EventEmitter {
     if (isAnonymousOrWildcard(this)) {
       const err = new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
       err.hint =
-        'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(clientId) to leave on behalf of a specific identity.';
+        'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(clientId) to leave on behalf of a specific identity. If the resulting leave is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
     return this.leaveClient(undefined, data);
@@ -237,7 +237,7 @@ class RealtimePresence extends EventEmitter {
           message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
         });
         err.hint =
-          'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (potentially stale) members.';
+          'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.';
         throw err;
       }
       return toMessages(this.members);

@@ -65,7 +65,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
         {
           const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
           err.hint =
-            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
           throw err;
         }
       }
@@ -107,7 +107,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
         {
           const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
           err.hint =
-            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
           throw err;
         }
       }
@@ -133,7 +133,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
         {
           const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
           err.hint =
-            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
           throw err;
         }
       }
@@ -213,7 +213,7 @@ export class ActivationStateMachine {
     if (!this._pushConfig) {
       const err = new this.client.ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
       err.hint =
-        'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+        'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
       throw err;
     }
     return this._pushConfig;
