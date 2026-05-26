@@ -13,20 +13,32 @@ define(['chai'], function (chai) {
       require(abs);
     }
 
-    it("'ably/promises' shim throws naming the v1 entry point and migration guide", function () {
-      expect(() => loadShim('promises.js'))
-        .to.throw(Error)
-        .with.property('message')
-        .that.matches(/'ably\/promises' was the v1 entry point/)
-        .and.matches(/migration-guides\/v2\/lib\.md/);
+    it("'ably/promises' shim throws naming the v1 entry point, with a hint pointing at the migration guide", function () {
+      let caught;
+      try {
+        loadShim('promises.js');
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).to.be.an.instanceOf(Error);
+      expect(caught.message).to.match(/'ably\/promises' was the v1 entry point/);
+      expect(caught.hint).to.be.a('string');
+      expect(caught.hint).to.match(/promise-only/);
+      expect(caught.hint).to.match(/migration-guides\/v2\/lib\.md/);
     });
 
-    it("'ably/callbacks' shim throws naming the v1 callback API and migration guide", function () {
-      expect(() => loadShim('callbacks.js'))
-        .to.throw(Error)
-        .with.property('message')
-        .that.matches(/'ably\/callbacks' was the v1 callback API entry point/)
-        .and.matches(/migration-guides\/v2\/lib\.md/);
+    it("'ably/callbacks' shim throws naming the v1 callback API, with a hint pointing at the migration guide", function () {
+      let caught;
+      try {
+        loadShim('callbacks.js');
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).to.be.an.instanceOf(Error);
+      expect(caught.message).to.match(/'ably\/callbacks' was the v1 callback API entry point/);
+      expect(caught.hint).to.be.a('string');
+      expect(caught.hint).to.match(/await/);
+      expect(caught.hint).to.match(/migration-guides\/v2\/lib\.md/);
     });
 
     it('package.json exports map wires the legacy subpaths to the shim files and their types', function () {
