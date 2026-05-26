@@ -254,9 +254,12 @@ class Auth {
    */
   async authorize(tokenParams: API.TokenParams | null, authOptions: AuthOptions | null): Promise<API.TokenDetails>;
 
-  authorize(...args: any[]): Promise<API.TokenDetails> {
+  authorize(...args: unknown[]): Promise<API.TokenDetails> {
     Utils.detectV1Callback(args, 0);
-    return this._authorizeImpl(args[0], args[1]);
+    return this._authorizeImpl(
+      args[0] as Record<string, any> | null | undefined,
+      args[1] as AuthOptions | null | undefined,
+    );
   }
 
   private async _authorizeImpl(
@@ -395,9 +398,9 @@ class Auth {
    */
   async requestToken(tokenParams: API.TokenParams | null, authOptions: AuthOptions): Promise<API.TokenDetails>;
 
-  requestToken(...args: any[]): Promise<API.TokenDetails> {
+  requestToken(...args: unknown[]): Promise<API.TokenDetails> {
     Utils.detectV1Callback(args, 0);
-    return this._requestTokenImpl(args[0], args[1]);
+    return this._requestTokenImpl(args[0] as API.TokenParams | null | undefined, args[1] as AuthOptions | undefined);
   }
 
   private async _requestTokenImpl(
@@ -757,9 +760,9 @@ class Auth {
    * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
    *                  the system will be queried for a time value to use.
    */
-  createTokenRequest(...args: any[]): Promise<API.TokenRequest> {
+  createTokenRequest(...args: unknown[]): Promise<API.TokenRequest> {
     Utils.detectV1Callback(args, 0);
-    return this._createTokenRequestImpl(args[0], args[1]);
+    return this._createTokenRequestImpl(args[0] as API.TokenParams | null, args[1]);
   }
 
   private async _createTokenRequestImpl(

@@ -250,10 +250,7 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  publish(...args: any[]): Promise<API.PublishResult> {
-    // Detect a v1-shape trailing callback synchronously, before the async body
-    // starts — agents pasting v1 patterns need the throw to surface at the call
-    // site, not as an unobserved Promise rejection.
+  publish(...args: unknown[]): Promise<API.PublishResult> {
     Utils.detectV1Callback(args, 0);
     return this._publishImpl(args);
   }
@@ -489,7 +486,6 @@ class RealtimeChannel extends EventEmitter {
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
-    Utils.detectV1Callback(args, 2);
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
@@ -999,9 +995,9 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  history = function (this: RealtimeChannel, ...args: any[]): Promise<PaginatedResult<Message>> {
+  history = function (this: RealtimeChannel, ...args: unknown[]): Promise<PaginatedResult<Message>> {
     Utils.detectV1Callback(args, 0);
-    return this._historyImpl(args[0]);
+    return this._historyImpl(args[0] as RealtimeHistoryParams | null);
   } as any;
 
   private _historyImpl = async function (

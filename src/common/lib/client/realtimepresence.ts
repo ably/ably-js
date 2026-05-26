@@ -54,7 +54,7 @@ class RealtimePresence extends EventEmitter {
     this.pendingPresence = [];
   }
 
-  enter(...args: any[]): Promise<void> {
+  enter(...args: unknown[]): Promise<void> {
     Utils.detectV1Callback(args, 0);
     return this._enterImpl(args[0]);
   }
@@ -66,7 +66,7 @@ class RealtimePresence extends EventEmitter {
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
   }
 
-  update(...args: any[]): Promise<void> {
+  update(...args: unknown[]): Promise<void> {
     Utils.detectV1Callback(args, 0);
     return this._updateImpl(args[0]);
   }
@@ -139,7 +139,7 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
-  leave(...args: any[]): Promise<void> {
+  leave(...args: unknown[]): Promise<void> {
     Utils.detectV1Callback(args, 0);
     return this._leaveImpl(args[0]);
   }
@@ -191,9 +191,9 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
-  get(...args: any[]): Promise<PresenceMessage[]> {
+  get(...args: unknown[]): Promise<PresenceMessage[]> {
     Utils.detectV1Callback(args, 0);
-    return this._getImpl(args[0]);
+    return this._getImpl(args[0] as RealtimePresenceParams | undefined);
   }
 
   private async _getImpl(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
@@ -224,9 +224,9 @@ class RealtimePresence extends EventEmitter {
     return toMessages(this.members);
   }
 
-  history(...args: any[]): Promise<PaginatedResult<PresenceMessage>> {
+  history(...args: unknown[]): Promise<PaginatedResult<PresenceMessage>> {
     Utils.detectV1Callback(args, 0);
-    return this._historyImpl(args[0]);
+    return this._historyImpl(args[0] as RealtimeHistoryParams | null);
   }
 
   private async _historyImpl(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {

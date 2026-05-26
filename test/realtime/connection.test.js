@@ -480,7 +480,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     it('v1_callback_ping_throws_synchronously', function (done) {
       const helper = this.test.helper;
-      const realtime = helper.AblyRealtime();
+      const realtime = helper.AblyRealtime({ autoConnect: false });
       try {
         realtime.connection.ping(function noopCallback(err) {
           void err;
@@ -492,7 +492,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           expect(err.message).to.contain('v1 callback signature');
           expect(err.message).to.contain('no longer supported');
           expect(err.hint).to.be.a('string');
-          expect(err.hint).to.contain('Remove the trailing callback');
+          expect(err.hint).to.contain('v2 uses Promises');
           expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
           helper.closeAndFinish(done, realtime);
         } catch (assertionErr) {

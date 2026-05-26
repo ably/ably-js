@@ -47,7 +47,7 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
-  ping(...args: any[]): Promise<number> {
+  ping(...args: unknown[]): Promise<number> {
     Utils.detectV1Callback(args, 0);
     return this._pingImpl();
   }

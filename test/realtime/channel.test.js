@@ -1451,9 +1451,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /**
      * v1-style trailing-callback shape on RealtimeChannel.{publish, subscribe,
-     * unsubscribe, history} throws synchronously with a steering ErrorInfo whose
-     * message diagnoses *what* went wrong and whose hint prescribes the v2
-     * replacement call.
+     * history} throws synchronously with a steering ErrorInfo whose message
+     * diagnoses *what* went wrong and whose hint prescribes the v2 replacement
+     * call.
      */
     [
       { method: 'publish', invoke: (ch) => ch.publish('event', { hello: 'world' }, () => {}) },
@@ -1474,28 +1474,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             () => {},
           ),
       },
-      {
-        method: 'unsubscribe',
-        invoke: (ch) =>
-          ch.unsubscribe(
-            'event',
-            () => {},
-            () => {},
-          ),
-      },
-      {
-        method: 'unsubscribe_listener_callback',
-        invoke: (ch) =>
-          ch.unsubscribe(
-            () => {},
-            () => {},
-          ),
-      },
       { method: 'history', invoke: (ch) => ch.history(null, () => {}) },
     ].forEach(function (testCase) {
       it('v1_callback_' + testCase.method + '_throws_synchronously', function (done) {
         var helper = this.test.helper,
-          realtime = helper.AblyRealtime(),
+          realtime = helper.AblyRealtime({ autoConnect: false }),
           channel = realtime.channels.get('v1cb_channel_' + testCase.method);
 
         try {
@@ -1511,7 +1494,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             expect(err.message).to.contain('v1 callback signature');
             expect(err.message).to.contain('no longer supported');
             expect(err.hint).to.be.a('string');
-            expect(err.hint).to.contain('Remove the trailing callback');
+            expect(err.hint).to.contain('v2 uses Promises');
             expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
             helper.closeAndFinish(done, realtime);
           } catch (assertionErr) {

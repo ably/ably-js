@@ -274,23 +274,24 @@ export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | 
  * trailing function (e.g. ClientOptions.authCallback).
  *
  * Fires when the trailing arg is a function AND either:
- *   - `args.length > minV2Args` (the trailing fn is beyond the v2 form's max), or
+ *   - `args.length > v2TrailingFnArity` (the trailing fn is beyond the arity at
+ *     which v2 legitimately ends in a function), or
  *   - the second-to-last arg is also a function — none of the v2 forms take two
  *     trailing functions, so e.g. `subscribe(listener, callback)` is always v1
  *     even though it matches the arity of `subscribe(event, listener)`.
  *
- * @param minV2Args - The maximum number of args the v2 form accepts. For methods
- *   whose v2 form never takes a trailing function (e.g. `authorize`, `publish`),
- *   pass `0`. For methods whose v2 form accepts a trailing listener (e.g.
- *   `subscribe(event, listener)`), pass the v2 arg count so the listener at the
- *   v2 max isn't misclassified as v1.
+ * @param v2TrailingFnArity - The arity at which v2 legitimately ends in a function
+ *   (e.g. `subscribe(event, listener)` → 2). For methods where v2 never ends in a
+ *   function (`authorize`, `publish`, `requestToken`, ...), pass 0.
  */
-export function detectV1Callback(args: ArrayLike<unknown>, minV2Args: number): void {
+export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: number): void {
   const n = args.length;
   if (typeof args[n - 1] !== 'function') return;
-  if (n <= minV2Args && typeof args[n - 2] !== 'function') return;
+  if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
   const err = new ErrorInfo('v1 callback signature is no longer supported.', 40000, 400);
-  err.hint = `Remove the trailing callback. See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md`;
+  err.hint =
+    'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
+    'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md';
   throw err;
 }
 
