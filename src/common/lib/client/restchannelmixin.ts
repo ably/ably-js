@@ -70,7 +70,7 @@ export class RestChannelMixin {
         400,
       );
       err.hint =
-        'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Also confirm the namespace enables message annotations/updates/deletes in the Ably dashboard.';
+        'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.';
       throw err;
     }
 
@@ -106,7 +106,7 @@ export class RestChannelMixin {
         400,
       );
       err.hint =
-        'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object. Also confirm the namespace enables message annotations/updates/deletes in the Ably dashboard.';
+        'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.';
       throw err;
     }
 
@@ -151,7 +151,7 @@ export class RestChannelMixin {
         400,
       );
       err.hint =
-        'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Also confirm the namespace enables message annotations/updates/deletes in the Ably dashboard.';
+        'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.';
       throw err;
     }
 

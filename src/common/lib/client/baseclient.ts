@@ -78,7 +78,7 @@ class BaseClient {
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
         const err = new ErrorInfo(msg, 40400, 404);
         err.hint =
-          'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you only have a token, use ClientOptions.token / tokenDetails instead.';
+          'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you only have a token, use ClientOptions.token / tokenDetails instead. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.';
         throw err;
       }
       normalOptions.keyName = keyMatch[1];
@@ -97,7 +97,7 @@ class BaseClient {
           400,
         );
         err.hint =
-          'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead.';
+          'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
         throw err;
       }
     }

@@ -519,7 +519,7 @@ class Auth {
             if ((body as string).length > MAX_TOKEN_LENGTH) {
               const err = new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401);
               err.hint =
-                'authUrl payloads must be under 128 KB. Your endpoint is likely returning more than just a TokenDetails/TokenRequest object — trim it down.';
+                'authUrl payloads must be under 128 KB. Your endpoint is returning more than a TokenDetails/TokenRequest object — return only the token shape, not wrapping JSON or extra fields.';
               cb(err, null);
               return;
             }
@@ -821,7 +821,7 @@ class Auth {
 
     if (!keySecret) {
       const err = new ErrorInfo('Invalid key specified', 40101, 403);
-      err.hint = 'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard.';
+      err.hint = 'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.';
       throw err;
     }
 
@@ -1027,7 +1027,7 @@ class Auth {
         400,
       );
       err.hint =
-        'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client, or pass it to authorize() as a tokenParam.';
+        'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client, or pass it to authorize() as a tokenParam. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     } else {
       const err = this._uncheckedSetClientId(clientId);

@@ -216,7 +216,7 @@ export class Rest {
     if (useTokenAuth(this.client.options)) {
       const err = new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
       err.hint =
-        'Token revocation requires basic auth. Construct a separate Ably.Rest client with ClientOptions.key (the API key with the revoke capability) just for this call.';
+        'Token revocation requires basic auth. Construct a separate Ably.Rest client with ClientOptions.key (the API key with the revoke capability) just for this call. If you have the Ably CLI installed, `ably auth keys list` shows which keys have the revoke capability.';
       throw err;
     }
 

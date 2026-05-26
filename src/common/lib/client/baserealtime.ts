@@ -205,7 +205,7 @@ class Channels extends EventEmitter {
           400,
         );
         err.hint =
-          'channels.get(name) returns the existing channel — call channel.setOptions(opts) to change params/modes (which may trigger a re-attach). Only the first channels.get() for a name applies options without a re-attach.';
+          'channels.get(name) returns the existing channel — call channel.setOptions(opts) to change params/modes (this triggers a re-attach if modes or params changed). Only the first channels.get() for a name applies options without a re-attach.';
         throw err;
       }
       channel.setOptions(channelOptions);

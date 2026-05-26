@@ -249,7 +249,7 @@ export async function decodeData(
             } catch (e) {
               const err = new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
               err.hint =
-                'The SDK will recover by re-attaching without delta. If you see this repeatedly, the base payload has likely diverged — disable channel deltas for this channel.';
+                'The SDK recovers by re-attaching without delta. If you see this repeatedly, the base payload has diverged — disable channel deltas for this channel.';
               throw err;
             }
             continue;
