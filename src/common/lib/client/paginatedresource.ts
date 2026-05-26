@@ -147,7 +147,9 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.first);
     }
 
-    throw new ErrorInfo('No link to the first page of results', 40400, 404);
+    const err = new ErrorInfo('No link to the first page of results', 40400, 404);
+    err.hint = 'Check hasFirst() before calling first(). Empty result sets and single-page responses have no first-page link.';
+    throw err;
   }
 
   async current(): Promise<PaginatedResult<T>> {
@@ -155,7 +157,9 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.current);
     }
 
-    throw new ErrorInfo('No link to the current page of results', 40400, 404);
+    const err = new ErrorInfo('No link to the current page of results', 40400, 404);
+    err.hint = 'Check hasCurrent() before calling current(). The current-page link is only set after at least one page has been fetched.';
+    throw err;
   }
 
   async next(): Promise<PaginatedResult<T> | null> {

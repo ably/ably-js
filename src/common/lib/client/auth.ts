@@ -158,7 +158,10 @@ class Auth {
         const msg =
           'No authentication options provided; need one of: key, authUrl, or authCallback (or for testing only, token or tokenDetails)';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth()', msg);
-        throw new ErrorInfo(msg, 40160, 401);
+        const err = new ErrorInfo(msg, 40160, 401);
+        err.hint =
+          'Pass one of ClientOptions.{ key, authUrl, authCallback, token, tokenDetails }. For production, prefer authUrl or authCallback so the API key stays on your server.';
+        throw err;
       }
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
       this._saveBasicOptions(options);
@@ -269,7 +272,12 @@ class Auth {
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
      * just check if it doesn't clash and assume we're generating a token from it */
     if (authOptions && authOptions.key && this.authOptions.key !== authOptions.key) {
-      throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
+      {
+        const err = new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
+        err.hint =
+          'auth.authorize() cannot change the API key — the new authOptions.key differs from the one the client was constructed with. To use a different key, construct a new Ably client.';
+        throw err;
+      }
     }
 
     try {
@@ -486,27 +494,33 @@ class Auth {
           }
           if (Platform.BufferUtils.isBuffer(body)) body = body.toString();
           if (!contentType) {
-            cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401), null);
+            const err = new ErrorInfo('authUrl response is missing a content-type header', 40170, 401);
+            err.hint =
+              'Have your auth endpoint return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt.';
+            cb(err, null);
             return;
           }
           const json = contentType.indexOf('application/json') > -1,
             text = contentType.indexOf('text/plain') > -1 || contentType.indexOf('application/jwt') > -1;
           if (!json && !text) {
-            cb(
-              new ErrorInfo(
-                'authUrl responded with unacceptable content-type ' +
-                  contentType +
-                  ', should be either text/plain, application/jwt or application/json',
-                40170,
-                401,
-              ),
-              null,
+            const err = new ErrorInfo(
+              'authUrl responded with unacceptable content-type ' +
+                contentType +
+                ', should be either text/plain, application/jwt or application/json',
+              40170,
+              401,
             );
+            err.hint =
+              'Update your auth endpoint to return Content-Type application/json, text/plain or application/jwt — the SDK cannot parse other content types.';
+            cb(err, null);
             return;
           }
           if (json) {
             if ((body as string).length > MAX_TOKEN_LENGTH) {
-              cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401), null);
+              const err = new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401);
+              err.hint =
+                'authUrl payloads must be under 128 KB. Your endpoint is likely returning more than just a TokenDetails/TokenRequest object — trim it down.';
+              cb(err, null);
               return;
             }
             try {
@@ -585,7 +599,10 @@ class Auth {
         'Auth()',
         'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
       );
-      throw new ErrorInfo(msg, 40171, 403);
+      const err = new ErrorInfo(msg, 40171, 403);
+      err.hint =
+        'Initialise the client with one of ClientOptions.{ key, authUrl, authCallback } so the SDK can refresh tokens. A bare token/tokenDetails alone cannot be renewed once expired.';
+      throw err;
     }
 
     /* normalise token params */
@@ -628,7 +645,10 @@ class Auth {
           tokenRequestCallbackTimeoutExpired = true;
           const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-          reject(new ErrorInfo(msg, 40170, 401));
+          const err = new ErrorInfo(msg, 40170, 401);
+          err.hint =
+            'Your authCallback/authUrl did not respond in time. Make sure the callback invokes its callback parameter (or resolves its promise) on every code path.';
+          reject(err);
         }, timeoutLength);
 
       tokenRequestCallback!(resolvedTokenParams, (err, tokenRequestOrDetails, contentType) => {
@@ -648,29 +668,37 @@ class Auth {
         /* the response from the callback might be a token string, a signed request or a token details */
         if (typeof tokenRequestOrDetails === 'string') {
           if (tokenRequestOrDetails.length === 0) {
-            reject(new ErrorInfo('Token string is empty', 40170, 401));
+            const err = new ErrorInfo('Token string is empty', 40170, 401);
+            err.hint =
+              'Your authCallback returned an empty string. Return a non-empty token string, or a TokenDetails/TokenRequest object.';
+            reject(err);
           } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
-            reject(
-              new ErrorInfo(
-                'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
-                40170,
-                401,
-              ),
+            const err = new ErrorInfo(
+              'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
+              40170,
+              401,
             );
+            err.hint =
+              'Tokens must be under 128 KB. Your endpoint is returning more than the token itself — return only the token string or a TokenDetails object.';
+            reject(err);
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
             /* common failure mode with poorly-implemented authCallbacks */
-            reject(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
+            const err = new ErrorInfo('Token string was literal null/undefined', 40170, 401);
+            err.hint =
+              'Your authCallback stringified a null/undefined token. Return the token itself, not "undefined"/"null"; callbacks that have no value to return should pass an error instead.';
+            reject(err);
           } else if (
             tokenRequestOrDetails[0] === '{' &&
             !(contentType && contentType.indexOf('application/jwt') > -1)
           ) {
-            reject(
-              new ErrorInfo(
-                "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
-                40170,
-                401,
-              ),
+            const err = new ErrorInfo(
+              "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
+              40170,
+              401,
             );
+            err.hint =
+              'Return TokenDetails/TokenRequest as an object (not a JSON-encoded string), or set the response Content-Type to application/jwt for JWT tokens.';
+            reject(err);
           } else {
             resolve({ token: tokenRequestOrDetails } as API.TokenDetails);
           }
@@ -681,18 +709,22 @@ class Auth {
             'Expected token request callback to call back with a token string or token request/details object, but got a ' +
             typeof tokenRequestOrDetails;
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-          reject(new ErrorInfo(msg, 40170, 401));
+          const err = new ErrorInfo(msg, 40170, 401);
+          err.hint =
+            'authCallback must invoke its callback with (err, tokenStringOrTokenDetailsOrTokenRequest). authUrl must respond with a token string or TokenDetails/TokenRequest JSON.';
+          reject(err);
           return;
         }
         const objectSize = JSON.stringify(tokenRequestOrDetails).length;
         if (objectSize > MAX_TOKEN_LENGTH && !resolvedAuthOptions.suppressMaxLengthCheck) {
-          reject(
-            new ErrorInfo(
-              'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
-              40170,
-              401,
-            ),
+          const err = new ErrorInfo(
+            'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
+            40170,
+            401,
           );
+          err.hint =
+            'Token objects must serialise to under 128 KB. Trim unused fields from your TokenDetails/TokenRequest, or set authOptions.suppressMaxLengthCheck if you understand the risk.';
+          reject(err);
           return;
         }
         if ('issued' in tokenRequestOrDetails) {
@@ -704,7 +736,10 @@ class Auth {
           const msg =
             'Expected token request callback to call back with a token string, token request object, or token details object';
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-          reject(new ErrorInfo(msg, 40170, 401));
+          const err = new ErrorInfo(msg, 40170, 401);
+          err.hint =
+            'Your authCallback/authUrl returned an object without a `keyName` (so it was treated as a TokenDetails) and that shape was also rejected. Return either a token string, a TokenRequest (with keyName), or a TokenDetails (with token).';
+          reject(err);
           return;
         }
         /* it's a token request, so make the request */
@@ -775,18 +810,25 @@ class Auth {
 
     const key = authOptions.key;
     if (!key) {
-      throw new ErrorInfo('No key specified', 40101, 403);
+      const err = new ErrorInfo('No key specified', 40101, 403);
+      err.hint =
+        'createTokenRequest needs an API key. Pass ClientOptions.key on the client or { key } in the authOptions argument. Token-auth clients cannot mint token requests themselves.';
+      throw err;
     }
     const keyParts = key.split(':'),
       keyName = keyParts[0],
       keySecret = keyParts[1];
 
     if (!keySecret) {
-      throw new ErrorInfo('Invalid key specified', 40101, 403);
+      const err = new ErrorInfo('Invalid key specified', 40101, 403);
+      err.hint = 'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard.';
+      throw err;
     }
 
     if (tokenParams.clientId === '') {
-      throw new ErrorInfo('clientId can’t be an empty string', 40012, 400);
+      const err = new ErrorInfo('clientId can’t be an empty string', 40012, 400);
+      err.hint = 'Pass a non-empty clientId, or omit the field entirely to mint an anonymous token.';
+      throw err;
     }
 
     if ('capability' in tokenParams) {
@@ -906,11 +948,14 @@ class Auth {
     if (token) {
       if (this._tokenClientIdMismatch(token.clientId)) {
         /* 403 to trigger a permanently failed client - RSA15c */
-        throw new ErrorInfo(
+        const err = new ErrorInfo(
           'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
           40102,
           403,
         );
+        err.hint =
+          'Mint the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it. The two cannot diverge.';
+        throw err;
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
        * automatically remove expired tokens. Else just use the cached token. If it is
@@ -972,13 +1017,18 @@ class Auth {
   /* User-set: check types, '*' is disallowed, throw any errors */
   _userSetClientId(clientId: string | undefined) {
     if (!(typeof clientId === 'string' || clientId === null)) {
-      throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
+      const err = new ErrorInfo('clientId must be either a string or null', 40012, 400);
+      err.hint = 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
+      throw err;
     } else if (clientId === '*') {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)',
         40012,
         400,
       );
+      err.hint =
+        'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client, or pass it to authorize() as a tokenParam.';
+      throw err;
     } else {
       const err = this._uncheckedSetClientId(clientId);
       if (err) throw err;
@@ -992,6 +1042,8 @@ class Auth {
        * recognise mismatch and return an error */
       const msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
       const err = new ErrorInfo(msg, 40102, 401);
+      err.hint =
+        'A clientId from the token does not match ClientOptions.clientId. Mint the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.';
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
       return err;
     } else {

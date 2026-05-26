@@ -199,11 +199,14 @@ class Channels extends EventEmitter {
       channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
     } else if (channelOptions) {
       if (channel._shouldReattachToSetOptions(channelOptions, channel.channelOptions)) {
-        throw new ErrorInfo(
+        const err = new ErrorInfo(
           'Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.',
           40000,
           400,
         );
+        err.hint =
+          'channels.get(name) returns the existing channel — call channel.setOptions(opts) to change params/modes (which may trigger a re-attach). Only the first channels.get() for a name applies options without a re-attach.';
+        throw err;
       }
       channel.setOptions(channelOptions);
     }

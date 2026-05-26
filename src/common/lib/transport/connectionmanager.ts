@@ -1881,7 +1881,10 @@ class ConnectionManager extends EventEmitter {
 
   async ping(): Promise<number> {
     if (this.state.state !== 'connected') {
-      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
+      const err = new ErrorInfo('Unable to ping service; not connected', 40000, 400);
+      err.hint =
+        'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …).';
+      throw err;
     }
 
     const transport = this.activeProtocol?.getTransport();
@@ -1945,11 +1948,17 @@ class ConnectionManager extends EventEmitter {
     } else if (err.statusCode === HttpStatusCodes.Forbidden) {
       const msg = 'Client configured authentication provider returned 403; failing the connection';
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
-      this.notifyState({ state: 'failed', error: new ErrorInfo(msg, 80019, 403, err) });
+      const wrapped = new ErrorInfo(msg, 80019, 403, err);
+      wrapped.hint =
+        'Your authUrl/authCallback returned 403. Fix the auth endpoint: the request reached Ably, but your server refused to mint a token. Inspect cause for the underlying error.';
+      this.notifyState({ state: 'failed', error: wrapped });
     } else {
       const msg = 'Client configured authentication provider request failed';
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
-      this.notifyState({ state: this.state.failState as string, error: new ErrorInfo(msg, 80019, 401, err) });
+      const wrapped = new ErrorInfo(msg, 80019, 401, err);
+      wrapped.hint =
+        'Your authUrl/authCallback could not be reached or returned an error. Check network connectivity to the auth endpoint and that it returns a valid token shape; the underlying error is in cause.';
+      this.notifyState({ state: this.state.failState as string, error: wrapped });
     }
   }
 

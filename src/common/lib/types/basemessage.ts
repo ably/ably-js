@@ -132,7 +132,12 @@ export function encodeData(
   }
 
   // RSL4a, throw an error for unsupported types
-  throw new ErrorInfo('Data type is unsupported', 40013, 400);
+  {
+    const err = new ErrorInfo('Data type is unsupported', 40013, 400);
+    err.hint =
+      'Message data must be a string, Buffer/ArrayBuffer/TypedArray, plain object, or array. Convert other types (e.g. Date, Map, Set) to one of these before publishing.';
+    throw err;
+  }
 }
 
 export async function decode<T extends BaseMessage>(
@@ -212,14 +217,20 @@ export async function decodeData(
             }
           case 'vcdiff':
             if (!context.plugins || !context.plugins.vcdiff) {
-              throw new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
+              const err = new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
+              err.hint =
+                'You enabled the delta channel option but did not provide the Vcdiff plugin. Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.';
+              throw err;
             }
             if (typeof Uint8Array === 'undefined') {
-              throw new ErrorInfo(
+              const err = new ErrorInfo(
                 'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
                 40020,
                 400,
               );
+              err.hint =
+                'Disable channel deltas (do not set delta in channel params) on environments without typed-array support, or upgrade the JavaScript runtime.';
+              throw err;
             }
             try {
               let deltaBase = context.baseEncodedPreviousPayload;
@@ -236,7 +247,10 @@ export async function decodeData(
               );
               lastPayload = decodedData;
             } catch (e) {
-              throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
+              const err = new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
+              err.hint =
+                'The SDK will recover by re-attaching without delta. If you see this repeatedly, the base payload has likely diverged — disable channel deltas for this channel.';
+              throw err;
             }
             continue;
           default:
