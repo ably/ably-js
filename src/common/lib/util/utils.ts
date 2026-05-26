@@ -470,11 +470,16 @@ export function matchDerivedChannel(name: string) {
   const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
-    throw new ErrorInfo('regex match failed', 400, 40010);
+    const err = new ErrorInfo('regex match failed', 400, 40010);
+    err.hint =
+      'Channel names with derived options must look like "[filter=...]name". See https://ably.com/docs/channels/options/derived.';
+    throw err;
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
   if (match![2]) {
-    throw new ErrorInfo(`cannot use a derived option with a ${match[2]} channel`, 400, 40010);
+    const err = new ErrorInfo(`cannot use a derived option with a ${match[2]} channel`, 400, 40010);
+    err.hint = `A "${match[2]}" channel already has a qualifier; derived options like filter= cannot be layered on top. Use a base channel name instead.`;
+    throw err;
   }
   // Return match values to be added to derive channel quantifier.
   return {
@@ -499,7 +504,9 @@ export function arrEquals(a: any[], b: any[]) {
 }
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
-  return new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
+  const err = new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
+  err.hint = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See https://ably.com/docs/getting-started/modular.`;
+  return err;
 }
 
 export function throwMissingPluginError(pluginName: keyof ModularPlugins): never {
@@ -554,7 +561,10 @@ export async function* listenerToAsyncIterator<T>(
         yield eventQueue.shift()!;
       } else {
         if (resolveNext) {
-          throw new ErrorInfo('Concurrent next() calls are not supported', 40000, 400);
+          const err = new ErrorInfo('Concurrent next() calls are not supported', 40000, 400);
+          err.hint =
+            'Drive the async iterator from a single for-await-of loop. Calling next() twice concurrently is not supported.';
+          throw err;
         }
 
         // Otherwise wait for the next event to arrive

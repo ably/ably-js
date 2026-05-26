@@ -106,11 +106,13 @@ class RestChannel {
       messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         'The single-argument form of publish() expects a message object or an array of message objects',
         40013,
         400,
       );
+      err.hint = 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.';
+      throw err;
     }
 
     if (!params) {
@@ -139,11 +141,14 @@ class RestChannel {
     const size = getMessagesSize(wireMessages),
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
         40009,
         400,
       );
+      err.hint =
+        'Split the publish into multiple calls so each batch is under the limit, or contact support to raise maxMessageSize for your app.';
+      throw err;
     }
 
     return this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);

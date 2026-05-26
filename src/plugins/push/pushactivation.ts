@@ -62,11 +62,19 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>> {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        {
+          const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+          err.hint =
+            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+          throw err;
+        }
       }
 
       if (!this.id) {
-        throw new this.rest.ErrorInfo('Device not activated', 40000, 400);
+        const err = new this.rest.ErrorInfo('Device not activated', 40000, 400);
+        err.hint =
+          'Call client.push.activate(registerCallback) and await its completion before listing subscriptions or other device-scoped operations.';
+        throw err;
       }
 
       if (!this.deviceIdentityToken) {
@@ -96,7 +104,12 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     loadPersisted() {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        {
+          const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+          err.hint =
+            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+          throw err;
+        }
       }
       this.platform = Platform.Config.push.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
@@ -117,7 +130,12 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     persist() {
       const config = this.rest.Platform.Config;
       if (!config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        {
+          const err = new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+          err.hint =
+            'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+          throw err;
+        }
       }
       if (this.id) {
         config.push.storage.set(persistKeys.deviceId, this.id);
@@ -193,7 +211,10 @@ export class ActivationStateMachine {
 
   get pushConfig() {
     if (!this._pushConfig) {
-      throw new this.client.ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+      const err = new this.client.ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+      err.hint =
+        'Push activation requires a supported platform (browser with Push API, or native iOS/Android). Use Push admin (publish to a device/clientId) from server contexts.';
+      throw err;
     }
     return this._pushConfig;
   }
@@ -229,11 +250,10 @@ export class ActivationStateMachine {
       }
 
       if (!deviceRegistration) {
-        this.handleEvent(
-          new GettingDeviceRegistrationFailed(
-            new this.client.ErrorInfo('registerCallback did not return deviceRegistration', 40000, 400),
-          ),
-        );
+        const err = new this.client.ErrorInfo('registerCallback did not return deviceRegistration', 40000, 400);
+        err.hint =
+          'Your registerCallback must invoke its callback with (null, deviceRegistration). Returning undefined or null in the second argument fails activation.';
+        this.handleEvent(new GettingDeviceRegistrationFailed(err));
       }
 
       if (isNew) {

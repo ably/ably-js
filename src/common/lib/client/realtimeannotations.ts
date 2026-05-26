@@ -71,11 +71,14 @@ class RealtimeAnnotations {
 
     // explicit check for attach state in caes attachOnSubscribe=false
     if ((this.channel.state === 'attached' && this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
-      throw new ErrorInfo(
+      const err = new ErrorInfo(
         "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
         93001,
         400,
       );
+      err.hint =
+        'Re-create the channel with annotation_subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }). Also confirm your token capability grants annotation-subscribe on this channel.';
+      throw err;
     }
   }
 
