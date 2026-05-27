@@ -217,7 +217,11 @@ export async function decodeData(
             }
           case 'vcdiff':
             if (!context.plugins || !context.plugins.vcdiff) {
-              const err = new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
+              const err = new ErrorInfo(
+                'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
+                40019,
+                400,
+              );
               err.hint =
                 'You enabled the delta channel option but did not provide the Vcdiff plugin. Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.';
               throw err;

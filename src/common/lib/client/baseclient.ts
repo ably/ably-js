@@ -88,7 +88,8 @@ class BaseClient {
     if ('clientId' in normalOptions) {
       if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null)) {
         const err = new ErrorInfo('clientId must be either a string or null', 40012, 400);
-        err.hint = 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
+        err.hint =
+          'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
         throw err;
       } else if (normalOptions.clientId === '*') {
         const err = new ErrorInfo(

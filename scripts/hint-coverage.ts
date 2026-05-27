@@ -265,7 +265,9 @@ async function main() {
   for (const f of failures) {
     console.log(`  ${f.entry.file}:${f.entry.line}  (code ${f.entry.code ?? 'unknown'})`);
     console.log(`    ${f.detail}`);
-    console.log(`    hint: ${JSON.stringify(f.entry.hintText.slice(0, 120))}${f.entry.hintText.length > 120 ? '…' : ''}`);
+    console.log(
+      `    hint: ${JSON.stringify(f.entry.hintText.slice(0, 120))}${f.entry.hintText.length > 120 ? '…' : ''}`,
+    );
   }
   exit(1);
 }
