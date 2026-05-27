@@ -285,7 +285,8 @@ class RealtimeChannel extends EventEmitter {
         40013,
         400,
       );
-      err.hint = 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
+      err.hint =
+        'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
     const maxMessageSize = this.client.options.maxMessageSize;
@@ -1038,7 +1039,8 @@ class RealtimeChannel extends EventEmitter {
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
         const err = new ErrorInfo('option untilAttach requires the channel to be attached', 40000, 400);
-        err.hint = 'Await channel.attach() (or channel.whenState("attached")) before calling history({ untilAttach: true }).';
+        err.hint =
+          'Await channel.attach() (or channel.whenState("attached")) before calling history({ untilAttach: true }).';
         throw err;
       }
       if (!this.properties.attachSerial) {
@@ -1047,7 +1049,8 @@ class RealtimeChannel extends EventEmitter {
           40000,
           400,
         );
-        err.hint = 'Re-attach the channel and try again; the SDK could not record an attachSerial from the previous attach.';
+        err.hint =
+          'Re-attach the channel and try again; the SDK could not record an attachSerial from the previous attach.';
         throw err;
       }
       delete params.untilAttach;
@@ -1073,7 +1076,8 @@ class RealtimeChannel extends EventEmitter {
       90001,
       400,
     );
-    err.hint = 'Call channel.detach() and wait for the channel to reach "detached" before calling channels.release(name).';
+    err.hint =
+      'Call channel.detach() and wait for the channel to reach "detached" before calling channels.release(name).';
     return err;
   }
 

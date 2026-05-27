@@ -111,7 +111,8 @@ class RestChannel {
         40013,
         400,
       );
-      err.hint = 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
+      err.hint =
+        'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
       throw err;
     }
 
