@@ -148,7 +148,8 @@ export class PaginatedResult<T> {
     }
 
     const err = new ErrorInfo('No link to the first page of results', 40400, 404);
-    err.hint = 'Check hasFirst() before calling first(). Empty result sets and single-page responses have no first-page link.';
+    err.hint =
+      'Check hasFirst() before calling first(). Empty result sets and single-page responses have no first-page link.';
     throw err;
   }
 
@@ -158,7 +159,8 @@ export class PaginatedResult<T> {
     }
 
     const err = new ErrorInfo('No link to the current page of results', 40400, 404);
-    err.hint = 'Check hasCurrent() before calling current(). The current-page link is only set after at least one page has been fetched.';
+    err.hint =
+      'Check hasCurrent() before calling current(). The current-page link is only set after at least one page has been fetched.';
     throw err;
   }
 

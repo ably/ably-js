@@ -821,7 +821,8 @@ class Auth {
 
     if (!keySecret) {
       const err = new ErrorInfo('Invalid key specified', 40101, 403);
-      err.hint = 'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.';
+      err.hint =
+        'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.';
       throw err;
     }
 
@@ -1018,7 +1019,8 @@ class Auth {
   _userSetClientId(clientId: string | undefined) {
     if (!(typeof clientId === 'string' || clientId === null)) {
       const err = new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      err.hint = 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
+      err.hint =
+        'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
       throw err;
     } else if (clientId === '*') {
       const err = new ErrorInfo(

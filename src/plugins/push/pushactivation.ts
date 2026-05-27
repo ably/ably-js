@@ -211,7 +211,11 @@ export class ActivationStateMachine {
 
   get pushConfig() {
     if (!this._pushConfig) {
-      const err = new this.client.ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+      const err = new this.client.ErrorInfo(
+        'This platform is not supported as a target of push notifications',
+        40000,
+        400,
+      );
       err.hint =
         'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
       throw err;
