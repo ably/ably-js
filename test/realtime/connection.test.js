@@ -488,7 +488,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.closeAndFinish(done, realtime, new Error('expected ping() to throw on v1 callback shape'));
       } catch (err) {
         try {
-          expect(err.code).to.equal(40000);
+          expect(err.code).to.equal(40025);
           expect(err.message).to.contain('v1 callback signature');
           expect(err.message).to.contain('no longer supported');
           expect(err.hint).to.be.a('string');

@@ -288,7 +288,7 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
   const n = args.length;
   if (typeof args[n - 1] !== 'function') return;
   if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
-  const err = new ErrorInfo('v1 callback signature is no longer supported.', 40000, 400);
+  const err = new ErrorInfo('v1 callback signature is no longer supported.', 40025, 400);
   err.hint =
     'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
     'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md';
