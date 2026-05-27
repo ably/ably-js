@@ -8,6 +8,7 @@ export interface IPartialErrorInfo extends Error {
   cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
   detail?: Record<string, string>;
+  hint?: string;
 }
 
 function toString(err: ErrorInfo | PartialErrorInfo) {
@@ -16,6 +17,7 @@ function toString(err: ErrorInfo | PartialErrorInfo) {
   if (err.statusCode) result += '; statusCode=' + err.statusCode;
   if (err.code) result += '; code=' + err.code;
   if (err.cause) result += '; cause=' + Utils.inspectError(err.cause);
+  if (err.hint) result += '; hint=' + err.hint;
   if (err.detail && Object.keys(err.detail).length > 0) result += '; detail=' + JSON.stringify(err.detail);
   if (err.href && !(err.message && err.message.indexOf('help.ably.io') > -1)) result += '; see ' + err.href + ' ';
   result += ']';
@@ -42,6 +44,7 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   cause?: ErrorInfo;
   href?: string;
   detail?: Record<string, string>;
+  hint?: string;
 
   constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo, detail?: Record<string, string>) {
     super(message);
@@ -82,6 +85,7 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   cause?: ErrorInfo | PartialErrorInfo;
   href?: string;
   detail?: Record<string, string>;
+  hint?: string;
 
   constructor(
     message: string,

@@ -2309,5 +2309,61 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         );
       });
     });
+
+    /**
+     * v1-style trailing-callback shape on RealtimePresence.{enter, update, leave,
+     * get, history, subscribe} throws synchronously with a steering ErrorInfo.
+     */
+    [
+      { method: 'enter', invoke: (presence) => presence.enter({ data: 'x' }, () => {}) },
+      { method: 'update', invoke: (presence) => presence.update({ data: 'x' }, () => {}) },
+      { method: 'leave', invoke: (presence) => presence.leave({ data: 'x' }, () => {}) },
+      { method: 'get', invoke: (presence) => presence.get(null, () => {}) },
+      { method: 'history', invoke: (presence) => presence.history(null, () => {}) },
+      {
+        method: 'subscribe',
+        invoke: (presence) =>
+          presence.subscribe(
+            'enter',
+            () => {},
+            () => {},
+          ),
+      },
+      {
+        method: 'subscribe_listener_callback',
+        invoke: (presence) =>
+          presence.subscribe(
+            () => {},
+            () => {},
+          ),
+      },
+    ].forEach(function (testCase) {
+      it('v1_callback_presence_' + testCase.method + '_throws_synchronously', function (done) {
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ clientId: testClientId, autoConnect: false }),
+          channel = realtime.channels.get('v1cb_presence_' + testCase.method);
+
+        try {
+          testCase.invoke(channel.presence);
+          helper.closeAndFinish(
+            done,
+            realtime,
+            new Error('expected presence.' + testCase.method + '() to throw on v1 callback shape'),
+          );
+        } catch (err) {
+          try {
+            expect(err.code).to.equal(40025);
+            expect(err.message).to.contain('v1 callback signature');
+            expect(err.message).to.contain('no longer supported');
+            expect(err.hint).to.be.a('string');
+            expect(err.hint).to.contain('v2 uses Promises');
+            expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
+            helper.closeAndFinish(done, realtime);
+          } catch (assertionErr) {
+            helper.closeAndFinish(done, realtime, assertionErr);
+          }
+        }
+      });
+    });
   });
 });

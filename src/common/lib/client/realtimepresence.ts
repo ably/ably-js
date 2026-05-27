@@ -54,14 +54,24 @@ class RealtimePresence extends EventEmitter {
     this.pendingPresence = [];
   }
 
-  async enter(data: unknown): Promise<void> {
+  enter(...args: unknown[]): Promise<void> {
+    Utils.detectV1Callback(args, 0);
+    return this._enterImpl(args[0]);
+  }
+
+  private async _enterImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
   }
 
-  async update(data: unknown): Promise<void> {
+  update(...args: unknown[]): Promise<void> {
+    Utils.detectV1Callback(args, 0);
+    return this._updateImpl(args[0]);
+  }
+
+  private async _updateImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
     }
@@ -129,7 +139,12 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
-  async leave(data: unknown): Promise<void> {
+  leave(...args: unknown[]): Promise<void> {
+    Utils.detectV1Callback(args, 0);
+    return this._leaveImpl(args[0]);
+  }
+
+  private async _leaveImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
     }
@@ -176,7 +191,12 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
-  async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
+  get(...args: unknown[]): Promise<PresenceMessage[]> {
+    Utils.detectV1Callback(args, 0);
+    return this._getImpl(args[0] as RealtimePresenceParams | undefined);
+  }
+
+  private async _getImpl(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
     const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
     function toMessages(members: PresenceMap): PresenceMessage[] {
@@ -204,7 +224,12 @@ class RealtimePresence extends EventEmitter {
     return toMessages(this.members);
   }
 
-  async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
+  history(...args: unknown[]): Promise<PaginatedResult<PresenceMessage>> {
+    Utils.detectV1Callback(args, 0);
+    return this._historyImpl(args[0] as RealtimeHistoryParams | null);
+  }
+
+  private async _historyImpl(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
     // We fetch this first so that any plugin-not-provided error takes priority over other errors
     const restMixin = this.channel.client.rest.presenceMixin;
@@ -407,7 +432,12 @@ class RealtimePresence extends EventEmitter {
     });
   }
 
-  async subscribe(..._args: unknown[] /* [event], listener */): Promise<void> {
+  subscribe(..._args: unknown[] /* [event], listener */): Promise<void> {
+    Utils.detectV1Callback(_args, 2);
+    return this._subscribeImpl(_args);
+  }
+
+  private async _subscribeImpl(_args: unknown[]): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];

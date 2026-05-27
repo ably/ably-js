@@ -473,5 +473,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       await helper.closeAndFinishAsync(realtime);
     });
+
+    /**
+     * v1-style trailing-callback shape on Connection.ping throws synchronously
+     * with a steering ErrorInfo.
+     */
+    it('v1_callback_ping_throws_synchronously', function (done) {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ autoConnect: false });
+      try {
+        realtime.connection.ping(function noopCallback(err) {
+          void err;
+        });
+        helper.closeAndFinish(done, realtime, new Error('expected ping() to throw on v1 callback shape'));
+      } catch (err) {
+        try {
+          expect(err.code).to.equal(40025);
+          expect(err.message).to.contain('v1 callback signature');
+          expect(err.message).to.contain('no longer supported');
+          expect(err.hint).to.be.a('string');
+          expect(err.hint).to.contain('v2 uses Promises');
+          expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
+          helper.closeAndFinish(done, realtime);
+        } catch (assertionErr) {
+          helper.closeAndFinish(done, realtime, assertionErr);
+        }
+      }
+    });
   });
 });

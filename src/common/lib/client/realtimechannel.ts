@@ -250,7 +250,12 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  async publish(...args: any[]): Promise<API.PublishResult> {
+  publish(...args: unknown[]): Promise<API.PublishResult> {
+    Utils.detectV1Callback(args, 0);
+    return this._publishImpl(args);
+  }
+
+  private async _publishImpl(args: any[]): Promise<API.PublishResult> {
     const first = args[0],
       second = args[1];
     let messages: Message[];
@@ -453,7 +458,12 @@ class RealtimeChannel extends EventEmitter {
     this.send(msg);
   }
 
-  async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
+  subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
+    Utils.detectV1Callback(args, 2);
+    return this._subscribeImpl(args);
+  }
+
+  private async _subscribeImpl(args: unknown[]): Promise<ChannelStateChange | null> {
     const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     if (this.state === 'failed') {
@@ -985,7 +995,12 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  history = async function (
+  history = function (this: RealtimeChannel, ...args: unknown[]): Promise<PaginatedResult<Message>> {
+    Utils.detectV1Callback(args, 0);
+    return this._historyImpl(args[0] as RealtimeHistoryParams | null);
+  } as any;
+
+  private _historyImpl = async function (
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
   ): Promise<PaginatedResult<Message>> {

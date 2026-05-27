@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
@@ -56,8 +56,8 @@ export function useChannel(
 
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 
-  const history: Ably.RealtimeChannel['history'] = useCallback(
-    (params?: Ably.RealtimeHistoryParams) => channel.history(params),
+  const history: Ably.RealtimeChannel['history'] = useMemo(
+    () => ((params?: Ably.RealtimeHistoryParams) => channel.history(params)) as Ably.RealtimeChannel['history'],
     [channel],
   );
 

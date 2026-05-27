@@ -1450,6 +1450,61 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
+     * v1-style trailing-callback shape on RealtimeChannel.{publish, subscribe,
+     * history} throws synchronously with a steering ErrorInfo whose message
+     * diagnoses *what* went wrong and whose hint prescribes the v2 replacement
+     * call.
+     */
+    [
+      { method: 'publish', invoke: (ch) => ch.publish('event', { hello: 'world' }, () => {}) },
+      {
+        method: 'subscribe',
+        invoke: (ch) =>
+          ch.subscribe(
+            'event',
+            () => {},
+            () => {},
+          ),
+      },
+      {
+        method: 'subscribe_listener_callback',
+        invoke: (ch) =>
+          ch.subscribe(
+            () => {},
+            () => {},
+          ),
+      },
+      { method: 'history', invoke: (ch) => ch.history(null, () => {}) },
+    ].forEach(function (testCase) {
+      it('v1_callback_' + testCase.method + '_throws_synchronously', function (done) {
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ autoConnect: false }),
+          channel = realtime.channels.get('v1cb_channel_' + testCase.method);
+
+        try {
+          testCase.invoke(channel);
+          helper.closeAndFinish(
+            done,
+            realtime,
+            new Error('expected ' + testCase.method + '() to throw on v1 callback shape'),
+          );
+        } catch (err) {
+          try {
+            expect(err.code).to.equal(40025);
+            expect(err.message).to.contain('v1 callback signature');
+            expect(err.message).to.contain('no longer supported');
+            expect(err.hint).to.be.a('string');
+            expect(err.hint).to.contain('v2 uses Promises');
+            expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
+            helper.closeAndFinish(done, realtime);
+          } catch (assertionErr) {
+            helper.closeAndFinish(done, realtime, assertionErr);
+          }
+        }
+      });
+    });
+
+    /**
      * A channel attach that times out should be retried
      *
      * @spec RTL4f

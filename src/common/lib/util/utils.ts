@@ -263,6 +263,38 @@ export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | 
   return typeof err == 'object' && err !== null && (err instanceof ErrorInfo || err instanceof PartialErrorInfo);
 }
 
+/**
+ * Detect a v1-style trailing callback on a public method's args list and throw a
+ * steering error. v2 removed callback support from these methods, but agents trained
+ * on v1 docs keep passing callbacks — without this check, the callback is silently
+ * swallowed and the call hangs (subscribe) or no-ops (publish).
+ *
+ * Apply only to methods whose v1 form accepted a Node-style (err, result) callback
+ * and which are promise-only in v2. Do not apply to APIs that legitimately accept a
+ * trailing function (e.g. ClientOptions.authCallback).
+ *
+ * Fires when the trailing arg is a function AND either:
+ *   - `args.length > v2TrailingFnArity` (the trailing fn is beyond the arity at
+ *     which v2 legitimately ends in a function), or
+ *   - the second-to-last arg is also a function — none of the v2 forms take two
+ *     trailing functions, so e.g. `subscribe(listener, callback)` is always v1
+ *     even though it matches the arity of `subscribe(event, listener)`.
+ *
+ * @param v2TrailingFnArity - The arity at which v2 legitimately ends in a function
+ *   (e.g. `subscribe(event, listener)` → 2). For methods where v2 never ends in a
+ *   function (`authorize`, `publish`, `requestToken`, ...), pass 0.
+ */
+export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: number): void {
+  const n = args.length;
+  if (typeof args[n - 1] !== 'function') return;
+  if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
+  const err = new ErrorInfo('v1 callback signature is no longer supported.', 40025, 400);
+  err.hint =
+    'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
+    'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md';
+  throw err;
+}
+
 export function inspectError(err: unknown): string {
   if (
     err instanceof Error ||
