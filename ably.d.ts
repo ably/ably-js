@@ -389,6 +389,13 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   autoConnect?: boolean;
 
   /**
+   * When `true`, documented silent-failure paths throw an {@link ErrorInfo} with a `hint` describing the cause and remediation. When `false` (the default in v2.x), the same paths emit a warning log and return their legacy silent value (for example, `presence.get()` on a channel attached without `presence_subscribe` returns `[]`). A future major version will flip the default to `true` with no per-call opt-out — `try`/`catch` is the escape.
+   *
+   * @defaultValue `false`
+   */
+  strictMode?: boolean;
+
+  /**
    * When a {@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably {@link TokenRequest | `TokenRequest`s}.
    */
   defaultTokenParams?: TokenParams;
