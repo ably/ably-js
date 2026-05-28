@@ -2118,5 +2118,42 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         await detachPromise;
       }, realtime);
     });
+
+    describe('DX-1211 - subscribe() without subscribe mode', function () {
+      it('with strictMode:true, attach resolves but subscribe rejects with 93003 and a subscribe-mode hint', async function () {
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime({ strictMode: true });
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = realtime.channels.get('dx-1211-subscribe-strict-' + String(Math.random()).slice(2), {
+            modes: ['publish'],
+          });
+          let caught;
+          try {
+            await channel.subscribe(function () {});
+          } catch (err) {
+            caught = err;
+          }
+          expect(caught, 'expected channel.subscribe() to reject').to.exist;
+          expect(caught.code).to.equal(93003);
+          expect(caught.hint).to.be.a('string');
+          expect(caught.hint).to.contain('subscribe');
+          expect(caught.hint).to.contain('ably auth keys list');
+        }, realtime);
+      });
+
+      it('with strictMode disabled (default), subscribe resolves and the listener is registered without server delivery', async function () {
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime();
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = realtime.channels.get('dx-1211-subscribe-silent-' + String(Math.random()).slice(2), {
+            modes: ['publish'],
+          });
+          const result = await channel.subscribe(function () {});
+          // attach resolves (ChannelStateChange or null) without throwing; the listener is harmless because the server will never deliver
+          expect(result === null || (result && typeof result === 'object')).to.equal(true);
+          expect(channel.state).to.equal('attached');
+        }, realtime);
+      });
+    });
   });
 });
