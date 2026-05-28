@@ -258,6 +258,7 @@ export class ActivationStateMachine {
         err.hint =
           'Your registerCallback must invoke its callback with (null, deviceRegistration). Returning undefined or null in the second argument fails activation.';
         this.handleEvent(new GettingDeviceRegistrationFailed(err));
+        return;
       }
 
       if (isNew) {
