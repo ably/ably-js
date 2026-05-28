@@ -1,4 +1,4 @@
-import { actions, channelModes } from '../types/protocolmessagecommon';
+import { actions, channelModes, flags } from '../types/protocolmessagecommon';
 import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
@@ -97,6 +97,7 @@ class RealtimeChannel extends EventEmitter {
   };
   errorReason: ErrorInfo | null;
   _mode = 0;
+  _silentSubscribeWarned = false;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
   _lastPayload: {
@@ -499,18 +500,51 @@ class RealtimeChannel extends EventEmitter {
     }
 
     // Filtered
-    if (event && typeof event === 'object' && !Array.isArray(event)) {
+    const isFilteredSubscription = !!(event && typeof event === 'object' && !Array.isArray(event));
+    if (isFilteredSubscription) {
       this.client._FilteredSubscriptions.subscribeFilter(this, event, listener);
     } else {
       this.subscriptions.on(event, listener);
     }
 
     // (RTL7g)
+    let stateChange: ChannelStateChange | null = null;
     if (this.channelOptions.attachOnSubscribe !== false) {
-      return this.attach();
-    } else {
-      return null;
+      stateChange = await this.attach();
     }
+
+    // Whether or not we attached on subscribe, if the channel ended up attached without the
+    // subscribe mode the server will never deliver messages to this listener.
+    if (this.state === 'attached' && (this._mode & flags.SUBSCRIBE) === 0) {
+      const err = new ErrorInfo({
+        message:
+          'You called channel.subscribe() but the channel was attached without the subscribe mode, so the server will never deliver messages to this listener.',
+        code: 93003,
+        statusCode: 400,
+        hint: 'Re-create the channel with subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", ...] }). Your token/API-key capability must permit subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+      });
+      if (this.client.options.strictMode === true) {
+        // The call is about to throw, so undo the listener registration above to avoid leaking a handler.
+        if (isFilteredSubscription) {
+          this.client._FilteredSubscriptions
+            .getAndDeleteFilteredSubscriptions(this, event, listener)
+            .forEach((l) => this.subscriptions.off(l));
+        } else {
+          this.subscriptions.off(event, listener);
+        }
+        throw err;
+      }
+      if (!this._silentSubscribeWarned) {
+        Logger.logActionNoStrip(
+          this.logger,
+          Logger.LOG_ERROR,
+          'RealtimeChannel.subscribe()',
+          err.message + '; hint=' + err.hint + Logger.silentFailureLogSuffix(),
+        );
+        this._silentSubscribeWarned = true;
+      }
+    }
+    return stateChange;
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
@@ -607,6 +641,7 @@ class RealtimeChannel extends EventEmitter {
       case actions.ATTACHED: {
         this.properties.attachSerial = message.channelSerial;
         this._mode = message.getMode();
+        this._silentSubscribeWarned = false;
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
         this.modes = (modesFromFlags && (Utils.allToLowerCase(modesFromFlags) as API.ChannelMode[])) || undefined;
