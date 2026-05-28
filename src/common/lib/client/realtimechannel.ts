@@ -198,7 +198,7 @@ class RealtimeChannel extends EventEmitter {
       code: 90001,
       statusCode: 400,
       cause: this.errorReason || undefined,
-      hint: 'Inspect channel.errorReason for the underlying cause, then call channel.attach() to recover. From "failed" or "suspended", a fresh attach() is required before further channel operations.',
+      hint: 'Inspect channel.errorReason for the underlying cause. From "failed", call channel.attach() to recover; "suspended" recovers automatically once the underlying connection is re-established.',
     });
     return err;
   }
@@ -297,7 +297,7 @@ class RealtimeChannel extends EventEmitter {
         message: 'The single-argument form of publish() expects a message object or an array of message objects',
         code: 40013,
         statusCode: 400,
-        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
       });
     }
     const maxMessageSize = this.client.options.maxMessageSize;
@@ -535,10 +535,10 @@ class RealtimeChannel extends EventEmitter {
       case 'initialized':
       case 'detaching':
       case 'detached': {
+        // sync() is an internal SDK method, so no fix-it hint here — user/LLM code shouldn't reach this throw.
         throw new PartialErrorInfo({
           message: 'Unable to sync to channel; not attached',
           code: 40000,
-          hint: 'sync() can only run on an attached or attaching channel. Await channel.attach() (or channel.whenState("attached")) before calling sync().',
         });
       }
       default:

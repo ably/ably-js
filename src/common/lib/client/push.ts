@@ -16,7 +16,7 @@ import Platform from 'common/platform';
 import type { ErrCallback } from 'common/types/utils';
 
 const PUSH_NOT_AVAILABLE_HINT =
-  'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+  'push.activate() registers the current process as a push target — supported in browser environments with service-worker support. In Node.js or other server contexts there is no device to register; use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
 
 class Push {
   client: BaseClient;

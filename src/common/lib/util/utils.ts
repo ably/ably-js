@@ -474,9 +474,9 @@ export function matchDerivedChannel(name: string) {
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
     throw new ErrorInfo({
-      message: 'regex match failed',
-      code: 400,
-      statusCode: 40010,
+      message: 'Channel name does not match the [filter=...]name shape required for derived channels',
+      code: 40010,
+      statusCode: 400,
       hint: 'Channel names with derived options must look like "[filter=...]name". See https://ably.com/docs/channels/options/derived.',
     });
   }
@@ -484,8 +484,8 @@ export function matchDerivedChannel(name: string) {
   if (match![2]) {
     throw new ErrorInfo({
       message: `cannot use a derived option with a ${match[2]} channel`,
-      code: 400,
-      statusCode: 40010,
+      code: 40010,
+      statusCode: 400,
       hint: `A "${match[2]}" channel already has a qualifier; derived options like filter= cannot be layered on top. Use a base channel name instead.`,
     });
   }
