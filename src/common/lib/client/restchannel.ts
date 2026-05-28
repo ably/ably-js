@@ -110,7 +110,7 @@ class RestChannel {
         message: 'The single-argument form of publish() expects a message object or an array of message objects',
         code: 40013,
         statusCode: 400,
-        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
       });
     }
 

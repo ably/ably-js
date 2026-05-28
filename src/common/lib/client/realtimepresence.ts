@@ -65,7 +65,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to enter a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(otherId, data) — this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
@@ -82,7 +82,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to update presence data',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(otherId, data) — this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
@@ -160,7 +160,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must have been specified to enter or leave a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(clientId) to leave on behalf of a specific identity. If the resulting leave is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(otherId) — leaveClient on behalf of a different identity requires a wildcard clientId on your API key/token.',
       });
     }
     return this.leaveClient(undefined, data);

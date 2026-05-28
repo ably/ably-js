@@ -1955,7 +1955,7 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 403,
         cause: err,
-        hint: 'Your authUrl/authCallback returned 403. Fix the auth endpoint: the request reached Ably, but your server refused to mint a token. Inspect cause for the underlying error.',
+        hint: 'Token authorization was refused with 403. This can be your authUrl/authCallback rejecting the request, or the Ably server refusing the resulting TokenRequest (e.g. when the request asks for capabilities outside the API key). Inspect cause for the underlying error.',
       });
       this.notifyState({ state: 'failed', error: wrapped });
     } else {
