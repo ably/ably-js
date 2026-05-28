@@ -62,10 +62,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _enterImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      const err = new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
-      err.hint =
-        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
-      throw err;
+      throw new ErrorInfo({
+        message: 'clientId must be specified to enter a presence channel',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
   }
@@ -77,10 +79,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _updateImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      const err = new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
-      err.hint =
-        'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
-      throw err;
+      throw new ErrorInfo({
+        message: 'clientId must be specified to update presence data',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(clientId, data). If the resulting presence message is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
   }
@@ -159,10 +163,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _leaveImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      const err = new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
-      err.hint =
-        'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(clientId) to leave on behalf of a specific identity. If the resulting leave is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
-      throw err;
+      throw new ErrorInfo({
+        message: 'clientId must have been specified to enter or leave a presence channel',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(clientId) to leave on behalf of a specific identity. If the resulting leave is rejected by the server, your token/API-key capability must include "presence" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
     }
     return this.leaveClient(undefined, data);
   }
@@ -204,14 +210,11 @@ class RealtimePresence extends EventEmitter {
       // by itself instead of attaching just in order to leave.
       // eslint-disable-next-line no-fallthrough
       default: {
-        const err = new PartialErrorInfo(
-          'Unable to leave presence channel while in ' + channel.state + ' state',
-          90001,
-        );
-        err.code = 90001;
-        err.hint =
-          'The channel is in "initialized" or "failed" state, so the client is not currently a presence member. From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.';
-        throw err;
+        throw new PartialErrorInfo({
+          message: 'Unable to leave presence channel while in ' + channel.state + ' state',
+          code: 90001,
+          hint: 'The channel is in "initialized" or "failed" state, so the client is not currently a presence member. From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.',
+        });
       }
     }
   }
@@ -231,14 +234,12 @@ class RealtimePresence extends EventEmitter {
     /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
     if (this.channel.state === 'suspended') {
       if (waitForSync) {
-        const err = ErrorInfo.fromValues({
+        throw ErrorInfo.fromValues({
           statusCode: 400,
           code: 91005,
           message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+          hint: 'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.',
         });
-        err.hint =
-          'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.';
-        throw err;
       }
       return toMessages(this.members);
     }
@@ -267,14 +268,12 @@ class RealtimePresence extends EventEmitter {
         delete params.untilAttach;
         params.from_serial = this.channel.properties.attachSerial;
       } else {
-        const err = new ErrorInfo(
-          'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
-          40000,
-          400,
-        );
-        err.hint =
-          'Await channel.attach() (or channel.whenState("attached")) before calling presence.history({ untilAttach: true }).';
-        throw err;
+        throw new ErrorInfo({
+          message: 'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await channel.attach() (or channel.whenState("attached")) before calling presence.history({ untilAttach: true }).',
+        });
       }
     }
 
@@ -445,9 +444,13 @@ class RealtimePresence extends EventEmitter {
       // RTP17g1: suppress id if the connId has changed
       const id = entry.connectionId === connId ? entry.id : undefined;
       this._enterOrUpdateClient(id, entry.clientId, entry.data, 'enter').catch((err) => {
-        const wrappedErr = new ErrorInfo('Presence auto re-enter failed', 91004, 400, err);
-        wrappedErr.hint =
-          'After a connection recovery the SDK could not re-enter this client into presence. Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.';
+        const wrappedErr = new ErrorInfo({
+          message: 'Presence auto re-enter failed',
+          code: 91004,
+          statusCode: 400,
+          cause: err,
+          hint: 'After a connection recovery the SDK could not re-enter this client into presence. Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.',
+        });
         Logger.logAction(
           this.logger,
           Logger.LOG_ERROR,
