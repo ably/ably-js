@@ -261,11 +261,12 @@ export async function decodeData(
       }
     } catch (e) {
       const err = e as ErrorInfo;
-      decodingError = new ErrorInfo(
-        `Error processing the ${xform} encoding, decoder returned ‘${err.message}’`,
-        err.code || 40013,
-        400,
-      );
+      decodingError = new ErrorInfo({
+        message: `Error processing the ${xform} encoding, decoder returned ‘${err.message}’`,
+        code: err.code || 40013,
+        statusCode: 400,
+        hint: err.hint,
+      });
     } finally {
       finalEncoding =
         (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
