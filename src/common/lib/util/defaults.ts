@@ -179,7 +179,7 @@ function checkHost(host: string): void {
       message: 'host must be a string; was a ' + typeof host,
       code: 40000,
       statusCode: 400,
-      hint: 'Pass `endpoint` as a single hostname string (e.g. "main.realtime.ably.net"), not an array or object.',
+      hint: 'Pass `endpoint` as a single endpoint name string (e.g. "main"), not an array or object.',
     });
   }
   if (!host.length) {

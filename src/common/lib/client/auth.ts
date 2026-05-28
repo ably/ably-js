@@ -500,7 +500,7 @@ class Auth {
               message: 'authUrl response is missing a content-type header',
               code: 40170,
               statusCode: 401,
-              hint: 'Have your auth endpoint return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt.',
+              hint: 'Auth endpoints may return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt.',
             });
             cb(err, null);
             return;
@@ -510,12 +510,12 @@ class Auth {
           if (!json && !text) {
             const err = new ErrorInfo({
               message:
-                'authUrl responded with unacceptable content-type ' +
+                'authUrl responded with unacceptable Content-Type ' +
                 contentType +
-                ', should be either text/plain, application/jwt or application/json',
+                '. Expected one of: text/plain, application/jwt or application/json',
               code: 40170,
               statusCode: 401,
-              hint: 'Update your auth endpoint to return Content-Type application/json, text/plain or application/jwt — the SDK cannot parse other content types.',
+              hint: 'Auth endpoints may return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt; the SDK cannot parse other content types.',
             });
             cb(err, null);
             return;
@@ -526,7 +526,7 @@ class Auth {
                 message: 'authUrl response exceeded max permitted length',
                 code: 40170,
                 statusCode: 401,
-                hint: 'authUrl payloads must be under 128 KB. Your endpoint is returning more than a TokenDetails/TokenRequest object — return only the token shape, not wrapping JSON or extra fields.',
+                hint: 'authUrl payloads must be under 128 KB. If your TokenDetails legitimately contains a large capability, trim unused fields or set authOptions.suppressMaxLengthCheck. Otherwise check the endpoint is returning only the token shape, not wrapped in extra JSON.',
               });
               cb(err, null);
               return;
@@ -659,7 +659,7 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Your authCallback/authUrl did not respond in time. Make sure the callback invokes its callback parameter (or resolves its promise) on every code path.',
+            hint: 'authCallback did not invoke its callback within the timeout, or authUrl did not respond. Check that the callback runs to completion on every code path and that authUrl is reachable.',
           });
           reject(err);
         }, timeoutLength);
@@ -693,7 +693,7 @@ class Auth {
               message: 'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
               code: 40170,
               statusCode: 401,
-              hint: 'Tokens must be under 128 KB. Your endpoint is returning more than the token itself — return only the token string or a TokenDetails object.',
+              hint: 'Tokens must be under 128 KB. If the TokenDetails legitimately contains a large capability, trim unused fields. Otherwise check the endpoint is returning only the token, not wrapped in extra data.',
             });
             reject(err);
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
@@ -710,11 +710,10 @@ class Auth {
             !(contentType && contentType.indexOf('application/jwt') > -1)
           ) {
             const err = new ErrorInfo({
-              message:
-                "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
+              message: 'Token was double-encoded',
               code: 40170,
               statusCode: 401,
-              hint: 'Return TokenDetails/TokenRequest as an object (not a JSON-encoded string), or set the response Content-Type to application/jwt for JWT tokens.',
+              hint: 'The endpoint returned a JSON-encoded string starting with `{`, but the Content-Type was not application/jwt — likely a stringified TokenDetails. Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
             });
             reject(err);
           } else {
@@ -838,7 +837,7 @@ class Auth {
         message: 'No key specified',
         code: 40101,
         statusCode: 403,
-        hint: 'createTokenRequest needs an API key. Pass ClientOptions.key on the client or { key } in the authOptions argument. Token-auth clients cannot mint token requests themselves.',
+        hint: 'createTokenRequest needs an API key. Pass ClientOptions.key on the client or { key } in the authOptions argument. Token-auth clients cannot construct token requests themselves.',
       });
     }
     const keyParts = key.split(':'),
@@ -859,7 +858,7 @@ class Auth {
         message: 'clientId can’t be an empty string',
         code: 40012,
         statusCode: 400,
-        hint: 'Pass a non-empty clientId, or omit the field entirely to mint an anonymous token.',
+        hint: 'Pass a non-empty clientId, or omit the field entirely for an anonymous token.',
       });
     }
 
@@ -985,7 +984,7 @@ class Auth {
             'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
           code: 40102,
           statusCode: 403,
-          hint: 'Mint the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it. The two cannot diverge.',
+          hint: 'Issue the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it. The two cannot diverge.',
         });
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
@@ -1078,7 +1077,7 @@ class Auth {
         message: msg,
         code: 40102,
         statusCode: 401,
-        hint: 'A clientId from the token does not match ClientOptions.clientId. Mint the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
+        hint: 'A clientId from the token does not match ClientOptions.clientId. Issue the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
       });
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
       return err;
