@@ -106,14 +106,12 @@ class RestChannel {
       messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
-      const err = new ErrorInfo(
-        'The single-argument form of publish() expects a message object or an array of message objects',
-        40013,
-        400,
-      );
-      err.hint =
-        'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
-      throw err;
+      throw new ErrorInfo({
+        message: 'The single-argument form of publish() expects a message object or an array of message objects',
+        code: 40013,
+        statusCode: 400,
+        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object. If the resulting publish is rejected by the server, your token/API-key capability must include "publish" on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
     }
 
     if (!params) {
@@ -142,14 +140,12 @@ class RestChannel {
     const size = getMessagesSize(wireMessages),
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
-      const err = new ErrorInfo(
-        `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
-        40009,
-        400,
-      );
-      err.hint =
-        'Split the publish into multiple calls so each batch is under the limit, or contact support to raise maxMessageSize for your app.';
-      throw err;
+      throw new ErrorInfo({
+        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        code: 40009,
+        statusCode: 400,
+        hint: 'Split the publish into multiple calls so each batch is under the limit, or contact support to raise maxMessageSize for your app.',
+      });
     }
 
     return this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);

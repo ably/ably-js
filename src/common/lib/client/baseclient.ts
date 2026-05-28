@@ -76,10 +76,12 @@ class BaseClient {
       if (!keyMatch) {
         const msg = 'invalid key parameter';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
-        const err = new ErrorInfo(msg, 40400, 404);
-        err.hint =
-          'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you only have a token, use ClientOptions.token / tokenDetails instead. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.';
-        throw err;
+        throw new ErrorInfo({
+          message: msg,
+          code: 40400,
+          statusCode: 404,
+          hint: 'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you only have a token, use ClientOptions.token / tokenDetails instead. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        });
       }
       normalOptions.keyName = keyMatch[1];
       normalOptions.keySecret = keyMatch[2];
@@ -87,19 +89,20 @@ class BaseClient {
 
     if ('clientId' in normalOptions) {
       if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null)) {
-        const err = new ErrorInfo('clientId must be either a string or null', 40012, 400);
-        err.hint =
-          'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.';
-        throw err;
+        throw new ErrorInfo({
+          message: 'clientId must be either a string or null',
+          code: 40012,
+          statusCode: 400,
+          hint: 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.',
+        });
       } else if (normalOptions.clientId === '*') {
-        const err = new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400,
-        );
-        err.hint =
-          'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.';
-        throw err;
+        throw new ErrorInfo({
+          message:
+            'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
+          code: 40012,
+          statusCode: 400,
+          hint: 'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        });
       }
     }
 
