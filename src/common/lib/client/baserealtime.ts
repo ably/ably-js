@@ -204,7 +204,7 @@ class Channels extends EventEmitter {
             'Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.',
           code: 40000,
           statusCode: 400,
-          hint: 'channels.get(name) returns the existing channel — to change params or modes, call channel.setOptions(opts) on the returned instance (it will re-attach if the new options differ from current).',
+          hint: 'channels.get(name) returns the existing channel - to change params or modes, call channel.setOptions(opts) on the returned instance (it will re-attach if the new options differ from current).',
         });
       }
       channel.setOptions(channelOptions);

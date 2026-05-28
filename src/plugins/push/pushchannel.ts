@@ -119,7 +119,7 @@ class PushChannel {
         message: 'Cannot subscribe from client without deviceIdentityToken',
         code: 50000,
         statusCode: 500,
-        hint: 'Activate this device first by awaiting client.push.activate(registerCallback) — the device must hold an identity token before subscribing to push.',
+        hint: 'Activate this device first by awaiting client.push.activate(registerCallback) - the device must hold an identity token before subscribing to push.',
       });
     }
   }

@@ -251,7 +251,7 @@ export async function decodeData(
                 message: 'Vcdiff delta decode failed with ' + e,
                 code: 40018,
                 statusCode: 400,
-                hint: 'The SDK recovers by re-attaching without delta. If you see this repeatedly, the base payload has diverged — disable channel deltas for this channel.',
+                hint: 'The SDK recovers by re-attaching without delta. If you see this repeatedly, the base payload has diverged - disable channel deltas for this channel.',
               });
             }
             continue;
