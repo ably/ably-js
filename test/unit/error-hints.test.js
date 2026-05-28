@@ -22,6 +22,7 @@ define(['chai', 'ably'], function (chai, Ably) {
           throw new Error('expected constructor to throw');
         } catch (err) {
           expect(err.code).to.equal(40400);
+          expect(err.hint).to.be.a('string');
           expect(err.hint).to.contain('appId');
           expect(err.hint).to.contain('keyId');
         }
@@ -33,6 +34,7 @@ define(['chai', 'ably'], function (chai, Ably) {
           throw new Error('expected constructor to throw');
         } catch (err) {
           expect(err.code).to.equal(40012);
+          expect(err.hint).to.be.a('string');
           expect(err.hint).to.contain('defaultTokenParams');
         }
       });
@@ -43,6 +45,7 @@ define(['chai', 'ably'], function (chai, Ably) {
           throw new Error('expected constructor to throw');
         } catch (err) {
           expect(err.code).to.equal(40160);
+          expect(err.hint).to.be.a('string');
           expect(err.hint).to.contain('authUrl');
           expect(err.hint).to.contain('authCallback');
         }
@@ -54,6 +57,7 @@ define(['chai', 'ably'], function (chai, Ably) {
           throw new Error('expected constructor to throw');
         } catch (err) {
           expect(err.code).to.equal(40106);
+          expect(err.hint).to.be.a('string');
           expect(err.hint).to.contain('endpoint');
           expect(err.hint).to.contain('legacy');
         }
@@ -64,10 +68,15 @@ define(['chai', 'ably'], function (chai, Ably) {
       it('missing plugin error carries an import hint', function () {
         const rest = new Ably.Rest({ key: 'a.b:c' });
         try {
-          rest._FilteredSubscriptions; // triggers throwMissingPluginError('MessageInteractions')
+          // _FilteredSubscriptions is the stable internal trigger for
+          // createMissingPluginError('MessageInteractions'); used here only
+          // because no public API exposes the missing-plugin throw without
+          // first connecting a Realtime client.
+          rest._FilteredSubscriptions;
           throw new Error('expected getter to throw');
         } catch (err) {
           expect(err.code).to.equal(40019);
+          expect(err.hint).to.be.a('string');
           expect(err.hint).to.contain('ably/modular');
           expect(err.hint).to.contain('plugins');
         }
