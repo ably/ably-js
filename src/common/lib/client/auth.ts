@@ -278,7 +278,7 @@ class Auth {
         message: 'Unable to update auth options with incompatible key',
         code: 40102,
         statusCode: 401,
-        hint: 'auth.authorize() cannot change the API key — the new authOptions.key differs from the one the client was constructed with. To use a different key, construct a new Ably client.',
+        hint: 'auth.authorize() cannot change the API key - the new authOptions.key differs from the one the client was constructed with. To use a different key, construct a new Ably client.',
       });
     }
 
@@ -713,7 +713,7 @@ class Auth {
               message: 'Token was double-encoded',
               code: 40170,
               statusCode: 401,
-              hint: 'The endpoint returned a JSON-encoded string starting with `{`, but the Content-Type was not application/jwt — likely a stringified TokenDetails. Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
+              hint: 'The endpoint returned a JSON-encoded string starting with `{`, but the Content-Type was not application/jwt - likely a stringified TokenDetails. Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
             });
             reject(err);
           } else {
