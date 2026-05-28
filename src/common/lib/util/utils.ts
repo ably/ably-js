@@ -293,7 +293,7 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
     code: 40025,
     statusCode: 400,
     hint:
-      'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
+      'v2 uses Promises - drop the trailing callback and `await` the returned promise. ' +
       'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md',
   });
 }

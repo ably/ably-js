@@ -266,7 +266,7 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
         'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
       code: 40106,
       statusCode: 400,
-      hint: 'Use only `endpoint` (the v2 option). `environment`, `restHost`, and `realtimeHost` are legacy v1 names — remove them from ClientOptions.',
+      hint: 'Use only `endpoint` (the v2 option). `environment`, `restHost`, and `realtimeHost` are legacy v1 names - remove them from ClientOptions.',
     });
   }
 

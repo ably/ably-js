@@ -60,7 +60,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
           message: 'Invalid channel mode: ' + currentMode,
           code: 40000,
           statusCode: 400,
-          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server also enforces this — your token/API-key capability must permit the requested modes on this channel, otherwise the subsequent attach is rejected. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server also enforces this - your token/API-key capability must permit the requested modes on this channel, otherwise the subsequent attach is rejected. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
         });
         return err;
       }
