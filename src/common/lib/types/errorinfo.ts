@@ -29,6 +29,9 @@ export interface IConvertibleToErrorInfo {
   code: number;
   statusCode: number;
   detail?: Record<string, string>;
+  hint?: string;
+  cause?: ErrorInfo | PartialErrorInfo;
+  href?: string;
 }
 
 export interface IConvertibleToPartialErrorInfo {
@@ -36,6 +39,9 @@ export interface IConvertibleToPartialErrorInfo {
   code: number | null;
   statusCode?: number;
   detail?: Record<string, string>;
+  hint?: string;
+  cause?: ErrorInfo | PartialErrorInfo;
+  href?: string;
 }
 
 export default class ErrorInfo extends Error implements IPartialErrorInfo, API.ErrorInfo {
@@ -46,15 +52,43 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   detail?: Record<string, string>;
   hint?: string;
 
-  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo, detail?: Record<string, string>) {
-    super(message);
-    if (typeof Object.setPrototypeOf !== 'undefined') {
-      Object.setPrototypeOf(this, ErrorInfo.prototype);
+  constructor(message: string, code: number, statusCode: number, cause?: ErrorInfo, detail?: Record<string, string>);
+  constructor(values: IConvertibleToErrorInfo);
+  constructor(
+    messageOrValues: string | IConvertibleToErrorInfo,
+    code?: number,
+    statusCode?: number,
+    cause?: ErrorInfo,
+    detail?: Record<string, string>,
+  ) {
+    if (typeof messageOrValues === 'object') {
+      const values = messageOrValues;
+      if (
+        typeof values.message !== 'string' ||
+        typeof values.code !== 'number' ||
+        typeof values.statusCode !== 'number' ||
+        (!Utils.isNil(values.detail) && (typeof values.detail !== 'object' || Array.isArray(values.detail)))
+      ) {
+        throw new Error('ErrorInfo: invalid values: ' + Platform.Config.inspect(values));
+      }
+      super(values.message);
+      if (typeof Object.setPrototypeOf !== 'undefined') {
+        Object.setPrototypeOf(this, ErrorInfo.prototype);
+      }
+      this.code = values.code;
+      this.statusCode = values.statusCode;
+      this.detail = values.detail;
+      Object.assign(this, values);
+    } else {
+      super(messageOrValues);
+      if (typeof Object.setPrototypeOf !== 'undefined') {
+        Object.setPrototypeOf(this, ErrorInfo.prototype);
+      }
+      this.code = code as number;
+      this.statusCode = statusCode as number;
+      this.cause = cause;
+      this.detail = detail;
     }
-    this.code = code;
-    this.statusCode = statusCode;
-    this.cause = cause;
-    this.detail = detail;
   }
 
   toString(): string {
@@ -62,16 +96,11 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   }
 
   static fromValues(values: IConvertibleToErrorInfo): ErrorInfo {
-    const { message, code, statusCode, detail } = values;
-    if (
-      typeof message !== 'string' ||
-      typeof code !== 'number' ||
-      typeof statusCode !== 'number' ||
-      (!Utils.isNil(detail) && (typeof detail !== 'object' || Array.isArray(detail)))
-    ) {
-      throw new Error('ErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
-    }
-    const result = Object.assign(new ErrorInfo(message, code, statusCode, undefined, detail), values);
+    // Delegate shape validation and field assignment to the options-object constructor;
+    // fromValues only adds the help.ably.io href default for server-decoded errors that
+    // arrive without one. SDK-thrown errors that use `new ErrorInfo({...})` directly do
+    // not get this default, by design.
+    const result = new ErrorInfo(values);
     if (result.code && !result.href) {
       result.href = 'https://help.ably.io/error/' + result.code;
     }
@@ -93,15 +122,43 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
     statusCode?: number,
     cause?: ErrorInfo | PartialErrorInfo,
     detail?: Record<string, string>,
+  );
+  constructor(values: IConvertibleToPartialErrorInfo);
+  constructor(
+    messageOrValues: string | IConvertibleToPartialErrorInfo,
+    code?: number | null,
+    statusCode?: number,
+    cause?: ErrorInfo | PartialErrorInfo,
+    detail?: Record<string, string>,
   ) {
-    super(message);
-    if (typeof Object.setPrototypeOf !== 'undefined') {
-      Object.setPrototypeOf(this, PartialErrorInfo.prototype);
+    if (typeof messageOrValues === 'object') {
+      const values = messageOrValues;
+      if (
+        typeof values.message !== 'string' ||
+        (!Utils.isNil(values.code) && typeof values.code !== 'number') ||
+        (!Utils.isNil(values.statusCode) && typeof values.statusCode !== 'number') ||
+        (!Utils.isNil(values.detail) && (typeof values.detail !== 'object' || Array.isArray(values.detail)))
+      ) {
+        throw new Error('PartialErrorInfo: invalid values: ' + Platform.Config.inspect(values));
+      }
+      super(values.message);
+      if (typeof Object.setPrototypeOf !== 'undefined') {
+        Object.setPrototypeOf(this, PartialErrorInfo.prototype);
+      }
+      this.code = values.code;
+      this.statusCode = values.statusCode;
+      this.detail = values.detail;
+      Object.assign(this, values);
+    } else {
+      super(messageOrValues);
+      if (typeof Object.setPrototypeOf !== 'undefined') {
+        Object.setPrototypeOf(this, PartialErrorInfo.prototype);
+      }
+      this.code = code as number | null;
+      this.statusCode = statusCode;
+      this.cause = cause;
+      this.detail = detail;
     }
-    this.code = code;
-    this.statusCode = statusCode;
-    this.cause = cause;
-    this.detail = detail;
   }
 
   toString(): string {
@@ -109,16 +166,9 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   }
 
   static fromValues(values: IConvertibleToPartialErrorInfo): PartialErrorInfo {
-    const { message, code, statusCode, detail } = values;
-    if (
-      typeof message !== 'string' ||
-      (!Utils.isNil(code) && typeof code !== 'number') ||
-      (!Utils.isNil(statusCode) && typeof statusCode !== 'number') ||
-      (!Utils.isNil(detail) && (typeof detail !== 'object' || Array.isArray(detail)))
-    ) {
-      throw new Error('PartialErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
-    }
-    const result = Object.assign(new PartialErrorInfo(message, code, statusCode, undefined, detail), values);
+    // Same shape as ErrorInfo.fromValues - delegate validation/assignment to the
+    // options-object constructor; href default applies only to the server-decoded path.
+    const result = new PartialErrorInfo(values);
     if (result.code && !result.href) {
       result.href = 'https://help.ably.io/error/' + result.code;
     }
