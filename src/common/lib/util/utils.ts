@@ -288,11 +288,14 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
   const n = args.length;
   if (typeof args[n - 1] !== 'function') return;
   if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
-  const err = new ErrorInfo('v1 callback signature is no longer supported.', 40025, 400);
-  err.hint =
-    'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
-    'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md';
-  throw err;
+  throw new ErrorInfo({
+    message: 'v1 callback signature is no longer supported.',
+    code: 40025,
+    statusCode: 400,
+    hint:
+      'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
+      'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md',
+  });
 }
 
 export function inspectError(err: unknown): string {
@@ -470,16 +473,21 @@ export function matchDerivedChannel(name: string) {
   const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
-    const err = new ErrorInfo('regex match failed', 400, 40010);
-    err.hint =
-      'Channel names with derived options must look like "[filter=...]name". See https://ably.com/docs/channels/options/derived.';
-    throw err;
+    throw new ErrorInfo({
+      message: 'regex match failed',
+      code: 400,
+      statusCode: 40010,
+      hint: 'Channel names with derived options must look like "[filter=...]name". See https://ably.com/docs/channels/options/derived.',
+    });
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
   if (match![2]) {
-    const err = new ErrorInfo(`cannot use a derived option with a ${match[2]} channel`, 400, 40010);
-    err.hint = `A "${match[2]}" channel already has a qualifier; derived options like filter= cannot be layered on top. Use a base channel name instead.`;
-    throw err;
+    throw new ErrorInfo({
+      message: `cannot use a derived option with a ${match[2]} channel`,
+      code: 400,
+      statusCode: 40010,
+      hint: `A "${match[2]}" channel already has a qualifier; derived options like filter= cannot be layered on top. Use a base channel name instead.`,
+    });
   }
   // Return match values to be added to derive channel quantifier.
   return {
@@ -504,8 +512,12 @@ export function arrEquals(a: any[], b: any[]) {
 }
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
-  const err = new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
-  err.hint = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See https://ably.com/docs/getting-started/modular.`;
+  const err = new ErrorInfo({
+    message: `${pluginName} plugin not provided`,
+    code: 40019,
+    statusCode: 400,
+    hint: `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See https://ably.com/docs/getting-started/modular.`,
+  });
   return err;
 }
 
@@ -561,10 +573,12 @@ export async function* listenerToAsyncIterator<T>(
         yield eventQueue.shift()!;
       } else {
         if (resolveNext) {
-          const err = new ErrorInfo('Concurrent next() calls are not supported', 40000, 400);
-          err.hint =
-            'Drive the async iterator from a single for-await-of loop. Calling next() twice concurrently is not supported.';
-          throw err;
+          throw new ErrorInfo({
+            message: 'Concurrent next() calls are not supported',
+            code: 40000,
+            statusCode: 400,
+            hint: 'Drive the async iterator from a single for-await-of loop. Calling next() twice concurrently is not supported.',
+          });
         }
 
         // Otherwise wait for the next event to arrive

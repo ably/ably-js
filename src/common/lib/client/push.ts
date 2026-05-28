@@ -15,6 +15,9 @@ import type {
 import Platform from 'common/platform';
 import type { ErrCallback } from 'common/types/utils';
 
+const PUSH_NOT_AVAILABLE_HINT =
+  'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+
 class Push {
   client: BaseClient;
   admin: Admin;
@@ -37,18 +40,22 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        {
-          const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
-          err.hint =
-            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
-          reject(err);
-        }
+        const err = new ErrorInfo({
+          message: 'This platform is not supported as a target of push notifications',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
+        reject(err);
         return;
       }
       if (this.stateMachine.activatedCallback) {
-        const err = new ErrorInfo('Activation already in progress', 40000, 400);
-        err.hint =
-          'Await the in-flight push.activate() before calling it again. Concurrent activations are not supported.';
+        const err = new ErrorInfo({
+          message: 'Activation already in progress',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await the in-flight push.activate() before calling it again. Concurrent activations are not supported.',
+        });
         reject(err);
         return;
       }
@@ -73,18 +80,22 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        {
-          const err = new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
-          err.hint =
-            'push.activate() registers this process as a push target — it cannot succeed in Node.js/server contexts (there is no device to register). Use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
-          reject(err);
-        }
+        const err = new ErrorInfo({
+          message: 'This platform is not supported as a target of push notifications',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
+        reject(err);
         return;
       }
       if (this.stateMachine.deactivatedCallback) {
-        const err = new ErrorInfo('Deactivation already in progress', 40000, 400);
-        err.hint =
-          'Await the in-flight push.deactivate() before calling it again. Concurrent deactivations are not supported.';
+        const err = new ErrorInfo({
+          message: 'Deactivation already in progress',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await the in-flight push.deactivate() before calling it again. Concurrent deactivations are not supported.',
+        });
         reject(err);
         return;
       }
@@ -280,14 +291,12 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      const err = new ErrorInfo(
-        'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
-        40000,
-        400,
-      );
-      err.hint =
-        'Pass either the device id string returned from push.activate(), or the DeviceDetails object (with a non-empty .id field).';
-      throw err;
+      throw new ErrorInfo({
+        message: 'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Pass either the device id string returned from push.activate(), or the DeviceDetails object (with a non-empty .id field).',
+      });
     }
 
     Utils.mixin(headers, client.options.headers);
@@ -336,14 +345,12 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      const err = new ErrorInfo(
-        'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
-        40000,
-        400,
-      );
-      err.hint =
-        'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.';
-      throw err;
+      throw new ErrorInfo({
+        message: 'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.',
+      });
     }
 
     Utils.mixin(headers, client.options.headers);

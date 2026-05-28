@@ -175,14 +175,20 @@ export function getHosts(options: NormalisedClientOptions): string[] {
 
 function checkHost(host: string): void {
   if (typeof host !== 'string') {
-    const err = new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
-    err.hint = 'Pass `endpoint` as a single hostname string (e.g. "main.realtime.ably.net"), not an array or object.';
-    throw err;
+    throw new ErrorInfo({
+      message: 'host must be a string; was a ' + typeof host,
+      code: 40000,
+      statusCode: 400,
+      hint: 'Pass `endpoint` as a single hostname string (e.g. "main.realtime.ably.net"), not an array or object.',
+    });
   }
   if (!host.length) {
-    const err = new ErrorInfo('host must not be zero-length', 40000, 400);
-    err.hint = 'Omit `endpoint`/`restHost`/`realtimeHost` to use the Ably default, or pass a non-empty hostname.';
-    throw err;
+    throw new ErrorInfo({
+      message: 'host must not be zero-length',
+      code: 40000,
+      statusCode: 400,
+      hint: 'Omit `endpoint`/`restHost`/`realtimeHost` to use the Ably default, or pass a non-empty hostname.',
+    });
   }
 }
 
@@ -255,27 +261,24 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
   // REC1b
   if (options.endpoint && (options.environment || options.restHost || options.realtimeHost)) {
     // RSC1b
-    const err = new ErrorInfo(
-      'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
-      40106,
-      400,
-    );
-    err.hint =
-      'Use only `endpoint` (the v2 option). `environment`, `restHost`, and `realtimeHost` are legacy v1 names — remove them from ClientOptions.';
-    throw err;
+    throw new ErrorInfo({
+      message:
+        'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
+      code: 40106,
+      statusCode: 400,
+      hint: 'Use only `endpoint` (the v2 option). `environment`, `restHost`, and `realtimeHost` are legacy v1 names — remove them from ClientOptions.',
+    });
   }
 
   // REC1c
   if (options.environment && (options.restHost || options.realtimeHost)) {
     // RSC1b
-    const err = new ErrorInfo(
-      'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
-      40106,
-      400,
-    );
-    err.hint =
-      'These are mutually exclusive legacy host options. Replace all of them with the v2 `endpoint` option, which subsumes both.';
-    throw err;
+    throw new ErrorInfo({
+      message: 'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
+      code: 40106,
+      statusCode: 400,
+      hint: 'These are mutually exclusive legacy host options. Replace all of them with the v2 `endpoint` option, which subsumes both.',
+    });
   }
 }
 
