@@ -39,14 +39,26 @@
         "types": "./liveobjects.d.ts",
         "default": "./build/liveobjects.js"
       }
+    },
+    "./promises": {
+      "types": "./promises.d.ts",
+      "default": "./promises.js"
+    },
+    "./callbacks": {
+      "types": "./callbacks.d.ts",
+      "default": "./callbacks.js"
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
+    "callbacks.d.ts",
+    "callbacks.js",
     "liveobjects.d.ts",
     "liveobjects.d.mts",
     "modular.d.ts",
+    "promises.d.ts",
+    "promises.js",
     "push.d.ts",
     "resources/**",
     "src/**",
