@@ -2501,5 +2501,70 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }
       });
     });
+
+    describe('DX-1211 - presence.get() without presence_subscribe mode', function () {
+      it('with strictMode:true, rejects with 93002 and hint naming presence_subscribe', function (done) {
+        const helper = this.test.helper;
+        const channelName = 'dx-1211-presence-strict-' + String(Math.random()).slice(2);
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime({ strictMode: true });
+          realtime.connection.on('connected', function () {
+            const channel = realtime.channels.get(channelName, { modes: ['publish'] });
+            Helper.whenPromiseSettles(channel.attach(), function (attachErr) {
+              if (attachErr) {
+                helper.closeAndFinish(done, realtime, attachErr);
+                return;
+              }
+              Helper.whenPromiseSettles(channel.presence.get(), function (err) {
+                try {
+                  expect(err, 'expected presence.get() to reject').to.exist;
+                  expect(err.code).to.equal(93002);
+                  expect(err.hint).to.be.a('string');
+                  expect(err.hint).to.contain('presence_subscribe');
+                  expect(err.hint).to.contain('ably auth keys list');
+                  helper.closeAndFinish(done, realtime);
+                } catch (assertionErr) {
+                  helper.closeAndFinish(done, realtime, assertionErr);
+                }
+              });
+            });
+          });
+          helper.monitorConnection(done, realtime);
+        } catch (err) {
+          helper.closeAndFinish(done, realtime, err);
+        }
+      });
+
+      it('with strictMode disabled (default), logs a warning and resolves to []', function (done) {
+        const helper = this.test.helper;
+        const channelName = 'dx-1211-presence-silent-' + String(Math.random()).slice(2);
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime();
+          realtime.connection.on('connected', function () {
+            const channel = realtime.channels.get(channelName, { modes: ['publish'] });
+            Helper.whenPromiseSettles(channel.attach(), function (attachErr) {
+              if (attachErr) {
+                helper.closeAndFinish(done, realtime, attachErr);
+                return;
+              }
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
+                try {
+                  expect(err, 'expected presence.get() not to throw with strictMode off').to.not.exist;
+                  expect(members).to.deep.equal([]);
+                  helper.closeAndFinish(done, realtime);
+                } catch (assertionErr) {
+                  helper.closeAndFinish(done, realtime, assertionErr);
+                }
+              });
+            });
+          });
+          helper.monitorConnection(done, realtime);
+        } catch (err) {
+          helper.closeAndFinish(done, realtime, err);
+        }
+      });
+    });
   });
 });
