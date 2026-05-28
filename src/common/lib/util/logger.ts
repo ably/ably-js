@@ -117,6 +117,16 @@ class Logger {
     logger.logAction(level, action, message);
   }
 
+  /**
+   * Suffix appended to silent-failure warnings emitted when `clientOptions.strictMode` is off,
+   * so the reader (human or LLM) knows the same path will throw in a future major version.
+   * The suffix is for log output only — do not put it into `ErrorInfo.hint`, because the hint
+   * is also surfaced when the throw fires (strictMode on), where the suffix is misleading.
+   */
+  static silentFailureLogSuffix(): string {
+    return ' This call currently fails silently because clientOptions.strictMode is not enabled. In a future major version this will throw — set clientOptions.strictMode: true to enable the throw now.';
+  }
+
   private logAction(level: LogLevels, action: string, message?: string) {
     if (this.shouldLog(level)) {
       (level === LogLevels.Error ? this.logErrorHandler : this.logHandler)('Ably: ' + action + ': ' + message, level);
