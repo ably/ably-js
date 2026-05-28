@@ -477,7 +477,7 @@ export function matchDerivedChannel(name: string) {
       message: 'Channel name does not match the [filter=...]name shape required for derived channels',
       code: 40010,
       statusCode: 400,
-      hint: 'Channel names with derived options must look like "[filter=...]name". See https://ably.com/docs/channels/options/derived.',
+      hint: 'See https://ably.com/docs/channels/options/derived.',
     });
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
@@ -574,7 +574,7 @@ export async function* listenerToAsyncIterator<T>(
             message: 'Concurrent next() calls are not supported',
             code: 40000,
             statusCode: 400,
-            hint: 'Drive the async iterator from a single for-await-of loop. Calling next() twice concurrently is not supported.',
+            hint: 'Drive the async iterator from a single for-await-of loop.',
           });
         }
 

@@ -65,8 +65,7 @@ export class RestChannelMixin {
     const serial = typeof serialOrMessage === 'string' ? serialOrMessage : serialOrMessage.serial;
     if (!serial) {
       throw new ErrorInfo({
-        message:
-          'This message lacks a serial. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
+        message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
         hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
@@ -100,8 +99,7 @@ export class RestChannelMixin {
   ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo({
-        message:
-          'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
+        message: 'This message lacks a serial and cannot be updated',
         code: 40003,
         statusCode: 400,
         hint: 'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
@@ -144,8 +142,7 @@ export class RestChannelMixin {
     const serial = typeof serialOrMessage === 'string' ? serialOrMessage : serialOrMessage.serial;
     if (!serial) {
       throw new ErrorInfo({
-        message:
-          'This message lacks a serial. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
+        message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
         hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',

@@ -444,7 +444,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Unable to detach; channel state = failed',
           code: 90001,
           statusCode: 400,
-          hint: 'A failed channel cannot be detached. Release it via channels.release(name) and call channels.get(name) again to start a fresh channel.',
+          hint: 'Release it via channels.release(name) and call channels.get(name) again to start a fresh channel.',
         });
       }
       default:
@@ -970,7 +970,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel attach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The server did not acknowledge the attach within realtimeRequestTimeout. The SDK will retry automatically once the connection is healthy; check connection.state and connection.errorReason.',
+          hint: 'The SDK will retry automatically once the connection is healthy; check connection.state and connection.errorReason.',
         });
         this.notifyState('suspended', err);
         break;
@@ -980,7 +980,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel detach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The server did not acknowledge the detach within realtimeRequestTimeout. The channel has reverted to attached; retry detach() once the connection is stable.',
+          hint: 'The channel has reverted to attached; retry detach() once the connection is stable.',
         });
         this.notifyState('attached', err);
         break;
@@ -1157,8 +1157,7 @@ class RealtimeChannel extends EventEmitter {
   ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo({
-        message:
-          'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
+        message: 'This message lacks a serial and cannot be updated',
         code: 40003,
         statusCode: 400,
         hint: 'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
