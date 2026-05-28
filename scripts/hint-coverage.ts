@@ -1,22 +1,32 @@
 /*
- * DX-1209 — static hint-coverage check.
+ * DX-1209 - static hint-coverage check.
  *
- * Statically scans every `.ts` file under src/ for `err.hint = ...`
- * assignments associated with an `ErrorInfo` throw and verifies:
+ * Walks the TypeScript AST of every `.ts` file under src/ for
+ * ErrorInfo (and PartialErrorInfo) constructions that carry a `hint`
+ * field, then verifies:
  *
  *   1. The hint string is non-empty.
- *   2. If we have a rubric entry for the ErrorInfo code, the hint contains
- *      every required substring (`contains`) or matches every required
- *      regex (`matches`).
+ *   2. If we have a rubric entry for the ErrorInfo code, the hint
+ *      contains every required substring (`contains`) or matches every
+ *      required regex (`matches`).
+ *
+ * Matches three call shapes:
+ *   - `new ErrorInfo({ message, code, statusCode, hint, ... })`
+ *   - `new PartialErrorInfo({ ... })`
+ *   - `ErrorInfo.fromValues({ ... })` / `PartialErrorInfo.fromValues({ ... })`
+ *
+ * The constructor reference can be `ErrorInfo`, `PartialErrorInfo`, or a
+ * member access ending in either (e.g. `this.client.ErrorInfo`).
  *
  * Hints are now a discoverable surface for LLMs and humans alike; this
  * check is a cheap drift guard for that surface. It does NOT lock down
- * exact wording — wording is allowed to evolve. It DOES lock down
- * presence and the API-name / concept tokens we don't want silently
- * renamed (e.g. `annotation_subscribe`, `defaultTokenParams`).
+ * exact wording. It DOES lock down presence and the API-name / concept
+ * tokens we don't want silently renamed (e.g. `annotation_subscribe`,
+ * `defaultTokenParams`).
  *
- * Add new entries to RUBRIC as new hint sites land. Missing rubric entries
- * for an error code are not an error — only an explicit rule violation is.
+ * Add new entries to RUBRIC as new hint sites land. Missing rubric
+ * entries for an error code are not an error - only an explicit rule
+ * violation is.
  *
  * Run with:
  *   tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/hint-coverage.ts \
@@ -29,6 +39,7 @@ import fs from 'fs';
 import path from 'path';
 import { glob } from 'glob';
 import { exit } from 'process';
+import * as ts from 'typescript';
 
 interface HintEntry {
   file: string;
@@ -101,91 +112,179 @@ const RUBRIC: Record<number, RubricEntry> = {
     ],
   },
   // Codes deliberately NOT keyed in the rubric:
-  //   40000, 40012, 40013, 40400, 40500 — each is shared across multiple
+  //   40000, 40012, 40013, 40400, 40500 - each is shared across multiple
   //   unrelated throw sites, so a code-level rubric over-constrains. Add
   //   message-keyed rules in a follow-up if/when needed.
 };
 
 const SRC_ROOT = path.resolve(__dirname, '..', 'src');
 
-function stripBlockComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+const ERROR_INFO_CTOR_NAMES = new Set(['ErrorInfo', 'PartialErrorInfo']);
+
+/**
+ * Walks an Expression and returns the trailing identifier name if it
+ * is an ErrorInfo-like ctor target, else null.
+ *
+ *   `ErrorInfo`                  -> 'ErrorInfo'
+ *   `PartialErrorInfo`           -> 'PartialErrorInfo'
+ *   `this.client.ErrorInfo`      -> 'ErrorInfo'
+ *   `client.ErrorInfo`           -> 'ErrorInfo'
+ *   `ErrorInfo.fromValues`       -> null (this is a call target, not a ctor)
+ */
+function ctorTrailingName(expr: ts.Expression): string | null {
+  if (ts.isIdentifier(expr)) return ERROR_INFO_CTOR_NAMES.has(expr.text) ? expr.text : null;
+  if (ts.isPropertyAccessExpression(expr)) {
+    return ERROR_INFO_CTOR_NAMES.has(expr.name.text) ? expr.name.text : null;
+  }
+  return null;
+}
+
+/** Returns the property-access tail components, e.g. `ErrorInfo.fromValues` -> ['ErrorInfo', 'fromValues']. */
+function propertyAccessChain(expr: ts.Expression): string[] | null {
+  const parts: string[] = [];
+  let cur: ts.Expression = expr;
+  while (ts.isPropertyAccessExpression(cur)) {
+    parts.unshift(cur.name.text);
+    cur = cur.expression;
+  }
+  if (ts.isIdentifier(cur)) {
+    parts.unshift(cur.text);
+    return parts;
+  }
+  return null;
+}
+
+/**
+ * Collapse a template literal to a plain-text approximation suitable
+ * for substring/regex checks. `${expr}` segments are rendered as the
+ * identifier-like fragments inside them so token checks succeed on
+ * dynamic variable names (e.g. `${expectedMode}` -> ` expectedMode `).
+ */
+function renderTemplateLiteral(tpl: ts.TemplateLiteral): string {
+  if (ts.isNoSubstitutionTemplateLiteral(tpl)) return tpl.text;
+  let out = tpl.head.text;
+  for (const span of tpl.templateSpans) {
+    const expr = span.expression.getText();
+    const ident = ' ' + expr.replace(/[^A-Za-z0-9_]+/g, ' ') + ' ';
+    out += ident + span.literal.text;
+  }
+  return out;
+}
+
+/**
+ * Resolve a string-valued initializer to its plain-text representation.
+ * Handles:
+ *   - String literals: 'foo' -> 'foo'
+ *   - Template literals: `foo${x}bar` -> 'foo x bar'
+ *   - String concatenations: 'a' + 'b' + '...' -> 'ab...'
+ *   - Identifier references resolved within the same file's top-level scope
+ *
+ * Returns null if the expression cannot be resolved to a static-ish value.
+ */
+function resolveStringExpr(
+  expr: ts.Expression,
+  fileConsts: Map<string, ts.Expression>,
+): { text: string; isTemplate: boolean } | null {
+  if (ts.isStringLiteralLike(expr)) return { text: expr.text, isTemplate: false };
+  if (ts.isTemplateExpression(expr)) return { text: renderTemplateLiteral(expr), isTemplate: true };
+  if (ts.isNoSubstitutionTemplateLiteral(expr)) return { text: expr.text, isTemplate: true };
+  if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    const left = resolveStringExpr(expr.left, fileConsts);
+    const right = resolveStringExpr(expr.right, fileConsts);
+    if (left && right) return { text: left.text + right.text, isTemplate: left.isTemplate || right.isTemplate };
+    return null;
+  }
+  if (ts.isIdentifier(expr)) {
+    const referenced = fileConsts.get(expr.text);
+    if (referenced) return resolveStringExpr(referenced, fileConsts);
+  }
+  return null;
+}
+
+/** Resolve a numeric expression (integer literal or const reference) to its value. */
+function resolveNumericExpr(expr: ts.Expression, fileConsts: Map<string, ts.Expression>): number | null {
+  if (ts.isNumericLiteral(expr)) {
+    const n = Number(expr.text);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (ts.isIdentifier(expr)) {
+    const referenced = fileConsts.get(expr.text);
+    if (referenced) return resolveNumericExpr(referenced, fileConsts);
+  }
+  return null;
+}
+
+/**
+ * Collect top-level `const X = <expr>` declarations into a map so we can
+ * resolve identifier references inside ErrorInfo arguments.
+ */
+function collectFileConsts(sourceFile: ts.SourceFile): Map<string, ts.Expression> {
+  const consts = new Map<string, ts.Expression>();
+  sourceFile.forEachChild((node) => {
+    if (ts.isVariableStatement(node)) {
+      for (const decl of node.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.initializer) {
+          consts.set(decl.name.text, decl.initializer);
+        }
+      }
+    }
+  });
+  return consts;
 }
 
 function extractHints(filePath: string): HintEntry[] {
   const raw = fs.readFileSync(filePath, 'utf8');
-  const src = stripBlockComments(raw);
-  const lines = src.split('\n');
+  const sourceFile = ts.createSourceFile(filePath, raw, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const fileConsts = collectFileConsts(sourceFile);
   const entries: HintEntry[] = [];
 
-  // Track the most-recent ErrorInfo code we saw within a sliding window.
-  let pendingCode: number | null = null;
-  let pendingCodeLine = -Infinity;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Detect `new ErrorInfo(... , <code>, ...)` — code can land on the same
-    // line as the constructor or on a later line in a multiline call.
-    const errInfoIdx = line.indexOf('new ErrorInfo(');
-    const errInfoClientIdx = line.indexOf('.ErrorInfo(');
-    if (errInfoIdx >= 0 || errInfoClientIdx >= 0) {
-      // Look ahead up to 6 lines for the code argument.
-      const span = lines.slice(i, i + 6).join(' ');
-      const codeMatch = span.match(/,\s*(\d{4,5})\s*,/);
-      if (codeMatch) {
-        pendingCode = parseInt(codeMatch[1], 10);
-        pendingCodeLine = i;
-      }
+  function processObjectArg(objExpr: ts.ObjectLiteralExpression, anchorNode: ts.Node) {
+    let codeExpr: ts.Expression | null = null;
+    let hintExpr: ts.Expression | null = null;
+    for (const prop of objExpr.properties) {
+      if (!ts.isPropertyAssignment(prop)) continue;
+      if (!ts.isIdentifier(prop.name)) continue;
+      if (prop.name.text === 'code') codeExpr = prop.initializer;
+      else if (prop.name.text === 'hint') hintExpr = prop.initializer;
     }
-
-    // Detect `err.hint = ...` — string body may span multiple lines.
-    const hintMatch = line.match(/(\w+)\.hint\s*=\s*(.*)$/);
-    if (hintMatch) {
-      // Drop the pending code if it's too far away (likely unrelated).
-      const code = i - pendingCodeLine <= 12 ? pendingCode : null;
-
-      // Reassemble the RHS until we hit a semicolon at the end of a line.
-      const rhsParts: string[] = [hintMatch[2]];
-      let j = i;
-      while (!rhsParts[rhsParts.length - 1].trimEnd().endsWith(';') && j < lines.length - 1) {
-        j++;
-        rhsParts.push(lines[j]);
-      }
-      const rhs = rhsParts.join(' ').replace(/;$/, '').trim();
-
-      // Classify literal vs template.
-      const isTemplate = rhs.startsWith('`');
-      // Extract a best-effort literal text by collapsing template segments
-      // to spaces so we can still check for substring tokens.
-      let text = rhs;
-      if (rhs.startsWith("'") || rhs.startsWith('"') || rhs.startsWith('`')) {
-        const quote = rhs[0];
-        // Remove leading + trailing quote.
-        text = rhs.slice(1);
-        const lastQuoteIdx = text.lastIndexOf(quote);
-        if (lastQuoteIdx >= 0) text = text.slice(0, lastQuoteIdx);
-        // Collapse interpolations (`${...}`) to the bare identifier(s) inside
-        // them. Lets token checks succeed on dynamic variable names without
-        // requiring runtime evaluation. E.g. `${expectedMode}` -> `expectedMode`.
-        text = text.replace(/\$\{([^}]*)\}/g, (_, expr) => {
-          const id = String(expr).trim();
-          // Pull only identifier-like fragments; drop method calls and operators
-          // so the substring search isn't polluted by syntax.
-          return ' ' + id.replace(/[^A-Za-z0-9_]+/g, ' ') + ' ';
-        });
-      }
-
-      entries.push({
-        file: path.relative(process.cwd(), filePath),
-        line: i + 1,
-        code,
-        hintText: text,
-        isTemplate,
-      });
-    }
+    if (!hintExpr) return;
+    const resolved = resolveStringExpr(hintExpr, fileConsts);
+    if (!resolved) return;
+    const code = codeExpr ? resolveNumericExpr(codeExpr, fileConsts) : null;
+    const { line } = sourceFile.getLineAndCharacterOfPosition(anchorNode.getStart(sourceFile));
+    entries.push({
+      file: path.relative(process.cwd(), filePath),
+      line: line + 1,
+      code,
+      hintText: resolved.text,
+      isTemplate: resolved.isTemplate,
+    });
   }
 
+  function visit(node: ts.Node) {
+    // new ErrorInfo({...}) / new PartialErrorInfo({...}) / new <chain>.ErrorInfo({...})
+    if (ts.isNewExpression(node) && node.arguments && node.arguments.length >= 1) {
+      const tail = ctorTrailingName(node.expression);
+      if (tail) {
+        const first = node.arguments[0];
+        if (ts.isObjectLiteralExpression(first)) processObjectArg(first, node);
+      }
+    }
+    // ErrorInfo.fromValues({...})
+    if (ts.isCallExpression(node) && node.arguments.length >= 1) {
+      const chain = propertyAccessChain(node.expression);
+      if (chain && chain.length >= 2 && chain[chain.length - 1] === 'fromValues') {
+        const ctorName = chain[chain.length - 2];
+        if (ERROR_INFO_CTOR_NAMES.has(ctorName)) {
+          const first = node.arguments[0];
+          if (ts.isObjectLiteralExpression(first)) processObjectArg(first, node);
+        }
+      }
+    }
+    node.forEachChild(visit);
+  }
+
+  visit(sourceFile);
   return entries;
 }
 
@@ -230,10 +329,7 @@ async function main() {
     ignore: ['**/*.test.ts', '**/*.d.ts'],
   });
 
-  let allEntries: HintEntry[] = [];
-  for (const f of files) {
-    allEntries = allEntries.concat(extractHints(f));
-  }
+  const allEntries: HintEntry[] = files.flatMap(extractHints);
 
   const failures: Failure[] = [];
   for (const e of allEntries) {
@@ -248,7 +344,7 @@ async function main() {
     byCode.set(e.code, list);
   }
 
-  console.log(`hint-coverage: scanned ${files.length} files, found ${allEntries.length} err.hint assignments\n`);
+  console.log(`hint-coverage: scanned ${files.length} files, found ${allEntries.length} hint sites\n`);
   const codes = [...byCode.keys()].sort((a, b) => (a ?? -1) - (b ?? -1));
   for (const code of codes) {
     const list = byCode.get(code)!;
