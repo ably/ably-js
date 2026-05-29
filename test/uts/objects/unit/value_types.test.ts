@@ -154,7 +154,7 @@ describe('uts/objects/unit/value_types', function () {
   // RTLCV4 — Consumption generates COUNTER_CREATE ObjectMessage
   // ============================================================
 
-  // UTS: objects/unit/RTLCV4/consume-generates-message-0
+  // UTS: objects/unit/RTLCV4/evaluate-generates-message-0
   it('RTLCV4 - consumption generates COUNTER_CREATE ObjectMessage', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLCV4-consume');
 
@@ -201,7 +201,7 @@ describe('uts/objects/unit/value_types', function () {
     expect(initialValue.count).to.equal(42);
   });
 
-  // UTS: objects/unit/RTLCV4a/consume-validates-count-0
+  // UTS: objects/unit/RTLCV4a/evaluate-validates-count-0
   it('RTLCV4a - consumption validates count type', async function () {
     const { root } = await setupCapturingChannel('test-RTLCV4a');
 
@@ -214,7 +214,7 @@ describe('uts/objects/unit/value_types', function () {
     }
   });
 
-  // UTS: objects/unit/RTLCV4/consume-zero-count-0
+  // UTS: objects/unit/RTLCV4/evaluate-zero-count-0
   it('RTLCV4 - consumption with count 0 is valid', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLCV4-zero');
 
@@ -256,7 +256,7 @@ describe('uts/objects/unit/value_types', function () {
   // RTLMV4 — Consumption generates MAP_CREATE ObjectMessage
   // ============================================================
 
-  // UTS: objects/unit/RTLMV4/consume-generates-message-0
+  // UTS: objects/unit/RTLMV4/evaluate-generates-message-0
   it('RTLMV4 - consumption generates MAP_CREATE ObjectMessage', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLMV4-consume');
 
@@ -374,7 +374,7 @@ describe('uts/objects/unit/value_types', function () {
     expect(outerMapInitialValue.entries['child'].data.objectId).to.equal(innerMapId);
   });
 
-  // UTS: objects/unit/RTLMV4a/consume-validates-entries-0
+  // UTS: objects/unit/RTLMV4a/evaluate-validates-entries-0
   it('RTLMV4a - consumption validates entries type', async function () {
     const { root } = await setupCapturingChannel('test-RTLMV4a');
 
@@ -387,7 +387,7 @@ describe('uts/objects/unit/value_types', function () {
     }
   });
 
-  // UTS: objects/unit/RTLMV4c/consume-validates-values-0
+  // UTS: objects/unit/RTLMV4c/evaluate-validates-values-0
   it('RTLMV4c - consumption validates value types', async function () {
     const { root } = await setupCapturingChannel('test-RTLMV4c');
 
@@ -430,6 +430,7 @@ describe('uts/objects/unit/value_types', function () {
       { input: false, expectedField: 'boolean', expectedValue: false, isJson: false },
       { input: [1, 'a', null], expectedField: 'json', expectedValue: [1, 'a', null], isJson: true },
       { input: { k: 'v' }, expectedField: 'json', expectedValue: { k: 'v' }, isJson: true },
+      { input: Buffer.from([1, 2, 3]), expectedField: 'bytes', expectedValue: 'AQID', isJson: false },
     ];
 
     for (const scenario of scenarios) {

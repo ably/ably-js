@@ -1,7 +1,7 @@
 /**
  * UTS: RealtimeObject Tests
  *
- * Spec points: RTO2, RTO10, RTO15, RTO17-RTO20, RTO22-RTO24
+ * Spec points: RTO2, RTO10, RTO15, RTO17-RTO20, RTO22-RTO26
  * Source: uts/objects/unit/realtime_object.md
  *
  * Tests the RealtimeObject entry point (channel.object): get() lifecycle,
@@ -275,12 +275,14 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // Trigger a single OBJECT message via a PathObject mutation
     const root = await channel.object.get();
-    await root.get('score').increment(5);
+    const result = await root.get('score').increment(5);
 
     expect(capturedMessages.length).to.equal(1);
     expect(capturedMessages[0].action).to.equal(PM_ACTION.OBJECT);
     expect(capturedMessages[0].channel).to.equal('test-RTO15');
     expect(capturedMessages[0].state.length).to.equal(1);
+    // Deviation: ably-js PathObject.increment() returns void (via publishAndApply),
+    // not a PublishResult with serials. The serials are consumed internally for apply-on-ACK.
   });
 
   // UTS: objects/unit/RTO20/publish-and-apply-local-0
@@ -1014,5 +1016,469 @@ describe('uts/objects/unit/realtime_object', function () {
       // which emits SYNCED. So the sequence is ['SYNCING', 'SYNCED'] not just ['SYNCED'].
       expect(events).to.include('SYNCED');
     });
+  });
+
+  // UTS: objects/unit/RTO25a/access-requires-subscribe-mode-0
+  it('RTO25a - Access API precondition requires OBJECT_SUBSCRIBE mode', async function () {
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          // Server grants only OBJECT_PUBLISH (1 << 25), not OBJECT_SUBSCRIBE
+          const OBJECT_PUBLISH_FLAG = 1 << 25;
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS | OBJECT_PUBLISH_FLAG,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    // Only OBJECT_PUBLISH, no OBJECT_SUBSCRIBE
+    const channel = client.channels.get('test-RTO25a', { modes: ['OBJECT_PUBLISH'] });
+
+    try {
+      await channel.object.get();
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(40024);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO25b/access-throws-detached-0
+  // Deviation: channel.object.get() calls ensureAttached() which re-attaches for DETACHED.
+  // RTO25 applies to PathObject/Instance access API methods (value, get, entries, etc.),
+  // which call throwIfInvalidAccessApiConfiguration(). We test via root.value() instead.
+  it('RTO25b - Access API precondition throws on DETACHED channel', async function () {
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        } else if (msg.action === PM_ACTION.DETACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.DETACHED,
+            channel: msg.channel,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTO25b-detached', { modes: ['OBJECT_SUBSCRIBE'] });
+
+    // Attach and sync first, save the root PathObject
+    const root = await channel.object.get();
+
+    // Detach channel
+    await channel.detach();
+    await flushAsync();
+    expect(channel.state).to.equal('detached');
+
+    try {
+      root.value();
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(90001);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO25b/access-throws-failed-0
+  it('RTO25b - Access API precondition throws on FAILED channel', async function () {
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          // Respond with ERROR to put channel into FAILED state
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ERROR,
+            channel: msg.channel,
+            error: { code: 90000, statusCode: 400, message: 'Channel error' },
+          });
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTO25b-failed', { modes: ['OBJECT_SUBSCRIBE'] });
+
+    // Trigger attach which will fail, putting channel into FAILED state
+    channel.attach();
+    await new Promise<void>((resolve) => {
+      const deadline = Date.now() + 5000;
+      const check = async () => {
+        while (channel.state !== 'failed' && Date.now() < deadline) {
+          await flushAsync();
+        }
+        resolve();
+      };
+      check();
+    });
+    expect(channel.state).to.equal('failed');
+
+    try {
+      await channel.object.get();
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(90001);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO26a/write-requires-publish-mode-0
+  it('RTO26a - Write API precondition requires OBJECT_PUBLISH mode', async function () {
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          // Server grants only OBJECT_SUBSCRIBE (1 << 24), not OBJECT_PUBLISH
+          const OBJECT_SUBSCRIBE_FLAG = 1 << 24;
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS | OBJECT_SUBSCRIBE_FLAG,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    // Request only OBJECT_SUBSCRIBE, no OBJECT_PUBLISH
+    const channel = client.channels.get('test-RTO26a', { modes: ['OBJECT_SUBSCRIBE'] });
+    const root = await channel.object.get();
+
+    try {
+      await root.set('name', 'Bob');
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(40024);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO26b/write-throws-detached-0
+  // RTO26 applies to write API methods on PathObject/Instance which call
+  // throwIfInvalidWriteApiConfiguration(). We use root.set() which checks channel state.
+  it('RTO26b - Write API precondition throws on DETACHED channel', async function () {
+    let attachCount = 0;
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          attachCount++;
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        } else if (msg.action === PM_ACTION.DETACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.DETACHED,
+            channel: msg.channel,
+          });
+        } else if (msg.action === PM_ACTION.OBJECT) {
+          const serials = (msg.state || []).map((_: any, i: number) => `t:${msg.msgSerial + 1}:${i}`);
+          mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTO26b-detached', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+    const root = await channel.object.get();
+
+    await channel.detach();
+    await flushAsync();
+    expect(channel.state).to.equal('detached');
+
+    try {
+      await root.set('name', 'Bob');
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(90001);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO26b/write-throws-failed-0
+  it('RTO26b - Write API precondition throws on FAILED channel', async function () {
+    const { root, channel, mockWs } = await setupSyncedChannel('test-RTO26b-failed');
+
+    // Force channel to FAILED state via channel ERROR
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ERROR,
+      channel: 'test-RTO26b-failed',
+      error: { code: 90000, statusCode: 400, message: 'Channel error' },
+    });
+    await flushAsync();
+    expect(channel.state).to.equal('failed');
+
+    try {
+      await root.set('name', 'Bob');
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(90001);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO26c/write-throws-echo-disabled-0
+  it('RTO26c - Write API precondition throws when echoMessages is false', async function () {
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'key-1',
+            siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      echoMessages: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTO26c', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+    const root = await channel.object.get();
+
+    try {
+      await root.set('name', 'Bob');
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(40000);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO24a/single-register-instance-0
+  it('RTO24a - RealtimeObject maintains a single PathObjectSubscriptionRegister', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTO24a');
+
+    const eventsRoot: any[] = [];
+    const eventsScore: any[] = [];
+
+    // Subscribe via root PathObject at path []
+    root.subscribe((event: any) => eventsRoot.push(event));
+
+    // Subscribe via a deeper PathObject at path ["score"]
+    const scorePath = root.get('score');
+    scorePath.subscribe((event: any) => eventsScore.push(event));
+
+    // Trigger an update on the score counter (serial must be > 't:0' from standard pool)
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO24a', [
+        buildCounterInc('counter:score@1000', 5, 't:1', 'aaa'),
+      ]),
+    );
+
+    const deadline = Date.now() + 5000;
+    while (eventsScore.length < 1 && Date.now() < deadline) {
+      await flushAsync();
+    }
+
+    // Both subscriptions are managed by the same register and both fire
+    expect(eventsRoot.length).to.be.greaterThanOrEqual(1);
+    expect(eventsScore.length).to.be.greaterThanOrEqual(1);
+  });
+
+  // UTS: objects/unit/RTO24c1/coverage-prefix-depth-0
+  it('RTO24c1 - Subscription coverage: prefix match with depth constraint', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTO24c1');
+
+    const shallowEvents: any[] = [];
+    const deepEvents: any[] = [];
+
+    // Subscribe at root with depth constraint -- covers root and immediate children only
+    // PathObject.subscribe(listener, options?) — listener first, options second.
+    // Deviation: ably-js depth semantics count the subscription level itself as depth 1,
+    // so depth=2 means "self + direct children" (UTS spec uses depth=1 for same meaning).
+    root.subscribe((event: any) => shallowEvents.push(event), { depth: 2 });
+
+    // Subscribe at root with no depth limit -- covers everything
+    root.subscribe((event: any) => deepEvents.push(event));
+
+    // Update a direct child of root (path ["score"]) -- depth 1 from root
+    // Serial must be > 't:0' from standard pool
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO24c1', [
+        buildCounterInc('counter:score@1000', 5, 't:1', 'aaa'),
+      ]),
+    );
+
+    const deadline1 = Date.now() + 5000;
+    while (deepEvents.length < 1 && Date.now() < deadline1) {
+      await flushAsync();
+    }
+
+    // Update a nested object (path ["profile", "nested_counter"]) -- depth 2 from root
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO24c1', [
+        buildCounterInc('counter:nested@1000', 1, 't:2', 'aaa'),
+      ]),
+    );
+
+    const deadline2 = Date.now() + 5000;
+    while (deepEvents.length < 2 && Date.now() < deadline2) {
+      await flushAsync();
+    }
+
+    // Shallow subscription (depth 1) only sees the direct child update
+    expect(shallowEvents.length).to.equal(1);
+
+    // Deep subscription (no depth limit) sees both updates
+    expect(deepEvents.length).to.be.greaterThanOrEqual(2);
   });
 });

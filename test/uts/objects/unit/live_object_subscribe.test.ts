@@ -1,31 +1,25 @@
 /**
  * UTS: LiveObject Subscribe Tests
  *
- * Spec points: RTLO4b, RTLO4c
+ * Spec points: RTLO4b, RTLO4b3, RTLO4b4c1, RTLO4b4c3a, RTLO4b4c3c, RTLO4b4d, RTLO4b4e, RTLO4b6, RTLO4b7
  * Source: uts/objects/unit/live_object_subscribe.md
  *
  * Tests subscribe/unsubscribe on internal LiveObject (via Instance wrapper):
- * receiving data updates, noop suppression, unsubscribe, mode requirements,
- * no side effects, LiveMap update events.
+ * receiving data updates, noop suppression, Subscription model (subscribe returns
+ * Subscription with unsubscribe), tombstone deregistration, objectMessage population,
+ * tombstone flag, no side effects, LiveMap update events.
  */
 
 import { expect } from 'chai';
-import { restoreAll, flushAsync, Ably, installMockWebSocket, trackClient } from '../../helpers';
-import { MockWebSocket } from '../../mock_websocket';
+import { restoreAll, flushAsync } from '../../helpers';
 import {
   setupSyncedChannel,
   buildObjectMessage,
-  buildObjectSyncMessage,
   buildCounterInc,
   buildMapSet,
-  buildMapRemove,
-  buildMapClear,
-  PM_ACTION,
-  HAS_OBJECTS,
+  buildObjectDelete,
   OBJ_OP,
-  STANDARD_POOL_OBJECTS,
 } from '../helpers/standard_test_pool';
-import * as LiveObjectsPlugin from '../../../../src/plugins/liveobjects';
 
 describe('uts/objects/unit/live_object_subscribe', function () {
   afterEach(function () {
@@ -87,101 +81,6 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     expect(updates).to.have.length(1);
   });
 
-  // UTS: objects/unit/RTLO4c/unsubscribe-deregisters-0
-  it('RTLO4c - unsubscribe deregisters listener', async function () {
-    const { root, mockWs } = await setupSyncedChannel('test-RTLO4c');
-    const updates: any[] = [];
-    const instance = root.get('score').instance()!;
-    const sub = instance.subscribe((event: any) => updates.push(event));
-
-    // First update should be received
-    mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4c', [
-        buildCounterInc('counter:score@1000', 5, '01', 'remote'),
-      ]),
-    );
-    await flushAsync();
-
-    expect(updates).to.have.length(1);
-
-    // Unsubscribe
-    sub.unsubscribe();
-
-    // Second update should NOT be received
-    mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4c', [
-        buildCounterInc('counter:score@1000', 10, '02', 'remote'),
-      ]),
-    );
-    await flushAsync();
-
-    expect(updates).to.have.length(1);
-  });
-
-  // UTS: objects/unit/RTLO4b1/subscribe-requires-mode-0
-  // Deviation: ably-js checks OBJECT_SUBSCRIBE mode at instance() access, not just subscribe().
-  // The error code 40024 is the same; we verify the mode is enforced before subscribe can be called.
-  it('RTLO4b1 - subscribe requires OBJECT_SUBSCRIBE mode', async function () {
-    // Custom setup: server responds with only OBJECT_PUBLISH mode (no OBJECT_SUBSCRIBE)
-    const OBJECT_PUBLISH_FLAG = 1 << 25; // OBJECT_PUBLISH
-    const mockWs = new MockWebSocket({
-      onConnectionAttempt: (conn) => {
-        mockWs.active_connection = conn;
-        conn.respond_with_connected({
-          action: PM_ACTION.CONNECTED,
-          connectionId: 'conn-1',
-          connectionDetails: {
-            connectionKey: 'key-1',
-            connectionStateTtl: 120000,
-            maxIdleInterval: 15000,
-            maxMessageSize: 65536,
-            serverId: 'test-server',
-            clientId: null,
-            siteCode: 'test-site',
-            objectsGCGracePeriod: 86400000,
-          },
-        });
-      },
-      onMessageFromClient: (msg: any) => {
-        if (msg.action === PM_ACTION.ATTACH) {
-          mockWs.active_connection!.send_to_client({
-            action: PM_ACTION.ATTACHED,
-            channel: msg.channel,
-            channelSerial: 'sync1:',
-            flags: HAS_OBJECTS | OBJECT_PUBLISH_FLAG,
-          });
-          mockWs.active_connection!.send_to_client(
-            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-          );
-        }
-      },
-    });
-    installMockWebSocket(mockWs.constructorFn);
-
-    const client = new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      autoConnect: false,
-      useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
-    });
-    trackClient(client);
-    client.connect();
-    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
-
-    const channel = client.channels.get('test-RTLO4b1', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-    const root = await channel.object.get();
-
-    // In ably-js, the OBJECT_SUBSCRIBE mode check is enforced at instance() access
-    // (via throwIfInvalidAccessApiConfiguration), which gates subscribe() as well.
-    try {
-      const instance = root.get('score').instance()!;
-      instance.subscribe(() => {});
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(40024);
-    }
-  });
-
   // UTS: objects/unit/RTLO4b6/subscribe-no-side-effects-0
   it('RTLO4b6 - subscribe has no side effects', async function () {
     const { channel, root } = await setupSyncedChannel('test-RTLO4b6');
@@ -210,13 +109,159 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     expect(updates).to.have.length(1);
   });
 
-  // UTS: objects/unit/RTLO4c1/unsubscribe-no-mode-required-0
-  it('RTLO4c1 - unsubscribe requires no channel mode', async function () {
-    const { root } = await setupSyncedChannel('test-RTLO4c1');
+  // UTS: objects/unit/RTLO4b7/subscribe-returns-subscription-0
+  it('RTLO4b7 - subscribe returns Subscription with unsubscribe method', async function () {
+    const { root } = await setupSyncedChannel('test-RTLO4b7-sub');
+    const instance = root.get('score').instance()!;
+
+    const sub = instance.subscribe(() => {});
+
+    expect(sub).to.be.an('object');
+    expect(sub.unsubscribe).to.be.a('function');
+  });
+
+  // UTS: objects/unit/RTLO4b7/subscription-unsubscribe-stops-delivery-0
+  it('RTLO4b7 - Subscription#unsubscribe stops delivery', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTLO4b7-unsub');
+    const updates: any[] = [];
+    const instance = root.get('score').instance()!;
+    const sub = instance.subscribe((event: any) => updates.push(event));
+
+    // First update should be received
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b7-unsub', [
+        buildCounterInc('counter:score@1000', 5, '01', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updates).to.have.length(1);
+
+    // Unsubscribe
+    sub.unsubscribe();
+
+    // Second update should NOT be received
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b7-unsub', [
+        buildCounterInc('counter:score@1000', 10, '02', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updates).to.have.length(1);
+  });
+
+  // UTS: objects/unit/RTLO4b7/subscription-unsubscribe-idempotent-0
+  it('RTLO4b7 - Subscription#unsubscribe is idempotent', async function () {
+    const { root } = await setupSyncedChannel('test-RTLO4b7-idem');
     const instance = root.get('score').instance()!;
     const sub = instance.subscribe(() => {});
 
-    // Should not throw
+    // Calling unsubscribe twice should not throw
     sub.unsubscribe();
+    sub.unsubscribe();
+  });
+
+  // UTS: objects/unit/RTLO4b4c3c/tombstone-deregisters-listeners-0
+  // Deviation: ably-js InstanceSubscriptionEvent does not expose a `tombstone` field.
+  // We verify the deregistration behaviour: both listeners fire for the tombstone event,
+  // and subsequent updates do NOT fire (proving the listeners were deregistered).
+  it('RTLO4b4c3c - tombstone update deregisters all listeners', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4c3c');
+    const updatesA: any[] = [];
+    const updatesB: any[] = [];
+    const instance = root.get('score').instance()!;
+    instance.subscribe((event: any) => updatesA.push(event));
+    instance.subscribe((event: any) => updatesB.push(event));
+
+    // Send OBJECT_DELETE which causes a tombstone LiveObjectUpdate
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4c3c', [
+        buildObjectDelete('counter:score@1000', '50', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    // Both listeners should have received the tombstone update
+    expect(updatesA).to.have.length(1);
+    expect(updatesB).to.have.length(1);
+
+    // Send another update — listeners should have been deregistered by tombstone
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4c3c', [
+        buildCounterInc('counter:score@1000', 3, '51', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updatesA).to.have.length(1);
+    expect(updatesB).to.have.length(1);
+  });
+
+  // UTS: objects/unit/RTLO4b4d/update-has-object-message-0
+  // Deviation: ably-js InstanceSubscriptionEvent exposes the public ObjectMessage as `.message`
+  // (not `.objectMessage`). The public message uses string action names (e.g. 'counter.inc').
+  it('RTLO4b4d - LiveObjectUpdate.objectMessage is populated from source ObjectMessage', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4d');
+    const updates: any[] = [];
+    const instance = root.get('score').instance()!;
+    instance.subscribe((event: any) => updates.push(event));
+
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4d', [
+        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updates).to.have.length(1);
+    expect(updates[0].message).to.exist;
+    expect(updates[0].message.serial).to.equal('99');
+    expect(updates[0].message.siteCode).to.equal('remote');
+    expect(updates[0].message.operation.action).to.equal('counter.inc');
+    expect(updates[0].message.operation.objectId).to.equal('counter:score@1000');
+  });
+
+  // UTS: objects/unit/RTLO4b4e/tombstone-flag-true-0
+  // Deviation: ably-js InstanceSubscriptionEvent does not expose `tombstone`.
+  // We verify indirectly that the tombstone event is delivered (listener fires)
+  // and that the message carries an OBJECT_DELETE operation.
+  it('RTLO4b4e - LiveObjectUpdate.tombstone is true for tombstone updates', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4e-true');
+    const updates: any[] = [];
+    const instance = root.get('score').instance()!;
+    instance.subscribe((event: any) => updates.push(event));
+
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4e-true', [
+        buildObjectDelete('counter:score@1000', '50', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updates).to.have.length(1);
+    expect(updates[0].message).to.exist;
+    expect(updates[0].message.operation.action).to.equal('object.delete');
+  });
+
+  // UTS: objects/unit/RTLO4b4e/tombstone-flag-false-0
+  // Deviation: ably-js InstanceSubscriptionEvent does not expose `tombstone`.
+  // We verify that a normal (non-tombstone) update is delivered with the correct operation.
+  it('RTLO4b4e - LiveObjectUpdate.tombstone is false for normal updates', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4e-false');
+    const updates: any[] = [];
+    const instance = root.get('score').instance()!;
+    instance.subscribe((event: any) => updates.push(event));
+
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4e-false', [
+        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(updates).to.have.length(1);
+    expect(updates[0].message).to.exist;
+    expect(updates[0].message.operation.action).to.equal('counter.inc');
   });
 });

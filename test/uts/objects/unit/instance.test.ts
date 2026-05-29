@@ -1,11 +1,12 @@
 /**
  * UTS: Instance Tests
  *
- * Spec points: RTINS1-18
+ * Spec points: RTINS1-16
  * Source: uts/objects/unit/instance.md
  *
  * Tests Instance wrapping of LiveObjects: id, value, get, entries,
- * size, compact, set, remove, increment, decrement, subscribe.
+ * size, compact, set, remove, increment, decrement, subscribe,
+ * InstanceSubscriptionEvent message fields, Subscription model.
  *
  * Deviation: Instance `id` is a getter property, not a method.
  */
@@ -108,9 +109,9 @@ describe('uts/objects/unit/instance', function () {
     expect(root.get('name').value()).to.equal('Bob');
   });
 
-  // UTS: objects/unit/RTINS12c/set-non-map-throws-0
-  it('RTINS12c - set() on non-LiveMap throws 92007', async function () {
-    const { root } = await setupSyncedChannel('test-RTINS12c');
+  // UTS: objects/unit/RTINS12d/set-non-map-throws-0
+  it('RTINS12d - set() on non-LiveMap throws 92007', async function () {
+    const { root } = await setupSyncedChannel('test-RTINS12d');
 
     const counterInst = root.get('score').instance()!;
     try {
@@ -139,9 +140,9 @@ describe('uts/objects/unit/instance', function () {
     expect(root.get('score').value()).to.equal(125);
   });
 
-  // UTS: objects/unit/RTINS14c/increment-non-counter-throws-0
-  it('RTINS14c - increment() on non-LiveCounter throws 92007', async function () {
-    const { root } = await setupSyncedChannel('test-RTINS14c');
+  // UTS: objects/unit/RTINS14d/increment-non-counter-throws-0
+  it('RTINS14d - increment() on non-LiveCounter throws 92007', async function () {
+    const { root } = await setupSyncedChannel('test-RTINS14d');
 
     const mapInst = root.instance()!;
     try {
@@ -200,71 +201,24 @@ describe('uts/objects/unit/instance', function () {
     expect(events[0].object.id).to.equal('counter:score@1000');
   });
 
-  // UTS: objects/unit/RTINS16b/subscribe-primitive-throws-0
-  it('RTINS16b - subscribe() on primitive throws 92007', async function () {
-    const { root } = await setupSyncedChannel('test-RTINS16b');
+  // UTS: objects/unit/RTINS16c/subscribe-primitive-throws-0
+  it('RTINS16c - subscribe() on primitive throws 92007', async function () {
+    const { root } = await setupSyncedChannel('test-RTINS16c');
 
     const nameInst = root.instance()!.get('name')!;
     expect(() => nameInst.subscribe(() => {})).to.throw().with.property('code', 92007);
   });
 
-  // UTS: objects/unit/RTINS16f/subscription-follows-identity-0
-  it('RTINS16f - Instance subscription follows identity not path', async function () {
-    const { root, mockWs } = await setupSyncedChannel('test-RTINS16f');
-
-    const counterInst = root.get('score').instance()!;
-    const events: any[] = [];
-    counterInst.subscribe((event: any) => events.push(event));
-
-    // Replace score with a new counter
-    mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16f', [
-        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, 't:1', 'remote'),
-      ]),
-    );
-    await flushAsync();
-
-    // Increment the ORIGINAL counter
-    mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16f', [
-        buildCounterInc('counter:score@1000', 10, '100', 'remote'),
-      ]),
-    );
-    await flushAsync();
-
-    expect(events.length).to.be.greaterThanOrEqual(1);
-    expect(counterInst.id).to.equal('counter:score@1000');
-  });
-
-  // UTS: objects/unit/RTINS17/unsubscribe-0
-  it('RTINS17 - unsubscribe() deregisters listener', async function () {
-    const { root, mockWs } = await setupSyncedChannel('test-RTINS17');
-
-    const counterInst = root.get('score').instance()!;
-    const events: any[] = [];
-    const sub = counterInst.subscribe((event: any) => events.push(event));
-    sub.unsubscribe();
-
-    mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS17', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
-    );
-    await flushAsync();
-
-    expect(events).to.have.length(0);
-  });
-
-  // UTS: objects/unit/RTINS16/subscription-event-metadata-0
-  it('RTINS16 - subscription event contains message metadata', async function () {
-    const { root, mockWs } = await setupSyncedChannel('test-RTINS16-meta');
+  // UTS: objects/unit/RTINS16e2/subscription-event-message-0
+  it('RTINS16e2 - InstanceSubscriptionEvent contains PublicAPI::ObjectMessage', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTINS16e2');
 
     const rootInst = root.instance()!;
     const events: any[] = [];
     rootInst.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16-meta', [
+      buildObjectMessage('test-RTINS16e2', [
         buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
       ]),
     );
@@ -274,5 +228,68 @@ describe('uts/objects/unit/instance', function () {
     expect(events[0].object).to.exist;
     expect(events[0].object.id).to.equal('root');
     expect(events[0].message).to.exist;
+    expect(events[0].message.channel).to.equal('test-RTINS16e2');
+    expect(events[0].message.operation.action).to.equal('map.set');
+    expect(events[0].message.operation.objectId).to.equal('root');
+    expect(events[0].message.operation.mapSet.key).to.equal('name');
+  });
+
+  // UTS: objects/unit/RTINS16f/subscribe-returns-subscription-0
+  it('RTINS16f - subscribe() returns Subscription for deregistration', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTINS16f');
+
+    const counterInst = root.get('score').instance()!;
+    const events: any[] = [];
+    const sub = counterInst.subscribe((event: any) => events.push(event));
+    sub.unsubscribe();
+
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTINS16f', [
+        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(events).to.have.length(0);
+  });
+
+  // UTS: objects/unit/RTINS16g/subscription-follows-identity-0
+  it('RTINS16g - Instance subscription follows identity not path', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTINS16g');
+
+    const counterInst = root.get('score').instance()!;
+    const events: any[] = [];
+    counterInst.subscribe((event: any) => events.push(event));
+
+    // Replace score with a new counter
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTINS16g', [
+        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, 't:1', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    // Increment the ORIGINAL counter
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTINS16g', [
+        buildCounterInc('counter:score@1000', 10, '100', 'remote'),
+      ]),
+    );
+    await flushAsync();
+
+    expect(events.length).to.be.greaterThanOrEqual(1);
+    expect(counterInst.id).to.equal('counter:score@1000');
+  });
+
+  // UTS: objects/unit/RTINS16h/subscribe-no-side-effects-0
+  it('RTINS16h - subscribe() has no side effects', async function () {
+    const { channel, root } = await setupSyncedChannel('test-RTINS16h');
+
+    const counterInst = root.get('score').instance()!;
+    const channelStateBefore = channel.state;
+
+    counterInst.subscribe(() => {});
+
+    expect(channel.state).to.equal(channelStateBefore);
   });
 });

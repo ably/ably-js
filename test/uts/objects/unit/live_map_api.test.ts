@@ -1,7 +1,7 @@
 /**
  * UTS: LiveMap API Tests
  *
- * Spec points: RTLM5, RTLM10-RTLM13, RTLM20-RTLM21, RTLM24
+ * Spec points: RTLM5, RTLM10-RTLM13, RTLM20-RTLM21, RTLM24, RTLMV4, RTLCV4
  * Source: uts/objects/unit/live_map_api.md
  *
  * Tests LiveMap read operations (get, size, entries, keys) and
@@ -309,6 +309,155 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(state[1].operation.mapSet.value.objectId).to.equal(state[0].operation.objectId);
   });
 
+  // ---------- RTLM20e7g: set() with LiveMapValueType ----------
+
+  // UTS: objects/unit/RTLM20e7g/set-map-value-type-0
+  it('RTLM20e7g - set() with LiveMap.create() sends MAP_CREATE + MAP_SET', async function () {
+    const capturedMessages: any[] = [];
+
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'conn-key-1',
+            connectionStateTtl: 120000,
+            maxIdleInterval: 15000,
+            maxMessageSize: 65536,
+            serverId: 'test-server',
+            clientId: null,
+            siteCode: 'test',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        } else if (msg.action === PM_ACTION.OBJECT) {
+          capturedMessages.push(msg);
+          const serials = (msg.state || []).map((_: any, i: number) => `ack-${msg.msgSerial}:${i}`);
+          mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTLM20e7g-map', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+    const root = await channel.object.get();
+
+    await root.set('nested_map', LiveObjectsPlugin.LiveMap.create({ key1: 'value1' }));
+
+    expect(capturedMessages).to.have.length(1);
+    const state = capturedMessages[0].state;
+    expect(state).to.have.length(2);
+    // Deviation: wire format uses numeric action values
+    expect(state[0].operation.action).to.equal(OBJ_OP.MAP_CREATE);
+    expect(state[0].operation.objectId).to.match(/^map:/);
+    expect(state[1].operation.action).to.equal(OBJ_OP.MAP_SET);
+    expect(state[1].operation.mapSet.key).to.equal('nested_map');
+    expect(state[1].operation.mapSet.value.objectId).to.equal(state[0].operation.objectId);
+  });
+
+  // ---------- RTLM20h1: set() with nested value types ----------
+
+  // UTS: objects/unit/RTLM20h1/set-nested-value-types-0
+  it('RTLM20h1 - set() with nested LiveMapValueType containing LiveCounterValueType', async function () {
+    const capturedMessages: any[] = [];
+
+    const mockWs = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mockWs.active_connection = conn;
+        conn.respond_with_connected({
+          action: PM_ACTION.CONNECTED,
+          connectionId: 'conn-1',
+          connectionDetails: {
+            connectionKey: 'conn-key-1',
+            connectionStateTtl: 120000,
+            maxIdleInterval: 15000,
+            maxMessageSize: 65536,
+            serverId: 'test-server',
+            clientId: null,
+            siteCode: 'test',
+            objectsGCGracePeriod: 86400000,
+          },
+        });
+      },
+      onMessageFromClient: (msg: any) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:',
+            flags: HAS_OBJECTS,
+          });
+          mockWs.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
+          );
+        } else if (msg.action === PM_ACTION.OBJECT) {
+          capturedMessages.push(msg);
+          const serials = (msg.state || []).map((_: any, i: number) => `ack-${msg.msgSerial}:${i}`);
+          mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
+        }
+      },
+    });
+    installMockWebSocket(mockWs.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    });
+    trackClient(client);
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTLM20h1', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
+    const root = await channel.object.get();
+
+    await root.set(
+      'stats',
+      LiveObjectsPlugin.LiveMap.create({
+        count: LiveObjectsPlugin.LiveCounter.create(0),
+        label: 'test',
+      }),
+    );
+
+    expect(capturedMessages).to.have.length(1);
+    const state = capturedMessages[0].state;
+    // Expect: COUNTER_CREATE, MAP_CREATE, MAP_SET (depth-first, then the MAP_SET at root)
+    expect(state).to.have.length(3);
+    // Deviation: wire format uses numeric action values
+    expect(state[0].operation.action).to.equal(OBJ_OP.COUNTER_CREATE);
+    expect(state[0].operation.objectId).to.match(/^counter:/);
+    expect(state[1].operation.action).to.equal(OBJ_OP.MAP_CREATE);
+    expect(state[1].operation.objectId).to.match(/^map:/);
+    expect(state[2].operation.action).to.equal(OBJ_OP.MAP_SET);
+    expect(state[2].operation.mapSet.key).to.equal('stats');
+    expect(state[2].operation.mapSet.value.objectId).to.equal(state[1].operation.objectId);
+  });
+
   // ---------- RTLM21: remove() ----------
 
   // UTS: objects/unit/RTLM21/remove-sends-map-remove-0
@@ -374,124 +523,6 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(objMsg.operation.action).to.equal(OBJ_OP.MAP_REMOVE);
     expect(objMsg.operation.objectId).to.equal('root');
     expect(objMsg.operation.mapRemove.key).to.equal('name');
-  });
-
-  // ---------- RTLM20d / RTLM21d: echoMessages false throws ----------
-
-  // UTS: objects/unit/RTLM20d/echo-messages-false-0
-  it('RTLM20d - set() with echoMessages false throws error 40000', async function () {
-    const mockWs = new MockWebSocket({
-      onConnectionAttempt: (conn) => {
-        mockWs.active_connection = conn;
-        conn.respond_with_connected({
-          action: PM_ACTION.CONNECTED,
-          connectionId: 'conn-1',
-          connectionDetails: {
-            connectionKey: 'conn-key-1',
-            connectionStateTtl: 120000,
-            maxIdleInterval: 15000,
-            maxMessageSize: 65536,
-            serverId: 'test-server',
-            clientId: null,
-            siteCode: 'test',
-            objectsGCGracePeriod: 86400000,
-          },
-        });
-      },
-      onMessageFromClient: (msg: any) => {
-        if (msg.action === PM_ACTION.ATTACH) {
-          mockWs.active_connection!.send_to_client({
-            action: PM_ACTION.ATTACHED,
-            channel: msg.channel,
-            channelSerial: 'sync1:',
-            flags: HAS_OBJECTS,
-          });
-          mockWs.active_connection!.send_to_client(
-            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-          );
-        }
-      },
-    });
-    installMockWebSocket(mockWs.constructorFn);
-
-    const client = new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      autoConnect: false,
-      useBinaryProtocol: false,
-      echoMessages: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
-    });
-    trackClient(client);
-    client.connect();
-    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
-
-    const channel = client.channels.get('test-RTLM20d', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-    const root = await channel.object.get();
-
-    try {
-      await root.set('name', 'Bob');
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
-    }
-  });
-
-  // UTS: objects/unit/RTLM21d/echo-messages-false-0
-  it('RTLM21d - remove() with echoMessages false throws error 40000', async function () {
-    const mockWs = new MockWebSocket({
-      onConnectionAttempt: (conn) => {
-        mockWs.active_connection = conn;
-        conn.respond_with_connected({
-          action: PM_ACTION.CONNECTED,
-          connectionId: 'conn-1',
-          connectionDetails: {
-            connectionKey: 'conn-key-1',
-            connectionStateTtl: 120000,
-            maxIdleInterval: 15000,
-            maxMessageSize: 65536,
-            serverId: 'test-server',
-            clientId: null,
-            siteCode: 'test',
-            objectsGCGracePeriod: 86400000,
-          },
-        });
-      },
-      onMessageFromClient: (msg: any) => {
-        if (msg.action === PM_ACTION.ATTACH) {
-          mockWs.active_connection!.send_to_client({
-            action: PM_ACTION.ATTACHED,
-            channel: msg.channel,
-            channelSerial: 'sync1:',
-            flags: HAS_OBJECTS,
-          });
-          mockWs.active_connection!.send_to_client(
-            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-          );
-        }
-      },
-    });
-    installMockWebSocket(mockWs.constructorFn);
-
-    const client = new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      autoConnect: false,
-      useBinaryProtocol: false,
-      echoMessages: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
-    });
-    trackClient(client);
-    client.connect();
-    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
-
-    const channel = client.channels.get('test-RTLM21d', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-    const root = await channel.object.get();
-
-    try {
-      await root.remove('name');
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
-    }
   });
 
   // ---------- RTLM20: set() applies locally after ACK ----------
