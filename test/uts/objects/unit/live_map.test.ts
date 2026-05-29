@@ -24,6 +24,9 @@
  *   standalone LiveMap needs a pool reference.
  * - RTLM14c (tombstoned ref check): Tested via protocol messages + pool, since
  *   checking requires pool access for referenced object tombstone status.
+ * - parentReferences tests: ably-js uses Map<LiveObject, Set<string>> for
+ *   _parentReferences. Tests access via (obj as any)._parentReferences and
+ *   check entries using the LiveObject instance as map key.
  */
 
 import { expect } from 'chai';
@@ -83,6 +86,32 @@ function getDataMap(map: LiveMap): Map<string, LiveMapEntry> {
   return (map as any)._dataRef.data;
 }
 
+/**
+ * Helper to capture the update passed to notifyUpdated() during applyOperation().
+ * Since applyOperation() returns boolean, we intercept notifyUpdated to capture the
+ * internal update object for assertions on update.update, objectMessage, tombstone, etc.
+ */
+function captureNotifyUpdated(map: LiveMap): { getUpdate: () => any } {
+  let capturedUpdate: any = undefined;
+  const origNotify = (map as any).notifyUpdated.bind(map);
+  (map as any).notifyUpdated = (update: any) => {
+    capturedUpdate = update;
+    origNotify(update);
+  };
+  return {
+    getUpdate: () => capturedUpdate,
+  };
+}
+
+/**
+ * Helper to check if a LiveObject's _parentReferences contains a reference from a given parent at a given key.
+ */
+function hasParentRef(child: any, parent: any, key: string): boolean {
+  const refs: Map<any, Set<string>> = child._parentReferences;
+  const keys = refs.get(parent);
+  return keys != null && keys.has(key);
+}
+
 describe('uts/objects/unit/live_map', function () {
   afterEach(function () {
     restoreAll();
@@ -114,6 +143,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM7-new');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -133,6 +163,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.timeserial).to.equal('01');
     expect(entry!.tombstone).to.equal(false);
     expect(result).to.equal(true);
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -144,6 +178,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM7-upd');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     // Pre-set data
     getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
 
@@ -163,6 +198,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.data).to.deep.equal({ string: 'Bob' });
     expect(entry!.timeserial).to.equal('02');
     expect(result).to.equal(true);
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -261,6 +300,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9d');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: undefined, tombstone: false, tombstonedAt: undefined });
 
     const msg = makeObjectMessage(client, {
@@ -276,6 +316,10 @@ describe('uts/objects/unit/live_map', function () {
     map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect(getDataMap(map).get('name')!.data).to.deep.equal({ string: 'Bob' });
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -335,6 +379,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM8-exist');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
 
     const msg = makeObjectMessage(client, {
@@ -356,6 +401,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.timeserial).to.equal('02');
     expect(entry!.tombstonedAt).to.equal(1700000000000);
     expect(result).to.equal(true);
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -367,6 +416,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM8-noent');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -386,6 +436,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.tombstone).to.equal(true);
     expect(entry!.tombstonedAt).to.equal(1700000000000);
     expect(result).to.equal(true);
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ ghost: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -430,6 +484,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM24-basic');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('old', { data: { string: 'old' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
     getDataMap(map).set('new', { data: { string: 'new' }, timeserial: '06', tombstone: false, tombstonedAt: undefined });
     getDataMap(map).set('same', { data: { string: 'same' }, timeserial: '04', tombstone: false, tombstonedAt: undefined });
@@ -452,6 +507,12 @@ describe('uts/objects/unit/live_map', function () {
     // Deviation: 'same' (serial '04') is KEPT in ably-js (strict > comparison)
     // UTS spec expects it to be removed (serial <= clearTimeserial)
     expect(getDataMap(map).has('same')).to.equal(true); // ably-js keeps it
+    // UTS: update.update and update.objectMessage assertions
+    // Deviation: UTS expects { old: 'removed', same: 'removed' } but ably-js only removes 'old'
+    const update = capture.getUpdate();
+    expect(update.update['old']).to.equal('removed');
+    expect(update.update).to.not.have.property('new');
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -489,6 +550,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM16');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
 
     const msg = makeObjectMessage(client, {
       serial: '02',
@@ -512,6 +574,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(getDataMap(map).get('removed_key')!.tombstone).to.equal(true);
     expect((map as any)._createOperationIsMerged).to.equal(true);
     expect(result).to.equal(true);
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'updated', removed_key: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -621,6 +687,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLO5');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
     getDataMap(map).set('age', { data: { number: 30 }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
     (map as any)._siteTimeserials = { site1: '00' };
@@ -641,6 +708,11 @@ describe('uts/objects/unit/live_map', function () {
     expect(map.isTombstoned()).to.equal(true);
     expect(getDataMap(map).size).to.equal(0); // data cleared
     expect(result).to.equal(true);
+    // UTS: update.update, update.tombstone, and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'removed', age: 'removed' });
+    expect(update.tombstone).to.equal(true);
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -705,6 +777,8 @@ describe('uts/objects/unit/live_map', function () {
     // Check update diff
     expect((update as any).update['old']).to.equal('removed');
     expect((update as any).update['new']).to.equal('updated');
+    // UTS: update.objectMessage assertion
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // =====================================================================
@@ -947,6 +1021,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM7-revive');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', {
       data: undefined,
       timeserial: '01',
@@ -970,6 +1045,10 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.data).to.deep.equal({ string: 'Alice' });
     expect(entry!.tombstone).to.equal(false);
     expect(entry!.tombstonedAt).to.be.undefined;
+    // UTS: update.update and update.objectMessage assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =====================================================================
@@ -981,6 +1060,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM24-newer');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('before', { data: { string: 'a' }, timeserial: '03', tombstone: false, tombstonedAt: undefined });
     getDataMap(map).set('after', { data: { string: 'b' }, timeserial: '07', tombstone: false, tombstonedAt: undefined });
     getDataMap(map).set('no_ts', { data: { string: 'c' }, timeserial: undefined, tombstone: false, tombstonedAt: undefined });
@@ -1000,5 +1080,386 @@ describe('uts/objects/unit/live_map', function () {
     expect(getDataMap(map).has('before')).to.equal(false); // '03' < '05'
     expect(getDataMap(map).has('no_ts')).to.equal(false); // null < any
     expect(getDataMap(map).get('after')!.data).to.deep.equal({ string: 'b' }); // '07' > '05'
+    // UTS: update assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.have.property('before');
+    expect(update.update).to.have.property('no_ts');
+    expect(update.update).to.not.have.property('after');
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM6f - replaceData with tombstone flag tombstones map
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM6f/replace-data-tombstone-flag-0
+  it('RTLM6f - replaceData with tombstone flag tombstones map', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM6f');
+
+    const map = createZeroMap(channel, 'map:test@1000');
+    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+
+    const stateMsg = makeObjectMessage(client, {
+      object: {
+        objectId: 'map:test@1000',
+        siteTimeserials: { site1: '01' },
+        tombstone: true,
+        map: {
+          semantics: MAP_SEMANTICS_LWW,
+          entries: {},
+        },
+      },
+    });
+
+    const update = map.overrideWithObjectState(stateMsg);
+
+    expect(map.isTombstoned()).to.equal(true);
+    expect(getDataMap(map).size).to.equal(0);
+    expect((update as any).update).to.deep.equal({ name: 'removed' });
+    expect((update as any).tombstone).to.equal(true);
+    expect((update as any).objectMessage).to.equal(stateMsg);
+  });
+
+  // =====================================================================
+  // RTLM7a3 - parentReferences: MAP_SET overwrites entry referencing LiveObject
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM7a3/map-set-overwrite-objectid-parent-refs-0
+  it('RTLM7a3 - MAP_SET overwrites entry referencing LiveObject with another LiveObject', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM7a3-overwrite');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref@1000');
+    pool.set('map:parentref@1000', map);
+
+    // Create two child counters in the pool
+    const oldCounter = pool.createZeroValueObjectIfNotExists('counter:old@1000');
+    const newCounter = pool.createZeroValueObjectIfNotExists('counter:new@2000');
+
+    // Set up map entry pointing to old counter
+    getDataMap(map).set('ref', { data: { objectId: 'counter:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    // Simulate existing parentReference: old counter knows map:parentref@1000 references it at key 'ref'
+    oldCounter.addParentReference(map, 'ref');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '02',
+      siteCode: 'site1',
+      operation: {
+        action: OBJ_OP.MAP_SET,
+        objectId: 'map:parentref@1000',
+        mapSet: { key: 'ref', value: { objectId: 'counter:new@2000' } },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('ref')!.data).to.deep.equal({ objectId: 'counter:new@2000' });
+    // removeParentReference was called on the old child
+    expect(hasParentRef(oldCounter, map, 'ref')).to.equal(false);
+    // addParentReference was called on the new child
+    expect(hasParentRef(newCounter, map, 'ref')).to.equal(true);
+    // UTS: update assertions
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ ref: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM7g2 - parentReferences: MAP_SET new entry referencing LiveObject
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM7g2/map-set-new-entry-add-parent-ref-0
+  it('RTLM7g2 - MAP_SET new entry referencing LiveObject adds parentReference', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM7g2');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref2@1000');
+    pool.set('map:parentref2@1000', map);
+
+    // Create child counter in the pool
+    const childCounter = pool.createZeroValueObjectIfNotExists('counter:child@1000');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '01',
+      siteCode: 'site1',
+      operation: {
+        action: OBJ_OP.MAP_SET,
+        objectId: 'map:parentref2@1000',
+        mapSet: { key: 'score', value: { objectId: 'counter:child@1000' } },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('score')!.data).to.deep.equal({ objectId: 'counter:child@1000' });
+    // addParentReference was called on the child
+    expect(hasParentRef(childCounter, map, 'score')).to.equal(true);
+    // UTS: update.objectMessage assertion
+    const update = capture.getUpdate();
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM7 - parentReferences: MAP_SET with non-LiveObject value
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM7/map-set-primitive-no-parent-refs-0
+  it('RTLM7 - MAP_SET with primitive value removes old parentReference but adds none', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM7-prim');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref3@1000');
+    pool.set('map:parentref3@1000', map);
+
+    // Create old counter in the pool
+    const oldCounter = pool.createZeroValueObjectIfNotExists('counter:old@1000');
+
+    // Set up map entry pointing to old counter
+    getDataMap(map).set('ref', { data: { objectId: 'counter:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    oldCounter.addParentReference(map, 'ref');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '02',
+      siteCode: 'site1',
+      operation: {
+        action: OBJ_OP.MAP_SET,
+        objectId: 'map:parentref3@1000',
+        mapSet: { key: 'ref', value: { string: 'plain_value' } },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('ref')!.data).to.deep.equal({ string: 'plain_value' });
+    // removeParentReference was called on old child (entry previously had objectId)
+    expect(hasParentRef(oldCounter, map, 'ref')).to.equal(false);
+    // No addParentReference call because new value is a primitive
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ ref: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM7a3 - parentReferences: MAP_SET replace LiveObject with LiveObject (both refs)
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM7a3/map-set-replace-objectid-both-refs-0
+  it('RTLM7a3 - MAP_SET replaces one LiveObject with another, both remove and add', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM7a3-both');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref4@1000');
+    pool.set('map:parentref4@1000', map);
+
+    // Create two child maps in the pool
+    const oldMap = pool.createZeroValueObjectIfNotExists('map:old@1000');
+    const newMap = pool.createZeroValueObjectIfNotExists('map:new@2000');
+
+    // Set up map entry pointing to old map
+    getDataMap(map).set('child', { data: { objectId: 'map:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    oldMap.addParentReference(map, 'child');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '02',
+      siteCode: 'site1',
+      operation: {
+        action: OBJ_OP.MAP_SET,
+        objectId: 'map:parentref4@1000',
+        mapSet: { key: 'child', value: { objectId: 'map:new@2000' } },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('child')!.data).to.deep.equal({ objectId: 'map:new@2000' });
+    // Old child no longer references root
+    expect(hasParentRef(oldMap, map, 'child')).to.equal(false);
+    // New child references root
+    expect(hasParentRef(newMap, map, 'child')).to.equal(true);
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ child: 'updated' });
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM8a3 - parentReferences: MAP_REMOVE entry referencing LiveObject
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM8a3/map-remove-objectid-parent-refs-0
+  it('RTLM8a3 - MAP_REMOVE on entry referencing LiveObject calls removeParentReference', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM8a3');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref5@1000');
+    pool.set('map:parentref5@1000', map);
+
+    // Create child counter in the pool
+    const childCounter = pool.createZeroValueObjectIfNotExists('counter:child@1000');
+
+    // Set up map entry pointing to child counter
+    getDataMap(map).set('score', { data: { objectId: 'counter:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    childCounter.addParentReference(map, 'score');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '02',
+      siteCode: 'site1',
+      serialTimestamp: 1700000000000,
+      operation: {
+        action: OBJ_OP.MAP_REMOVE,
+        objectId: 'map:parentref5@1000',
+        mapRemove: { key: 'score' },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('score')!.tombstone).to.equal(true);
+    // removeParentReference was called on the child
+    expect(hasParentRef(childCounter, map, 'score')).to.equal(false);
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ score: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLM8 - parentReferences: MAP_REMOVE entry with non-LiveObject value
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM8/map-remove-primitive-no-parent-refs-0
+  it('RTLM8 - MAP_REMOVE on primitive entry does not affect parentReferences', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM8-prim');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref6@1000');
+    pool.set('map:parentref6@1000', map);
+
+    // Set up map entry with primitive value
+    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '02',
+      siteCode: 'site1',
+      serialTimestamp: 1700000000000,
+      operation: {
+        action: OBJ_OP.MAP_REMOVE,
+        objectId: 'map:parentref6@1000',
+        mapRemove: { key: 'name' },
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(getDataMap(map).get('name')!.tombstone).to.equal(true);
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ name: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
+    // No parentReference calls needed -- test passes without errors
+  });
+
+  // =====================================================================
+  // RTLM24e1c - parentReferences: MAP_CLEAR removes parent references
+  // =====================================================================
+
+  // UTS: objects/unit/RTLM24e1c/map-clear-parent-refs-0
+  it('RTLM24e1c - MAP_CLEAR removes parent references for cleared entries', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLM24e1c');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref7@1000');
+    pool.set('map:parentref7@1000', map);
+
+    // Create two child counters in the pool
+    const counterA = pool.createZeroValueObjectIfNotExists('counter:a@1000');
+    const counterB = pool.createZeroValueObjectIfNotExists('counter:b@1000');
+
+    // Set up map entries: two objectId refs, one primitive, one newer (kept after clear)
+    getDataMap(map).set('ref_a', { data: { objectId: 'counter:a@1000' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('ref_b', { data: { objectId: 'counter:b@1000' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('primitive', { data: { string: 'hello' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('newer', { data: { string: 'kept' }, timeserial: '09', tombstone: false, tombstonedAt: undefined });
+
+    counterA.addParentReference(map, 'ref_a');
+    counterB.addParentReference(map, 'ref_b');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '05',
+      siteCode: 'site1',
+      operation: {
+        action: OBJ_OP.MAP_CLEAR,
+        objectId: 'map:parentref7@1000',
+        mapClear: {},
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    // ref_a and ref_b removed (timeserial "02" < "05"), newer kept (timeserial "09" > "05")
+    expect(getDataMap(map).has('ref_a')).to.equal(false);
+    expect(getDataMap(map).has('ref_b')).to.equal(false);
+    expect(getDataMap(map).has('primitive')).to.equal(false);
+    expect(getDataMap(map).has('newer')).to.equal(true);
+    // removeParentReference was called on both child counters
+    expect(hasParentRef(counterA, map, 'ref_a')).to.equal(false);
+    expect(hasParentRef(counterB, map, 'ref_b')).to.equal(false);
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ ref_a: 'removed', ref_b: 'removed', primitive: 'removed' });
+    expect(update.objectMessage).to.equal(msg);
+  });
+
+  // =====================================================================
+  // RTLO4e9 - parentReferences: tombstone LiveMap removes parent refs
+  // =====================================================================
+
+  // UTS: objects/unit/RTLO4e9/tombstone-map-parent-refs-0
+  it('RTLO4e9 - OBJECT_DELETE on map removes all parent references for entries', async function () {
+    const { channel, client } = await setupSyncedChannel('test-RTLO4e9');
+
+    const pool = getRealtimeObject(channel).getPool();
+    const map = createZeroMap(channel, 'map:parentref8@1000');
+    pool.set('map:parentref8@1000', map);
+
+    // Create child objects in the pool
+    const childCounter = pool.createZeroValueObjectIfNotExists('counter:child@1000');
+    const childMap = pool.createZeroValueObjectIfNotExists('map:child@1000');
+
+    // Set up map entries: two objectId refs and one primitive
+    getDataMap(map).set('counter_ref', { data: { objectId: 'counter:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('map_ref', { data: { objectId: 'map:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    (map as any)._siteTimeserials = { site1: '00' };
+
+    childCounter.addParentReference(map, 'counter_ref');
+    childMap.addParentReference(map, 'map_ref');
+
+    const capture = captureNotifyUpdated(map);
+    const msg = makeObjectMessage(client, {
+      serial: '01',
+      siteCode: 'site1',
+      serialTimestamp: 1700000000000,
+      operation: {
+        action: OBJ_OP.OBJECT_DELETE,
+        objectId: 'map:parentref8@1000',
+        objectDelete: {},
+      },
+    });
+
+    map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(map.isTombstoned()).to.equal(true);
+    expect(getDataMap(map).size).to.equal(0);
+    // removeParentReference was called on both children
+    expect(hasParentRef(childCounter, map, 'counter_ref')).to.equal(false);
+    expect(hasParentRef(childMap, map, 'map_ref')).to.equal(false);
+    const update = capture.getUpdate();
+    expect(update.update).to.deep.equal({ counter_ref: 'removed', map_ref: 'removed', name: 'removed' });
+    expect(update.tombstone).to.equal(true);
+    expect(update.objectMessage).to.equal(msg);
   });
 });

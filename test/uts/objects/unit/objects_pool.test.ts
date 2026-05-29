@@ -37,6 +37,39 @@ import {
 } from '../helpers/standard_test_pool';
 
 /**
+ * Helper: convert a LiveObject's private _parentReferences Map<LiveObject, Set<string>>
+ * into a plain object keyed by objectId for assertion purposes.
+ * Returns e.g. { "root": Set{"score"}, "map:profile@1000": Set{"nested_counter"} }
+ */
+function getParentRefsById(obj: any): Map<string, Set<string>> {
+  const refs: Map<string, Set<string>> = new Map();
+  const parentRefs: Map<any, Set<string>> = (obj as any)._parentReferences;
+  for (const [parent, keys] of parentRefs) {
+    refs.set(parent.getObjectId(), new Set(keys));
+  }
+  return refs;
+}
+
+/**
+ * Helper: assert that a LiveObject's parentReferences match the expected structure.
+ * Expected is a Record<objectId, string[]> where each string[] is the set of keys.
+ * An empty object means no parent references.
+ */
+function expectParentRefs(obj: any, expected: Record<string, string[]>) {
+  const refs = getParentRefsById(obj);
+  const expectedEntries = Object.entries(expected);
+  expect(refs.size).to.equal(expectedEntries.length, `parentReferences size mismatch for ${obj.getObjectId()}`);
+  for (const [parentId, keys] of expectedEntries) {
+    expect(refs.has(parentId)).to.be.true;
+    const actualKeys = refs.get(parentId)!;
+    expect(actualKeys.size).to.equal(keys.length, `key set size mismatch for parent ${parentId}`);
+    for (const key of keys) {
+      expect(actualKeys.has(key)).to.be.true;
+    }
+  }
+}
+
+/**
  * Helper: build a full createOp for a map, including action and objectId.
  * ably-js validates createOp.objectId and createOp.action during overrideWithObjectState.
  */
@@ -202,6 +235,8 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Should have received update events
     expect(updates.length).to.be.greaterThanOrEqual(1);
+    // RTO4b2a: objectMessage should not be populated on sync-completion updates
+    expect(updates[0].objectMessage).to.be.undefined;
   });
 
   // UTS: objects/unit/RTO5/sync-complete-sequence-0
@@ -1031,5 +1066,188 @@ describe('uts/objects/unit/objects_pool', function () {
     expect(root.get('old_key').value()).to.be.undefined;
     // new_key has timeserial '07' which is > clearTimeserial '05', should be present
     expect(root.get('new_key').value()).to.equal('new');
+  });
+
+  // UTS: objects/unit/RTO5c10/sync-rebuilds-parent-refs-0
+  it('RTO5c10 - sync rebuilds parentReferences', async function () {
+    const { channel, root, mockWs } = await setupSyncedChannel('test-RTO5c10');
+
+    const rto = getRealtimeObject(channel);
+
+    // After standard sync, verify parentReferences match the standard pool tree:
+    // root: no parent
+    const rootObj = rto._objectsPool.get('root');
+    expectParentRefs(rootObj, {});
+
+    // counter:score@1000: referenced by root at key "score"
+    const scoreObj = rto._objectsPool.get('counter:score@1000');
+    expectParentRefs(scoreObj, { root: ['score'] });
+
+    // map:profile@1000: referenced by root at key "profile"
+    const profileObj = rto._objectsPool.get('map:profile@1000');
+    expectParentRefs(profileObj, { root: ['profile'] });
+
+    // counter:nested@1000: referenced by map:profile@1000 at key "nested_counter"
+    const nestedObj = rto._objectsPool.get('counter:nested@1000');
+    expectParentRefs(nestedObj, { 'map:profile@1000': ['nested_counter'] });
+
+    // map:prefs@1000: referenced by map:profile@1000 at key "prefs"
+    const prefsObj = rto._objectsPool.get('map:prefs@1000');
+    expectParentRefs(prefsObj, { 'map:profile@1000': ['prefs'] });
+  });
+
+  // UTS: objects/unit/RTO5c10/resync-rebuilds-parent-refs-0
+  it('RTO5c10 - re-sync rebuilds parentReferences with new tree structure', async function () {
+    const { channel, mockWs } = await setupManualChannel('test-RTO5c10-resync', {
+      onMessageFromClient: (msg, ws) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          ws.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:cursor',
+            flags: HAS_OBJECTS,
+          });
+          // First sync: counter:abc@1000 is a child of root
+          ws.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', [
+              buildObjectState('root', { aaa: 't:0' }, {
+                map: {
+                  semantics: MAP_SEMANTICS_LWW,
+                  entries: {
+                    counter_key: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:0' },
+                  },
+                },
+                createOp: mapCreateOp('root'),
+              }),
+              buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
+                counter: { count: 10 },
+                createOp: counterCreateOp('counter:abc@1000', 10),
+              }),
+            ]),
+          );
+        }
+      },
+    });
+
+    const root = await channel.object.get();
+
+    const rto = getRealtimeObject(channel);
+    expect(rto._state).to.equal('synced');
+
+    // Verify first sync parentReferences
+    const counterObj = rto._objectsPool.get('counter:abc@1000');
+    expectParentRefs(counterObj, { root: ['counter_key'] });
+
+    // Second sync: counter:abc@1000 is now a child of map:wrapper@1000, not root
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ATTACHED,
+      channel: 'test-RTO5c10-resync',
+      channelSerial: 'sync2:cursor',
+      flags: HAS_OBJECTS,
+    });
+    mockWs.active_connection!.send_to_client(
+      buildObjectSyncMessage('test-RTO5c10-resync', 'sync2:', [
+        buildObjectState('root', { aaa: 't:1' }, {
+          map: {
+            semantics: MAP_SEMANTICS_LWW,
+            entries: {
+              wrapper: { data: { objectId: 'map:wrapper@1000' }, timeserial: 't:1' },
+            },
+          },
+          createOp: mapCreateOp('root'),
+        }),
+        buildObjectState('map:wrapper@1000', { aaa: 't:1' }, {
+          map: {
+            semantics: MAP_SEMANTICS_LWW,
+            entries: {
+              moved_counter: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:1' },
+            },
+          },
+          createOp: mapCreateOp('map:wrapper@1000'),
+        }),
+        buildObjectState('counter:abc@1000', { aaa: 't:1' }, {
+          counter: { count: 20 },
+          createOp: counterCreateOp('counter:abc@1000', 20),
+        }),
+      ]),
+    );
+    await flushAsync();
+
+    expect(rto._state).to.equal('synced');
+
+    // root is not referenced by any parent
+    const rootObj = rto._objectsPool.get('root');
+    expectParentRefs(rootObj, {});
+
+    // map:wrapper@1000 is now a child of root at key "wrapper"
+    const wrapperObj = rto._objectsPool.get('map:wrapper@1000');
+    expectParentRefs(wrapperObj, { root: ['wrapper'] });
+
+    // counter:abc@1000 is now a child of map:wrapper@1000, NOT of root
+    const counterObjAfter = rto._objectsPool.get('counter:abc@1000');
+    expectParentRefs(counterObjAfter, { 'map:wrapper@1000': ['moved_counter'] });
+  });
+
+  // UTS: objects/unit/RTO5c10/empty-sync-parent-refs-0
+  it('RTO5c10 - empty sync leaves root with empty parentReferences', async function () {
+    const { channel, mockWs } = await setupManualChannel('test-RTO5c10-empty', {
+      onMessageFromClient: (msg, ws) => {
+        if (msg.action === PM_ACTION.ATTACH) {
+          ws.active_connection!.send_to_client({
+            action: PM_ACTION.ATTACHED,
+            channel: msg.channel,
+            channelSerial: 'sync1:cursor',
+            flags: HAS_OBJECTS,
+          });
+          // First sync: root has a child counter
+          ws.active_connection!.send_to_client(
+            buildObjectSyncMessage(msg.channel, 'sync1:', [
+              buildObjectState('root', { aaa: 't:0' }, {
+                map: {
+                  semantics: MAP_SEMANTICS_LWW,
+                  entries: {
+                    child: { data: { objectId: 'counter:child@1000' }, timeserial: 't:0' },
+                  },
+                },
+                createOp: mapCreateOp('root'),
+              }),
+              buildObjectState('counter:child@1000', { aaa: 't:0' }, {
+                counter: { count: 1 },
+                createOp: counterCreateOp('counter:child@1000', 1),
+              }),
+            ]),
+          );
+        }
+      },
+    });
+
+    const root = await channel.object.get();
+
+    const rto = getRealtimeObject(channel);
+    expect(rto._state).to.equal('synced');
+
+    // Verify parentReferences are populated after first sync
+    const childObj = rto._objectsPool.get('counter:child@1000');
+    expect(childObj).to.exist;
+    expectParentRefs(childObj, { root: ['child'] });
+
+    // Empty sync: ATTACHED without HAS_OBJECTS
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ATTACHED,
+      channel: 'test-RTO5c10-empty',
+      flags: 0,
+    });
+    await flushAsync();
+
+    expect(rto._state).to.equal('synced');
+
+    // counter:child@1000 was removed from pool (RTO4b1)
+    expect(rto._objectsPool.get('counter:child@1000')).to.be.undefined;
+
+    // root exists with empty data and empty parentReferences
+    const rootObj = rto._objectsPool.get('root');
+    expect(rootObj).to.exist;
+    expectParentRefs(rootObj, {});
+    expect(root.size()).to.equal(0);
   });
 });

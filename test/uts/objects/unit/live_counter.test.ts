@@ -1,7 +1,7 @@
 /**
  * UTS: LiveCounter Tests
  *
- * Spec points: RTLC1, RTLC3, RTLC4, RTLC6, RTLC7, RTLC8, RTLC9, RTLC14, RTLC16, RTLO3, RTLO4a, RTLO4e, RTLO5, RTLO6
+ * Spec points: RTLC1, RTLC3, RTLC4, RTLC6, RTLC7, RTLC8, RTLC9, RTLC14, RTLC16, RTLO3, RTLO4a, RTLO4b4d, RTLO4b4e, RTLO4e, RTLO5, RTLO6
  * Source: uts/objects/unit/live_counter.md
  *
  * Tests the LiveCounter CRDT data structure: increment, create merge,
@@ -68,6 +68,23 @@ function makeObjectMessage(client: any, values: any): ObjectMessage {
   return ObjectMessage.fromValues(values, client.Utils, client.MessageEncoding);
 }
 
+/**
+ * Helper to capture the update passed to notifyUpdated() during applyOperation().
+ * Since applyOperation() returns boolean, we intercept notifyUpdated to capture the
+ * internal update object for assertions on objectMessage, tombstone, etc.
+ */
+function captureNotifyUpdated(counter: LiveCounter): { getUpdate: () => any } {
+  let capturedUpdate: any = undefined;
+  const origNotify = (counter as any).notifyUpdated.bind(counter);
+  (counter as any).notifyUpdated = (update: any) => {
+    capturedUpdate = update;
+    origNotify(update);
+  };
+  return {
+    getUpdate: () => capturedUpdate,
+  };
+}
+
 describe('uts/objects/unit/live_counter', function () {
   afterEach(function () {
     restoreAll();
@@ -100,6 +117,7 @@ describe('uts/objects/unit/live_counter', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC9-basic');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
     const msg = makeObjectMessage(client, {
       serial: '01',
       siteCode: 'site1',
@@ -114,6 +132,10 @@ describe('uts/objects/unit/live_counter', function () {
 
     expect((counter as any)._dataRef.data).to.equal(5);
     expect(result).to.equal(true);
+    const update = capture.getUpdate();
+    expect(update.noop).to.not.equal(true);
+    expect(update.update.amount).to.equal(5);
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // UTS: objects/unit/RTLC9/counter-inc-negative-0
@@ -121,6 +143,7 @@ describe('uts/objects/unit/live_counter', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC9-neg');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
     // Pre-set state
     (counter as any)._dataRef.data = 10;
     (counter as any)._siteTimeserials = { site1: '00' };
@@ -138,6 +161,9 @@ describe('uts/objects/unit/live_counter', function () {
     counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect((counter as any)._dataRef.data).to.equal(7);
+    const update = capture.getUpdate();
+    expect(update.update.amount).to.equal(-3);
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // UTS: objects/unit/RTLC9/counter-inc-missing-number-0
@@ -203,6 +229,7 @@ describe('uts/objects/unit/live_counter', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC8-merge');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -219,6 +246,9 @@ describe('uts/objects/unit/live_counter', function () {
     expect((counter as any)._dataRef.data).to.equal(42);
     expect((counter as any)._createOperationIsMerged).to.equal(true);
     expect(result).to.equal(true);
+    const update = capture.getUpdate();
+    expect(update.update.amount).to.equal(42);
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // UTS: objects/unit/RTLC8/counter-create-already-merged-0
@@ -469,6 +499,7 @@ describe('uts/objects/unit/live_counter', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLO5');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
     (counter as any)._dataRef.data = 42;
     (counter as any)._siteTimeserials = { site1: '00' };
 
@@ -489,6 +520,10 @@ describe('uts/objects/unit/live_counter', function () {
     expect((counter as any)._dataRef.data).to.equal(0);
     expect(counter.tombstonedAt()).to.equal(1700000000000);
     expect(result).to.equal(true);
+    const update = capture.getUpdate();
+    expect(update.update.amount).to.equal(-42);
+    expect(update.tombstone).to.equal(true);
+    expect(update.objectMessage).to.equal(msg);
   });
 
   // =========================================================================
@@ -641,6 +676,7 @@ describe('uts/objects/unit/live_counter', function () {
     expect((counter as any)._siteTimeserials).to.deep.equal({ site2: '05' });
     expect((counter as any)._createOperationIsMerged).to.equal(false);
     expect((update as any).update.amount).to.equal(40);
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // UTS: objects/unit/RTLC6/replace-data-with-create-op-0
@@ -668,6 +704,7 @@ describe('uts/objects/unit/live_counter', function () {
     expect((counter as any)._dataRef.data).to.equal(150);
     expect((counter as any)._createOperationIsMerged).to.equal(true);
     expect((update as any).update.amount).to.equal(150);
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // UTS: objects/unit/RTLC6e/replace-data-tombstoned-noop-0
@@ -725,6 +762,8 @@ describe('uts/objects/unit/live_counter', function () {
     expect(counter.isTombstoned()).to.equal(true);
     expect((counter as any)._dataRef.data).to.equal(0);
     expect((update as any).update.amount).to.equal(-30);
+    expect((update as any).tombstone).to.equal(true);
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // UTS: objects/unit/RTLC6/replace-data-missing-count-0
@@ -747,6 +786,7 @@ describe('uts/objects/unit/live_counter', function () {
 
     expect((counter as any)._dataRef.data).to.equal(0);
     expect((update as any).update.amount).to.equal(-42);
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // =========================================================================
@@ -772,6 +812,7 @@ describe('uts/objects/unit/live_counter', function () {
     const update = counter.overrideWithObjectState(stateMsg);
 
     expect((update as any).update.amount).to.equal(55);
+    expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
   // =========================================================================

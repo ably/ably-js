@@ -5,7 +5,7 @@
  * Source: uts/objects/unit/path_object.md
  *
  * Tests PathObject navigation, value resolution, instance wrapping,
- * entries/keys/values iteration, size, compact, and compactJson.
+ * entries (RTPO9), keys (RTPO10), values (RTPO11) iteration, size, compact, and compactJson.
  */
 
 import { expect } from 'chai';
@@ -159,6 +159,52 @@ describe('uts/objects/unit/path_object', function () {
 
     const entries = [...root.get('score').entries()];
     expect(entries).to.have.length(0);
+  });
+
+  // UTS: objects/unit/RTPO10/keys-returns-array-0
+  it('RTPO10 - keys() returns key strings for LiveMap', async function () {
+    const { root } = await setupSyncedChannel('test-RTPO10');
+
+    const keys = [...root.keys()];
+    expect(keys).to.be.an('array');
+    expect(keys).to.have.length(7);
+    expect(keys).to.include('name');
+    expect(keys).to.include('profile');
+    expect(keys).to.include('score');
+  });
+
+  // UTS: objects/unit/RTPO10d/keys-non-map-empty-0
+  it('RTPO10d - keys() returns empty iterator for non-LiveMap', async function () {
+    const { root } = await setupSyncedChannel('test-RTPO10d');
+
+    const keys = [...root.get('score').keys()];
+    expect(keys).to.be.an('array');
+    expect(keys).to.have.length(0);
+  });
+
+  // UTS: objects/unit/RTPO11/values-returns-array-0
+  it('RTPO11 - values() returns PathObject children for LiveMap', async function () {
+    const { root } = await setupSyncedChannel('test-RTPO11');
+
+    const vals = [...root.values()];
+    expect(vals).to.be.an('array');
+    expect(vals).to.have.length(7);
+    const paths: Record<string, boolean> = {};
+    for (const v of vals) {
+      paths[v.path()] = true;
+    }
+    expect(paths['name']).to.equal(true);
+    expect(paths['profile']).to.equal(true);
+    expect(paths['score']).to.equal(true);
+  });
+
+  // UTS: objects/unit/RTPO11d/values-non-map-empty-0
+  it('RTPO11d - values() returns empty iterator for non-LiveMap', async function () {
+    const { root } = await setupSyncedChannel('test-RTPO11d');
+
+    const vals = [...root.get('score').values()];
+    expect(vals).to.be.an('array');
+    expect(vals).to.have.length(0);
   });
 
   // UTS: objects/unit/RTPO12/size-count-0

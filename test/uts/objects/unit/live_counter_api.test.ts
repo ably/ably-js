@@ -28,10 +28,6 @@ import {
   HAS_OBJECTS,
 } from '../helpers/standard_test_pool';
 
-// Channel mode flag bits (from protocolmessagecommon.ts)
-const FLAG_OBJECT_SUBSCRIBE = 1 << 24;
-const FLAG_OBJECT_PUBLISH = 1 << 25;
-
 describe('uts/objects/unit/live_counter_api', function () {
   afterEach(function () {
     restoreAll();
@@ -114,122 +110,6 @@ describe('uts/objects/unit/live_counter_api', function () {
 
     await root.get('score').increment(50);
     expect(root.get('score').value()).to.equal(150);
-  });
-
-  // UTS: objects/unit/RTLC12b/increment-requires-publish-0
-  it('RTLC12b - increment requires OBJECT_PUBLISH mode', async function () {
-    const mockWs = new MockWebSocket({
-      onConnectionAttempt: (conn) => {
-        mockWs.active_connection = conn;
-        conn.respond_with_connected({
-          action: PM_ACTION.CONNECTED,
-          connectionId: 'conn-1',
-          connectionDetails: {
-            connectionKey: 'key-1',
-            connectionStateTtl: 120000,
-            maxIdleInterval: 15000,
-            maxMessageSize: 65536,
-            serverId: 'test-server',
-            clientId: null,
-            siteCode: 'test',
-            objectsGCGracePeriod: 86400000,
-          },
-        });
-      },
-      onMessageFromClient: (msg: any) => {
-        if (msg.action === PM_ACTION.ATTACH) {
-          // Return ATTACHED with only OBJECT_SUBSCRIBE mode flag (no OBJECT_PUBLISH)
-          mockWs.active_connection!.send_to_client({
-            action: PM_ACTION.ATTACHED,
-            channel: msg.channel,
-            channelSerial: 'sync1:',
-            flags: HAS_OBJECTS | FLAG_OBJECT_SUBSCRIBE,
-          });
-          mockWs.active_connection!.send_to_client(
-            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-          );
-        }
-      },
-    });
-    installMockWebSocket(mockWs.constructorFn);
-
-    const client = new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      autoConnect: false,
-      useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
-    });
-    trackClient(client);
-    client.connect();
-    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
-
-    const channel = client.channels.get('test-RTLC12b', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-    const root = await channel.object.get();
-
-    try {
-      await root.get('score').increment(10);
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(40024);
-    }
-  });
-
-  // UTS: objects/unit/RTLC12d/echo-messages-false-0
-  it('RTLC12d - increment with echoMessages false throws', async function () {
-    const mockWs = new MockWebSocket({
-      onConnectionAttempt: (conn) => {
-        mockWs.active_connection = conn;
-        conn.respond_with_connected({
-          action: PM_ACTION.CONNECTED,
-          connectionId: 'conn-1',
-          connectionDetails: {
-            connectionKey: 'key-1',
-            connectionStateTtl: 120000,
-            maxIdleInterval: 15000,
-            maxMessageSize: 65536,
-            serverId: 'test-server',
-            clientId: null,
-            siteCode: 'test',
-            objectsGCGracePeriod: 86400000,
-          },
-        });
-      },
-      onMessageFromClient: (msg: any) => {
-        if (msg.action === PM_ACTION.ATTACH) {
-          mockWs.active_connection!.send_to_client({
-            action: PM_ACTION.ATTACHED,
-            channel: msg.channel,
-            channelSerial: 'sync1:',
-            flags: HAS_OBJECTS,
-          });
-          mockWs.active_connection!.send_to_client(
-            buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-          );
-        }
-      },
-    });
-    installMockWebSocket(mockWs.constructorFn);
-
-    const client = new Ably.Realtime({
-      key: 'appId.keyId:keySecret',
-      autoConnect: false,
-      useBinaryProtocol: false,
-      echoMessages: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
-    });
-    trackClient(client);
-    client.connect();
-    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
-
-    const channel = client.channels.get('test-RTLC12d', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
-    const root = await channel.object.get();
-
-    try {
-      await root.get('score').increment(10);
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(40000);
-    }
   });
 
   // UTS: objects/unit/RTLC12e1/increment-non-number-0

@@ -4,8 +4,10 @@
  * Source: uts/objects/helpers/standard_test_pool.md
  *
  * Provides builder functions for constructing protocol/object messages,
- * a standard fixture tree (STANDARD_POOL_OBJECTS), and setupSyncedChannel
- * for mock WebSocket tests.
+ * a standard fixture tree (STANDARD_POOL_OBJECTS), setupSyncedChannel
+ * for mock WebSocket tests, buildObjectMessageWithState for wrapping
+ * state objects into ObjectMessages, and buildPublicObjectMessage for
+ * constructing public API ObjectMessages with string-based actions.
  */
 
 import { MockWebSocket } from '../../mock_websocket';
@@ -20,6 +22,7 @@ export const PM_ACTION = {
   ERROR: 9,
   ATTACH: 10,
   ATTACHED: 11,
+  DETACH: 12,
   DETACHED: 13,
   OBJECT: 19,
   OBJECT_SYNC: 20,
@@ -190,6 +193,52 @@ export function buildObjectState(
   if (opts.counter != null) state.counter = opts.counter;
   if (opts.createOp != null) state.createOp = opts.createOp;
   return { object: state };
+}
+
+// --- ObjectMessage wrapper (wraps a plain state into an ObjectMessage) ---
+
+export function buildObjectMessageWithState(objectState: any) {
+  return { object: objectState };
+}
+
+// --- Public API ObjectMessage builder ---
+
+const OBJ_OP_ACTION_STRINGS: Record<number, string> = {
+  [OBJ_OP.MAP_CREATE]: 'map.create',
+  [OBJ_OP.MAP_SET]: 'map.set',
+  [OBJ_OP.MAP_REMOVE]: 'map.remove',
+  [OBJ_OP.COUNTER_CREATE]: 'counter.create',
+  [OBJ_OP.COUNTER_INC]: 'counter.inc',
+  [OBJ_OP.OBJECT_DELETE]: 'object.delete',
+  [OBJ_OP.MAP_CLEAR]: 'map.clear',
+};
+
+export function buildPublicObjectMessage(objectMessage: any, channelName: string) {
+  const op = objectMessage.operation;
+  const publicOp: any = {
+    action: OBJ_OP_ACTION_STRINGS[op.action],
+    objectId: op.objectId,
+  };
+  if (op.mapSet) publicOp.mapSet = op.mapSet;
+  if (op.mapRemove) publicOp.mapRemove = op.mapRemove;
+  if (op.counterInc) publicOp.counterInc = op.counterInc;
+  if (op.objectDelete) publicOp.objectDelete = op.objectDelete;
+  if (op.mapClear) publicOp.mapClear = op.mapClear;
+  if (op.mapCreate) publicOp.mapCreate = op.mapCreate;
+  if (op.counterCreate) publicOp.counterCreate = op.counterCreate;
+
+  return {
+    id: objectMessage.id,
+    clientId: objectMessage.clientId,
+    connectionId: objectMessage.connectionId,
+    timestamp: objectMessage.timestamp,
+    channel: channelName,
+    serial: objectMessage.serial,
+    serialTimestamp: objectMessage.serialTimestamp,
+    siteCode: objectMessage.siteCode,
+    extras: objectMessage.extras,
+    operation: publicOp,
+  };
 }
 
 // --- Standard test pool fixtures ---
