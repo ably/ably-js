@@ -193,7 +193,6 @@
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
     "speccoveragereport": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/specCoverageReport.ts && esr scripts/specCoverageReport.ts",
-    "hintcoverage": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/hint-coverage.ts && esr scripts/hint-coverage.ts",
     "process-private-api-data": "tsc --noEmit --esModuleInterop --strictNullChecks scripts/processPrivateApiData/run.ts && esr scripts/processPrivateApiData/run.ts",
     "docs": "typedoc"
   }
