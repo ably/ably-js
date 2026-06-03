@@ -200,8 +200,7 @@ class Channels extends EventEmitter {
     } else if (channelOptions) {
       if (channel._shouldReattachToSetOptions(channelOptions, channel.channelOptions)) {
         throw new ErrorInfo({
-          message:
-            'Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use RealtimeChannel.setOptions() instead.',
+          message: 'Channels.get() cannot be used to set channel options that would cause the channel to reattach.',
           code: 40000,
           statusCode: 400,
           hint: 'channels.get(name) returns the existing channel - to change params or modes, call channel.setOptions(opts) on the returned instance (it will re-attach if the new options differ from current).',

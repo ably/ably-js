@@ -97,8 +97,7 @@ class BaseClient {
         });
       } else if (normalOptions.clientId === '*') {
         throw new ErrorInfo({
-          message:
-            'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
+          message: 'Can’t use "*" as a clientId as that string is reserved.',
           code: 40012,
           statusCode: 400,
           hint: 'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',

@@ -1955,7 +1955,7 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 403,
         cause: err,
-        hint: 'Token authorization was refused with 403. This can be your authUrl/authCallback rejecting the request, or the Ably server refusing the resulting TokenRequest (e.g. when the request asks for capabilities outside the API key). Inspect cause for the underlying error.',
+        hint: 'This can be your authUrl/authCallback rejecting the request, or the Ably server refusing the resulting TokenRequest (e.g. when the request asks for capabilities outside the API key). Inspect cause for the underlying error.',
       });
       this.notifyState({ state: 'failed', error: wrapped });
     } else {
@@ -1966,7 +1966,7 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 401,
         cause: err,
-        hint: 'Your authUrl/authCallback could not be reached or returned an error. Check network connectivity to the auth endpoint and that it returns a valid token shape; the underlying error is in cause.',
+        hint: 'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape; the underlying error is in cause.',
       });
       this.notifyState({ state: this.state.failState as string, error: wrapped });
     }

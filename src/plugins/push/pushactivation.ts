@@ -261,7 +261,7 @@ export class ActivationStateMachine {
           message: 'registerCallback did not return deviceRegistration',
           code: 40000,
           statusCode: 400,
-          hint: 'Your registerCallback must invoke its callback with (null, deviceRegistration). Returning undefined or null in the second argument fails activation.',
+          hint: 'Your registerCallback must invoke its callback with (null, deviceRegistration).',
         });
         this.handleEvent(new GettingDeviceRegistrationFailed(err));
         return;

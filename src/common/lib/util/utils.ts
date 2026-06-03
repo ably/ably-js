@@ -486,7 +486,7 @@ export function matchDerivedChannel(name: string) {
       message: `cannot use a derived option with a ${match[2]} channel`,
       code: 40010,
       statusCode: 400,
-      hint: `A "${match[2]}" channel already has a qualifier; derived options like filter= cannot be layered on top. Use a base channel name instead.`,
+      hint: `Use a base channel name instead, without the "${match[2]}" qualifier.`,
     });
   }
   // Return match values to be added to derive channel quantifier.

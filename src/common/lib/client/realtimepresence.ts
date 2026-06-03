@@ -160,7 +160,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must have been specified to enter or leave a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Anonymous clients cannot publish presence. Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(otherId) - leaveClient on behalf of a different identity requires a wildcard clientId on your API key/token.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(otherId) - leaveClient on behalf of a different identity requires a wildcard clientId on your API key/token.',
       });
     }
     return this.leaveClient(undefined, data);
@@ -202,7 +202,7 @@ class RealtimePresence extends EventEmitter {
         throw new PartialErrorInfo({
           message: 'Unable to leave presence channel (incompatible state)',
           code: 90001,
-          hint: 'The channel is in "initialized" or "failed" state, so the client is not currently a presence member. From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.',
+          hint: 'From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.',
         });
       }
       default:
@@ -429,7 +429,7 @@ class RealtimePresence extends EventEmitter {
           code: 91004,
           statusCode: 400,
           cause: err,
-          hint: 'After a connection recovery the SDK could not re-enter this client into presence. Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.',
+          hint: 'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.',
         });
         Logger.logAction(
           this.logger,
