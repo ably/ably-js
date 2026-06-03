@@ -32,7 +32,7 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
       message: 'User denied permission to send notifications',
       code: 40000,
       statusCode: 400,
-      hint: 'The browser denied the Notification permission prompt. The user must accept notifications before push activation can complete; surface a UI explaining the value before requesting again.',
+      hint: 'Surface a UI explaining the value of notifications, then request permission again; push activation can only complete once the user accepts.',
     });
     machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
     return;

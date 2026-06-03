@@ -151,7 +151,7 @@ export class PaginatedResult<T> {
       message: 'No link to the first page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'Check hasFirst() before calling first(). Empty result sets and single-page responses have no first-page link.',
+      hint: 'Check hasFirst() before calling first().',
     });
   }
 
@@ -164,7 +164,7 @@ export class PaginatedResult<T> {
       message: 'No link to the current page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'Check hasCurrent() before calling current(). The current-page link is only set after at least one page has been fetched.',
+      hint: 'Check hasCurrent() before calling current().',
     });
   }
 
