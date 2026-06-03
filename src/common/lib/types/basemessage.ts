@@ -221,7 +221,7 @@ export async function decodeData(
                 message: 'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
                 code: 40019,
                 statusCode: 400,
-                hint: 'You enabled the delta channel option but did not provide the Vcdiff plugin. Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.',
+                hint: 'Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.',
               });
             }
             if (typeof Uint8Array === 'undefined') {

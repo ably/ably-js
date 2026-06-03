@@ -155,8 +155,7 @@ class Auth {
     } else {
       /* Basic auth */
       if (!options.key) {
-        const msg =
-          'No authentication options provided; need one of: key, authUrl, or authCallback (or for testing only, token or tokenDetails)';
+        const msg = 'No authentication options provided';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth()', msg);
         throw new ErrorInfo({
           message: msg,
@@ -685,7 +684,7 @@ class Auth {
               message: 'Token string is empty',
               code: 40170,
               statusCode: 401,
-              hint: 'Your authCallback returned an empty string. Return a non-empty token string, or a TokenDetails/TokenRequest object.',
+              hint: 'Return a non-empty token string, or a TokenDetails/TokenRequest object.',
             });
             reject(err);
           } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
@@ -702,7 +701,7 @@ class Auth {
               message: 'Token string was literal null/undefined',
               code: 40170,
               statusCode: 401,
-              hint: 'Your authCallback stringified a null/undefined token. Return the token itself, not "undefined"/"null"; callbacks that have no value to return should pass an error instead.',
+              hint: 'Return the token itself, not "undefined"/"null"; callbacks that have no value to return should pass an error instead.',
             });
             reject(err);
           } else if (
@@ -713,7 +712,7 @@ class Auth {
               message: 'Token was double-encoded',
               code: 40170,
               statusCode: 401,
-              hint: 'The endpoint returned a JSON-encoded string starting with `{`, but the Content-Type was not application/jwt - likely a stringified TokenDetails. Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
+              hint: 'Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
             });
             reject(err);
           } else {
@@ -1055,8 +1054,7 @@ class Auth {
       });
     } else if (clientId === '*') {
       throw new ErrorInfo({
-        message:
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)',
+        message: 'Can’t use "*" as a clientId as that string is reserved',
         code: 40012,
         statusCode: 400,
         hint: 'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client, or pass it to authorize() as a tokenParam. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',

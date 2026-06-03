@@ -54,7 +54,7 @@ class Push {
           message: 'Activation already in progress',
           code: 40000,
           statusCode: 400,
-          hint: 'Await the in-flight push.activate() before calling it again. Concurrent activations are not supported.',
+          hint: 'Await the in-flight push.activate() before calling it again.',
         });
         reject(err);
         return;
@@ -94,7 +94,7 @@ class Push {
           message: 'Deactivation already in progress',
           code: 40000,
           statusCode: 400,
-          hint: 'Await the in-flight push.deactivate() before calling it again. Concurrent deactivations are not supported.',
+          hint: 'Await the in-flight push.deactivate() before calling it again.',
         });
         reject(err);
         return;

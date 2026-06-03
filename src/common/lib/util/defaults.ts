@@ -277,7 +277,7 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
       message: 'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
       code: 40106,
       statusCode: 400,
-      hint: 'These are mutually exclusive legacy host options. Replace all of them with the v2 `endpoint` option, which subsumes both.',
+      hint: 'Replace all of them with the v2 `endpoint` option, which subsumes both.',
     });
   }
 }
