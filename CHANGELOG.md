@@ -2,6 +2,22 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.22.0](https://github.com/ably/ably-js/tree/2.22.0) (2026-06-05)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.21.0...2.22.0)
+
+### What's Changed
+
+- Make `agent` channel option additive in React hooks [#2237](https://github.com/ably/ably-js/pull/2237)
+- Add missing `RestAnnotation#delete` typings [#2218](https://github.com/ably/ably-js/pull/2218)
+- Throw on legacy v1 `ably/promises` and `ably/callbacks` imports [#2227](https://github.com/ably/ably-js/pull/2227)
+- Mark v1 callback API as deprecated and throw on v1 callback shapes [#2226](https://github.com/ably/ably-js/pull/2226)
+- Mark public `ObjectMessage.id` and `.timestamp` as optional [#2230](https://github.com/ably/ably-js/pull/2230)
+- Add `PathEvent.isOriginalTarget` as alternative to `bubbles` for LiveObjects path subscriptions [#2223](https://github.com/ably/ably-js/pull/2223)
+- Introduce `Path` type alias for path arrays in LiveObjects code [#2222](https://github.com/ably/ably-js/pull/2222)
+- Change `channels#release` semantics to implicit detach rather than error on unexpected channel state [#2190](https://github.com/ably/ably-js/pull/2190)
+- Bump `ws` to 8.20.1 to resolve security advisory [#2225](https://github.com/ably/ably-js/pull/2225)
+
 ## [2.21.0](https://github.com/ably/ably-js/tree/2.21.0) (2026-03-19)
 
 ### New features
