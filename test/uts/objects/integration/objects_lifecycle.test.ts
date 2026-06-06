@@ -35,6 +35,9 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     await teardownSandbox();
   });
 
+  ['json', 'msgpack'].forEach((protocol) => {
+  describe(`(${protocol})`, function () {
+
   /**
    * RTO23 - get() waits for sync and returns PathObject
    *
@@ -49,7 +52,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(client);
@@ -83,7 +86,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientA);
@@ -92,7 +95,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientB);
@@ -145,7 +148,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientA);
@@ -154,7 +157,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientB);
@@ -204,7 +207,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientA);
@@ -213,7 +216,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientB);
@@ -275,7 +278,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientA);
@@ -284,7 +287,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(clientB);
@@ -337,7 +340,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     const restClient = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
 
@@ -352,7 +355,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     });
     trackClient(client);
@@ -368,4 +371,6 @@ describe('uts/objects/integration/objects_lifecycle', function () {
 
     await closeAndWait(client);
   });
+  }); // describe(protocol)
+  }); // forEach
 });

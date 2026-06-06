@@ -35,6 +35,9 @@ describe('uts/objects/integration/objects_sync', function () {
     await teardownSandbox();
   });
 
+  ['json', 'msgpack'].forEach((protocol) => {
+  describe(`(${protocol})`, function () {
+
   /**
    * RTO4, RTO5 - Attach triggers sync, get() resolves after SYNCED
    *
@@ -49,7 +52,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     } as any);
     trackClient(client);
@@ -83,7 +86,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     } as any);
     trackClient(clientA);
@@ -92,7 +95,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     } as any);
     trackClient(clientB);
@@ -145,7 +148,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     } as any);
     trackClient(client);
@@ -219,7 +222,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol: protocol === 'msgpack',
       plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
     } as any);
     trackClient(client);
@@ -240,4 +243,6 @@ describe('uts/objects/integration/objects_sync', function () {
 
     await closeAndWait(client);
   });
+  }); // describe(protocol)
+  }); // forEach
 });
