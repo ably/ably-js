@@ -353,12 +353,13 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
    * ERROR (action 9) to transition to FAILED. A PathObject mutation (which
    * uses publishAndApply internally) should fail.
    *
-   * DEVIATION: UTS spec expects error code 92008, but the ably-js implementation
-   * throws 90001 (invalid channel state) because set() calls
-   * throwIfInvalidWriteApiConfiguration() before reaching publishAndApply's
-   * sync-wait logic. The 92008 path is only reachable when the channel
-   * transitions to FAILED *during* the sync wait, but in this test sync has
-   * already completed before the channel enters FAILED. We assert 90001 instead.
+   * DEVIATION: UTS spec expects error code 92008 with error.cause.code == 90000,
+   * but the ably-js implementation throws 90001 (invalid channel state) because
+   * set() calls throwIfInvalidWriteApiConfiguration() before reaching
+   * publishAndApply's sync-wait logic. The 92008 path is only reachable when
+   * the channel transitions to FAILED *during* the sync wait, but in this test
+   * sync has already completed before the channel enters FAILED. We assert
+   * 90001 instead, and the error has no .cause property.
    */
   // UTS: objects/proxy/RTO20e/publish-fails-on-channel-failed-0
   it('RTO20e - publishAndApply fails when channel enters FAILED', async function () {
