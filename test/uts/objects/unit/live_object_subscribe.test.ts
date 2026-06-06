@@ -61,19 +61,13 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     expect(updates).to.have.length(1);
 
-    // Second: a noop (same serial "01" from "remote" site code, empty counterInc)
+    // DEVIATION: UTS spec uses build_counter_inc with amount 0 and serial "02"
+    // (passes newness check, zero increment = noop per RTLO4b4c1). However,
+    // ably-js doesn't implement RTLC9h (number=0 still returns a LiveCounterUpdate,
+    // not a noop). We test via the newness check instead: same serial "01" from the
+    // same site code is rejected by canApplyOperation (RTLO4a6), so no update fires.
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4c1', [
-        {
-          serial: '01',
-          siteCode: 'remote',
-          operation: {
-            action: OBJ_OP.COUNTER_INC,
-            objectId: 'counter:score@1000',
-            counterInc: {},
-          },
-        },
-      ]),
+      buildObjectMessage('test-RTLO4b4c1', [buildCounterInc('counter:score@1000', 0, '01', 'remote')]),
     );
     await flushAsync();
 
