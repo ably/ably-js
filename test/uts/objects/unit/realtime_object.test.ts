@@ -715,8 +715,17 @@ describe('uts/objects/unit/realtime_object', function () {
     );
     await flushAsync();
 
-    // After re-sync, the score is back to 100 (from pool state)
     expect(root.get('score').value()).to.equal(100);
+
+    // Replay the same serial ("t:1:0") that was used for apply-on-ACK.
+    // If appliedOnAckSerials was cleared, this applies normally.
+    // If NOT cleared, dedup (RTO9a3) would reject it and score stays 100.
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO5c9', [buildCounterInc('counter:score@1000', 10, 't:1:0', 'test')]),
+    );
+    await flushAsync();
+
+    expect(root.get('score').value()).to.equal(110);
   });
 
   // UTS: objects/unit/RTO20/subscription-fires-on-ack-apply-0
