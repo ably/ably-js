@@ -12,8 +12,6 @@
  * - RTO10/RTO10b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
  *   not Platform.Config.setTimeout. Tests stub Date.now and use a short
  *   gcInterval to trigger GC, then restore originals.
- * - RTO20f (siteTimeserials): _siteTimeserials is protected on LiveObject
- *   and _value is private on DefaultInstance. Test accesses via (instance as any)._value._siteTimeserials.
  * - RTO17-RTO18 scenario "re-attach after detach": ably-js channel goes through
  *   SUSPENDED (not directly to DETACHED) on server DETACHED, so this scenario
  *   is verified via a fresh setupSyncedChannel + server-initiated ATTACHED instead.
@@ -656,16 +654,22 @@ describe('uts/objects/unit/realtime_object', function () {
 
   // UTS: objects/unit/RTO20f/ack-no-site-timeserials-update-0
   it('RTO20f - Apply-on-ACK does not update siteTimeserials', async function () {
-    const { root } = await setupSyncedChannel('test-RTO20f');
-
-    const counterInstance = root.get('score').instance();
-    const siteSerialsBefore = { ...(counterInstance as any)._value._siteTimeserials };
+    const { root, mockWs } = await setupSyncedChannel('test-RTO20f');
 
     await root.get('score').increment(10);
+    expect(root.get('score').value()).to.equal(110);
 
-    const siteSerialsAfter = { ...(counterInstance as any)._value._siteTimeserials };
+    // Send inbound COUNTER_INC from siteCode "test" with serial "t:0:0".
+    // Uses a different serial than the ACK ("t:1:0") to avoid appliedOnAckSerials
+    // dedup, but same siteCode. If LOCAL incorrectly set
+    // siteTimeserials["test"] = "t:1:0", "t:0:0" would fail the newness check
+    // (string comparison: "t:0:0" < "t:1:0").
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO20f', [buildCounterInc('counter:score@1000', 10, 't:0:0', 'test')]),
+    );
+    await flushAsync();
 
-    expect(siteSerialsAfter).to.deep.equal(siteSerialsBefore);
+    expect(root.get('score').value()).to.equal(120);
   });
 
   // UTS: objects/unit/RTO20/ack-after-echo-no-double-apply-0
