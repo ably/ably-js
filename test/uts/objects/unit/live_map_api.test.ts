@@ -1,7 +1,7 @@
 /**
  * UTS: LiveMap API Tests
  *
- * Spec points: RTLM5, RTLM10-RTLM13, RTLM20-RTLM21, RTLM24, RTLMV4, RTLCV4
+ * Spec points: RTLM5, RTLM10-RTLM13, RTLM20-RTLM21, RTLMV4, RTLCV4
  * Source: uts/objects/unit/live_map_api.md
  *
  * Tests LiveMap read operations (get, size, entries, keys) and
@@ -9,7 +9,6 @@
  * value type handling, and error cases.
  *
  * Deviations:
- * - RTLM24 (clear) skipped: LiveMap#clear() is not yet implemented in ably-js.
  * - RTLM20/set-invalid-values-table-0: 'symbol' test case uses Symbol('test').
  * - RTLM12 (keys): uses root.instance().keys() since PathObject does not expose keys().
  */
@@ -620,10 +619,4 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(capturedMessages[0].state[0].operation.mapSet.value.bytes).to.equal('AQID');
   });
 
-  // ---------- RTLM24: clear() sends MAP_CLEAR message ----------
-  // Skipped: LiveMap#clear() is not yet implemented in ably-js.
-  // UTS: objects/unit/RTLM24/clear-sends-map-clear-0
-  it.skip('RTLM24 - clear() sends MAP_CLEAR message (not yet implemented)', function () {
-    // Placeholder: LiveMap#clear() does not exist yet.
-  });
 });

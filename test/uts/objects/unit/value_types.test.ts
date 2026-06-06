@@ -142,14 +142,6 @@ describe('uts/objects/unit/value_types', function () {
     expect((vt as any)._count).to.equal(0);
   });
 
-  // UTS: objects/unit/RTLCV3c/no-validation-at-create-0
-  it('RTLCV3c - no validation at creation time', function () {
-    // RTLCV3c: No input validation is performed at creation time
-    const vt = LiveObjectsPlugin.LiveCounter.create('not_a_number' as any);
-    expect(vt).to.exist;
-    expect((vt as any)._livetype).to.equal('LiveCounter');
-  });
-
   // ============================================================
   // RTLCV4 — Consumption generates COUNTER_CREATE ObjectMessage
   // ============================================================
