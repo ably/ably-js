@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.22.1](https://github.com/ably/ably-js/tree/2.22.1) (2026-06-08)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.22.0...2.22.1)
+
+### What's Changed
+
+- Fix v1-callback deprecated overloads breaking mock assignment by changing return type from `never` to `void` [#2239](https://github.com/ably/ably-js/pull/2239)
+
 ## [2.22.0](https://github.com/ably/ably-js/tree/2.22.0) (2026-06-05)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.21.0...2.22.0)
