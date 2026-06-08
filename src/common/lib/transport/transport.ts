@@ -290,7 +290,14 @@ abstract class Transport extends EventEmitter {
     const sinceLast = Date.now() - this.lastActivity;
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
-      const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
+      const connId = this.connectionManager.connectionId;
+      const msg =
+        'No activity seen from Ably in ' +
+        sinceLast +
+        'ms; assuming connection has dropped. ' +
+        'Will disconnect and reconnect automatically (error code: 80003, status: 408' +
+        (connId ? ', connectionId: ' + connId : '') +
+        ')';
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
       this.disconnect(new ErrorInfo(msg, 80003, 408));
     } else {
