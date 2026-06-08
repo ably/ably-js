@@ -2008,7 +2008,7 @@ export declare interface Auth {
     tokenParams: TokenParams | null,
     authOptions: AuthOptions | null,
     callback: StandardCallback<TokenDetails>,
-  ): never;
+  ): void;
   /**
    * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
    *
@@ -2035,7 +2035,7 @@ export declare interface Auth {
     tokenParams: TokenParams | null,
     authOptions: AuthOptions | null,
     callback: StandardCallback<TokenRequest>,
-  ): never;
+  ): void;
   /**
    * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
    *
@@ -2062,7 +2062,7 @@ export declare interface Auth {
     tokenParams: TokenParams | null,
     authOptions: AuthOptions | null,
     callback: StandardCallback<TokenDetails>,
-  ): never;
+  ): void;
   /**
    * Revokes the tokens specified by the provided array of {@link TokenRevocationTargetSpecifier}s. Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked. See the [token revocation docs](https://ably.com/docs/core-features/authentication#token-revocation) for more information.
    *
@@ -2161,7 +2161,7 @@ export declare interface RealtimePresence {
    * @param params - A {@link RealtimePresenceParams} object.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  get(params: RealtimePresenceParams | null, callback: StandardCallback<PresenceMessage[]>): never;
+  get(params: RealtimePresenceParams | null, callback: StandardCallback<PresenceMessage[]>): void;
   /**
    * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
    *
@@ -2182,7 +2182,7 @@ export declare interface RealtimePresence {
    * @param params - A {@link RealtimeHistoryParams} object.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<PresenceMessage>>): never;
+  history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<PresenceMessage>>): void;
   /**
    * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
    *
@@ -2216,7 +2216,7 @@ export declare interface RealtimePresence {
     action: PresenceAction | Array<PresenceAction>,
     listener: messageCallback<PresenceMessage>,
     callback: ErrorCallback,
-  ): never;
+  ): void;
   /**
    * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
    *
@@ -2237,7 +2237,7 @@ export declare interface RealtimePresence {
    * @param data - The payload associated with the presence member.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  enter(data: any, callback: ErrorCallback): never;
+  enter(data: any, callback: ErrorCallback): void;
   /**
    * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceActions.ENTER} event.
    *
@@ -2258,7 +2258,7 @@ export declare interface RealtimePresence {
    * @param data - The payload to update for the presence member.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  update(data: any, callback: ErrorCallback): never;
+  update(data: any, callback: ErrorCallback): void;
   /**
    * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
    *
@@ -2279,7 +2279,7 @@ export declare interface RealtimePresence {
    * @param data - The payload associated with the presence member.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  leave(data: any, callback: ErrorCallback): never;
+  leave(data: any, callback: ErrorCallback): void;
   /**
    * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
    *
@@ -2686,7 +2686,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param listener - An event listener function.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  unsubscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): never;
+  unsubscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): void;
 
   /**
    * A {@link RealtimePresence} object.
@@ -2732,7 +2732,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param params - A {@link RealtimeHistoryParams} object.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<InboundMessage>>): never;
+  history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<InboundMessage>>): void;
   /**
    * Sets the {@link ChannelOptions} for the channel.
    *
@@ -2787,7 +2787,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param listener - An event listener function.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  subscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): never;
+  subscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): void;
   /**
    * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
    *
@@ -2827,7 +2827,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param data - The message payload.
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  publish(name: string, data: any, callback: ErrorCallback): never;
+  publish(name: string, data: any, callback: ErrorCallback): void;
   /**
    * If the channel is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the channel transitions to the given state.
    *
@@ -3530,7 +3530,7 @@ export declare interface Connection
    * ```
    * @param callback - v1 Node-style callback (no longer supported).
    */
-  ping(callback: StandardCallback<number>): never;
+  ping(callback: StandardCallback<number>): void;
   /**
    * If the connection is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the connection transitions to the given state.
    *
