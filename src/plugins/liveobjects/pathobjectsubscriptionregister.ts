@@ -24,10 +24,10 @@ export interface SubscriptionEntry {
 export interface PathEvent {
   /**
    * Candidate paths for surfacing this event to subscriptions, in order of
-   * decreasing priority. For a given subscription, the first candidate path
+   * decreasing preference. For a given subscription, the first candidate path
    * it covers is used as the path of `event.object` passed to its listener.
    */
-  priorityOrderedCandidatePaths: Path[];
+  preferenceOrderedCandidatePaths: Path[];
   /** Object message that caused this event */
   message?: ObjectMessage;
 }
@@ -90,12 +90,12 @@ export class PathObjectSubscriptionRegister {
 
   /**
    * Dispatches a {@link PathEvent} to subscriptions. Each subscription that
-   * covers any of the event's {@link PathEvent.priorityOrderedCandidatePaths}
+   * covers any of the event's {@link PathEvent.preferenceOrderedCandidatePaths}
    * receives at most one notification, at the first covered path.
    */
   notifyPathEvent(event: PathEvent): void {
     for (const subscription of this._subscriptions.values()) {
-      const chosenCoveredPath = event.priorityOrderedCandidatePaths.find((path) =>
+      const chosenCoveredPath = event.preferenceOrderedCandidatePaths.find((path) =>
         this._subscriptionCoversPath(subscription, path),
       );
       if (chosenCoveredPath === undefined) {
