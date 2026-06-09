@@ -114,9 +114,15 @@ class RealtimePresence extends EventEmitter {
     }
     const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
+    // RTP16: send immediately only if the channel is ATTACHED and the connection
+    // is CONNECTED (RTP16d1). Otherwise queue at the channel level, to be sent
+    // when the channel next reaches ATTACHED (RTP5b): RTP16d2 when ATTACHED but
+    // not CONNECTED, RTP16b when ATTACHING/INITIALIZED.
+    if (channel.state === 'attached' && channel.connectionManager.state.state === 'connected') {
+      return channel.sendPresence([wirePresMsg]);
+    }
+
     switch (channel.state) {
-      case 'attached':
-        return channel.sendPresence([wirePresMsg]);
       case 'initialized':
       case 'detached':
         // RTP16b: queue at the channel level only when queueMessages is enabled
@@ -125,6 +131,7 @@ class RealtimePresence extends EventEmitter {
         }
       // eslint-disable-next-line no-fallthrough
       case 'attaching':
+      case 'attached':
         if (channel.client.options.queueMessages) {
           return new Promise((resolve, reject) => {
             this.pendingPresence.push({
@@ -177,11 +184,18 @@ class RealtimePresence extends EventEmitter {
     }
     const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
+    // RTP16: send immediately only if the channel is ATTACHED and the connection
+    // is CONNECTED (RTP16d1); otherwise queue at the channel level (RTP16d2 when
+    // ATTACHED, RTP16b when ATTACHING), to be sent when the channel next reaches
+    // ATTACHED (RTP5b).
+    if (channel.state === 'attached' && channel.connectionManager.state.state === 'connected') {
+      return channel.sendPresence([wirePresMsg]);
+    }
+
     switch (channel.state) {
-      case 'attached':
-        return channel.sendPresence([wirePresMsg]);
       case 'attaching':
-        // RTP16b: queue at the channel level only when queueMessages is enabled
+      case 'attached':
+        // RTP16b / RTP16d2: queue at the channel level only when queueMessages is enabled
         if (channel.client.options.queueMessages) {
           return new Promise((resolve, reject) => {
             this.pendingPresence.push({
