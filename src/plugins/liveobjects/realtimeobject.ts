@@ -568,11 +568,21 @@ export class RealtimeObject {
   private _throwIfMissingChannelMode(expectedMode: 'object_subscribe' | 'object_publish'): void {
     // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2a2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        hint: `Re-create the channel with "${expectedMode}" in modes: realtime.channels.get(name, { modes: [..., "${expectedMode}"] }). If the subsequent attach is rejected by the server, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows your key's capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.`,
+      });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
     if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2b2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        hint: `Re-create the channel with "${expectedMode}" in modes: realtime.channels.get(name, { modes: [..., "${expectedMode}"] }). If the subsequent attach is rejected by the server, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows your key's capabilities.`,
+      });
     }
   }
 

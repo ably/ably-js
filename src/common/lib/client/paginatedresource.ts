@@ -147,7 +147,12 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.first);
     }
 
-    throw new ErrorInfo('No link to the first page of results', 40400, 404);
+    throw new ErrorInfo({
+      message: 'No link to the first page of results',
+      code: 40400,
+      statusCode: 404,
+      hint: 'Check hasFirst() before calling first().',
+    });
   }
 
   async current(): Promise<PaginatedResult<T>> {
@@ -155,7 +160,12 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.current);
     }
 
-    throw new ErrorInfo('No link to the current page of results', 40400, 404);
+    throw new ErrorInfo({
+      message: 'No link to the current page of results',
+      code: 40400,
+      statusCode: 404,
+      hint: 'Check hasCurrent() before calling current().',
+    });
   }
 
   async next(): Promise<PaginatedResult<T> | null> {

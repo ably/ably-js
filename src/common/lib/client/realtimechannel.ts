@@ -31,11 +31,23 @@ interface RealtimeHistoryParams {
 
 function validateChannelOptions(options?: API.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
-    return new ErrorInfo('options.params must be an object', 40000, 400);
+    const err = new ErrorInfo({
+      message: 'options.params must be an object',
+      code: 40000,
+      statusCode: 400,
+      hint: 'Pass an object map of channel params (e.g. { rewind: "1" }), not a string or array.',
+    });
+    return err;
   }
   if (options && 'modes' in options) {
     if (!Array.isArray(options.modes)) {
-      return new ErrorInfo('options.modes must be an array', 40000, 400);
+      const err = new ErrorInfo({
+        message: 'options.modes must be an array',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Pass an array of ChannelMode strings, e.g. { modes: ["publish", "subscribe"] }.',
+      });
+      return err;
     }
     for (let i = 0; i < options.modes.length; i++) {
       const currentMode = options.modes[i];
@@ -44,7 +56,13 @@ function validateChannelOptions(options?: API.ChannelOptions) {
         typeof currentMode !== 'string' ||
         !channelModes.includes(String.prototype.toUpperCase.call(currentMode))
       ) {
-        return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
+        const err = new ErrorInfo({
+          message: 'Invalid channel mode: ' + currentMode,
+          code: 40000,
+          statusCode: 400,
+          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server also enforces this - your token/API-key capability must permit the requested modes on this channel, otherwise the subsequent attach is rejected. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+        });
+        return err;
       }
     }
   }
@@ -173,12 +191,14 @@ class RealtimeChannel extends EventEmitter {
   }
 
   invalidStateError(): ErrorInfo {
-    return new ErrorInfo(
-      'Channel operation failed as channel state is ' + this.state,
-      90001,
-      400,
-      this.errorReason || undefined,
-    );
+    const err = new ErrorInfo({
+      message: 'Channel operation failed as channel state is ' + this.state,
+      code: 90001,
+      statusCode: 400,
+      cause: this.errorReason || undefined,
+      hint: 'Inspect channel.errorReason for the underlying cause. From "failed", call channel.attach() to recover; "suspended" recovers automatically once the underlying connection is re-established.',
+    });
+    return err;
   }
 
   static processListenerArgs(args: unknown[]): any[] {
@@ -271,11 +291,12 @@ class RealtimeChannel extends EventEmitter {
       messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
-      throw new ErrorInfo(
-        'The single-argument form of publish() expects a message object or an array of message objects',
-        40013,
-        400,
-      );
+      throw new ErrorInfo({
+        message: 'The single-argument form of publish() expects a message object or an array of message objects',
+        code: 40013,
+        statusCode: 400,
+        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
+      });
     }
     const maxMessageSize = this.client.options.maxMessageSize;
     // TODO get rid of CipherOptions type assertion, indicates channeloptions types are broken
@@ -283,11 +304,12 @@ class RealtimeChannel extends EventEmitter {
     /* RSL1i */
     const size = getMessagesSize(wireMessages);
     if (size > maxMessageSize) {
-      throw new ErrorInfo(
-        `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
-        40009,
-        400,
-      );
+      throw new ErrorInfo({
+        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        code: 40009,
+        statusCode: 400,
+        hint: 'Split the publish into multiple calls so each batch is under the limit, or contact support to raise maxMessageSize for your app.',
+      });
     }
 
     this.throwIfUnpublishableState();
@@ -417,8 +439,14 @@ class RealtimeChannel extends EventEmitter {
       case 'detached':
         return;
       // RTL5b
-      case 'failed':
-        throw new ErrorInfo('Unable to detach; channel state = failed', 90001, 400);
+      case 'failed': {
+        throw new ErrorInfo({
+          message: 'Unable to detach; channel state = failed',
+          code: 90001,
+          statusCode: 400,
+          hint: 'Release it via channels.release(name) and call channels.get(name) again to start a fresh channel.',
+        });
+      }
       default:
         // RTL5l: if connection is not connected, immediately transition to detached
         if (connectionManager.state.state !== 'connected') {
@@ -504,8 +532,13 @@ class RealtimeChannel extends EventEmitter {
     switch (this.state) {
       case 'initialized':
       case 'detaching':
-      case 'detached':
-        throw new PartialErrorInfo('Unable to sync to channel; not attached', 40000);
+      case 'detached': {
+        // sync() is an internal SDK method, so no fix-it hint here — user/LLM code shouldn't reach this throw.
+        throw new PartialErrorInfo({
+          message: 'Unable to sync to channel; not attached',
+          code: 40000,
+        });
+      }
       default:
     }
     const connectionManager = this.connectionManager;
@@ -933,12 +966,22 @@ class RealtimeChannel extends EventEmitter {
   timeoutPendingState(): void {
     switch (this.state) {
       case 'attaching': {
-        const err = new ErrorInfo('Channel attach timed out', 90007, 408);
+        const err = new ErrorInfo({
+          message: 'Channel attach timed out',
+          code: 90007,
+          statusCode: 408,
+          hint: 'The SDK will retry automatically once the connection is healthy; check connection.state and connection.errorReason.',
+        });
         this.notifyState('suspended', err);
         break;
       }
       case 'detaching': {
-        const err = new ErrorInfo('Channel detach timed out', 90007, 408);
+        const err = new ErrorInfo({
+          message: 'Channel detach timed out',
+          code: 90007,
+          statusCode: 408,
+          hint: 'The channel has reverted to attached; retry detach() once the connection is stable.',
+        });
         this.notifyState('attached', err);
         break;
       }
@@ -1011,14 +1054,20 @@ class RealtimeChannel extends EventEmitter {
 
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
-        throw new ErrorInfo('option untilAttach requires the channel to be attached', 40000, 400);
+        throw new ErrorInfo({
+          message: 'option untilAttach requires the channel to be attached',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await channel.attach() (or channel.whenState("attached")) before calling history({ untilAttach: true }).',
+        });
       }
       if (!this.properties.attachSerial) {
-        throw new ErrorInfo(
-          'untilAttach was specified and channel is attached, but attachSerial is not defined',
-          40000,
-          400,
-        );
+        throw new ErrorInfo({
+          message: 'untilAttach was specified and channel is attached, but attachSerial is not defined',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Re-attach the channel and try again; the SDK could not record an attachSerial from the previous attach.',
+        });
       }
       delete params.untilAttach;
       params.from_serial = this.properties.attachSerial;
@@ -1037,12 +1086,15 @@ class RealtimeChannel extends EventEmitter {
     if (s === 'initialized' || s === 'detached' || s === 'failed') {
       return null;
     }
-    return new ErrorInfo(
-      'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' +
+    const err = new ErrorInfo({
+      message:
+        'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' +
         s,
-      90001,
-      400,
-    );
+      code: 90001,
+      statusCode: 400,
+      hint: 'Call channel.detach() and wait for the channel to reach "detached" before calling channels.release(name).',
+    });
+    return err;
   }
 
   setChannelSerial(channelSerial?: string | null): void {
@@ -1104,11 +1156,12 @@ class RealtimeChannel extends EventEmitter {
     params?: Record<string, any>,
   ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
-      throw new ErrorInfo(
-        'This message lacks a serial and cannot be updated. Make sure you have enabled "Message annotations, updates, and deletes" in channel settings on your dashboard.',
-        40003,
-        400,
-      );
+      throw new ErrorInfo({
+        message: 'This message lacks a serial and cannot be updated',
+        code: 40003,
+        statusCode: 400,
+        hint: 'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
+      });
     }
 
     this.throwIfUnpublishableState();

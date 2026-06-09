@@ -61,7 +61,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _enterImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
+      throw new ErrorInfo({
+        message: 'clientId must be specified to enter a presence channel',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(otherId, data) - this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
+      });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
   }
@@ -73,7 +78,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _updateImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
+      throw new ErrorInfo({
+        message: 'clientId must be specified to update presence data',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(otherId, data) - this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
+      });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
   }
@@ -146,7 +156,12 @@ class RealtimePresence extends EventEmitter {
 
   private async _leaveImpl(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
-      throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
+      throw new ErrorInfo({
+        message: 'clientId must have been specified to enter or leave a presence channel',
+        code: 40012,
+        statusCode: 400,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(otherId) - leaveClient on behalf of a different identity requires a wildcard clientId on your API key/token.',
+      });
     }
     return this.leaveClient(undefined, data);
   }
@@ -184,7 +199,11 @@ class RealtimePresence extends EventEmitter {
       case 'failed': {
         /* we're not attached; therefore we let any entered status
          * timeout by itself instead of attaching just in order to leave */
-        throw new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+        throw new PartialErrorInfo({
+          message: 'Unable to leave presence channel (incompatible state)',
+          code: 90001,
+          hint: 'From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.',
+        });
       }
       default:
         throw channel.invalidStateError();
@@ -210,6 +229,7 @@ class RealtimePresence extends EventEmitter {
           statusCode: 400,
           code: 91005,
           message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+          hint: 'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.',
         });
       }
       return toMessages(this.members);
@@ -239,11 +259,12 @@ class RealtimePresence extends EventEmitter {
         delete params.untilAttach;
         params.from_serial = this.channel.properties.attachSerial;
       } else {
-        throw new ErrorInfo(
-          'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
-          40000,
-          400,
-        );
+        throw new ErrorInfo({
+          message: 'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await channel.attach() (or channel.whenState("attached")) before calling presence.history({ untilAttach: true }).',
+        });
       }
     }
 
@@ -403,7 +424,13 @@ class RealtimePresence extends EventEmitter {
       // RTP17g1: suppress id if the connId has changed
       const id = entry.connectionId === connId ? entry.id : undefined;
       this._enterOrUpdateClient(id, entry.clientId, entry.data, 'enter').catch((err) => {
-        const wrappedErr = new ErrorInfo('Presence auto re-enter failed', 91004, 400, err);
+        const wrappedErr = new ErrorInfo({
+          message: 'Presence auto re-enter failed',
+          code: 91004,
+          statusCode: 400,
+          cause: err,
+          hint: 'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.',
+        });
         Logger.logAction(
           this.logger,
           Logger.LOG_ERROR,

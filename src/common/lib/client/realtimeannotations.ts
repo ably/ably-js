@@ -69,13 +69,15 @@ class RealtimeAnnotations {
       await channel.attach();
     }
 
-    // explicit check for attach state in caes attachOnSubscribe=false
+    // explicit check for attach state in case attachOnSubscribe=false
     if ((this.channel.state === 'attached' && this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
-      throw new ErrorInfo(
-        "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
-        93001,
-        400,
-      );
+      throw new ErrorInfo({
+        message:
+          "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
+        code: 93001,
+        statusCode: 400,
+        hint: 'Re-create the channel with annotation_subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled, and `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+      });
     }
   }
 
