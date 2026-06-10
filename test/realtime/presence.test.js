@@ -197,11 +197,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
-     * With queueMessages disabled, a presence operation on a channel that has not
-     * yet reached the ATTACHED state is rejected rather than queued at the channel
-     * level.
+     * With queueMessages disabled, the presence message on a channel that has not
+     * yet reached the ATTACHED state is not queued and the operation is rejected
+     * (RTP16b). The implicit attach is unaffected (RTP8d).
      *
      * @spec RTP16b
+     * @specpartial RTP8d - the implicit attach still happens
      */
     it('presence_enter_no_queueing', async function () {
       const helper = this.test.helper;
@@ -218,7 +219,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }
         expect(err, 'Check enter is rejected when queueMessages is disabled').to.be.ok;
         expect(err.code).to.equal(90001, 'Check rejection uses the invalid-state error code');
-        expect(channel.state).to.equal('initialized', 'Check channel was neither attached nor queued');
+
+        /* RTP8d: the implicit attach still happens; queueMessages only governs
+         * whether the presence message itself is queued. */
+        await channel.attach();
+        expect(channel.state).to.equal('attached', 'Check the channel still attaches (RTP8d)');
       } finally {
         realtime.close();
       }
@@ -1761,11 +1766,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
-     * Presence operations performed while the connection is not CONNECTED (with the
-     * channel still ATTACHED) are queued at the channel level and sent once the
-     * channel next reaches the ATTACHED state, not via the connection-wide queue.
+     * A presence operation performed while the connection is not CONNECTED (with the
+     * channel still ATTACHED) is, on reconnect, moved off the connection-wide queue
+     * onto the channel and sent only once the channel has re-attached, rather than
+     * flushed before re-attach completes.
      *
-     * @spec RTP16d2
+     * @spec RTL3d2
      * @specpartial RTP5b - queued presence messages are sent once the channel re-attaches
      */
     it('presence_enter_while_disconnected_sent_after_reattach', async function () {
