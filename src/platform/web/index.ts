@@ -17,7 +17,6 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
-import msgpack from './lib/util/msgpack';
 import { defaultBundledRequestImplementations } from './lib/http/request';
 
 const Crypto = createCryptoClass(Config, BufferUtils);
@@ -31,7 +30,10 @@ Platform.WebStorage = WebStorage;
 
 for (const clientClass of [DefaultRest, DefaultRealtime]) {
   clientClass.Crypto = Crypto;
-  clientClass._MsgPack = msgpack;
+  // MsgPack no longer bundled in the browser build. Browsers default to JSON
+  // (preferBinary: false). MsgPack is available as an optional plugin via:
+  //   import { MsgPack } from 'ably/modular';
+  //   new Ably.Realtime({ plugins: { MsgPack } });
 }
 
 Http.bundledRequestImplementations = defaultBundledRequestImplementations;
@@ -45,12 +47,11 @@ if (Platform.Config.agent) {
   Platform.Defaults.agent += ' ' + Platform.Config.agent;
 }
 
-export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, makeProtocolMessageFromDeserialized, ErrorInfo };
+export { DefaultRest as Rest, DefaultRealtime as Realtime, makeProtocolMessageFromDeserialized, ErrorInfo };
 
 export default {
   ErrorInfo,
   Rest: DefaultRest,
   Realtime: DefaultRealtime,
-  msgpack,
   makeProtocolMessageFromDeserialized,
 };

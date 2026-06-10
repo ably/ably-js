@@ -19,11 +19,6 @@ import Logger from '../util/logger';
 export class DefaultRest extends BaseRest {
   // The public typings declare that this requires an argument to be passed, but since we want to emit a good error message in the case where a non-TypeScript user does not pass an argument, tell the compiler that this is possible so that it forces us to handle it.
   constructor(options?: ClientOptions | string) {
-    const MsgPack = DefaultRest._MsgPack;
-    if (!MsgPack) {
-      throw new Error('Expected DefaultRest._MsgPack to have been set');
-    }
-
     super(
       Defaults.objectifyOptions(options, true, 'Rest', Logger.defaultLogger, {
         ...allCommonModularPlugins,
