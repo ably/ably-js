@@ -22,8 +22,21 @@ class RealtimeAnnotations {
   }
 
   async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    return this._publish(msgOrSerial, annotationValues, 'publish');
+  }
+
+  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    annotationValues.action = 'annotation.delete';
+    return this._publish(msgOrSerial, annotationValues, 'delete');
+  }
+
+  private async _publish(
+    msgOrSerial: string | Message,
+    annotationValues: Partial<Properties<Annotation>>,
+    methodName: string,
+  ): Promise<void> {
     const channelName = this.channel.name;
-    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
+    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues, methodName);
     const wireAnnotation = await annotation.encode();
 
     this.channel.throwIfUnpublishableState();
@@ -31,7 +44,7 @@ class RealtimeAnnotations {
     Logger.logAction(
       this.logger,
       Logger.LOG_MICRO,
-      'RealtimeAnnotations.publish()',
+      'RealtimeAnnotations.' + methodName + '()',
       'channelName = ' +
         channelName +
         ', sending annotation with messageSerial = ' +
@@ -46,11 +59,6 @@ class RealtimeAnnotations {
       annotations: [wireAnnotation],
     });
     await this.channel.sendAndAwaitAck(pm);
-  }
-
-  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
-    annotationValues.action = 'annotation.delete';
-    await this.publish(msgOrSerial, annotationValues);
   }
 
   async subscribe(..._args: unknown[] /* [type], listener */): Promise<void> {
@@ -76,7 +84,7 @@ class RealtimeAnnotations {
           "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
         code: 93001,
         statusCode: 400,
-        hint: 'Re-create the channel with annotation_subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled, and `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+        hint: 'Re-create the channel with annotation_subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, and deletes" enabled in the Ably dashboard. If the attach succeeds but this error persists, check that your API key or token has the annotation-subscribe capability on this channel; without it the server silently grants fewer modes than requested. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled, and `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
       });
       Logger.logActionNoStrip(
         this.logger,
