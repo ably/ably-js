@@ -2728,6 +2728,33 @@ export declare interface RestAnnotations {
    */
   publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary. The semantics of the delete (and what fields are required) are different for each annotation type; see annotation types documentation for more details. This is a {@link RestAnnotations.publish | `publish()`} with the `action` set to `annotation.delete`, and it mutates the passed annotation object to carry that action, overwriting any `action` you set. Message annotations must be enabled for the channel's namespace by a channel rule and the key or token must have the `annotation-publish` capability; without these the server rejects the operation and the call rejects with an {@link ErrorInfo}. Rejects with a hinted {@link ErrorInfo} unless the first argument is a message serial string or a {@link Message} carrying a `serial`, such as one received from a subscription or history; newly constructed `Message` objects have no serial.
+   *
+   * @param message - The message which has an annotation that you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(message, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   */
+  delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary (alternative form where you only have the serial of the message, not a complete Message object). The semantics of the delete (and what fields are required) are different for each annotation type; see annotation types documentation for more details. This is a {@link RestAnnotations.publish | `publish()`} with the `action` set to `annotation.delete`, and it mutates the passed annotation object to carry that action, overwriting any `action` you set. Message annotations must be enabled for the channel's namespace by a channel rule and the key or token must have the `annotation-publish` capability; without these the server rejects the operation and the call rejects with an {@link ErrorInfo}. Rejects with a hinted {@link ErrorInfo} unless the first argument is a message serial string or a {@link Message} carrying a `serial`, such as one received from a subscription or history; newly constructed `Message` objects have no serial.
+   *
+   * @param messageSerial - The serial field of the message which has an annotation that
+   * you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(messageSerial, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   */
+  delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
    * Get all annotations for a given message (as a paginated result). Rejects with a hinted {@link ErrorInfo} unless the first argument is a message serial string or a {@link Message} carrying a `serial`, such as one received from a subscription or history; newly constructed `Message` objects have no serial. Message annotations must be enabled for the channel's namespace by a channel rule; without it the call rejects with an {@link ErrorInfo}.
    *
    * @param message - The message to get annotations for.
