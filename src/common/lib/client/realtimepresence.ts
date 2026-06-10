@@ -119,15 +119,21 @@ class RealtimePresence extends EventEmitter {
         return channel.sendPresence([wirePresMsg]);
       case 'initialized':
       case 'detached':
+        // RTP8d: implicitly attach the channel
         channel.attach();
       // eslint-disable-next-line no-fallthrough
       case 'attaching':
-        return new Promise((resolve, reject) => {
-          this.pendingPresence.push({
-            presence: wirePresMsg,
-            callback: (err) => (err ? reject(err) : resolve()),
+        // RTP16b: queue at the channel level only when queueMessages is enabled
+        if (channel.client.options.queueMessages) {
+          return new Promise((resolve, reject) => {
+            this.pendingPresence.push({
+              presence: wirePresMsg,
+              callback: (err) => (err ? reject(err) : resolve()),
+            });
           });
-        });
+        }
+      // RTP16c: not queueable, so reject
+      // eslint-disable-next-line no-fallthrough
       default: {
         const err = new PartialErrorInfo(
           'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
@@ -174,20 +180,27 @@ class RealtimePresence extends EventEmitter {
       case 'attached':
         return channel.sendPresence([wirePresMsg]);
       case 'attaching':
-        return new Promise((resolve, reject) => {
-          this.pendingPresence.push({
-            presence: wirePresMsg,
-            callback: (err) => (err ? reject(err) : resolve()),
+        // RTP16b: queue at the channel level only when queueMessages is enabled
+        if (channel.client.options.queueMessages) {
+          return new Promise((resolve, reject) => {
+            this.pendingPresence.push({
+              presence: wirePresMsg,
+              callback: (err) => (err ? reject(err) : resolve()),
+            });
           });
-        });
-      case 'initialized':
-      case 'failed': {
-        /* we're not attached; therefore we let any entered status
-         * timeout by itself instead of attaching just in order to leave */
-        throw new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+        }
+      // RTP16c: not queueable, so reject.
+      // Additionally, as we're not attached, we let any entered status time out
+      // by itself instead of attaching just in order to leave.
+      // eslint-disable-next-line no-fallthrough
+      default: {
+        const err = new PartialErrorInfo(
+          'Unable to leave presence channel while in ' + channel.state + ' state',
+          90001,
+        );
+        err.code = 90001;
+        throw err;
       }
-      default:
-        throw channel.invalidStateError();
     }
   }
 
@@ -379,6 +392,17 @@ class RealtimePresence extends EventEmitter {
           // eslint-disable-next-line no-empty
         } catch (e) {}
       this.pendingPresence = [];
+    }
+  }
+
+  /**
+   * RTL3d: re-queue presence messages that were moved off the connection-wide
+   * queue onto this channel's presence queue, to be sent once the channel next
+   * reaches the ATTACHED state (RTP5b).
+   */
+  requeuePresenceMessages(presenceMessages: WirePresenceMessage[], callback: ErrCallback): void {
+    for (const presence of presenceMessages) {
+      this.pendingPresence.push({ presence, callback });
     }
   }
 
