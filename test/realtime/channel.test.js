@@ -2115,12 +2115,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       }, realtime);
     });
 
-    describe('DX-1211 - subscribe() without subscribe mode', function () {
+    describe('subscribe() without subscribe mode', function () {
       it('with strictMode:true, attach resolves but subscribe rejects with 93003 and a subscribe-mode hint', async function () {
         const helper = this.test.helper;
         const realtime = helper.AblyRealtime({ strictMode: true });
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = realtime.channels.get('dx-1211-subscribe-strict-' + String(Math.random()).slice(2), {
+          const channel = realtime.channels.get('subscribe-without-mode-strict-' + String(Math.random()).slice(2), {
             modes: ['publish'],
           });
           let caught;
@@ -2141,7 +2141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         const helper = this.test.helper;
         const realtime = helper.AblyRealtime();
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = realtime.channels.get('dx-1211-subscribe-silent-' + String(Math.random()).slice(2), {
+          const channel = realtime.channels.get('subscribe-without-mode-silent-' + String(Math.random()).slice(2), {
             modes: ['publish'],
           });
           const result = await channel.subscribe(function () {});

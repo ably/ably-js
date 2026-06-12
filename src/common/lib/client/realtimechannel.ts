@@ -500,8 +500,7 @@ class RealtimeChannel extends EventEmitter {
     }
 
     // Filtered
-    const isFilteredSubscription = !!(event && typeof event === 'object' && !Array.isArray(event));
-    if (isFilteredSubscription) {
+    if (event && typeof event === 'object' && !Array.isArray(event)) {
       this.client._FilteredSubscriptions.subscribeFilter(this, event, listener);
     } else {
       this.subscriptions.on(event, listener);
@@ -518,20 +517,14 @@ class RealtimeChannel extends EventEmitter {
     if (this.state === 'attached' && (this._mode & flags.SUBSCRIBE) === 0) {
       const err = new ErrorInfo({
         message:
-          'You called channel.subscribe() but the channel was attached without the subscribe mode, so the server will never deliver messages to this listener.',
+          'The channel was attached without the subscribe mode, so the server will not deliver messages to this listener.',
         code: 93003,
         statusCode: 400,
-        hint: 'Re-create the channel with subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", ...] }). Your token/API-key capability must permit subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+        hint: 'Include "subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
       });
       if (this.client.options.strictMode === true) {
-        // The call is about to throw, so undo the listener registration above to avoid leaking a handler.
-        if (isFilteredSubscription) {
-          this.client._FilteredSubscriptions
-            .getAndDeleteFilteredSubscriptions(this, event, listener)
-            .forEach((l) => this.subscriptions.off(l));
-        } else {
-          this.subscriptions.off(event, listener);
-        }
+        // The listener stays registered despite the throw, matching subscribe()'s existing
+        // semantics: the listener is always added regardless of attach outcome.
         throw err;
       }
       if (!this._silentSubscribeWarned) {
