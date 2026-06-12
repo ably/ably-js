@@ -1,4 +1,4 @@
-import { actions, channelModes } from '../types/protocolmessagecommon';
+import { actions, channelModes, flags } from '../types/protocolmessagecommon';
 import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
@@ -97,6 +97,7 @@ class RealtimeChannel extends EventEmitter {
   };
   errorReason: ErrorInfo | null;
   _mode = 0;
+  _silentSubscribeWarned = false;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
   _lastPayload: {
@@ -506,11 +507,37 @@ class RealtimeChannel extends EventEmitter {
     }
 
     // (RTL7g)
+    let stateChange: ChannelStateChange | null = null;
     if (this.channelOptions.attachOnSubscribe !== false) {
-      return this.attach();
-    } else {
-      return null;
+      stateChange = await this.attach();
     }
+
+    // Whether or not we attached on subscribe, if the channel ended up attached without the
+    // subscribe mode the server will never deliver messages to this listener.
+    if (this.state === 'attached' && (this._mode & flags.SUBSCRIBE) === 0) {
+      const err = new ErrorInfo({
+        message:
+          'The channel was attached without the subscribe mode, so the server will not deliver messages to this listener.',
+        code: 93003,
+        statusCode: 400,
+        hint: 'Include "subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
+      if (this.client.options.strictMode === true) {
+        // The listener stays registered despite the throw, matching subscribe()'s existing
+        // semantics: the listener is always added regardless of attach outcome.
+        throw err;
+      }
+      if (!this._silentSubscribeWarned) {
+        Logger.logActionNoStrip(
+          this.logger,
+          Logger.LOG_ERROR,
+          'RealtimeChannel.subscribe()',
+          err.message + '; hint=' + err.hint + Logger.silentFailureLogSuffix(),
+        );
+        this._silentSubscribeWarned = true;
+      }
+    }
+    return stateChange;
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
@@ -607,6 +634,7 @@ class RealtimeChannel extends EventEmitter {
       case actions.ATTACHED: {
         this.properties.attachSerial = message.channelSerial;
         this._mode = message.getMode();
+        this._silentSubscribeWarned = false;
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
         this.modes = (modesFromFlags && (Utils.allToLowerCase(modesFromFlags) as API.ChannelMode[])) || undefined;

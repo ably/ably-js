@@ -70,14 +70,23 @@ class RealtimeAnnotations {
     }
 
     // explicit check for attach state in case attachOnSubscribe=false
-    if ((this.channel.state === 'attached' && this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
-      throw new ErrorInfo({
+    if (this.channel.state === 'attached' && (this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
+      const err = new ErrorInfo({
         message:
           "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
         code: 93001,
         statusCode: 400,
-        hint: 'Re-create the channel with annotation_subscribe in modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled, and `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+        hint: 'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled, and `ably auth keys list` shows your key\'s capabilities.',
       });
+      Logger.logActionNoStrip(
+        this.logger,
+        Logger.LOG_MAJOR,
+        'RealtimeAnnotations.subscribe()',
+        err.message + '; hint=' + err.hint,
+      );
+      // The listener stays registered despite the throw, matching subscribe()'s existing
+      // semantics: the listener is always added regardless of attach outcome.
+      throw err;
     }
   }
 
