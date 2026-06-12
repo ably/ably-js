@@ -95,7 +95,7 @@ export class Rest {
       throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
     }
     /* calculate time offset only once for this device by adding to the prototype */
-    this.client.serverTimeOffset = time - Date.now();
+    this.client.serverTimeOffset = time - Platform.Config.now();
     return time;
   }
 

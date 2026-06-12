@@ -22,6 +22,9 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
       typeof global.queueMicrotask === 'function'
         ? (f: () => void) => global.queueMicrotask(f)
         : (f: () => void) => Promise.resolve().then(f),
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    now: Date.now,
     addEventListener: null,
     inspect: JSON.stringify,
     stringByteSize: function (str: string) {

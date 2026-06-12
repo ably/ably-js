@@ -14,6 +14,9 @@ export interface ICommonPlatformConfig {
   supportsBinary: boolean;
   preferBinary: boolean;
   nextTick: process.nextTick;
+  setTimeout: (handler: () => void, timeout?: number) => ReturnType<typeof globalThis.setTimeout>;
+  clearTimeout: (id: ReturnType<typeof globalThis.setTimeout> | null | undefined) => void;
+  now: () => number;
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
   getRandomArrayBuffer: (byteLength: number) => Promise<ArrayBuffer>;
