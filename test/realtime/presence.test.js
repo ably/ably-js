@@ -2500,10 +2500,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
     });
 
-    describe('DX-1211 - presence.get() without presence_subscribe mode', function () {
+    describe('presence.get() without presence_subscribe mode', function () {
       it('with strictMode:true, rejects with 93002 and hint naming presence_subscribe', function (done) {
         const helper = this.test.helper;
-        const channelName = 'dx-1211-presence-strict-' + String(Math.random()).slice(2);
+        const channelName = 'presence-get-without-mode-strict-' + String(Math.random()).slice(2);
         let realtime;
         try {
           realtime = helper.AblyRealtime({ strictMode: true });
@@ -2536,7 +2536,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       it('with strictMode disabled (default), logs a warning and resolves to []', function (done) {
         const helper = this.test.helper;
-        const channelName = 'dx-1211-presence-silent-' + String(Math.random()).slice(2);
+        const channelName = 'presence-get-without-mode-silent-' + String(Math.random()).slice(2);
         let realtime;
         try {
           realtime = helper.AblyRealtime();
