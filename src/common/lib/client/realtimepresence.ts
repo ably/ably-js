@@ -250,10 +250,10 @@ class RealtimePresence extends EventEmitter {
     if ((this.channel._mode & flags.PRESENCE_SUBSCRIBE) === 0) {
       const err = new ErrorInfo({
         message:
-          'You called presence.get() but the channel was attached without the presence_subscribe mode, so the server has not delivered any members to this client.',
+          'The channel was attached without the presence_subscribe mode, so the server has not delivered any members to this client.',
         code: 93002,
         statusCode: 400,
-        hint: 'Re-create the channel with presence_subscribe in modes: realtime.channels.get(name, { modes: ["presence_subscribe", ...] }). Your token/API-key capability must permit presence-subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities. Note: appending to channel.modes after attach() does not enable the mode server-side - the array reflects what the server granted, not what you requested.',
+        hint: 'Include "presence_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["presence_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Alternatively, omit modes entirely and ensure your token/API-key capability permits presence-subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
       });
       if (this.channel.client.options.strictMode === true) throw err;
       Logger.logActionNoStrip(
