@@ -17,24 +17,45 @@ export interface PresenceListenerResult<T> {
 
 export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;
 
+// The channel name can be omitted to use the channel from the nearest ChannelProvider.
+export function usePresenceListener<T = any>(
+  onPresenceMessageReceived?: OnPresenceMessageReceived<T>,
+): PresenceListenerResult<T>;
 export function usePresenceListener<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
   onPresenceMessageReceived?: OnPresenceMessageReceived<T>,
+): PresenceListenerResult<T>;
+
+export function usePresenceListener<T = any>(
+  channelNameOrNameAndOptionsOrListener?: ChannelParameters | OnPresenceMessageReceived<T>,
+  onPresenceMessageReceived?: OnPresenceMessageReceived<T>,
 ): PresenceListenerResult<T> {
+  // The first argument is the listener when the channel name is inferred from a
+  // surrounding ChannelProvider, e.g. usePresenceListener(listener).
+  const inferChannelFromNearestProvider = typeof channelNameOrNameAndOptionsOrListener === 'function';
+  const channelNameOrNameAndOptions = inferChannelFromNearestProvider
+    ? undefined
+    : (channelNameOrNameAndOptionsOrListener as ChannelParameters | undefined);
+  const listener = inferChannelFromNearestProvider
+    ? (channelNameOrNameAndOptionsOrListener as OnPresenceMessageReceived<T>)
+    : onPresenceMessageReceived;
+
   const params =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
-      : { channelName: channelNameOrNameAndOptions };
+      : channelNameOrNameAndOptions === undefined
+        ? {}
+        : { channelName: channelNameOrNameAndOptions };
   const skip = params.skip;
 
   const { channel } = useChannelInstance(params.ablyId, params.channelName);
   const { connectionError, channelError } = useStateErrors(params);
   const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
 
-  const onPresenceMessageReceivedRef = useRef(onPresenceMessageReceived);
+  const onPresenceMessageReceivedRef = useRef(listener);
   useEffect(() => {
-    onPresenceMessageReceivedRef.current = onPresenceMessageReceived;
-  }, [onPresenceMessageReceived]);
+    onPresenceMessageReceivedRef.current = listener;
+  }, [listener]);
 
   const updatePresence = useCallback(
     async (message?: Ably.PresenceMessage) => {

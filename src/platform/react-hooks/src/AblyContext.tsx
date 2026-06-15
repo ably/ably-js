@@ -20,6 +20,10 @@ export type AblyContextValue = Record<string, AblyContextProviderProps>;
 export interface AblyContextProviderProps {
   client: Ably.RealtimeClient;
   _channelNameToChannelContext: Record<string, ChannelContextProps>;
+  // The channel named by the closest enclosing `ChannelProvider`. Channel hooks
+  // called without an explicit channel name resolve to this, so the name does
+  // not have to be repeated when there is a surrounding provider.
+  _nearestChannelName?: string;
 }
 
 export interface ChannelContextProps {

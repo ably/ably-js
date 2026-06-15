@@ -40,6 +40,7 @@ export const ChannelProvider = ({
             derived,
           },
         },
+        _nearestChannelName: channelName,
       },
     };
   }, [derived, client, channel, channelName, _channelNameToChannelContext, ablyId, context]);
