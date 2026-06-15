@@ -8,7 +8,15 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  trackClient,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  flushAsync,
+} from '../../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -257,7 +265,7 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
               connectionKey: 'key-2',
               maxIdleInterval: 15000,
               connectionStateTtl: 120000,
-            } as any,
+            },
             error: {
               code: 80008,
               statusCode: 400,

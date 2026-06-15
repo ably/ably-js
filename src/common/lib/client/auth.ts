@@ -766,8 +766,8 @@ class Auth {
   }
 
   private async _createTokenRequestImpl(
-    tokenParams: API.TokenParams | null,
-    authOptions: any,
+    tokenParams?: API.TokenParams | null,
+    authOptions?: any,
   ): Promise<API.TokenRequest> {
     /* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
     authOptions = authOptions || this.authOptions;

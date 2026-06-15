@@ -151,7 +151,7 @@ class Logger {
     return level <= this.logLevel;
   };
 
-  setLog = (level: LogLevels | undefined, handler: Function | undefined) => {
+  setLog = (level: LogLevels | undefined, handler?: Function | undefined) => {
     if (level !== undefined) this.logLevel = level;
     if (handler !== undefined) this.logHandler = this.logErrorHandler = handler;
   };

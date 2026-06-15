@@ -43,7 +43,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3);
 
     expect(result.statusCode).to.be.at.least(200);
     expect(result.statusCode).to.be.below(300);
@@ -71,7 +71,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3, null, null, {});
 
     expect(result.statusCode).to.be.at.least(200);
     expect(result.statusCode).to.be.below(300);
@@ -101,7 +101,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await tokenClient.request('GET', '/channels/' + channelName);
+    const result = await tokenClient.request('GET', '/channels/' + channelName, 3, null, null, {});
 
     expect(result.statusCode).to.be.at.least(200);
     expect(result.statusCode).to.be.below(300);
@@ -124,7 +124,7 @@ describe('uts/rest/integration/auth', function () {
     const client = new Ably.Rest({
       authCallback: async (_params: any, cb: any) => {
         try {
-          const tokenRequest = await tokenRequestClient.auth.createTokenRequest(_params);
+          const tokenRequest = await tokenRequestClient.auth.createTokenRequest(_params, null);
           cb(null, tokenRequest);
         } catch (err) {
           cb(err, null);
@@ -133,7 +133,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3, null, null, {});
 
     expect(result.statusCode).to.be.at.least(200);
     expect(result.statusCode).to.be.below(300);
@@ -167,7 +167,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3, null, null, {});
 
     expect(result.statusCode).to.be.at.least(200);
     expect(result.statusCode).to.be.below(300);
@@ -189,7 +189,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3, null, null, {});
     expect(result.success).to.equal(false);
     expect(result.statusCode).to.equal(401);
     expect(result.errorCode).to.equal(40400);
@@ -239,7 +239,7 @@ describe('uts/rest/integration/auth', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.request('GET', '/channels/' + channelName);
+    const result = await client.request('GET', '/channels/' + channelName, 3, null, null, {});
 
     // The request succeeded (token was renewed and retried)
     expect(result.statusCode).to.be.at.least(200);

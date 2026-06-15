@@ -27,7 +27,8 @@ import Logger from '../../../../../src/common/lib/util/logger';
  * and presence.syncComplete (set by setInProgress).
  */
 function createMockPresence(): any {
-  const logger = new Logger(0);
+  const logger = new Logger();
+  logger.setLog(0);
   return {
     channel: { name: 'test-channel' },
     logger: logger,
@@ -68,7 +69,6 @@ function createPresenceMap(): PresenceMap {
 }
 
 describe('uts/realtime/unit/presence/presence_map', function () {
-
   /**
    * RTP2 - Basic put and get
    *
@@ -104,14 +104,16 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2d2 - ENTER stored as PRESENT', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'entered',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'entered',
+      }),
+    );
 
     const stored = map.get('conn-1:client-1');
     expect(stored).to.not.be.undefined;
@@ -129,24 +131,28 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const map = createPresenceMap();
 
     // First enter
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'initial',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'initial',
+      }),
+    );
 
     // Then update
-    map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-      data: 'updated',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+        data: 'updated',
+      }),
+    );
 
     const stored = map.get('conn-1:client-1');
     expect(stored.action).to.equal('present');
@@ -162,13 +168,15 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2d2 - PRESENT stored as PRESENT', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'present',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'present',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+      }),
+    );
 
     const stored = map.get('conn-1:client-1');
     expect(stored).to.not.be.undefined;
@@ -191,22 +199,26 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2d1 - put returns true for accepted messages', function () {
     const map = createPresenceMap();
 
-    const resultEnter = map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-    }));
+    const resultEnter = map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+      }),
+    );
 
-    const resultUpdate = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-      data: 'updated',
-    }));
+    const resultUpdate = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+        data: 'updated',
+      }),
+    );
 
     // In ably-js, put() returns boolean true for accepted
     expect(resultEnter).to.equal(true);
@@ -224,22 +236,26 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const map = createPresenceMap();
 
     // Add a member
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+      }),
+    );
 
     // Remove the member
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+      }),
+    );
 
     // RTP2h1a: remove returns true (existing member was found)
     expect(result).to.equal(true);
@@ -259,13 +275,15 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2h1 - LEAVE for non-existent member returns false', function () {
     const map = createPresenceMap();
 
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'unknown',
-      connectionId: 'conn-x',
-      id: 'conn-x:0:0',
-      timestamp: 1000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'unknown',
+        connectionId: 'conn-x',
+        id: 'conn-x:0:0',
+        timestamp: 1000,
+      }),
+    );
 
     expect(result).to.equal(false);
   });
@@ -286,25 +304,29 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const map = createPresenceMap();
 
     // Add a member
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+      }),
+    );
 
     // Start sync
     map.startSync();
 
     // LEAVE during sync
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+      }),
+    );
 
     // In ably-js, remove() returns true because an existing member was found
     expect(result).to.equal(true);
@@ -334,17 +356,25 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     };
 
     // Add two members
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }),
+    );
 
     // Start sync
     map.startSync();
 
     // Alice gets updated during sync (still present)
-    map.put(makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
+    map.put(
+      makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }),
+    );
 
     // Bob sends LEAVE during sync (stored as ABSENT)
-    map.remove(makePresenceMessage({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }));
+    map.remove(
+      makePresenceMessage({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }),
+    );
 
     // End sync
     map.endSync();
@@ -371,38 +401,44 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const map = createPresenceMap();
 
     // Add initial message with msgSerial=5, index=0
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:0',
-      timestamp: 1000,
-      data: 'first',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:0',
+        timestamp: 1000,
+        data: 'first',
+      }),
+    );
 
     // Try to put an older message (msgSerial=3) -- should be rejected
-    const staleResult = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:3:0',
-      timestamp: 2000,
-      data: 'stale',
-    }));
+    const staleResult = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:3:0',
+        timestamp: 2000,
+        data: 'stale',
+      }),
+    );
 
     // Stale message rejected (RTP2a) — check before newer put
     expect(staleResult).to.equal(false);
     expect(map.get('conn-1:client-1').data).to.equal('first');
 
     // Put a newer message (msgSerial=7)
-    const newerResult = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:7:0',
-      timestamp: 500,
-      data: 'newer',
-    }));
+    const newerResult = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:7:0',
+        timestamp: 500,
+        data: 'newer',
+      }),
+    );
 
     // Newer message accepted (even though timestamp is older)
     expect(newerResult).to.equal(true);
@@ -418,34 +454,40 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2b2 - newness comparison by index when msgSerial equal', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:2',
-      timestamp: 1000,
-      data: 'index-2',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:2',
+        timestamp: 1000,
+        data: 'index-2',
+      }),
+    );
 
     // Same msgSerial, lower index -- stale
-    const stale = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:1',
-      timestamp: 2000,
-      data: 'index-1',
-    }));
+    const stale = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:1',
+        timestamp: 2000,
+        data: 'index-1',
+      }),
+    );
 
     // Same msgSerial, higher index -- newer
-    const newer = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:5',
-      timestamp: 500,
-      data: 'index-5',
-    }));
+    const newer = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:5',
+        timestamp: 500,
+        data: 'index-5',
+      }),
+    );
 
     expect(stale).to.equal(false);
     expect(newer).to.equal(true);
@@ -464,23 +506,27 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const map = createPresenceMap();
 
     // Add member with normal id (connectionId is prefix of id)
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'entered',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'entered',
+      }),
+    );
 
     // Synthesized leave: id does NOT start with connectionId
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'synthesized-leave-id',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'synthesized-leave-id',
+        timestamp: 2000,
+      }),
+    );
 
     // Timestamp 2000 > 1000, so the synthesized leave is newer
     expect(result).to.equal(true);
@@ -496,23 +542,27 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2b1 - synthesized leave rejected when older by timestamp', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 5000,
-      data: 'entered',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 5000,
+        data: 'entered',
+      }),
+    );
 
     // Synthesized leave with older timestamp
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'synthesized-leave-id',
-      timestamp: 3000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'synthesized-leave-id',
+        timestamp: 3000,
+      }),
+    );
 
     // Rejected -- existing message (timestamp 5000) is newer
     expect(result).to.equal(false);
@@ -529,24 +579,28 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2b1a - equal timestamps: incoming message is newer', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'synthesized-id-1',
-      timestamp: 1000,
-      data: 'first',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'synthesized-id-1',
+        timestamp: 1000,
+        data: 'first',
+      }),
+    );
 
     // Same timestamp, incoming wins
-    const result = map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'synthesized-id-2',
-      timestamp: 1000,
-      data: 'second',
-    }));
+    const result = map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'synthesized-id-2',
+        timestamp: 1000,
+        data: 'second',
+      }),
+    );
 
     expect(result).to.equal(true);
     expect(map.get('conn-1:client-1').data).to.equal('second');
@@ -565,34 +619,40 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     map.startSync();
 
     // First SYNC message
-    map.put(makePresenceMessage({
-      action: 'present',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:0',
-      timestamp: 1000,
-      data: 'sync-first',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'present',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:0',
+        timestamp: 1000,
+        data: 'sync-first',
+      }),
+    );
 
     // Second SYNC message with older serial -- rejected
-    const stale = map.put(makePresenceMessage({
-      action: 'present',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:3:0',
-      timestamp: 2000,
-      data: 'sync-stale',
-    }));
+    const stale = map.put(
+      makePresenceMessage({
+        action: 'present',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:3:0',
+        timestamp: 2000,
+        data: 'sync-stale',
+      }),
+    );
 
     // Third SYNC message with newer serial -- accepted
-    const newer = map.put(makePresenceMessage({
-      action: 'present',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:8:0',
-      timestamp: 500,
-      data: 'sync-newer',
-    }));
+    const newer = map.put(
+      makePresenceMessage({
+        action: 'present',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:8:0',
+        timestamp: 500,
+        data: 'sync-newer',
+      }),
+    );
 
     expect(stale).to.equal(false);
     expect(newer).to.equal(true);
@@ -608,9 +668,15 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2 - multiple members coexist', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c3', id: 'c3:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c3', id: 'c3:0:0', timestamp: 100 }),
+    );
 
     // Three distinct members (alice on c1, bob on c2, alice on c3)
     expect(map.values()).to.have.length(3);
@@ -628,12 +694,18 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2 - values() excludes ABSENT members', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }),
+    );
 
     // Start sync and mark bob as ABSENT
     map.startSync();
-    map.remove(makePresenceMessage({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }));
+    map.remove(
+      makePresenceMessage({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }),
+    );
 
     // Bob is stored as ABSENT but excluded from values()
     expect(map.get('c2:bob')).to.not.be.undefined;
@@ -653,7 +725,9 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('clear() resets all state', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
     map.startSync();
 
     map.clear();
@@ -682,14 +756,20 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     };
 
     // Add two members before sync
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }),
+    );
 
     // Start sync -- both are now residual
     map.startSync();
 
     // Only alice is seen during sync
-    map.put(makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
+    map.put(
+      makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }),
+    );
 
     // End sync -- bob was not seen, so he should be removed
     map.endSync();
@@ -718,9 +798,15 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     mockPresence._synthesizeLeaves = (_items: any[]) => {};
 
     // Add three members
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'carol', connectionId: 'c3', id: 'c3:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }),
+    );
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'carol', connectionId: 'c3', id: 'c3:0:0', timestamp: 100 }),
+    );
 
     map.startSync();
 
@@ -744,12 +830,16 @@ describe('uts/realtime/unit/presence/presence_map', function () {
     const mockPresence = (map as any).presence;
     mockPresence._synthesizeLeaves = (_items: any[]) => {};
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }),
+    );
 
     map.startSync();
 
     // Re-confirm alice during sync
-    map.put(makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
+    map.put(
+      makePresenceMessage({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }),
+    );
 
     map.endSync();
 
@@ -785,28 +875,31 @@ describe('uts/realtime/unit/presence/presence_map', function () {
   it('RTP2b2 - stale LEAVE is rejected', function () {
     const map = createPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:5:0',
-      timestamp: 1000,
-      data: 'entered',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:5:0',
+        timestamp: 1000,
+        data: 'entered',
+      }),
+    );
 
     // Try to remove with an older id (msgSerial=3)
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:3:0',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:3:0',
+        timestamp: 2000,
+      }),
+    );
 
     // Rejected because the existing entry (serial 5) is newer than the leave (serial 3)
     expect(result).to.equal(false);
     expect(map.get('conn-1:client-1')).to.not.be.undefined;
     expect(map.get('conn-1:client-1').data).to.equal('entered');
   });
-
 });

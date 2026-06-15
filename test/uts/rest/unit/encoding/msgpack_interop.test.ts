@@ -94,7 +94,7 @@ describe('uts/rest/unit/encoding/msgpack_interop', function () {
       const decoded = await wireMessage.decode({}, Logger.defaultLogger);
 
       // Re-encode for msgpack wire format
-      const reEncoded = await decoded.encode({});
+      const reEncoded = await decoded.encode({} as any);
       const reProtocolMessage = { messages: [reEncoded], msgSerial: 0 };
       const reBytes = msgpack.encode(reProtocolMessage, true);
 

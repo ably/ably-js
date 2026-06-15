@@ -201,7 +201,7 @@ function getKeyParts(keyStr: string): { keyName: string; keySecret: string } {
 }
 
 async function pollUntil<T>(
-  fn: () => Promise<T> | T,
+  fn: () => Promise<T | null | undefined> | T | null | undefined,
   opts: { interval?: number; timeout?: number } = {},
 ): Promise<T> {
   const interval = opts.interval || 500;

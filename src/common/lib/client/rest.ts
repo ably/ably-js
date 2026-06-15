@@ -55,7 +55,7 @@ export class Rest {
     this.push = new Push(this.client);
   }
 
-  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
+  async stats(params?: RequestParams): Promise<PaginatedResult<Stats>> {
     const headers = Defaults.defaultGetHeaders(this.client.options),
       format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format;
@@ -103,9 +103,9 @@ export class Rest {
     method: string,
     path: string,
     version: number,
-    params: RequestParams,
-    body: unknown,
-    customHeaders: Record<string, string>,
+    params?: RequestParams,
+    body?: unknown,
+    customHeaders?: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {

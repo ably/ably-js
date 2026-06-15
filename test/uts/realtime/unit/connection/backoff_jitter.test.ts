@@ -15,10 +15,20 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, Platform, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  Platform,
+  trackClient,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  flushAsync,
+} from '../../../helpers';
 
 // Import the backoff/jitter functions directly from utils for unit testing
 import { getBackoffCoefficient, getJitterCoefficient, getRetryTime } from '../../../../../src/common/lib/util/utils';
+import { InternalClientOptions } from '../../../types';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {
@@ -49,10 +59,10 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
     }
 
     // Verify exact values for the first few retries
-    expect(coefficients[0]).to.equal(1.0);          // n=1: (1+2)/3 = 1
-    expect(coefficients[1]).to.equal(4.0 / 3.0);    // n=2: (2+2)/3 = 4/3
-    expect(coefficients[2]).to.equal(5.0 / 3.0);    // n=3: (3+2)/3 = 5/3
-    expect(coefficients[3]).to.equal(2.0);           // n=4: (4+2)/3 = 2, capped at 2
+    expect(coefficients[0]).to.equal(1.0); // n=1: (1+2)/3 = 1
+    expect(coefficients[1]).to.equal(4.0 / 3.0); // n=2: (2+2)/3 = 4/3
+    expect(coefficients[2]).to.equal(5.0 / 3.0); // n=3: (3+2)/3 = 5/3
+    expect(coefficients[3]).to.equal(2.0); // n=4: (4+2)/3 = 2, capped at 2
 
     // Verify all subsequent retries are capped at 2.0
     for (let i = 3; i < 10; i++) {
@@ -235,7 +245,8 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
         });
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           attachCount++;
           if (attachCount === 1) {
             // First attach succeeds
@@ -277,7 +288,7 @@ describe('uts/realtime/unit/connection/backoff_jitter', function () {
       channelRetryTimeout: channelRetryTimeout,
       autoConnect: false,
       useBinaryProtocol: false,
-    });
+    } as InternalClientOptions);
     trackClient(client);
 
     client.connect();

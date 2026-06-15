@@ -13,7 +13,16 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+} from '../../../helpers';
+import RealtimeChannel from '../../../../../src/common/lib/client/realtimechannel';
 
 describe('uts/realtime/unit/presence/realtime_presence_get', function () {
   afterEach(function () {
@@ -59,7 +68,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTP11a-single');
+    const channel: RealtimeChannel = client.channels.get('test-RTP11a-single');
     await channel.attach();
 
     // Start get() -- sync has not arrived yet, so this must wait
@@ -130,7 +139,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTP11c1-multi');
+    const channel: RealtimeChannel = client.channels.get('test-RTP11c1-multi');
     await channel.attach();
 
     // Start get() -- sync has not arrived yet
@@ -149,9 +158,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
       action: 16, // SYNC
       channel: 'test-RTP11c1-multi',
       channelSerial: 'seq1:cursor1',
-      presence: [
-        { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-      ],
+      presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
     });
 
     // get() should still be waiting -- sync not complete
@@ -163,9 +170,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
       action: 16, // SYNC
       channel: 'test-RTP11c1-multi',
       channelSerial: 'seq1:',
-      presence: [
-        { action: 1, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 },
-      ],
+      presence: [{ action: 1, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }],
     });
 
     const members = await getFuture;
@@ -204,9 +209,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:cursor1',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },
@@ -423,9 +426,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },
@@ -516,9 +517,7 @@ describe('uts/realtime/unit/presence/realtime_presence_get', function () {
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },

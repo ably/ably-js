@@ -25,7 +25,8 @@ import Logger from '../../../../../src/common/lib/util/logger';
  * and presence.syncComplete (set by setInProgress).
  */
 function createMockPresence(): any {
-  const logger = new Logger(0);
+  const logger = new Logger();
+  logger.setLog(0);
   return {
     channel: { name: 'test-channel' },
     logger: logger,
@@ -115,14 +116,16 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17b - ENTER adds to map', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'hello',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'hello',
+      }),
+    );
 
     const stored = map.get('client-1');
     expect(stored).to.not.be.undefined;
@@ -143,14 +146,16 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17b - UPDATE with no prior entry adds to map', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'from-update',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'from-update',
+      }),
+    );
 
     const stored = map.get('client-1');
     expect(stored).to.not.be.undefined;
@@ -169,23 +174,27 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17b - ENTER after ENTER overwrites', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'first',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'first',
+      }),
+    );
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-      data: 'second',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+        data: 'second',
+      }),
+    );
 
     expect(map.values()).to.have.length(1);
     // NOTE: ably-js stores ENTER as PRESENT (RTP2d2)
@@ -202,23 +211,27 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17b - UPDATE after ENTER overwrites', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'initial',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'initial',
+      }),
+    );
 
-    map.put(makePresenceMessage({
-      action: 'update',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-      data: 'updated',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'update',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+        data: 'updated',
+      }),
+    );
 
     expect(map.values()).to.have.length(1);
     // NOTE: ably-js stores UPDATE as PRESENT (RTP2d2)
@@ -235,14 +248,16 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17b - PRESENT adds to map', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({
-      action: 'present',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'present',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'present',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'present',
+      }),
+    );
 
     const stored = map.get('client-1');
     expect(stored).to.not.be.undefined;
@@ -268,24 +283,28 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
     const map = createLocalPresenceMap();
 
     // Add member
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+      }),
+    );
 
     expect(map.get('client-1')).to.not.be.undefined;
 
     // Non-synthesized LEAVE: connectionId "conn-1" IS an initial substring of id "conn-1:1:0"
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:1:0',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 2000,
+      }),
+    );
 
     // NOTE: In ably-js, remove() returns boolean (true if existing member found),
     // not the removed message. The UTS spec expects the return to be true.
@@ -313,14 +332,16 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
     const map = createLocalPresenceMap();
 
     // Add member
-    map.put(makePresenceMessage({
-      action: 'enter',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'conn-1:0:0',
-      timestamp: 1000,
-      data: 'entered',
-    }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 1000,
+        data: 'entered',
+      }),
+    );
 
     // Synthesized LEAVE: connectionId "conn-1" is NOT an initial substring of id "synthesized-leave-id"
     // In ably-js, the newness check compares by timestamp since one message is synthesized.
@@ -328,13 +349,15 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
     // NOTE: The UTS spec expects remove() to return false and ignore the synthesized leave,
     // but ably-js's PresenceMap does not filter synthesized leaves -- that is done at a higher level
     // in RealtimePresence. At the PresenceMap level, a newer synthesized leave WILL remove the member.
-    const result = map.remove(makePresenceMessage({
-      action: 'leave',
-      clientId: 'client-1',
-      connectionId: 'conn-1',
-      id: 'synthesized-leave-id',
-      timestamp: 2000,
-    }));
+    const result = map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'client-1',
+        connectionId: 'conn-1',
+        id: 'synthesized-leave-id',
+        timestamp: 2000,
+      }),
+    );
 
     // ably-js PresenceMap.remove() will accept this because timestamp 2000 > 1000.
     // The RTP17b filtering of synthesized leaves is done in RealtimePresence, not PresenceMap.
@@ -352,9 +375,36 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17 - multiple clientIds coexist', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'conn-1', id: 'conn-1:0:0', timestamp: 100, data: 'alice-data' }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'conn-1', id: 'conn-1:0:1', timestamp: 100, data: 'bob-data' }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'carol', connectionId: 'conn-1', id: 'conn-1:0:2', timestamp: 100, data: 'carol-data' }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'alice',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 100,
+        data: 'alice-data',
+      }),
+    );
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'bob',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:1',
+        timestamp: 100,
+        data: 'bob-data',
+      }),
+    );
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'carol',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:2',
+        timestamp: 100,
+        data: 'carol-data',
+      }),
+    );
 
     expect(map.values()).to.have.length(3);
     expect(map.get('alice')).to.not.be.undefined;
@@ -372,10 +422,34 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17 - remove one of multiple members', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'conn-1', id: 'conn-1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'conn-1', id: 'conn-1:0:1', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'alice',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 100,
+      }),
+    );
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'bob',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:1',
+        timestamp: 100,
+      }),
+    );
 
-    map.remove(makePresenceMessage({ action: 'leave', clientId: 'alice', connectionId: 'conn-1', id: 'conn-1:1:0', timestamp: 200 }));
+    map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'alice',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 200,
+      }),
+    );
 
     expect(map.get('alice')).to.be.undefined;
     expect(map.get('bob')).to.not.be.undefined;
@@ -392,8 +466,24 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP5a - clear() resets all state', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'conn-1', id: 'conn-1:0:0', timestamp: 100 }));
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'bob', connectionId: 'conn-1', id: 'conn-1:0:1', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'alice',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 100,
+      }),
+    );
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'bob',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:1',
+        timestamp: 100,
+      }),
+    );
 
     expect(map.values()).to.have.length(2);
 
@@ -423,10 +513,26 @@ describe('uts/realtime/unit/presence/local_presence_map', function () {
   it('RTP17 - remove for unknown clientId is a no-op', function () {
     const map = createLocalPresenceMap();
 
-    map.put(makePresenceMessage({ action: 'enter', clientId: 'alice', connectionId: 'conn-1', id: 'conn-1:0:0', timestamp: 100 }));
+    map.put(
+      makePresenceMessage({
+        action: 'enter',
+        clientId: 'alice',
+        connectionId: 'conn-1',
+        id: 'conn-1:0:0',
+        timestamp: 100,
+      }),
+    );
 
     // Remove a clientId that was never added (non-synthesized leave)
-    map.remove(makePresenceMessage({ action: 'leave', clientId: 'nonexistent', connectionId: 'conn-1', id: 'conn-1:1:0', timestamp: 200 }));
+    map.remove(
+      makePresenceMessage({
+        action: 'leave',
+        clientId: 'nonexistent',
+        connectionId: 'conn-1',
+        id: 'conn-1:1:0',
+        timestamp: 200,
+      }),
+    );
 
     // Original member is unaffected
     expect(map.get('alice')).to.not.be.undefined;

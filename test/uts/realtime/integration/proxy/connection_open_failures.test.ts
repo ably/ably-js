@@ -111,8 +111,8 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
 
     expect(client.connection.state).to.equal('failed');
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(40005);
-    expect(client.connection.errorReason.statusCode).to.equal(400);
+    expect(client.connection.errorReason!.code).to.equal(40005);
+    expect(client.connection.errorReason!.statusCode).to.equal(400);
 
     expect(stateChanges).to.include('connecting');
     expect(stateChanges).to.include('failed');
@@ -343,8 +343,8 @@ describe('uts/realtime/integration/proxy/connection_open_failures', function () 
 
     expect(client.connection.state).to.equal('failed');
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(50000);
-    expect(client.connection.errorReason.statusCode).to.equal(500);
+    expect(client.connection.errorReason!.code).to.equal(50000);
+    expect(client.connection.errorReason!.statusCode).to.equal(500);
 
     expect(stateChanges).to.include('connecting');
     expect(stateChanges).to.include('failed');

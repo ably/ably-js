@@ -20,7 +20,8 @@ import PresenceMessage from '../../../../../src/common/lib/types/presencemessage
 import Logger from '../../../../../src/common/lib/util/logger';
 
 function createMockPresence(): any {
-  const logger = new Logger(0);
+  const logger = new Logger();
+  logger.setLog(0);
   return {
     channel: { name: 'test-channel' },
     logger: logger,
@@ -57,7 +58,6 @@ function createPresenceMap(mockPresence?: any): { map: PresenceMap; mock: any } 
 }
 
 describe('uts/realtime/unit/presence/presence_sync', function () {
-
   /**
    * RTP18a - startSync sets syncInProgress
    */
@@ -116,14 +116,16 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   it('RTP19 - synthesized LEAVE preserves original attributes', function () {
     const { map, mock } = createPresenceMap();
 
-    map.put(msg({
-      action: 'enter',
-      clientId: 'bob',
-      connectionId: 'c2',
-      id: 'c2:0:0',
-      timestamp: 100,
-      data: 'bob-data',
-    }));
+    map.put(
+      msg({
+        action: 'enter',
+        clientId: 'bob',
+        connectionId: 'c2',
+        id: 'c2:0:0',
+        timestamp: 100,
+        data: 'bob-data',
+      }),
+    );
 
     map.startSync();
     map.endSync();
@@ -148,7 +150,9 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
 
     map.startSync();
     map.put(msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
-    map.put(msg({ action: 'update', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200, data: 'new-data' }));
+    map.put(
+      msg({ action: 'update', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200, data: 'new-data' }),
+    );
     map.endSync();
 
     expect(mock._synthesizedLeaves.length).to.equal(1);
@@ -257,7 +261,9 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
     map.startSync();
     map.put(msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
 
-    const removeResult = map.remove(msg({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }));
+    const removeResult = map.remove(
+      msg({ action: 'leave', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 200 }),
+    );
 
     expect(removeResult).to.equal(true);
     expect(map.get('c2:bob')).to.not.be.undefined;
@@ -313,10 +319,14 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   it('RTP19 - stale SYNC message still removes member from residuals', function () {
     const { map, mock } = createPresenceMap();
 
-    map.put(msg({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:5:0', timestamp: 500, data: 'original' }));
+    map.put(
+      msg({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:5:0', timestamp: 500, data: 'original' }),
+    );
 
     map.startSync();
-    const result = map.put(msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:3:0', timestamp: 300, data: 'stale' }));
+    const result = map.put(
+      msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:3:0', timestamp: 300, data: 'stale' }),
+    );
     map.endSync();
 
     expect(result).to.equal(false);
@@ -333,15 +343,27 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
   it('RTP19 - PRESENCE echoes followed by SYNC preserves all members', function () {
     const { map, mock } = createPresenceMap();
 
-    map.put(msg({ action: 'enter', clientId: 'user-0', connectionId: 'c1', id: 'c1:0:0', timestamp: 100, data: 'data-0' }));
-    map.put(msg({ action: 'enter', clientId: 'user-1', connectionId: 'c1', id: 'c1:1:0', timestamp: 100, data: 'data-1' }));
-    map.put(msg({ action: 'enter', clientId: 'user-2', connectionId: 'c1', id: 'c1:2:0', timestamp: 100, data: 'data-2' }));
+    map.put(
+      msg({ action: 'enter', clientId: 'user-0', connectionId: 'c1', id: 'c1:0:0', timestamp: 100, data: 'data-0' }),
+    );
+    map.put(
+      msg({ action: 'enter', clientId: 'user-1', connectionId: 'c1', id: 'c1:1:0', timestamp: 100, data: 'data-1' }),
+    );
+    map.put(
+      msg({ action: 'enter', clientId: 'user-2', connectionId: 'c1', id: 'c1:2:0', timestamp: 100, data: 'data-2' }),
+    );
     expect(map.values().length).to.equal(3);
 
     map.startSync();
-    map.put(msg({ action: 'present', clientId: 'user-0', connectionId: 'c1', id: 'c1:0:0', timestamp: 100, data: 'data-0' }));
-    map.put(msg({ action: 'present', clientId: 'user-1', connectionId: 'c1', id: 'c1:1:0', timestamp: 100, data: 'data-1' }));
-    map.put(msg({ action: 'present', clientId: 'user-2', connectionId: 'c1', id: 'c1:2:0', timestamp: 100, data: 'data-2' }));
+    map.put(
+      msg({ action: 'present', clientId: 'user-0', connectionId: 'c1', id: 'c1:0:0', timestamp: 100, data: 'data-0' }),
+    );
+    map.put(
+      msg({ action: 'present', clientId: 'user-1', connectionId: 'c1', id: 'c1:1:0', timestamp: 100, data: 'data-1' }),
+    );
+    map.put(
+      msg({ action: 'present', clientId: 'user-2', connectionId: 'c1', id: 'c1:2:0', timestamp: 100, data: 'data-2' }),
+    );
     map.endSync();
 
     expect(mock._synthesizedLeaves.length).to.equal(0);

@@ -20,6 +20,7 @@ const DEFAULT_CONNECTED = {
     maxMessageSize: 65536,
     serverId: 'test-server',
   },
+  error: null as any,
 };
 
 /** WebSocket connectivity check URL pattern */
@@ -140,7 +141,7 @@ class PendingWSConnection {
    * Connection succeeds and delivers a CONNECTED protocol message.
    */
   respond_with_connected(
-    connectedMsg?: Partial<typeof DEFAULT_CONNECTED> & {
+    connectedMsg?: Partial<Omit<typeof DEFAULT_CONNECTED, 'connectionDetails'>> & {
       connectionDetails?: Partial<typeof DEFAULT_CONNECTED.connectionDetails>;
     },
   ): void {

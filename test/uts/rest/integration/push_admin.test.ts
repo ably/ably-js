@@ -6,14 +6,7 @@
  */
 
 import { expect } from 'chai';
-import {
-  Ably,
-  SANDBOX_ENDPOINT,
-  setupSandbox,
-  teardownSandbox,
-  getApiKey,
-  uniqueChannelName,
-} from './sandbox';
+import { Ably, SANDBOX_ENDPOINT, setupSandbox, teardownSandbox, getApiKey, uniqueChannelName } from './sandbox';
 
 function randomId(): string {
   return Math.random().toString(36).substring(2, 10);
@@ -71,10 +64,7 @@ describe('uts/rest/integration/push_admin', function () {
     });
 
     try {
-      await client.push.admin.publish(
-        {},
-        { notification: { title: 'Test' } },
-      );
+      await client.push.admin.publish({}, { notification: { title: 'Test' } });
       expect.fail('Publish with empty recipient should have failed');
     } catch (error: any) {
       expect(error.code).to.not.be.null;
@@ -163,11 +153,11 @@ describe('uts/rest/integration/push_admin', function () {
       });
 
       expect(updated.id).to.equal(deviceId);
-      expect(updated.push!.recipient!.deviceToken).to.equal('token-v2');
+      expect((updated.push!.recipient as any).deviceToken).to.equal('token-v2');
 
       // Verify via get
       const retrieved = await client.push.admin.deviceRegistrations.get(deviceId);
-      expect(retrieved.push!.recipient!.deviceToken).to.equal('token-v2');
+      expect((retrieved.push!.recipient as any).deviceToken).to.equal('token-v2');
     } finally {
       await client.push.admin.deviceRegistrations.remove(deviceId);
     }

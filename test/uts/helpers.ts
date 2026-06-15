@@ -42,13 +42,13 @@ const _allPlatformTimers = new Set<any>();
 const _origPlatformSetTimeout = Platform.Config.setTimeout;
 const _origPlatformClearTimeout = Platform.Config.clearTimeout;
 Platform.Config.setTimeout = function (fn: any, ms?: number, ...args: any[]) {
-  const timer = _origPlatformSetTimeout.call(this, fn, ms, ...args);
+  const timer = (_origPlatformSetTimeout as any).call(null, fn, ms, ...args);
   _allPlatformTimers.add(timer);
   return timer;
 } as any;
 Platform.Config.clearTimeout = function (timer: any) {
   _allPlatformTimers.delete(timer);
-  return _origPlatformClearTimeout.call(this, timer);
+  return _origPlatformClearTimeout.call(null, timer);
 } as any;
 
 /**

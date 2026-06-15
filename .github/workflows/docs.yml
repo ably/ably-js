@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
+          submodules: 'recursive'
           persist-credentials: false
 
       - name: Use Node.js 20.x
@@ -46,6 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
+          submodules: 'recursive'
           persist-credentials: false
 
       - name: Download typedoc artifact

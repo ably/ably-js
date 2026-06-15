@@ -177,7 +177,7 @@ describe('uts/realtime/integration/auth/auth', function () {
 
     expect(client.connection.state).to.equal('failed');
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(40102);
+    expect(client.connection.errorReason!.code).to.equal(40102);
 
     try {
       await closeAndWait(client);

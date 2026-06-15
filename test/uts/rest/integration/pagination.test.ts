@@ -104,8 +104,8 @@ describe('uts/rest/integration/pagination', function () {
     );
 
     const page1 = await channel.history({ limit: 5 });
-    const page2 = await page1.next();
-    const page3 = await page2.next();
+    const page2 = (await page1.next())!;
+    const page3 = (await page2.next())!;
 
     expect(page1.items.length).to.equal(5);
     expect(page2.items.length).to.equal(5);
@@ -116,7 +116,7 @@ describe('uts/rest/integration/pagination', function () {
     for (const page of [page1, page2, page3]) {
       for (const item of page.items) {
         expect(allIds).to.not.include(item.id);
-        allIds.push(item.id);
+        allIds.push(item.id!);
       }
     }
 
@@ -155,7 +155,7 @@ describe('uts/rest/integration/pagination', function () {
     );
 
     const page1 = await channel.history({ limit: 3 });
-    const page2 = await page1.next();
+    const page2 = (await page1.next())!;
     const firstPage = await page2.first();
 
     // firstPage should have same items as page1
@@ -210,7 +210,7 @@ describe('uts/rest/integration/pagination', function () {
         break;
       }
 
-      page = await page.next();
+      page = (await page.next())!;
     }
 
     expect(allMessages.length).to.equal(messageCount);

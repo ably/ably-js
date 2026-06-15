@@ -65,7 +65,7 @@ describe('uts/rest/integration/time_stats', function () {
       endpoint: SANDBOX_ENDPOINT,
     });
 
-    const result = await client.stats();
+    const result = await client.stats(null);
 
     // Result should be a PaginatedResult with an items array
     expect(result).to.be.an('object');
@@ -90,7 +90,7 @@ describe('uts/rest/integration/time_stats', function () {
     });
 
     const result = await client.stats({
-      limit: 5,
+      limit: '5',
       direction: 'forwards',
       unit: 'hour',
     });

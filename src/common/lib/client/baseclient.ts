@@ -145,7 +145,7 @@ class BaseClient {
     return Defaults.getHttpScheme(this.options) + host + ':' + Defaults.getPort(this.options, false);
   }
 
-  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
+  async stats(params?: RequestParams): Promise<PaginatedResult<Stats>> {
     return this.rest.stats(params);
   }
 
@@ -157,9 +157,9 @@ class BaseClient {
     method: string,
     path: string,
     version: number,
-    params: RequestParams,
-    body: unknown,
-    customHeaders: Record<string, string>,
+    params?: RequestParams,
+    body?: unknown,
+    customHeaders?: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
     return this.rest.request(method, path, version, params, body, customHeaders);
   }

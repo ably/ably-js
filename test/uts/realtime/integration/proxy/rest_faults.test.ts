@@ -217,10 +217,13 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
     await realtimeChannel.publish('test-msg', 'hello world');
 
     // Poll until the message appears in history (eventual consistency)
-    await pollUntil(async () => {
-      const history = await restChannel.history();
-      return history.items.length > 0;
-    }, { interval: 500, timeout: 10000 });
+    await pollUntil(
+      async () => {
+        const history = await restChannel.history();
+        return history.items.length > 0;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     // Retrieve channel history via REST
     const history = await restChannel.history();
@@ -231,7 +234,7 @@ describe('uts/realtime/integration/proxy/rest_faults', function () {
     // Find the published message in history
     const publishedMsg = history.items.find((m: any) => m.name === 'test-msg');
     expect(publishedMsg).to.not.be.undefined;
-    expect(publishedMsg.data).to.equal('hello world');
+    expect(publishedMsg!.data).to.equal('hello world');
 
     // Proxy event log shows both WebSocket and HTTP traffic
     const log = await session.getLog();

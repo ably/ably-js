@@ -373,7 +373,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
 
     // Error reason is set indicating why resume failed
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(80008);
+    expect(client.connection.errorReason!.code).to.equal(80008);
 
     // Connection is still CONNECTED (not FAILED — the server gave a new connection)
     expect(client.connection.state).to.equal('connected');
@@ -454,7 +454,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     // 40171 ("Token not renewable") rather than the original 40142 because the SDK
     // detects it has no means to renew (no key, no authCallback, no authUrl)
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(40171);
+    expect(client.connection.errorReason!.code).to.equal(40171);
 
     // State changes should show the transition to FAILED
     expect(stateChanges).to.include('failed');
@@ -630,8 +630,8 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
 
     // Connection error reason reflects the injected error
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(50000);
-    expect(client.connection.errorReason.statusCode).to.equal(500);
+    expect(client.connection.errorReason!.code).to.equal(50000);
+    expect(client.connection.errorReason!.statusCode).to.equal(500);
 
     // Both channels should be in FAILED state
     expect(channelA.state).to.equal('failed');
@@ -1034,7 +1034,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
 
     // RTN15c7: Error is set on the connection indicating recovery failure
     expect(client.connection.errorReason).to.not.be.null;
-    expect(client.connection.errorReason.code).to.equal(80008);
+    expect(client.connection.errorReason!.code).to.equal(80008);
 
     // Connection is still CONNECTED (not FAILED — the server gave a new connection)
     expect(client.connection.state).to.equal('connected');
