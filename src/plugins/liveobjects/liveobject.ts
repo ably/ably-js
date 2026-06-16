@@ -309,7 +309,7 @@ export abstract class LiveObject<
     // notifyPathEvent() emits at most one event on each subscription, this
     // means that we emit at most one event per path-to-this.
     for (const pathToThis of pathsToThis) {
-      const priorityOrderedCandidatePaths: Path[] = [pathToThis];
+      const preferenceOrderedCandidatePaths: Path[] = [pathToThis];
 
       // For LiveMapUpdate, also add a candidate path per updated key. We insert these after
       // pathToThis so that notifyPathEvent() picks pathToThis in the case where a given subscription
@@ -318,12 +318,12 @@ export abstract class LiveObject<
         const updatedKeys = Object.keys(update.update);
 
         for (const key of updatedKeys) {
-          priorityOrderedCandidatePaths.push([...pathToThis, key]);
+          preferenceOrderedCandidatePaths.push([...pathToThis, key]);
         }
       }
 
       const pathEvent: PathEvent = {
-        priorityOrderedCandidatePaths,
+        preferenceOrderedCandidatePaths,
         message: operationObjectMessage,
       };
 
