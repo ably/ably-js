@@ -63,7 +63,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   function checkCantPublish(channel) {
     return function (callback) {
       Helper.whenPromiseSettles(channel.publish(null, null), function (err) {
-        if (err && err.code === 40160) {
+        // 40160: operation not permitted by capabilities; 40165: PUBLISH mode not requested when attaching
+        if (err && (err.code === 40160 || err.code === 40165)) {
           callback();
         } else {
           callback(err || 'checkCantPublish: unexpectedly allowed to publish');
@@ -85,7 +86,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   function checkCantEnterPresence(channel) {
     return function (callback) {
       Helper.whenPromiseSettles(channel.presence.enterClient(Helper.randomString(), null), function (err) {
-        if (err && err.code === 40160) {
+        // 40160: operation not permitted by capabilities; 40165: PRESENCE mode not requested when attaching
+        if (err && (err.code === 40160 || err.code === 40165)) {
           callback();
         } else {
           callback(err || 'checkCantEnterPresence: unexpectedly allowed to enter presence');
