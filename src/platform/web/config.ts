@@ -62,6 +62,9 @@ const Config: IPlatformConfig = {
     typeof globalObject.queueMicrotask === 'function'
       ? (f: () => void) => globalObject.queueMicrotask(f)
       : (f: () => void) => Promise.resolve().then(f),
+  setTimeout: globalObject.setTimeout.bind(globalObject),
+  clearTimeout: globalObject.clearTimeout.bind(globalObject),
+  now: Date.now,
   addEventListener: globalObject.addEventListener,
   inspect: JSON.stringify,
   stringByteSize: function (str: string) {
