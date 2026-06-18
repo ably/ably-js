@@ -786,11 +786,11 @@ describe('uts/rest/unit/fallback', function () {
     await client.time();
 
     expect(hosts).to.have.length(5);
-    expect(hosts[0]).to.equal('main.realtime.ably.net');     // primary fail
-    expect(hosts[1]).to.equal(fallbackHost);                 // fallback success (cached)
-    expect(hosts[2]).to.equal(fallbackHost);                 // cached fallback (held)
-    expect(hosts[3]).to.equal('main.realtime.ably.net');     // after expiry → primary
-    expect(hosts[4]).to.equal('main.realtime.ably.net');     // still primary, not re-pinned
+    expect(hosts[0]).to.equal('main.realtime.ably.net'); // primary fail
+    expect(hosts[1]).to.equal(fallbackHost); // fallback success (cached)
+    expect(hosts[2]).to.equal(fallbackHost); // cached fallback (held)
+    expect(hosts[3]).to.equal('main.realtime.ably.net'); // after expiry → primary
+    expect(hosts[4]).to.equal('main.realtime.ably.net'); // still primary, not re-pinned
   });
 
   // ── Category D: Endpoint edge cases ───────────────────────────────

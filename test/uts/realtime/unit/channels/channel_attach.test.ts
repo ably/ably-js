@@ -17,7 +17,15 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/channels/channel_attach', function () {
   afterEach(function () {

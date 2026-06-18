@@ -67,10 +67,13 @@ describeEachProtocol('uts/realtime/integration/channels/channel_history', functi
     await pubChannel.publish('event2', 'data2');
     await pubChannel.publish('event3', 'data3');
 
-    const history = await pollUntil(async () => {
-      const result = await subChannel.history();
-      return result.items.length === 3 ? result : null;
-    }, { interval: 500, timeout: 10000 });
+    const history = await pollUntil(
+      async () => {
+        const result = await subChannel.history();
+        return result.items.length === 3 ? result : null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     expect(history.items).to.have.length(3);
 

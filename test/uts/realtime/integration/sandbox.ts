@@ -132,7 +132,11 @@ function closeAndWait(client: any, timeout = 10000): Promise<void> {
 function connectAndWait(client: any, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(`Timed out waiting for connected (state: ${client.connection.state}, error: ${client.connection.errorReason})`));
+      reject(
+        new Error(
+          `Timed out waiting for connected (state: ${client.connection.state}, error: ${client.connection.errorReason})`,
+        ),
+      );
     }, timeout);
 
     if (client.connection.state === 'connected') {
@@ -177,7 +181,7 @@ function generateJWT(opts: {
 }): string {
   const now = Math.floor(Date.now() / 1000);
   const exp = opts.expiresAt != null ? Math.floor(opts.expiresAt / 1000) : now + (opts.ttl || 3600000) / 1000;
-  const iat = opts.issuedAt != null ? Math.floor(opts.issuedAt / 1000) : (exp < now ? exp - 60 : now);
+  const iat = opts.issuedAt != null ? Math.floor(opts.issuedAt / 1000) : exp < now ? exp - 60 : now;
 
   const header = base64url(JSON.stringify({ typ: 'JWT', alg: 'HS256', kid: opts.keyName }));
 

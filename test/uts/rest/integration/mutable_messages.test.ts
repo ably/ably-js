@@ -140,10 +140,9 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     const serial = publishResult.serials[0] as string;
 
     // Update the message
-    const updateResult = await channel.updateMessage(
-      { serial, name: 'updated', data: 'updated-data' } as any,
-      { description: 'edited content' },
-    );
+    const updateResult = await channel.updateMessage({ serial, name: 'updated', data: 'updated-data' } as any, {
+      description: 'edited content',
+    });
 
     // Update returns a version serial
     expect(updateResult).to.have.property('versionSerial');
@@ -228,14 +227,8 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     const serial = publishResult.serials[0] as string;
 
     // Update twice
-    await channel.updateMessage(
-      { serial, data: 'v2' } as any,
-      { description: 'first edit' },
-    );
-    await channel.updateMessage(
-      { serial, data: 'v3' } as any,
-      { description: 'second edit' },
-    );
+    await channel.updateMessage({ serial, data: 'v2' } as any, { description: 'first edit' });
+    await channel.updateMessage({ serial, data: 'v3' } as any, { description: 'second edit' });
 
     // Poll version history until all versions appear
     const versions = await pollUntil(
@@ -277,10 +270,9 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     const serial = publishResult.serials[0] as string;
 
     // Append to the message
-    const appendResult = await channel.appendMessage(
-      { serial, data: 'appended-data' } as any,
-      { description: 'appended content' },
-    );
+    const appendResult = await channel.appendMessage({ serial, data: 'appended-data' } as any, {
+      description: 'appended content',
+    });
 
     expect(appendResult).to.have.property('versionSerial');
     expect(appendResult.versionSerial).to.be.a('string');

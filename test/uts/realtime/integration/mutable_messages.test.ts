@@ -79,10 +79,9 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
 
     const serial = received[0].serial;
 
-    const updateResult = await channelA.updateMessage(
-      { serial, name: 'updated', data: 'v2' } as any,
-      { description: 'edited' },
-    );
+    const updateResult = await channelA.updateMessage({ serial, name: 'updated', data: 'v2' } as any, {
+      description: 'edited',
+    });
 
     await pollUntil(() => (received.length >= 2 ? true : null), {
       interval: 200,
@@ -222,10 +221,9 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
 
     const serial = received[0].serial;
 
-    const appendResult = await channelA.appendMessage(
-      { serial, data: 'appended-data' } as any,
-      { description: 'thread reply' },
-    );
+    const appendResult = await channelA.appendMessage({ serial, data: 'appended-data' } as any, {
+      description: 'thread reply',
+    });
 
     await pollUntil(() => (received.length >= 2 ? true : null), {
       interval: 200,
@@ -294,10 +292,7 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
     const serial = received[0].serial;
 
     // 2. Update
-    await channelA.updateMessage(
-      { serial, name: 'lifecycle', data: 'v2' } as any,
-      { description: 'edit 1' },
-    );
+    await channelA.updateMessage({ serial, name: 'lifecycle', data: 'v2' } as any, { description: 'edit 1' });
 
     await pollUntil(() => (received.length >= 2 ? true : null), {
       interval: 200,
@@ -305,10 +300,7 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
     });
 
     // 3. Append
-    await channelA.appendMessage(
-      { serial, data: 'reply-data' } as any,
-      { description: 'thread reply' },
-    );
+    await channelA.appendMessage({ serial, data: 'reply-data' } as any, { description: 'thread reply' });
 
     await pollUntil(() => (received.length >= 3 ? true : null), {
       interval: 200,
@@ -381,14 +373,8 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
 
     const serial = received[0].serial;
 
-    await channel.updateMessage(
-      { serial, data: 'v2' } as any,
-      { description: 'first edit' },
-    );
-    await channel.updateMessage(
-      { serial, data: 'v3' } as any,
-      { description: 'second edit' },
-    );
+    await channel.updateMessage({ serial, data: 'v2' } as any, { description: 'first edit' });
+    await channel.updateMessage({ serial, data: 'v3' } as any, { description: 'second edit' });
 
     // Wait for propagation before HTTP-based reads
     await new Promise((r) => setTimeout(r, 2000));

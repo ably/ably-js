@@ -15,7 +15,16 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, Platform, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  Platform,
+  trackClient,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  flushAsync,
+} from '../../../helpers';
 
 async function pumpTimers(clock: any, iterations = 30) {
   for (let i = 0; i < iterations; i++) {

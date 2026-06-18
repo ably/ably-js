@@ -13,7 +13,15 @@
 import { expect } from 'chai';
 import { MockWebSocket, PendingWSConnection } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/channels/channel_publish', function () {
   afterEach(function () {
@@ -1721,7 +1729,10 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
     // Advance time past realtimeRequestTimeout so the attach times out
     for (let i = 0; i < 10; i++) {
       await clock.tickAsync(200);
-      for (let j = 0; j < 5; j++) { clock.tick(0); await flushAsync(); }
+      for (let j = 0; j < 5; j++) {
+        clock.tick(0);
+        await flushAsync();
+      }
       if (channel.state === 'suspended') break;
     }
 
@@ -1832,7 +1843,10 @@ describe('uts/realtime/unit/channels/channel_publish', function () {
     // Advance time until SUSPENDED
     for (let i = 0; i < 15; i++) {
       await clock.tickAsync(2000);
-      for (let j = 0; j < 10; j++) { clock.tick(0); await flushAsync(); }
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await flushAsync();
+      }
       if (client.connection.state === 'suspended') break;
     }
     expect(client.connection.state).to.equal('suspended');

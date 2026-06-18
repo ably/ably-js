@@ -8,7 +8,14 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll } from '../../../helpers';
+import {
+  Ably,
+  trackClient,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/connection/error_reason', function () {
   afterEach(function () {

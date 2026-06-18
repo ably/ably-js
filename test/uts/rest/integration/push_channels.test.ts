@@ -25,14 +25,7 @@
  */
 
 import { expect } from 'chai';
-import {
-  Ably,
-  SANDBOX_ENDPOINT,
-  setupSandbox,
-  teardownSandbox,
-  getApiKey,
-  uniqueChannelName,
-} from './sandbox';
+import { Ably, SANDBOX_ENDPOINT, setupSandbox, teardownSandbox, getApiKey, uniqueChannelName } from './sandbox';
 
 function randomId(): string {
   return Math.random().toString(36).substring(2, 10);

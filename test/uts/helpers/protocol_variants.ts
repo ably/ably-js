@@ -20,10 +20,7 @@ const PROTOCOLS: Protocol[] = ['json', 'msgpack'];
  * The callback receives mocha's Suite `this` context via `.call()`,
  * so `this.timeout()` works inside the callback when using `function()` syntax.
  */
-export function describeEachProtocol(
-  name: string,
-  fn: (this: Mocha.Suite, protocol: Protocol) => void,
-): void {
+export function describeEachProtocol(name: string, fn: (this: Mocha.Suite, protocol: Protocol) => void): void {
   for (const protocol of PROTOCOLS) {
     describe(`${name} [${protocol}]`, function (this: Mocha.Suite) {
       fn.call(this, protocol);

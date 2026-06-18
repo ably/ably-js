@@ -134,11 +134,14 @@ describeEachProtocol('uts/rest/integration/publish', function (protocol) {
     }
 
     // Poll history until message appears
-    const history = await pollUntil(async () => {
-      const result = await channel.history(null);
-      if (result.items.length > 0) return result;
-      return null;
-    }, { interval: 500, timeout: 10000 });
+    const history = await pollUntil(
+      async () => {
+        const result = await channel.history(null);
+        if (result.items.length > 0) return result;
+        return null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     // Verify only one message in history (duplicates were deduplicated)
     expect(history.items).to.have.length(1);

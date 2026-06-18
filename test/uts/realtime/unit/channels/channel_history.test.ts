@@ -48,10 +48,14 @@ describe('uts/realtime/unit/channels/channel_history', function () {
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
         captured.push(req);
-        req.respond_with(200, [
-          { id: '1', name: 'event1', data: 'hello' },
-          { id: '2', name: 'event2', data: 'world' },
-        ], { 'content-type': 'application/json' });
+        req.respond_with(
+          200,
+          [
+            { id: '1', name: 'event1', data: 'hello' },
+            { id: '2', name: 'event2', data: 'world' },
+          ],
+          { 'content-type': 'application/json' },
+        );
       },
     });
     installMockHttp(httpMock);

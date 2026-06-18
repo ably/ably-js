@@ -48,10 +48,13 @@ describeEachProtocol('uts/rest/integration/history', function (protocol) {
     await channel.publish('event3', { key: 'value' });
 
     // Poll until messages appear in history
-    const history = await pollUntil(async () => {
-      const result = await channel.history();
-      return result.items.length === 3 ? result : null;
-    }, { interval: 500, timeout: 10000 });
+    const history = await pollUntil(
+      async () => {
+        const result = await channel.history();
+        return result.items.length === 3 ? result : null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     expect(history.items).to.have.length(3);
 
@@ -92,10 +95,13 @@ describeEachProtocol('uts/rest/integration/history', function (protocol) {
     await channel.publish('third', '3');
 
     // Poll until all messages appear
-    await pollUntil(async () => {
-      const result = await channel.history();
-      return result.items.length === 3 ? result : null;
-    }, { interval: 500, timeout: 10000 });
+    await pollUntil(
+      async () => {
+        const result = await channel.history();
+        return result.items.length === 3 ? result : null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     const history = await channel.history({ direction: 'forwards' });
 
@@ -125,10 +131,13 @@ describeEachProtocol('uts/rest/integration/history', function (protocol) {
     }
 
     // Poll until all messages are persisted
-    await pollUntil(async () => {
-      const result = await channel.history();
-      return result.items.length === 10 ? result : null;
-    }, { interval: 500, timeout: 10000 });
+    await pollUntil(
+      async () => {
+        const result = await channel.history();
+        return result.items.length === 10 ? result : null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     const history = await channel.history({ limit: 5 });
 
@@ -165,18 +174,17 @@ describeEachProtocol('uts/rest/integration/history', function (protocol) {
     await channel.publish('late2', 'l2');
 
     // Poll until all messages appear and retrieve with timestamps
-    const allMessages: any[] = await pollUntil(async () => {
-      const result = await channel.history();
-      return result.items.length === 4 ? result.items : null;
-    }, { interval: 500, timeout: 10000 });
+    const allMessages: any[] = await pollUntil(
+      async () => {
+        const result = await channel.history();
+        return result.items.length === 4 ? result.items : null;
+      },
+      { interval: 500, timeout: 10000 },
+    );
 
     // Use server-assigned timestamps to define the time boundary
-    const earlyTimestamps = allMessages
-      .filter((m: any) => m.name.startsWith('early'))
-      .map((m: any) => m.timestamp);
-    const lateTimestamps = allMessages
-      .filter((m: any) => m.name.startsWith('late'))
-      .map((m: any) => m.timestamp);
+    const earlyTimestamps = allMessages.filter((m: any) => m.name.startsWith('early')).map((m: any) => m.timestamp);
+    const lateTimestamps = allMessages.filter((m: any) => m.name.startsWith('late')).map((m: any) => m.timestamp);
 
     const maxEarlyTs = Math.max(...earlyTimestamps);
     const minLateTs = Math.min(...lateTimestamps);

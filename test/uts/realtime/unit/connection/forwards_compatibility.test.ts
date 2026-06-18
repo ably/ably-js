@@ -54,7 +54,8 @@ describe('uts/realtime/unit/connection/forwards_compatibility', function () {
         });
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -231,7 +232,8 @@ describe('uts/realtime/unit/connection/forwards_compatibility', function () {
         });
       },
       onMessageFromClient: (msg, conn) => {
-        if (msg.action === 10) { // ATTACH
+        if (msg.action === 10) {
+          // ATTACH
           conn!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,

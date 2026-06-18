@@ -442,7 +442,6 @@ describe('uts/rest/unit/channel/publish', function () {
     // The message should be essentially empty (name and data are null/missing)
   });
 
-
   /**
    * RSL1l - Publish params passed as querystring
    *

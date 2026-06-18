@@ -291,4 +291,14 @@ function stopProxy(): void {
   _proxyEnsured = false;
 }
 
-export { ProxySession, ProxyRule, ProxyEvent, ImperativeAction, createProxySession, waitForProxy, ensureProxy, stopProxy, allocatePort };
+export {
+  ProxySession,
+  ProxyRule,
+  ProxyEvent,
+  ImperativeAction,
+  createProxySession,
+  waitForProxy,
+  ensureProxy,
+  stopProxy,
+  allocatePort,
+};

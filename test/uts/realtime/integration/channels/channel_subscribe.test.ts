@@ -182,10 +182,10 @@ describe('uts/realtime/integration/channels/channel_subscribe', function () {
     await channelA.publish('from-a', 'hello from a');
     await channelB.publish('from-b', 'hello from b');
 
-    await pollUntil(
-      () => (receivedByA.length >= 2 && receivedByB.length >= 2 ? true : null),
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (receivedByA.length >= 2 && receivedByB.length >= 2 ? true : null), {
+      interval: 200,
+      timeout: 10000,
+    });
 
     const aNNames = receivedByA.map((m: any) => m.name);
     const bNames = receivedByB.map((m: any) => m.name);

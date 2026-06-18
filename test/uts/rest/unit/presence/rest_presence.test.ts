@@ -1280,7 +1280,11 @@ describe('uts/rest/unit/presence/rest_presence', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', addRequestIds: true, useBinaryProtocol: false } as any);
+    const client = new Ably.Rest({
+      key: 'appId.keyId:keySecret',
+      addRequestIds: true,
+      useBinaryProtocol: false,
+    } as any);
     const channel = client.channels.get('test');
     await channel.presence.get({});
 

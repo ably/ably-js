@@ -8,7 +8,15 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, trackClient, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  trackClient,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  flushAsync,
+} from '../../../helpers';
 
 /** Helper: pump fake + real event loops */
 async function pumpTimers(clock: any, iterations = 30) {
@@ -676,23 +684,20 @@ describe('uts/realtime/unit/connection/connection_ping', function () {
 
     client.connection.once('connected', () => {
       // Listen on connectionManager directly for synchronous state change
-      (client as any).connection.connectionManager.once(
-        'connectionstate',
-        (stateChange: any) => {
-          if (stateChange.current === 'closing') {
-            // We are now synchronously in CLOSING state
-            client.connection.ping().then(
-              () => {
-                done(new Error('Expected ping to reject'));
-              },
-              (err: any) => {
-                expect(err).to.not.be.null;
-                done();
-              },
-            );
-          }
-        },
-      );
+      (client as any).connection.connectionManager.once('connectionstate', (stateChange: any) => {
+        if (stateChange.current === 'closing') {
+          // We are now synchronously in CLOSING state
+          client.connection.ping().then(
+            () => {
+              done(new Error('Expected ping to reject'));
+            },
+            (err: any) => {
+              expect(err).to.not.be.null;
+              done();
+            },
+          );
+        }
+      });
 
       // Initiate close — transitions through CLOSING -> CLOSED
       client.close();

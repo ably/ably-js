@@ -23,12 +23,7 @@ import { createProxySession, waitForProxy, ProxySession } from '../helpers/proxy
 function waitForState(client: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for state '${targetState}' (current: ${client.connection.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for state '${targetState}' (current: ${client.connection.state})`)),
       timeout,
     );
     if (client.connection.state === targetState) {
@@ -119,10 +114,7 @@ describe('uts/realtime/integration/proxy/auth_reauth', function () {
     });
 
     // 7. Poll until authCallbackCount increases
-    await pollUntil(
-      () => authCallbackCount > originalCallbackCount,
-      { timeout: 15000 },
-    );
+    await pollUntil(() => authCallbackCount > originalCallbackCount, { timeout: 15000 });
 
     // Assertions
     // Auth callback was invoked exactly once more

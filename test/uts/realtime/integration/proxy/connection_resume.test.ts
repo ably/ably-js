@@ -25,12 +25,7 @@ import { createProxySession, waitForProxy, ProxySession } from '../helpers/proxy
 function waitForState(client: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for state '${targetState}' (current: ${client.connection.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for state '${targetState}' (current: ${client.connection.state})`)),
       timeout,
     );
     if (client.connection.state === targetState) {
@@ -52,12 +47,7 @@ function waitForState(client: any, targetState: string, timeout = 15000): Promis
 function waitForChannelState(channel: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for channel state '${targetState}' (current: ${channel.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for channel state '${targetState}' (current: ${channel.state})`)),
       timeout,
     );
     if (channel.state === targetState) {
@@ -694,8 +684,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
             },
           },
           times: 1,
-          comment:
-            'RTN15g: Replace 1st CONNECTED with short connectionStateTtl (2s)',
+          comment: 'RTN15g: Replace 1st CONNECTED with short connectionStateTtl (2s)',
         },
         {
           match: { type: 'delay_after_ws_connect', delayMs: 1000 },
@@ -753,15 +742,11 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     expect(wsConnects.length).to.be.at.least(3);
 
     // 1st ws_connect: initial connection, no resume
-    expect(
-      wsConnects[0].queryParams == null || wsConnects[0].queryParams!['resume'] == null,
-    ).to.be.true;
+    expect(wsConnects[0].queryParams == null || wsConnects[0].queryParams!['resume'] == null).to.be.true;
 
     // Last ws_connect: fresh connection from suspended (TTL expired), no resume
     const lastConnect = wsConnects[wsConnects.length - 1];
-    expect(
-      lastConnect.queryParams == null || lastConnect.queryParams!['resume'] == null,
-    ).to.be.true;
+    expect(lastConnect.queryParams == null || lastConnect.queryParams!['resume'] == null).to.be.true;
 
     await closeAndWait(client);
   });
@@ -820,7 +805,8 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
           (e) => e.type === 'ws_frame' && e.direction === 'client_to_server' && e.message?.action === 15,
         );
         const suppressedAcks = log.filter(
-          (e) => e.type === 'ws_frame' && e.direction === 'server_to_client' && e.message?.action === 1 && e.ruleMatched,
+          (e) =>
+            e.type === 'ws_frame' && e.direction === 'server_to_client' && e.message?.action === 1 && e.ruleMatched,
         );
         return messageFrames.length > 0 && suppressedAcks.length > 0;
       },
@@ -947,9 +933,7 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
     expect(wsConnects[0].queryParams!['recover']).to.equal(originalConnectionKey);
 
     // No resume param (this is recovery, not resume)
-    expect(
-      wsConnects[0].queryParams!['resume'] == null,
-    ).to.be.true;
+    expect(wsConnects[0].queryParams!['resume'] == null).to.be.true;
 
     // No error on successful recovery
     expect(client2.connection.errorReason).to.be.null;

@@ -592,9 +592,7 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
       // When the user attaches, the ATTACH message should include the channelSerial
       channelOne.once('attached', () => {
         // Find the ATTACH frame sent for channel-one
-        const attachFrame = capturedMessages.find(
-          (m) => m.action === 10 && m.channel === 'channel-one',
-        );
+        const attachFrame = capturedMessages.find((m) => m.action === 10 && m.channel === 'channel-one');
         expect(attachFrame).to.exist;
         expect(attachFrame.channelSerial).to.equal('serial-1-abc');
 

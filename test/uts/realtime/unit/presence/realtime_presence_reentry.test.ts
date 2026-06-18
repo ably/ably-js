@@ -127,9 +127,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
     const reentryMessages = capturedPresence.slice(prevCapturedLength);
     expect(reentryMessages.length).to.be.at.least(1);
 
-    const reenter = reentryMessages.find(
-      (m: any) => m.presence && m.presence.some((p: any) => p.action === 2),
-    );
+    const reenter = reentryMessages.find((m: any) => m.presence && m.presence.some((p: any) => p.action === 2));
     expect(reenter).to.not.be.undefined;
 
     client.close();
@@ -374,9 +372,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
     // Re-entry message should NOT have id set because connectionId changed
     // Note: on the wire, presence actions are numeric (2 = ENTER)
     const reentryMessages = capturedPresence.slice(capturedBefore);
-    const reentry = reentryMessages.find(
-      (m: any) => m.presence && m.presence.some((p: any) => p.action === 2),
-    );
+    const reentry = reentryMessages.find((m: any) => m.presence && m.presence.some((p: any) => p.action === 2));
     expect(reentry).to.not.be.undefined;
 
     const reentryPresence = reentry.presence[0];

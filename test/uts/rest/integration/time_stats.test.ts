@@ -6,13 +6,7 @@
  */
 
 import { expect } from 'chai';
-import {
-  Ably,
-  SANDBOX_ENDPOINT,
-  setupSandbox,
-  teardownSandbox,
-  getApiKey,
-} from './sandbox';
+import { Ably, SANDBOX_ENDPOINT, setupSandbox, teardownSandbox, getApiKey } from './sandbox';
 
 describe('uts/rest/integration/time_stats', function () {
   this.timeout(30000);

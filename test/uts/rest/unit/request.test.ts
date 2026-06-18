@@ -485,7 +485,7 @@ describe('uts/rest/unit/request', function () {
 
       const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
       await client.request('GET', '/test', 3, null as any, null as any, {
-        'Authorization': 'Bearer malicious-token',
+        Authorization: 'Bearer malicious-token',
       });
 
       expect(captured).to.have.length(1);

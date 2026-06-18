@@ -61,9 +61,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
       realtimeClient.connection.once('disconnected', resolve);
     });
 
-    const revokeResult = await keyClient.auth.revokeTokens([
-      { type: 'clientId', value: clientId },
-    ]);
+    const revokeResult = await keyClient.auth.revokeTokens([{ type: 'clientId', value: clientId }]);
 
     expect(revokeResult.successCount).to.equal(1);
     expect(revokeResult.failureCount).to.equal(0);
@@ -102,9 +100,7 @@ describe('uts/rest/integration/revoke_tokens', function () {
     });
 
     try {
-      await tokenRest.auth.revokeTokens([
-        { type: 'clientId', value: 'anyone' },
-      ]);
+      await tokenRest.auth.revokeTokens([{ type: 'clientId', value: 'anyone' }]);
       expect.fail('revokeTokens should have failed with token auth client');
     } catch (error: any) {
       expect(error.code).to.equal(40162);
@@ -131,10 +127,10 @@ describe('uts/rest/integration/revoke_tokens', function () {
     const serverTime = await keyClient.time();
     const issuedBefore = serverTime - 20 * 60 * 1000;
 
-    const revokeResult = await keyClient.auth.revokeTokens(
-      [{ type: 'clientId', value: clientId }],
-      { issuedBefore, allowReauthMargin: true },
-    );
+    const revokeResult = await keyClient.auth.revokeTokens([{ type: 'clientId', value: clientId }], {
+      issuedBefore,
+      allowReauthMargin: true,
+    });
 
     expect(revokeResult.successCount).to.equal(1);
     expect(revokeResult.results).to.have.length(1);

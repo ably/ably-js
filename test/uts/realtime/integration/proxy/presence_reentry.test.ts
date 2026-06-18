@@ -22,12 +22,7 @@ import { createProxySession, waitForProxy, ProxySession } from '../helpers/proxy
 function waitForState(client: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for state '${targetState}' (current: ${client.connection.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for state '${targetState}' (current: ${client.connection.state})`)),
       timeout,
     );
     if (client.connection.state === targetState) {
@@ -49,12 +44,7 @@ function waitForState(client: any, targetState: string, timeout = 15000): Promis
 function waitForChannelState(channel: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for channel state '${targetState}' (current: ${channel.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for channel state '${targetState}' (current: ${channel.state})`)),
       timeout,
     );
     if (channel.state === targetState) {

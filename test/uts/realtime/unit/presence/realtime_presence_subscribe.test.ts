@@ -69,25 +69,19 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 },
-      ],
+      presence: [{ action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 }],
     });
 
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 4, clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 2000, data: 'updated' },
-      ],
+      presence: [{ action: 4, clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 2000, data: 'updated' }],
     });
 
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 3, clientId: 'alice', connectionId: 'c1', id: 'c1:2:0', timestamp: 3000 },
-      ],
+      presence: [{ action: 3, clientId: 'alice', connectionId: 'c1', id: 'c1:2:0', timestamp: 3000 }],
     });
 
     await flushAsync();
@@ -388,16 +382,18 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     const eventsA: any[] = [];
     const eventsB: any[] = [];
 
-    channel.presence.subscribe((event: any) => { eventsA.push(event); });
-    channel.presence.subscribe((event: any) => { eventsB.push(event); });
+    channel.presence.subscribe((event: any) => {
+      eventsA.push(event);
+    });
+    channel.presence.subscribe((event: any) => {
+      eventsB.push(event);
+    });
 
     // Deliver first event -- both listeners receive it
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 },
-      ],
+      presence: [{ action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 }],
     });
 
     await flushAsync();
@@ -412,9 +408,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 2, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 2000 },
-      ],
+      presence: [{ action: 2, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 2000 }],
     });
 
     await flushAsync();
@@ -468,8 +462,12 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     const eventsA: any[] = [];
     const eventsB: any[] = [];
 
-    const listenerA = (event: any) => { eventsA.push(event); };
-    const listenerB = (event: any) => { eventsB.push(event); };
+    const listenerA = (event: any) => {
+      eventsA.push(event);
+    };
+    const listenerB = (event: any) => {
+      eventsB.push(event);
+    };
 
     channel.presence.subscribe(listenerA);
     channel.presence.subscribe(listenerB);
@@ -480,9 +478,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 },
-      ],
+      presence: [{ action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000 }],
     });
 
     await flushAsync();
@@ -534,7 +530,9 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     await channel.attach();
 
     const received: any[] = [];
-    const listener = (event: any) => { received.push(event); };
+    const listener = (event: any) => {
+      received.push(event);
+    };
 
     // Subscribe to both ENTER and LEAVE
     channel.presence.subscribe('enter', listener);
@@ -607,9 +605,7 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 14, // PRESENCE
       channel: channelName,
-      presence: [
-        { action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000, data: 'hello' },
-      ],
+      presence: [{ action: 2, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 1000, data: 'hello' }],
     });
 
     await flushAsync();
@@ -664,7 +660,9 @@ describe('uts/realtime/unit/presence/realtime_presence_subscribe', function () {
     await channel.attach();
 
     const received: any[] = [];
-    channel.presence.subscribe((event: any) => { received.push(event); });
+    channel.presence.subscribe((event: any) => {
+      received.push(event);
+    });
 
     // Server delivers multiple presence events in one ProtocolMessage
     mock.active_connection!.send_to_client({

@@ -18,7 +18,6 @@
 import { expect } from 'chai';
 
 describe('uts/realtime/unit/connection/network_change', function () {
-
   /**
    * RTN20a - Network loss while CONNECTED triggers immediate DISCONNECTED transition
    *

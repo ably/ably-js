@@ -225,13 +225,16 @@ describeEachProtocol('uts/rest/integration/presence', function (protocol) {
     // Poll REST history until events appear
     const restChannel = client.channels.get(channelName);
 
-    const history = await pollUntil(async () => {
-      const result = await restChannel.presence.history({});
-      return result.items.length >= 3 ? result : null;
-    }, {
-      interval: 500,
-      timeout: 10000,
-    });
+    const history = await pollUntil(
+      async () => {
+        const result = await restChannel.presence.history({});
+        return result.items.length >= 3 ? result : null;
+      },
+      {
+        interval: 500,
+        timeout: 10000,
+      },
+    );
 
     expect(history!.items.length).to.be.at.least(3);
 
@@ -282,13 +285,16 @@ describeEachProtocol('uts/rest/integration/presence', function (protocol) {
 
     // Poll until events appear
     const restChannel = client.channels.get(channelName);
-    await pollUntil(async () => {
-      const result = await restChannel.presence.history({});
-      return result.items.length >= 2 ? true : null;
-    }, {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(
+      async () => {
+        const result = await restChannel.presence.history({});
+        return result.items.length >= 2 ? true : null;
+      },
+      {
+        interval: 500,
+        timeout: 10000,
+      },
+    );
 
     // Query with time range
     const history = await restChannel.presence.history({
@@ -335,13 +341,16 @@ describeEachProtocol('uts/rest/integration/presence', function (protocol) {
 
     // Poll until events appear
     const restChannel = client.channels.get(channelName);
-    await pollUntil(async () => {
-      const result = await restChannel.presence.history({});
-      return result.items.length >= 3 ? true : null;
-    }, {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(
+      async () => {
+        const result = await restChannel.presence.history({});
+        return result.items.length >= 3 ? true : null;
+      },
+      {
+        interval: 500,
+        timeout: 10000,
+      },
+    );
 
     // Get history forwards (oldest first)
     const historyForwards = await restChannel.presence.history({ direction: 'forwards' });
@@ -391,13 +400,16 @@ describeEachProtocol('uts/rest/integration/presence', function (protocol) {
 
     // Poll until all events appear
     const restChannel = client.channels.get(channelName);
-    await pollUntil(async () => {
-      const result = await restChannel.presence.history({});
-      return result.items.length >= 5 ? true : null;
-    }, {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(
+      async () => {
+        const result = await restChannel.presence.history({});
+        return result.items.length >= 5 ? true : null;
+      },
+      {
+        interval: 500,
+        timeout: 10000,
+      },
+    );
 
     // Request with small limit
     const page1 = await restChannel.presence.history({ limit: 2 });
@@ -518,13 +530,16 @@ describeEachProtocol('uts/rest/integration/presence', function (protocol) {
 
     // Poll and retrieve history
     const restChannel = client.channels.get(channelName);
-    const history = await pollUntil(async () => {
-      const result = await restChannel.presence.history({});
-      return result.items.length >= 1 ? result : null;
-    }, {
-      interval: 500,
-      timeout: 10000,
-    });
+    const history = await pollUntil(
+      async () => {
+        const result = await restChannel.presence.history({});
+        return result.items.length >= 1 ? result : null;
+      },
+      {
+        interval: 500,
+        timeout: 10000,
+      },
+    );
 
     expect(history!.items[0].data).to.be.an('object');
     expect(history!.items[0].data.key).to.equal('value');

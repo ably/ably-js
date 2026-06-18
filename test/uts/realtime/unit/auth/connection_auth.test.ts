@@ -218,7 +218,6 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
     client.connect();
   });
 
-
   /**
    * RSA4c2 - authCallback error during CONNECTING causes DISCONNECTED
    *

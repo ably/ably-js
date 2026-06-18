@@ -36,9 +36,7 @@ const fixtures: Fixture[] = JSON.parse(fs.readFileSync(fixturesPath, 'utf-8'));
 
 function buildExpected(fixture: Fixture): any {
   if (fixture.type === 'string') {
-    return fixture.numRepeat > 0
-      ? fixture.data.repeat(fixture.numRepeat)
-      : fixture.data;
+    return fixture.numRepeat > 0 ? fixture.data.repeat(fixture.numRepeat) : fixture.data;
   } else if (fixture.type === 'binary') {
     const repeated = fixture.data.repeat(fixture.numRepeat);
     return Buffer.from(repeated, 'utf-8');

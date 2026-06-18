@@ -74,7 +74,7 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
       await channelA.presence.enterClient(`user-${i}`, `data-${i}`);
     }
 
-    await pollUntil(() => receivedEnters.length >= memberCount ? true : null, {
+    await pollUntil(() => (receivedEnters.length >= memberCount ? true : null), {
       interval: 200,
       timeout: 30000,
     });
@@ -136,7 +136,7 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
     // Phase 1: Enter
     await channelA.presence.enter('hello');
 
-    await pollUntil(() => allEvents.length >= 1 ? true : null, {
+    await pollUntil(() => (allEvents.length >= 1 ? true : null), {
       interval: 200,
       timeout: 10000,
     });
@@ -149,7 +149,7 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
     // Phase 2: Update
     await channelA.presence.update('world');
 
-    await pollUntil(() => allEvents.length >= 2 ? true : null, {
+    await pollUntil(() => (allEvents.length >= 2 ? true : null), {
       interval: 200,
       timeout: 10000,
     });
@@ -161,7 +161,7 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
     // Phase 3: Leave
     await channelA.presence.leave('goodbye');
 
-    await pollUntil(() => allEvents.length >= 3 ? true : null, {
+    await pollUntil(() => (allEvents.length >= 3 ? true : null), {
       interval: 200,
       timeout: 10000,
     });

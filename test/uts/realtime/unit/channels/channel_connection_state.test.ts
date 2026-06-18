@@ -15,7 +15,15 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/channels/channel_connection_state', function () {
   afterEach(function () {
@@ -719,12 +727,18 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
     trackClient(client);
 
     client.connect();
-    for (let i = 0; i < 20; i++) { clock.tick(0); await flushAsync(); }
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await flushAsync();
+    }
     expect(client.connection.state).to.equal('connected');
 
     const channel = client.channels.get('test-RTL3c-attaching');
     channel.attach().catch(() => {});
-    for (let i = 0; i < 10; i++) { clock.tick(0); await flushAsync(); }
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await flushAsync();
+    }
     expect(channel.state).to.equal('attaching');
 
     const channelStateChanges: any[] = [];
@@ -737,7 +751,10 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
     // Advance time past connectionStateTtl to reach SUSPENDED
     for (let i = 0; i < 15; i++) {
       await clock.tickAsync(2000);
-      for (let j = 0; j < 10; j++) { clock.tick(0); await flushAsync(); }
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await flushAsync();
+      }
       if (client.connection.state === 'suspended') break;
     }
 
@@ -795,7 +812,10 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
     trackClient(client);
 
     client.connect();
-    for (let i = 0; i < 20; i++) { clock.tick(0); await flushAsync(); }
+    for (let i = 0; i < 20; i++) {
+      clock.tick(0);
+      await flushAsync();
+    }
     expect(client.connection.state).to.equal('connected');
 
     const channel = client.channels.get('test-RTL3d-suspended');
@@ -809,7 +829,10 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
     // Advance to SUSPENDED
     for (let i = 0; i < 15; i++) {
       await clock.tickAsync(2000);
-      for (let j = 0; j < 10; j++) { clock.tick(0); await flushAsync(); }
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await flushAsync();
+      }
       if (client.connection.state === 'suspended') break;
     }
     expect(client.connection.state).to.equal('suspended');
@@ -824,13 +847,19 @@ describe('uts/realtime/unit/channels/channel_connection_state', function () {
     // Advance past suspendedRetryTimeout
     for (let i = 0; i < 10; i++) {
       await clock.tickAsync(2500);
-      for (let j = 0; j < 10; j++) { clock.tick(0); await flushAsync(); }
+      for (let j = 0; j < 10; j++) {
+        clock.tick(0);
+        await flushAsync();
+      }
       if (client.connection.state === 'connected') break;
     }
     expect(client.connection.state).to.equal('connected');
 
     // Wait for channel to re-attach
-    for (let i = 0; i < 10; i++) { clock.tick(0); await flushAsync(); }
+    for (let i = 0; i < 10; i++) {
+      clock.tick(0);
+      await flushAsync();
+    }
 
     expect(channel.state).to.equal('attached');
     expect(attachCount).to.be.at.least(2);

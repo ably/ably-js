@@ -482,9 +482,7 @@ describe('uts/realtime/unit/connection/fallback_hosts', function () {
     await channel.history();
 
     // Find HTTP requests that are history-related (not connectivity checks)
-    const historyRequests = httpRequests.filter(
-      (r) => r.url.includes('/channels/') && r.url.includes('/messages'),
-    );
+    const historyRequests = httpRequests.filter((r) => r.url.includes('/channels/') && r.url.includes('/messages'));
     expect(historyRequests.length).to.be.at.least(1);
 
     // The HTTP request host should use the same fallback datacenter letter

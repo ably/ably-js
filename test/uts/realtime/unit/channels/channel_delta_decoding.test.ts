@@ -105,10 +105,18 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
       id: 'serial:0',
       messages: [
         { id: 'serial:0', data: 'first message', encoding: null },
-        { id: 'serial:1', data: Buffer.from('second message').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-          extras: { delta: { from: 'serial:0', format: 'vcdiff' } } },
-        { id: 'serial:2', data: Buffer.from('third message').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-          extras: { delta: { from: 'serial:1', format: 'vcdiff' } } },
+        {
+          id: 'serial:1',
+          data: Buffer.from('second message').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'serial:0', format: 'vcdiff' } },
+        },
+        {
+          id: 'serial:2',
+          data: Buffer.from('third message').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'serial:1', format: 'vcdiff' } },
+        },
       ],
     });
 
@@ -140,17 +148,25 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
     await channel.attach();
 
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
     await flushAsync();
 
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('updated payload').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('updated payload').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -181,28 +197,42 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Message 1: non-delta
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'value-A', encoding: null }],
     });
     await flushAsync();
 
     // Message 2: delta from msg-1
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('value-B').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('value-B').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
     // Message 3: delta from msg-2 (verifies base updated to value-B)
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-3:0',
-      messages: [{
-        id: 'msg-3:0', data: Buffer.from('value-C').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-3:0',
+      messages: [
+        {
+          id: 'msg-3:0',
+          data: Buffer.from('value-C').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -234,7 +264,9 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // ProtocolMessage with 2 messages — last ID should be serial:1
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'serial:0',
+      action: 15,
+      channel: channelName,
+      id: 'serial:0',
       messages: [
         { id: 'serial:0', data: 'first', encoding: null },
         { id: 'serial:1', data: 'second', encoding: null },
@@ -244,11 +276,17 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Delta referencing serial:1 (the last message) — should succeed
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('third').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'serial:1', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('third').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'serial:1', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -291,7 +329,10 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Establish base
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
     await flushAsync();
@@ -301,11 +342,17 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Delta with wrong base ID
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('delta-data').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-999:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('delta-data').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-999:0', format: 'vcdiff' } },
+        },
+      ],
     });
 
     await new Promise<void>((r) => {
@@ -347,18 +394,26 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Base message first (so lastPayload.messageId is set)
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-0:0',
+      action: 15,
+      channel: channelName,
+      id: 'msg-0:0',
       messages: [{ id: 'msg-0:0', data: 'base', encoding: null }],
     });
     await flushAsync();
 
     // Delta message without plugin
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
-      messages: [{
-        id: 'msg-1:0', data: Buffer.from('some-delta').toString('base64'), encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-0:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      messages: [
+        {
+          id: 'msg-1:0',
+          data: Buffer.from('some-delta').toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-0:0', format: 'vcdiff' } },
+        },
+      ],
     });
 
     await new Promise<void>((r) => {
@@ -406,7 +461,10 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Establish base with non-delta
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-100',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      channelSerial: 'serial-100',
       messages: [{ id: 'msg-1:0', data: 'base payload', encoding: null }],
     });
     await flushAsync();
@@ -417,11 +475,18 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Delta message that will fail to decode
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0', channelSerial: 'serial-200',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('fake-delta').toString('base64'), encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      channelSerial: 'serial-200',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('fake-delta').toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
 
     await new Promise<void>((r) => {
@@ -485,18 +550,28 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Base message
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'original base', encoding: null }],
     });
     await flushAsync();
 
     // Delta that fails on first attempt → triggers recovery → ATTACHING → ATTACHED
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0', channelSerial: 'serial-2',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('bad-delta').toString('base64'), encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      channelSerial: 'serial-2',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('bad-delta').toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
 
     // Wait for recovery: first attaching (recovery starts), then attached (recovery completes)
@@ -512,7 +587,10 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Fresh message after recovery
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-3:0', channelSerial: 'serial-3',
+      action: 15,
+      channel: channelName,
+      id: 'msg-3:0',
+      channelSerial: 'serial-3',
       messages: [{ id: 'msg-3:0', data: 'fresh after recovery', encoding: null }],
     });
     await flushAsync();
@@ -560,18 +638,27 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Base message
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0', channelSerial: 'serial-1',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      channelSerial: 'serial-1',
       messages: [{ id: 'msg-1:0', data: 'base', encoding: null }],
     });
     await flushAsync();
 
     // First failed delta → triggers recovery
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('bad-1').toString('base64'), encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('bad-1').toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await new Promise<void>((r) => {
       if (channel.state === 'attaching') return r();
@@ -580,11 +667,17 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Second failed delta while recovery in progress
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-3:0',
-      messages: [{
-        id: 'msg-3:0', data: Buffer.from('bad-2').toString('base64'), encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-3:0',
+      messages: [
+        {
+          id: 'msg-3:0',
+          data: Buffer.from('bad-2').toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-2:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -625,12 +718,16 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
     const baseAsBase64 = baseBinary.toString('base64'); // "SGVsbG8="
 
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
-      messages: [{
-        id: 'msg-1:0',
-        data: baseAsBase64,
-        encoding: 'base64',
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      messages: [
+        {
+          id: 'msg-1:0',
+          data: baseAsBase64,
+          encoding: 'base64',
+        },
+      ],
     });
     await flushAsync();
 
@@ -638,13 +735,17 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
     // The mock vcdiff decoder is pass-through, so delta data = new value.
     const newBinary = Buffer.from([0x57, 0x6f, 0x72, 0x6c, 0x64]); // "World"
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0',
-        data: newBinary.toString('base64'),
-        encoding: 'vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: newBinary.toString('base64'),
+          encoding: 'vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -688,12 +789,16 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
     const jsonString = '{"foo":"bar","count":1}';
 
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
-      messages: [{
-        id: 'msg-1:0',
-        data: jsonString,
-        encoding: 'json',
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
+      messages: [
+        {
+          id: 'msg-1:0',
+          data: jsonString,
+          encoding: 'json',
+        },
+      ],
     });
     await flushAsync();
 
@@ -703,13 +808,17 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
     const newJsonString = '{"foo":"baz","count":2}';
 
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0',
-        data: Buffer.from(newJsonString).toString('base64'),
-        encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from(newJsonString).toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 
@@ -745,18 +854,26 @@ describe('uts/realtime/unit/channels/channel_delta_decoding', function () {
 
     // Non-delta message (string base)
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-1:0',
+      action: 15,
+      channel: channelName,
+      id: 'msg-1:0',
       messages: [{ id: 'msg-1:0', data: 'hello world', encoding: null }],
     });
     await flushAsync();
 
     // Delta message
     mock.active_connection!.send_to_client({
-      action: 15, channel: channelName, id: 'msg-2:0',
-      messages: [{
-        id: 'msg-2:0', data: Buffer.from('goodbye world').toString('base64'), encoding: 'utf-8/vcdiff/base64',
-        extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
-      }],
+      action: 15,
+      channel: channelName,
+      id: 'msg-2:0',
+      messages: [
+        {
+          id: 'msg-2:0',
+          data: Buffer.from('goodbye world').toString('base64'),
+          encoding: 'utf-8/vcdiff/base64',
+          extras: { delta: { from: 'msg-1:0', format: 'vcdiff' } },
+        },
+      ],
     });
     await flushAsync();
 

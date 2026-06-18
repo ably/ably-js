@@ -376,7 +376,6 @@ describe('uts/rest/unit/auth/token_renewal', function () {
     // DEVIATION: ably-js does not support msgpack protocol
   });
 
-
   /**
    * RSA4b - Renewal limit (max 1 retry per spec)
    *

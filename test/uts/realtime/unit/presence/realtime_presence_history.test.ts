@@ -73,9 +73,7 @@ describe('uts/realtime/unit/presence/realtime_presence_history', function () {
     });
 
     // Find the history request
-    const historyReq = httpMock.captured_requests.find(
-      (r: any) => r.path.includes('/presence/history'),
-    );
+    const historyReq = httpMock.captured_requests.find((r: any) => r.path.includes('/presence/history'));
     expect(historyReq).to.not.be.undefined;
 
     // Verify path
@@ -117,11 +115,15 @@ describe('uts/realtime/unit/presence/realtime_presence_history', function () {
     const httpMock = new MockHttpClient({
       onConnectionAttempt: (conn) => conn.respond_with_success(),
       onRequest: (req) => {
-        req.respond_with(200, [
-          { action: 2, clientId: 'alice', timestamp: 1000 }, // enter
-          { action: 4, clientId: 'alice', timestamp: 2000 }, // update
-          { action: 3, clientId: 'alice', timestamp: 3000 }, // leave
-        ], { 'content-type': 'application/json' });
+        req.respond_with(
+          200,
+          [
+            { action: 2, clientId: 'alice', timestamp: 1000 }, // enter
+            { action: 4, clientId: 'alice', timestamp: 2000 }, // update
+            { action: 3, clientId: 'alice', timestamp: 3000 }, // leave
+          ],
+          { 'content-type': 'application/json' },
+        );
       },
     });
     installMockHttp(httpMock);

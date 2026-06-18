@@ -271,12 +271,10 @@ describe('uts/rest/unit/rest_client', function () {
       // Accept either numeric 50003 or string 'ETIMEDOUT', or message containing "timeout".
       const hasTimeoutCode = error.code === 50003 || error.code === 'ETIMEDOUT';
       const hasTimeoutStatus = error.statusCode === 408;
-      const hasTimeoutMessage =
-        typeof error.message === 'string' && error.message.toLowerCase().includes('timeout');
+      const hasTimeoutMessage = typeof error.message === 'string' && error.message.toLowerCase().includes('timeout');
       expect(hasTimeoutCode || hasTimeoutStatus || hasTimeoutMessage).to.be.true;
     }
   });
-
 
   /**
    * RSC7c - Request ID preserved on fallback retry

@@ -12,7 +12,15 @@
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
 import { MockHttpClient } from '../../../mock_http';
-import { Ably, installMockWebSocket, installMockHttp, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  installMockHttp,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/presence/realtime_presence_channel_state', function () {
   afterEach(function () {
@@ -46,9 +54,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },
@@ -249,9 +255,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         } else if (msg.action === 12) {
           // DETACH
@@ -319,9 +323,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },
@@ -566,9 +568,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
             action: 16, // SYNC
             channel: msg.channel,
             channelSerial: 'seq1:cursor1',
-            presence: [
-              { action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 },
-            ],
+            presence: [{ action: 1, clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }],
           });
         }
       },
@@ -599,9 +599,7 @@ describe('uts/realtime/unit/presence/realtime_presence_channel_state', function 
       action: 16, // SYNC
       channel: 'test-RTP13',
       channelSerial: 'seq1:',
-      presence: [
-        { action: 1, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 },
-      ],
+      presence: [{ action: 1, clientId: 'bob', connectionId: 'c2', id: 'c2:0:0', timestamp: 100 }],
     });
 
     // Allow the sync completion to be processed

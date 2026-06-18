@@ -1042,22 +1042,26 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22a-ref',
-      messages: [{
-        name: 'reply',
-        data: 'match',
-        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'reply',
+          data: 'match',
+          extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     // Message with different extras.ref.timeserial
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22a-ref',
-      messages: [{
-        name: 'reply',
-        data: 'no-match',
-        extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'reply',
+          data: 'no-match',
+          extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     // Message with no extras.ref
@@ -1071,11 +1075,13 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22a-ref',
-      messages: [{
-        name: 'reaction',
-        data: 'match-2',
-        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reaction' } },
-      }],
+      messages: [
+        {
+          name: 'reaction',
+          data: 'match-2',
+          extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reaction' } },
+        },
+      ],
     });
 
     await flushAsync();
@@ -1136,33 +1142,39 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22b-isref',
-      messages: [{
-        name: 'reply',
-        data: 'has-ref',
-        extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'reply',
+          data: 'has-ref',
+          extras: { ref: { timeserial: 'abc123@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     // Message with extras but no ref field — should be delivered
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22b-isref',
-      messages: [{
-        name: 'annotated',
-        data: 'extras-no-ref',
-        extras: { headers: { 'custom-key': 'custom-value' } },
-      }],
+      messages: [
+        {
+          name: 'annotated',
+          data: 'extras-no-ref',
+          extras: { headers: { 'custom-key': 'custom-value' } },
+        },
+      ],
     });
 
     // Another message WITH extras.ref — should NOT be delivered
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22b-isref',
-      messages: [{
-        name: 'reaction',
-        data: 'also-has-ref',
-        extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reaction' } },
-      }],
+      messages: [
+        {
+          name: 'reaction',
+          data: 'also-has-ref',
+          extras: { ref: { timeserial: 'xyz789@1700000000000-0', type: 'com.ably.reaction' } },
+        },
+      ],
     });
 
     await flushAsync();
@@ -1220,33 +1232,39 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22c-multi',
-      messages: [{
-        name: 'comment',
-        data: 'both-match',
-        extras: { ref: { timeserial: 'abc@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'comment',
+          data: 'both-match',
+          extras: { ref: { timeserial: 'abc@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     // Message matching name but NOT refType — should NOT be delivered
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22c-multi',
-      messages: [{
-        name: 'comment',
-        data: 'name-only',
-        extras: { ref: { timeserial: 'def@1700000000000-0', type: 'com.ably.reaction' } },
-      }],
+      messages: [
+        {
+          name: 'comment',
+          data: 'name-only',
+          extras: { ref: { timeserial: 'def@1700000000000-0', type: 'com.ably.reaction' } },
+        },
+      ],
     });
 
     // Message matching refType but NOT name — should NOT be delivered
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22c-multi',
-      messages: [{
-        name: 'update',
-        data: 'type-only',
-        extras: { ref: { timeserial: 'ghi@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'update',
+          data: 'type-only',
+          extras: { ref: { timeserial: 'ghi@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     // Message matching NEITHER — should NOT be delivered
@@ -1260,11 +1278,13 @@ describe('uts/realtime/unit/channels/channel_subscribe', function () {
     mock.active_connection!.send_to_client({
       action: 15,
       channel: 'test-RTL22c-multi',
-      messages: [{
-        name: 'comment',
-        data: 'both-match-2',
-        extras: { ref: { timeserial: 'jkl@1700000000000-0', type: 'com.ably.reply' } },
-      }],
+      messages: [
+        {
+          name: 'comment',
+          data: 'both-match-2',
+          extras: { ref: { timeserial: 'jkl@1700000000000-0', type: 'com.ably.reply' } },
+        },
+      ],
     });
 
     await flushAsync();

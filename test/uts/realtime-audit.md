@@ -86,6 +86,7 @@ RTL17 is listed in the file header comment but has no corresponding `it(...)` bl
 **Both the expected state (should be FAILED, not DISCONNECTED) and error code (should be 40171, not 40142) are wrong in the UTS spec.** This is a UTS spec error — it describes ably-js's actual behavior (which has an explicit workaround at `connectionmanager.ts` line 804: `TODO remove below line once realtime sends token errors as DISCONNECTEDs`) rather than the features spec requirement.
 
 **Note**: The RSA4a (non-renewable) and RSA4b (renewable) cases ARE tested separately, but in different files:
+
 - **RTN14b (ERROR during connection, non-renewable)**: `error_reason.test.ts` — this test (wrong expectations as described above)
 - **RTN15h1 (DISCONNECTED while connected, non-renewable)**: `connection_failures.test.ts` ~line 317 — correctly expects FAILED state
 - **RTN15h2 (DISCONNECTED while connected, renewable)**: `connection_failures.test.ts` ~line 364 — correctly expects reconnect
@@ -144,19 +145,19 @@ These are errors in the UTS specs in the specification repo that need fixing reg
 
 ## Summary Table
 
-| # | Severity | Spec Point | File | Issue |
-|---|----------|-----------|------|-------|
-| 1 | Critical | RTL4g | channel_attributes | Deviation mislabeled as UTS spec error |
-| 2 | Critical | RTN15c7 | connection_failures | Missing error field and errorReason assertions |
-| 3 | Critical | RTN14g | connection_open_failures | Tests wrong scenario (RTN15j instead of RTN14g) |
-| 4 | High | RTN15h2 | connection_failures | Token renewal failure sub-case missing |
-| 5 | High | RTL17 | channel_subscribe | Test declared in header but not implemented |
-| 6 | High | RTN14b/RTN25 | error_reason | Non-renewable token error: wrong expected state (DISCONNECTED→FAILED) and code (40142→40171). RTN15h1/h2 in connection_failures are correct. |
-| 7 | UTS fix | RTL4j | channel_attach.md | Wrong ATTACH_RESUME expectation after detach+reattach |
-| 8 | UTS fix | RTL5 | channel_detach.md | "Detach clears errorReason" has no spec basis |
-| 9 | UTS fix | Various | 4 channel specs | `suspendedRetryTimeout` should be `channelRetryTimeout` |
-| 10 | Docs | — | channels_collection | Stale header comment about release() throwing |
-| 11 | Docs | RTS4a | deviations.md | Stale entry — ably-js now complies |
+| #   | Severity | Spec Point   | File                     | Issue                                                                                                                                        |
+| --- | -------- | ------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Critical | RTL4g        | channel_attributes       | Deviation mislabeled as UTS spec error                                                                                                       |
+| 2   | Critical | RTN15c7      | connection_failures      | Missing error field and errorReason assertions                                                                                               |
+| 3   | Critical | RTN14g       | connection_open_failures | Tests wrong scenario (RTN15j instead of RTN14g)                                                                                              |
+| 4   | High     | RTN15h2      | connection_failures      | Token renewal failure sub-case missing                                                                                                       |
+| 5   | High     | RTL17        | channel_subscribe        | Test declared in header but not implemented                                                                                                  |
+| 6   | High     | RTN14b/RTN25 | error_reason             | Non-renewable token error: wrong expected state (DISCONNECTED→FAILED) and code (40142→40171). RTN15h1/h2 in connection_failures are correct. |
+| 7   | UTS fix  | RTL4j        | channel_attach.md        | Wrong ATTACH_RESUME expectation after detach+reattach                                                                                        |
+| 8   | UTS fix  | RTL5         | channel_detach.md        | "Detach clears errorReason" has no spec basis                                                                                                |
+| 9   | UTS fix  | Various      | 4 channel specs          | `suspendedRetryTimeout` should be `channelRetryTimeout`                                                                                      |
+| 10  | Docs     | —            | channels_collection      | Stale header comment about release() throwing                                                                                                |
+| 11  | Docs     | RTS4a        | deviations.md            | Stale entry — ably-js now complies                                                                                                           |
 
 ---
 
@@ -164,19 +165,19 @@ These are errors in the UTS specs in the specification repo that need fixing reg
 
 All findings have been addressed. UTS specs fixed, ably-js tests updated. Results:
 
-| # | Finding | Resolution | ably-js |
-|---|---------|-----------|---------|
-| 1 | RTL4g mislabeled | Test fixed to assert spec behavior (errorReason cleared) | **FAILS** — ably-js does not clear errorReason on re-attach from FAILED |
-| 2 | RTN15c7 missing assertions | Added error field to mock + errorReason/event assertions | **PASSES** |
-| 3 | RTN14g wrong scenario | Restructured to send ERROR during connection opening | **PASSES** |
-| 4 | RTN15h2 failure sub-case | Not added (out of scope for this fix round) | — |
-| 5 | RTL17 missing | Test added | **PASSES** — ably-js correctly drops messages when not ATTACHED |
-| 6 | RTN25/RTN14b token error | UTS spec + test fixed: expect FAILED/40171 | **PASSES** — ably-js correctly transitions to FAILED with 40171 |
-| 7 | RTL4j ATTACH_RESUME | UTS spec fixed: test via setOptions reattach, not detach+reattach | ably-js test already correct (was not using UTS detach+reattach pattern) |
-| 8 | RTL5 detach errorReason | UTS test removed (no spec basis) | — |
-| 9 | suspendedRetryTimeout | Fixed in 3 UTS specs (channel_error, channel_server_initiated_detach, channel_attach). channel_connection_state left unchanged (correct: connection-level option). | ably-js tests already used correct `channelRetryTimeout` |
-| 10 | Stale header comment | Fixed in channels_collection.test.ts | — |
-| 11 | Stale RTS4a deviation | Removed from deviations.md | — |
+| #   | Finding                    | Resolution                                                                                                                                                         | ably-js                                                                  |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| 1   | RTL4g mislabeled           | Test fixed to assert spec behavior (errorReason cleared)                                                                                                           | **FAILS** — ably-js does not clear errorReason on re-attach from FAILED  |
+| 2   | RTN15c7 missing assertions | Added error field to mock + errorReason/event assertions                                                                                                           | **PASSES**                                                               |
+| 3   | RTN14g wrong scenario      | Restructured to send ERROR during connection opening                                                                                                               | **PASSES**                                                               |
+| 4   | RTN15h2 failure sub-case   | Not added (out of scope for this fix round)                                                                                                                        | —                                                                        |
+| 5   | RTL17 missing              | Test added                                                                                                                                                         | **PASSES** — ably-js correctly drops messages when not ATTACHED          |
+| 6   | RTN25/RTN14b token error   | UTS spec + test fixed: expect FAILED/40171                                                                                                                         | **PASSES** — ably-js correctly transitions to FAILED with 40171          |
+| 7   | RTL4j ATTACH_RESUME        | UTS spec fixed: test via setOptions reattach, not detach+reattach                                                                                                  | ably-js test already correct (was not using UTS detach+reattach pattern) |
+| 8   | RTL5 detach errorReason    | UTS test removed (no spec basis)                                                                                                                                   | —                                                                        |
+| 9   | suspendedRetryTimeout      | Fixed in 3 UTS specs (channel_error, channel_server_initiated_detach, channel_attach). channel_connection_state left unchanged (correct: connection-level option). | ably-js tests already used correct `channelRetryTimeout`                 |
+| 10  | Stale header comment       | Fixed in channels_collection.test.ts                                                                                                                               | —                                                                        |
+| 11  | Stale RTS4a deviation      | Removed from deviations.md                                                                                                                                         | —                                                                        |
 
 **Final test counts: 748 passing, 39 pending, 2 failing.**
 

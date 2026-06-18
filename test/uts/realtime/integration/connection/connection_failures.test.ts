@@ -6,13 +6,7 @@
  */
 
 import { expect } from 'chai';
-import {
-  Ably,
-  SANDBOX_ENDPOINT,
-  setupSandbox,
-  teardownSandbox,
-  trackClient,
-} from '../sandbox';
+import { Ably, SANDBOX_ENDPOINT, setupSandbox, teardownSandbox, trackClient } from '../sandbox';
 
 describe('uts/realtime/integration/connection/connection_failures', function () {
   this.timeout(30000);
