@@ -1,0 +1,42 @@
+name: Test NodeJS (UTS)
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test-node:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # tsx (used to run the TypeScript UTS suite) requires Node >= 18, so 16.x is excluded.
+        node-version: [18.x, 20.x]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+        with:
+          submodules: 'recursive'
+          persist-credentials: false
+      - name: Reconfigure git to use HTTP authentication
+        run: >
+          git config --global url."https://github.com/".insteadOf
+          ssh://git@github.com/
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - name: Run UTS unit tests
+        run: npm run test:uts:unit
+        env:
+          CI: true
+      - name: Run UTS integration tests
+        run: npm run test:uts:integration
+        env:
+          CI: true

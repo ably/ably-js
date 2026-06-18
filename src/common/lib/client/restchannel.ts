@@ -84,9 +84,9 @@ class RestChannel {
     this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, this.logger, options);
   }
 
-  async history(params: RestHistoryParams | null): Promise<PaginatedResult<Message>> {
+  async history(params?: RestHistoryParams | null): Promise<PaginatedResult<Message>> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
-    return this.client.rest.channelMixin.history(this, params);
+    return this.client.rest.channelMixin.history(this, params ?? null);
   }
 
   async publish(...args: any[]): Promise<API.PublishResult> {

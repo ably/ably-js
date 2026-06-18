@@ -55,7 +55,7 @@ export class Rest {
     this.push = new Push(this.client);
   }
 
-  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
+  async stats(params?: RequestParams): Promise<PaginatedResult<Stats>> {
     const headers = Defaults.defaultGetHeaders(this.client.options),
       format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format;
@@ -95,7 +95,7 @@ export class Rest {
       throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
     }
     /* calculate time offset only once for this device by adding to the prototype */
-    this.client.serverTimeOffset = time - Date.now();
+    this.client.serverTimeOffset = time - Platform.Config.now();
     return time;
   }
 
@@ -103,9 +103,9 @@ export class Rest {
     method: string,
     path: string,
     version: number,
-    params: RequestParams,
-    body: unknown,
-    customHeaders: Record<string, string>,
+    params?: RequestParams,
+    body?: unknown,
+    customHeaders?: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {

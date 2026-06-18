@@ -25,7 +25,7 @@ function pad(timeSegment: number, three?: number) {
 function getHandler(logger: Function): Function {
   return Platform.Config.logTimestamps
     ? function (msg: unknown) {
-        const time = new Date();
+        const time = new Date(Platform.Config.now());
         logger(
           pad(time.getHours()) +
             ':' +
@@ -151,7 +151,7 @@ class Logger {
     return level <= this.logLevel;
   };
 
-  setLog = (level: LogLevels | undefined, handler: Function | undefined) => {
+  setLog = (level: LogLevels | undefined, handler?: Function | undefined) => {
     if (level !== undefined) this.logLevel = level;
     if (handler !== undefined) this.logHandler = this.logErrorHandler = handler;
   };

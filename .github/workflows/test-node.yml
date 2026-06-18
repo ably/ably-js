@@ -29,7 +29,12 @@ jobs:
         uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
+      # --ignore-scripts skips dependency install/postinstall scripts. The only deps with
+      # install scripts are esbuild and playwright, which require Node >= 18 and would fail
+      # the install on the Node 16 leg. None of them are used by the node test path
+      # (mocha + grunt/webpack/ts-loader), so skipping their scripts keeps Node 16 green.
+      # The project's own build runs explicitly via `npm run test:node` below.
+      - run: npm ci --ignore-scripts
       - run: npm run test:node
         env:
           CI: true
