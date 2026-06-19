@@ -173,6 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTP8d
      * @specpartial RTP8a - doesn't test entering with data
+     * @specpartial RTP16b - presence queued at the channel level while not yet ATTACHED, with queueMessages enabled (default)
      */
     it('presenceEnterWithoutAttach', function (done) {
       const helper = this.test.helper;
@@ -193,6 +194,39 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutAttach);
+    });
+
+    /**
+     * With queueMessages disabled, the presence message on a channel that has not
+     * yet reached the ATTACHED state is not queued and the operation is rejected
+     * (RTP16b). The implicit attach is unaffected (RTP8d).
+     *
+     * @spec RTP16b
+     * @specpartial RTP8d - the implicit attach still happens
+     */
+    it('presence_enter_no_queueing', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ clientId: testClientId, queueMessages: false });
+      try {
+        await realtime.connection.once('connected');
+        const channel = realtime.channels.get('presence_enter_no_queueing');
+
+        let err;
+        try {
+          await channel.presence.enter('data');
+        } catch (e) {
+          err = e;
+        }
+        expect(err, 'Check enter is rejected when queueMessages is disabled').to.be.ok;
+        expect(err.code).to.equal(90001, 'Check rejection uses the invalid-state error code');
+
+        /* RTP8d: the implicit attach still happens; queueMessages only governs
+         * whether the presence message itself is queued. */
+        await channel.attach();
+        expect(channel.state).to.equal('attached', 'Check the channel still attaches (RTP8d)');
+      } finally {
+        realtime.close();
+      }
     });
 
     /**
