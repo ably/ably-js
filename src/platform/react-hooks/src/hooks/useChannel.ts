@@ -19,6 +19,8 @@ export interface ChannelResult {
 
 type SubscribeArgs = [string, AblyMessageCallback] | [AblyMessageCallback];
 
+// The channel name can be omitted to use the channel from the nearest ChannelProvider.
+export function useChannel(callbackOnMessage?: AblyMessageCallback): ChannelResult;
 export function useChannel(
   channelNameOrNameAndOptions: ChannelParameters,
   callbackOnMessage?: AblyMessageCallback,
@@ -30,19 +32,34 @@ export function useChannel(
 ): ChannelResult;
 
 export function useChannel(
-  channelNameOrNameAndOptions: ChannelParameters,
+  channelNameOrNameAndOptionsOrCallback?: ChannelParameters | AblyMessageCallback,
   eventOrCallback?: string | AblyMessageCallback,
   callback?: AblyMessageCallback,
 ): ChannelResult {
+  // The first argument is the message callback when the channel name is
+  // inferred from a surrounding ChannelProvider, e.g. useChannel(listener).
+  const inferChannelFromNearestProvider = typeof channelNameOrNameAndOptionsOrCallback === 'function';
+  const channelNameOrNameAndOptions = inferChannelFromNearestProvider
+    ? undefined
+    : (channelNameOrNameAndOptionsOrCallback as ChannelParameters | undefined);
+  const eventOrCallbackArg = inferChannelFromNearestProvider
+    ? (channelNameOrNameAndOptionsOrCallback as AblyMessageCallback)
+    : eventOrCallback;
+
   const channelHookOptions =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
-      : { channelName: channelNameOrNameAndOptions };
+      : channelNameOrNameAndOptions === undefined
+        ? {}
+        : { channelName: channelNameOrNameAndOptions };
 
   const ably = useAbly(channelHookOptions.ablyId);
-  const { channelName, skip } = channelHookOptions;
+  const { skip } = channelHookOptions;
 
-  const { channel, derived } = useChannelInstance(channelHookOptions.ablyId, channelName);
+  const { channel, derived, channelName } = useChannelInstance(
+    channelHookOptions.ablyId,
+    channelHookOptions.channelName,
+  );
 
   const publish: Ably.RealtimeChannel['publish'] = useMemo(() => {
     if (!derived) return channel.publish.bind(channel);
@@ -51,8 +68,8 @@ export function useChannel(
     return regularChannel.publish.bind(regularChannel);
   }, [ably.channels, derived, channel, channelName]);
 
-  const channelEvent = typeof eventOrCallback === 'string' ? eventOrCallback : null;
-  const ablyMessageCallback = typeof eventOrCallback === 'string' ? callback : eventOrCallback;
+  const channelEvent = typeof eventOrCallbackArg === 'string' ? eventOrCallbackArg : null;
+  const ablyMessageCallback = typeof eventOrCallbackArg === 'string' ? callback : eventOrCallbackArg;
 
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 

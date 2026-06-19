@@ -71,6 +71,36 @@ const { channel } = useChannel('your-channel-name', (message) => {
 
 Every time a message is sent to `your-channel-name` it'll be logged to the console. You can do whatever you need to with those messages.
 
+#### Omitting the channel name
+
+When a channel-based hook (`useChannel`, `usePresence`, `usePresenceListener`, `useChannelStateListener`) is called without a channel name, it resolves to the channel of the closest enclosing `ChannelProvider`. This avoids repeating the name when there is a surrounding provider:
+
+```jsx
+<ChannelProvider channelName="your-channel-name">
+  <Component />
+</ChannelProvider>;
+
+// Inside Component — no channel name needed:
+const { channel } = useChannel((message) => {
+  console.log(message);
+});
+```
+
+When providers are nested, the nearest one wins. You can still pass an explicit channel name to target a specific enclosing provider by name:
+
+```jsx
+<ChannelProvider channelName="outer">
+  <ChannelProvider channelName="inner">
+    {/* useChannel(...) resolves to "inner"; useChannel("outer", ...) resolves to "outer" */}
+  </ChannelProvider>
+</ChannelProvider>
+```
+
+> [!NOTE]
+> Channel resolution is scoped by `ablyId`. A hook called without an `ablyId` uses the `default` one, so it only resolves to a `ChannelProvider` that also uses the `default` `ablyId`. If your `ChannelProvider` uses a non-default `ablyId`, you must pass it to the hook for the channel to be inferred, for example `useChannel({ ablyId: 'your-ably-id' })`.
+
+<!-- -->
+
 > [!NOTE]
 > Our react hooks are designed to run on the client-side, so if you are using server-side rendering, make sure that your components which use Ably react hooks are only rendered on the client side.
 
@@ -196,6 +226,13 @@ usePresence('your-channel-name', { foo: 'bar' });
 usePresence('another-channel-name', 123);
 usePresence('third-channel-name', 'initial status');
 ```
+
+> [!NOTE]
+> Unlike the other channel-based hooks, `usePresence` cannot infer the channel from the nearest `ChannelProvider` when you call it with presence data only. Because the presence data can itself be a string or object, it is indistinguishable from a channel name or options object, so `usePresence(presenceData)` would be treated as a channel name. To infer the channel while still passing presence data, pass `undefined` as the first argument:
+>
+> ```javascript
+> usePresence(undefined, { foo: 'bar' });
+> ```
 
 If you're using `TypeScript` there are type hints to make sure that value passed to `updateStatus` is of the same `type` as your initial constraint, or a provided generic type parameter:
 

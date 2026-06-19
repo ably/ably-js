@@ -14,14 +14,25 @@ export interface PresenceResult<T> {
   channelError: Ably.ErrorInfo | null;
 }
 
+/**
+ * Enter the presence set of a channel.
+ *
+ * The channel name can be omitted to use the channel from the nearest `ChannelProvider`.
+ * Because the presence data can itself be a string or object, it is indistinguishable
+ * from a channel name or options object, so it cannot be passed as the first argument.
+ * To infer the channel while still providing presence data, pass `undefined` as the
+ * first argument: `usePresence(undefined, presenceData)`.
+ */
 export function usePresence<T = any>(
-  channelNameOrNameAndOptions: ChannelParameters,
+  channelNameOrNameAndOptions?: ChannelParameters,
   messageOrPresenceObject?: T,
 ): PresenceResult<T> {
   const params =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
-      : { channelName: channelNameOrNameAndOptions };
+      : channelNameOrNameAndOptions === undefined
+        ? {}
+        : { channelName: channelNameOrNameAndOptions };
   const skip = params.skip;
 
   const ably = useAbly(params.ablyId);

@@ -1,7 +1,13 @@
 import * as Ably from 'ably';
 
 export type ChannelNameAndOptions = {
-  channelName: string;
+  /**
+   * The name of the channel to use. When omitted, channel hooks resolve to the
+   * channel named by the closest enclosing `ChannelProvider`. Resolution is
+   * scoped by `ablyId`, so a channel is only inferred from a `ChannelProvider`
+   * that uses the same `ablyId` (the `default` one when none is provided).
+   */
+  channelName?: string;
   ablyId?: string;
   skip?: boolean;
 
