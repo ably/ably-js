@@ -10,6 +10,7 @@ import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from '../../platform';
+import type { PendingMessage } from '../transport/protocol';
 import { StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
@@ -545,6 +546,22 @@ class RealtimeChannel extends EventEmitter {
       presence: presence,
     });
     await this.sendAndAwaitAck(msg);
+  }
+
+  /**
+   * RTL3d: when the connection becomes CONNECTED, presence messages waiting on
+   * the connection-wide queue are moved onto this channel's presence queue, so
+   * they are only sent once the channel has (re-)attached (RTP5b) rather than
+   * flushed immediately. Returns true if the channel will (re-)attach and the
+   * messages were re-queued.
+   */
+  requeuePresenceFromConnectionQueue(pendingMessage: PendingMessage): boolean {
+    if (this._presence && (this.state === 'attached' || this.state === 'attaching' || this.state === 'suspended')) {
+      const callback = pendingMessage.callback;
+      this._presence.requeuePresenceMessages(pendingMessage.message.presence ?? [], (err) => callback?.(err));
+      return true;
+    }
+    return false;
   }
 
   async sendState(objectMessages: WireObjectMessage[]): Promise<API.PublishResult> {

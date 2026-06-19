@@ -173,6 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTP8d
      * @specpartial RTP8a - doesn't test entering with data
+     * @specpartial RTP16b - presence queued at the channel level while not yet ATTACHED, with queueMessages enabled (default)
      */
     it('presenceEnterWithoutAttach', function (done) {
       const helper = this.test.helper;
@@ -193,6 +194,39 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutAttach);
+    });
+
+    /**
+     * With queueMessages disabled, the presence message on a channel that has not
+     * yet reached the ATTACHED state is not queued and the operation is rejected
+     * (RTP16b). The implicit attach is unaffected (RTP8d).
+     *
+     * @spec RTP16b
+     * @specpartial RTP8d - the implicit attach still happens
+     */
+    it('presence_enter_no_queueing', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ clientId: testClientId, queueMessages: false });
+      try {
+        await realtime.connection.once('connected');
+        const channel = realtime.channels.get('presence_enter_no_queueing');
+
+        let err;
+        try {
+          await channel.presence.enter('data');
+        } catch (e) {
+          err = e;
+        }
+        expect(err, 'Check enter is rejected when queueMessages is disabled').to.be.ok;
+        expect(err.code).to.equal(90001, 'Check rejection uses the invalid-state error code');
+
+        /* RTP8d: the implicit attach still happens; queueMessages only governs
+         * whether the presence message itself is queued. */
+        await channel.attach();
+        expect(channel.state).to.equal('attached', 'Check the channel still attaches (RTP8d)');
+      } finally {
+        realtime.close();
+      }
     });
 
     /**
@@ -1729,6 +1763,106 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       assert.notEqual(enter.id, member1.id, 'Check the new enter did not have the msgId of the original');
 
       realtime.close();
+    });
+
+    /**
+     * A presence operation performed while the connection is not CONNECTED (with the
+     * channel still ATTACHED) is, on reconnect, moved off the connection-wide queue
+     * onto the channel and sent only once the channel has re-attached, rather than
+     * flushed before re-attach completes.
+     *
+     * @spec RTL3d2
+     * @specpartial RTP5b - queued presence messages are sent once the channel re-attaches
+     */
+    it('presence_enter_while_disconnected_sent_after_reattach', async function () {
+      const helper = this.test.helper;
+      const channelName = 'presence_enter_while_disconnected';
+      const realtime = helper.AblyRealtime();
+      try {
+        await realtime.connection.once('connected');
+        const channel = realtime.channels.get(channelName);
+        await channel.attach();
+
+        /* Observe our own member entering once it is echoed back from the server */
+        const sawEnter = new Promise((resolve) => {
+          channel.presence.subscribe('enter', function handler(presmsg) {
+            if (presmsg.clientId === testClientId) {
+              channel.presence.unsubscribe('enter', handler);
+              resolve();
+            }
+          });
+        });
+
+        /* Watch the next (post-reconnect) transport to record, at the moment the
+         * queued PRESENCE message is put on the wire, whether the channel has
+         * already received its ATTACHED (i.e. re-attach has completed). */
+        let channelReattached = false;
+        let presenceSentAfterReattach = null;
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
+        realtime.connection.connectionManager.once('transport.active', (transport) => {
+          const originalOnProtocolMessage = transport.onProtocolMessage;
+          helper.recordPrivateApi('replace.transport.onProtocolMessage');
+          transport.onProtocolMessage = function (message) {
+            if (message.action === 11 /* ATTACHED */ && message.channel === channelName) {
+              channelReattached = true;
+            }
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            originalOnProtocolMessage.call(transport, message);
+          };
+
+          const originalSend = transport.send;
+          helper.recordPrivateApi('replace.transport.send');
+          transport.send = function (message) {
+            if (
+              message.action === 14 /* PRESENCE */ &&
+              message.channel === channelName &&
+              presenceSentAfterReattach === null
+            ) {
+              presenceSentAfterReattach = channelReattached;
+            }
+            helper.recordPrivateApi('call.transport.send');
+            return originalSend.apply(transport, arguments);
+          };
+        });
+
+        /* Force a failed resume (lost continuity) on reconnect, so the channel
+         * must fully re-attach with no prior server-side attachment. */
+        helper.recordPrivateApi('write.connectionManager.connectionKey');
+        realtime.connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____';
+        helper.recordPrivateApi('write.connectionManager.connectionId');
+        realtime.connection.connectionManager.connectionId = 'ablyjs_tes';
+
+        /* Enter while DISCONNECTED: the channel is still ATTACHED (RTL3e), so the
+         * presence message is queued at the channel level until re-attach. */
+        const enterResult = new Promise((resolve, reject) => {
+          realtime.connection.once('disconnected', () => {
+            channel.presence.enterClient(testClientId, 'data').then(resolve, reject);
+          });
+        });
+
+        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+        realtime.connection.connectionManager.disconnectAllTransports();
+
+        /* The enter resolves once the connection reconnects and the channel re-attaches. */
+        await enterResult;
+
+        /* The queued PRESENCE message must have been sent only after the channel
+         * received its ATTACHED (re-attach complete), not flushed on reconnect. */
+        expect(presenceSentAfterReattach).to.equal(
+          true,
+          'Check queued presence was sent only after the channel re-attached',
+        );
+
+        /* ...and the member is present in the channel's presence set. */
+        await sawEnter;
+        const members = await channel.presence.get({ waitForSync: true });
+        expect(extractClientIds(members)).to.deep.equal(
+          [testClientId],
+          'Check entered member is present after reconnect',
+        );
+      } finally {
+        realtime.close();
+      }
     });
 
     /**
