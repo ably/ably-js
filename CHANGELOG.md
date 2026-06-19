@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.23.0](https://github.com/ably/ably-js/tree/2.23.0) (2026-06-19)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.22.1...2.23.0)
+
+### What's Changed
+
+- Allow omitting `channelName` in the React channel hooks to use the nearest `ChannelProvider` [#2248](https://github.com/ably/ably-js/pull/2248)
+- Fix presence auto-reenter causing "Unable to perform operation on channel" NACKs after reconnecting from a transient disconnect; presence operations are now queued at the channel level until the channel next re-attaches [#2241](https://github.com/ably/ably-js/pull/2241)
+
 ## [2.22.1](https://github.com/ably/ably-js/tree/2.22.1) (2026-06-08)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.22.0...2.22.1)
