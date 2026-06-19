@@ -1261,6 +1261,7 @@ class ConnectionManager extends EventEmitter {
     /* implement the change and notify */
     this.enactStateChange(change);
     if (this.state.sendEvents) {
+      this.queuedPresenceToChannelQueues(); // RTL3d
       this.sendQueuedMessages();
     } else if (!this.state.queueEvents) {
       this.realtime.channels.propogateConnectionInterruption(state, change.reason);
@@ -1804,6 +1805,22 @@ class ConnectionManager extends EventEmitter {
   queue(msg: ProtocolMessage, callback: PublishCallback): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
     this.queuedMessages.push(new PendingMessage(msg, callback));
+  }
+
+  /* RTL3d: queued presence messages must wait for their channel to (re-)attach
+   * before being sent, so move them from the connection-wide queue onto the
+   * relevant channel's presence queue (sent on attach, RTP5b) rather than
+   * flushing them immediately on connect. Messages for channels that will not
+   * re-attach are left on the queue for sendQueuedMessages to handle. */
+  queuedPresenceToChannelQueues(): void {
+    this.queuedMessages.messages = this.queuedMessages.messages.filter((pendingMessage) => {
+      if (pendingMessage.message.action !== actions.PRESENCE) {
+        return true;
+      }
+      const channelName = pendingMessage.message.channel;
+      const channel = channelName ? this.realtime.channels.all[channelName] : undefined;
+      return !(channel && channel.requeuePresenceFromConnectionQueue(pendingMessage));
+    });
   }
 
   sendQueuedMessages(): void {

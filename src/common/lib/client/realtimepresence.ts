@@ -396,6 +396,17 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
+  /**
+   * RTL3d: re-queue presence messages that were moved off the connection-wide
+   * queue onto this channel's presence queue, to be sent once the channel next
+   * reaches the ATTACHED state (RTP5b).
+   */
+  requeuePresenceMessages(presenceMessages: WirePresenceMessage[], callback: ErrCallback): void {
+    for (const presence of presenceMessages) {
+      this.pendingPresence.push({ presence, callback });
+    }
+  }
+
   _clearMyMembers(): void {
     this._myMembers.clear();
   }
