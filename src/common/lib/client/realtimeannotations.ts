@@ -77,7 +77,7 @@ class RealtimeAnnotations {
         code: 93001,
         statusCode: 400,
         remediation:
-          'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). If the subsequent attach is rejected by the server, check that the channel namespace has "Message annotations, updates, appends, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which namespaces have it enabled, and `ably auth keys list` shows your key\'s capabilities.',
+          'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). If the attach is then rejected, the channel namespace does not have "Message annotations, updates, appends, and deletes" enabled (`ably apps rules list` shows which namespaces do). If the attach succeeds but annotations still are not delivered, your API key lacks the annotation-subscribe capability and the server silently dropped the mode (`ably auth keys list` shows your key\'s capabilities).',
       });
       Logger.logActionNoStrip(
         this.logger,
