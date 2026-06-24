@@ -66,7 +66,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to enter a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter(). To enter on behalf of another identity, use presence.enterClient(otherId, data) - this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter() again; once a clientId is set the enter still requires the API key or token to grant the presence capability on this channel (and the channel must reach the attached state), or the server rejects it. To enter on behalf of another identity, use presence.enterClient(otherId, data), which additionally requires a wildcard clientId on your API key or token.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
@@ -83,7 +83,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to update presence data',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update(). To update on behalf of another identity, use presence.updateClient(otherId, data) - this requires a wildcard clientId on your API key/token, otherwise the server rejects the request.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update() again; once a clientId is set the update still requires the API key or token to grant the presence capability on this channel, or the server rejects it. To update on behalf of another identity, use presence.updateClient(otherId, data), which additionally requires a wildcard clientId on your API key or token.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
@@ -167,7 +167,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must have been specified to enter or leave a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token), or use presence.leaveClient(otherId) - leaveClient on behalf of a different identity requires a wildcard clientId on your API key/token.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before retrying presence.leave(), or call presence.leaveClient(otherId) to leave on behalf of another identity. Either way the API key or token must also carry the presence capability for this channel server-side, and leaveClient for a different identity additionally requires a wildcard clientId, otherwise the server rejects the request.',
       });
     }
     return this.leaveClient(undefined, data);
@@ -213,7 +213,7 @@ class RealtimePresence extends EventEmitter {
         throw new PartialErrorInfo({
           message: 'Unable to leave presence channel while in ' + channel.state + ' state',
           code: 90001,
-          hint: 'From "initialized" there is no presence entry to leave; from "failed" inspect channel.errorReason and re-attach before retrying.',
+          hint: 'Inspect channel.errorReason for the cause, then await channel.attach() and retry presence.leave() if the channel state is "failed". If the state is "initialized" no member was ever entered, so there is nothing to leave and no action is needed.',
         });
       }
     }

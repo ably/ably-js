@@ -294,7 +294,7 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
     statusCode: 400,
     hint:
       'v2 uses Promises - drop the trailing callback and `await` the returned promise. ' +
-      'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md',
+      'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md.',
   });
 }
 
@@ -477,7 +477,7 @@ export function matchDerivedChannel(name: string) {
       message: 'Channel name does not match the [filter=...]name shape required for derived channels',
       code: 40010,
       statusCode: 400,
-      hint: 'See https://ably.com/docs/channels/options/derived.',
+      hint: 'Format the name as [filter=<expr>]<channelName>, for example "[filter=...]foo". See https://ably.com/docs/channels#derived.',
     });
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
@@ -516,7 +516,7 @@ export function createMissingPluginError(pluginName: keyof ModularPlugins): Erro
     message: `${pluginName} plugin not provided`,
     code: 40019,
     statusCode: 400,
-    hint: `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See https://ably.com/docs/getting-started/modular.`,
+    hint: `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`,
   });
   return err;
 }

@@ -68,7 +68,7 @@ export class RestChannelMixin {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
+        hint: 'Pass `getMessage` a non-empty serial string, or a `Message` delivered by a subscribe callback (which carries a populated `.serial`) rather than a freshly constructed `Message` whose `.serial` is unset.',
       });
     }
 
@@ -145,7 +145,7 @@ export class RestChannelMixin {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
+        hint: 'Pass a Message that carries a non-empty `.serial` (the object delivered to a subscribe or history callback), or pass that serial string directly, so `getMessageVersions` can address the message whose version history you want.',
       });
     }
 

@@ -179,7 +179,7 @@ function checkHost(host: string): void {
       message: 'host must be a string; was a ' + typeof host,
       code: 40000,
       statusCode: 400,
-      hint: 'Pass `endpoint` as a single endpoint name string (e.g. "main"), not an array or object.',
+      hint: 'Pass each host option as a string: `endpoint` (e.g. "main"), and every entry of `fallbackHosts` (and `restHost`/`realtimeHost` if used) must be a non-array string.',
     });
   }
   if (!host.length) {
@@ -187,7 +187,7 @@ function checkHost(host: string): void {
       message: 'host must not be zero-length',
       code: 40000,
       statusCode: 400,
-      hint: 'Omit `endpoint`/`restHost`/`realtimeHost` to use the Ably default, or pass a non-empty hostname.',
+      hint: 'Remove any empty-string entry from the `fallbackHosts` array, or omit `fallbackHosts` entirely to use the Ably defaults. An empty `endpoint`/`restHost`/`realtimeHost` already falls back to the default and is not the cause here.',
     });
   }
 }

@@ -1084,7 +1084,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'untilAttach was specified and channel is attached, but attachSerial is not defined',
           code: 40000,
           statusCode: 400,
-          hint: 'Re-attach the channel and try again; the SDK could not record an attachSerial from the previous attach.',
+          hint: 'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) to force the SDK to record a fresh attachSerial, then retry history({ untilAttach: true }).',
         });
       }
       delete params.untilAttach;

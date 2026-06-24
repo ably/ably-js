@@ -496,10 +496,10 @@ class Auth {
           if (Platform.BufferUtils.isBuffer(body)) body = body.toString();
           if (!contentType) {
             const err = new ErrorInfo({
-              message: 'authUrl response is missing a content-type header',
+              message: 'authUrl response is missing a Content-Type header',
               code: 40170,
               statusCode: 401,
-              hint: 'Auth endpoints may return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt.',
+              hint: 'Set a Content-Type response header on your authUrl endpoint: application/json for a TokenDetails/TokenRequest object, text/plain for a token string, or application/jwt for a JWT.',
             });
             cb(err, null);
             return;
@@ -514,7 +514,7 @@ class Auth {
                 '. Expected one of: text/plain, application/jwt or application/json',
               code: 40170,
               statusCode: 401,
-              hint: 'Auth endpoints may return a Content-Type of application/json (TokenDetails/TokenRequest), text/plain (token string) or application/jwt; the SDK cannot parse other content types.',
+              hint: 'Change your authUrl endpoint to respond with a Content-Type the SDK can parse: application/json (TokenDetails/TokenRequest), text/plain (token string), or application/jwt (JWT).',
             });
             cb(err, null);
             return;
@@ -522,10 +522,10 @@ class Auth {
           if (json) {
             if ((body as string).length > MAX_TOKEN_LENGTH) {
               const err = new ErrorInfo({
-                message: 'authUrl response exceeded max permitted length',
+                message: 'authUrl JSON response exceeded the maximum permitted length of 128 KB',
                 code: 40170,
                 statusCode: 401,
-                hint: 'authUrl payloads must be under 128 KB. If your TokenDetails legitimately contains a large capability, trim unused fields or set authOptions.suppressMaxLengthCheck. Otherwise check the endpoint is returning only the token shape, not wrapped in extra JSON.',
+                hint: 'Make your authUrl endpoint return only the token payload (a TokenDetails or TokenRequest object, or a token string), not an envelope wrapping it in extra fields. If a TokenDetails genuinely needs a large capability, narrow the capability to the channels and operations the client actually needs.',
               });
               cb(err, null);
               return;
@@ -652,13 +652,16 @@ class Auth {
         timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
         tokenRequestCallbackTimeout = Platform.Config.setTimeout(() => {
           tokenRequestCallbackTimeoutExpired = true;
-          const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
+          const msg =
+            'Token request via authCallback/authUrl did not complete within the configured timeout (' +
+            timeoutLength / 1000 +
+            ' seconds)';
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
           const err = new ErrorInfo({
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'authCallback did not invoke its callback within the timeout, or authUrl did not respond. Check that the callback runs to completion on every code path and that authUrl is reachable.',
+            hint: 'Add logging to your authCallback/authUrl to find where it stalls, and make sure it always resolves (and that authUrl is reachable). If the work legitimately takes longer, raise ClientOptions.realtimeRequestTimeout.',
           });
           reject(err);
         }, timeoutLength);
@@ -684,7 +687,7 @@ class Auth {
               message: 'Token string is empty',
               code: 40170,
               statusCode: 401,
-              hint: 'Return a non-empty token string, or a TokenDetails/TokenRequest object.',
+              hint: 'Return a non-empty value from your authCallback/authUrl: a token string, a TokenRequest, or a TokenDetails object. The callback returned an empty string.',
             });
             reject(err);
           } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
@@ -692,7 +695,7 @@ class Auth {
               message: 'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
               code: 40170,
               statusCode: 401,
-              hint: 'Tokens must be under 128 KB. If the TokenDetails legitimately contains a large capability, trim unused fields. Otherwise check the endpoint is returning only the token, not wrapped in extra data.',
+              hint: 'Return only the bare signed token string from your authCallback/authUrl, not an envelope, debug output, or a stringified TokenDetails wrapping it, since tokens must serialise to under 128 KB. If the token capability is genuinely this large, narrow it to the channels and operations the client needs.',
             });
             reject(err);
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
@@ -741,7 +744,7 @@ class Auth {
               'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
             code: 40170,
             statusCode: 401,
-            hint: 'Token objects must serialise to under 128 KB. Trim unused fields from your TokenDetails/TokenRequest, or set authOptions.suppressMaxLengthCheck if you understand the risk.',
+            hint: 'Token objects must serialise to under 128 KB. Trim unused fields from your TokenDetails/TokenRequest, and if a large capability is required, narrow it to the channels and operations the client actually needs.',
           });
           reject(err);
           return;
@@ -759,7 +762,7 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Your authCallback/authUrl returned an object without a `keyName` (so it was treated as a TokenDetails) and that shape was also rejected. Return either a token string, a TokenRequest (with keyName), or a TokenDetails (with token).',
+            hint: 'Return a token string, a TokenRequest (an object with a `keyName` field), or a TokenDetails (an object with an `issued` field) from your authCallback/authUrl. The returned object had neither field, so it matched neither shape; note that a bare `token` field is not enough to identify a TokenDetails here, the `issued` field is what the SDK keys on.',
           });
           reject(err);
           return;
@@ -848,7 +851,7 @@ class Auth {
         message: 'Invalid key specified',
         code: 40101,
         statusCode: 403,
-        hint: 'API keys are "appId.keyId:secret". Copy the full key including the colon from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        hint: 'Copy the full "appId.keyId:secret" key including the colon and secret from the Ably dashboard, since the key you passed has no colon-separated secret. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
       });
     }
 
@@ -1057,7 +1060,7 @@ class Auth {
         message: 'Can’t use "*" as a clientId as that string is reserved',
         code: 40012,
         statusCode: 400,
-        hint: 'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client, or pass it to authorize() as a tokenParam. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Move "*" out of ClientOptions.clientId; for a wildcard token, set defaultTokenParams: { clientId: "*" } on the client or pass it to authorize() as a tokenParam. The API key must also have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows the capabilities on your key.',
       });
     } else {
       const err = this._uncheckedSetClientId(clientId);
