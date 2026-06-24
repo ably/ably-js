@@ -221,7 +221,7 @@ export class Rest {
         message: 'Cannot revoke tokens when using token auth',
         code: 40162,
         statusCode: 401,
-        hint: 'Construct a separate Ably.Rest client with ClientOptions.key (the API key with the revoke capability) just for this call. If you have the Ably CLI installed, `ably auth keys list` shows which keys have the revoke capability.',
+        hint: 'Token revocation must use basic auth, so construct a separate Ably.Rest client with ClientOptions.key (a raw API key) just for this call. The key must have had token revocation enabled (its "Revocable tokens" setting in the Ably dashboard) before the tokens were issued, otherwise there is nothing to revoke.',
       });
     }
 

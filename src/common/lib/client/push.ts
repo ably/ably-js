@@ -295,7 +295,7 @@ class DeviceRegistrations {
         message: 'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
         code: 40000,
         statusCode: 400,
-        hint: 'Pass either the device id string returned from push.activate(), or the DeviceDetails object (with a non-empty .id field).',
+        hint: 'Pass either the device id string (the local device id, e.g. from client.device().id after push.activate() completes, or the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save()), or a DeviceDetails object with a non-empty .id field.',
       });
     }
 

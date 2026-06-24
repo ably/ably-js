@@ -1084,7 +1084,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'untilAttach was specified and channel is attached, but attachSerial is not defined',
           code: 40000,
           statusCode: 400,
-          hint: 'Re-attach the channel and try again; the SDK could not record an attachSerial from the previous attach.',
+          hint: 'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) to force the SDK to record a fresh attachSerial, then retry history({ untilAttach: true }).',
         });
       }
       delete params.untilAttach;
@@ -1178,7 +1178,7 @@ class RealtimeChannel extends EventEmitter {
         message: 'This message lacks a serial and cannot be updated',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The namespace must enable message annotations/updates/deletes in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which channel namespaces have Mutable Messages enabled.',
+        hint: 'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The channel namespace must have "Message annotations, updates, appends, and deletes" enabled in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which namespaces have it enabled.',
       });
     }
 
