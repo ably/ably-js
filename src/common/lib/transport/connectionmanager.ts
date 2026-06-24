@@ -1972,7 +1972,7 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 403,
         cause: err,
-        hint: 'This can be your authUrl/authCallback rejecting the request, or the Ably server refusing the resulting TokenRequest (e.g. when the request asks for capabilities outside the API key). Inspect cause for the underlying error.',
+        hint: 'Inspect cause for the underlying error: a 403 here means either your authUrl/authCallback rejected the request, or the Ably server refused the resulting TokenRequest. If the latter, narrow the requested capability to what your API key actually grants.',
       });
       this.notifyState({ state: 'failed', error: wrapped });
     } else {

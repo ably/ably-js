@@ -93,14 +93,14 @@ class BaseClient {
           message: 'clientId must be either a string or null',
           code: 40012,
           statusCode: 400,
-          hint: 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.',
+          hint: 'For an anonymous client omit clientId or pass null; to identify the client pass a stable string such as a user id. To authenticate as any clientId, use a wildcard token (defaultTokenParams: { clientId: "*" }) rather than setting clientId here.',
         });
       } else if (normalOptions.clientId === '*') {
         throw new ErrorInfo({
           message: 'Can’t use "*" as a clientId as that string is reserved.',
           code: 40012,
           statusCode: 400,
-          hint: 'Move "*" out of ClientOptions.clientId. For a wildcard token, set defaultTokenParams: { clientId: "*" } on the client instead. The API key must have wildcard-clientId capability in the Ably dashboard, otherwise the server rejects the token request. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+          hint: 'Move "*" out of ClientOptions.clientId. For a wildcard identity, set defaultTokenParams: { clientId: "*" } on the client instead. A client using a raw API key can already assume any clientId, so a wildcard token request succeeds by default; it is rejected only when the token or key issuing it is itself restricted to a single clientId.',
         });
       }
     }
