@@ -2667,7 +2667,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   readonly name: string;
   /**
-   * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any. This is `null` until an error occurs, for example a transition to `failed` or `suspended`, so guard against `null` despite the declared type; inspect it to diagnose a failed or suspended channel.
+   * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any. This is `null` until an error occurs, for example a transition in channel state to `failed` or `suspended`. Guard against `null` despite the declared type and inspect it to diagnose a channel in the failed or suspended state.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#error-reason
    */
@@ -2677,19 +2677,21 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   readonly state: ChannelState;
   /**
-   * Optional [channel parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) that configure the behavior of the channel. After the channel attaches this reflects the parameters the server confirmed on the most recent attach, which may differ from those requested via {@link ChannelOptions.params}, and is `undefined` before the channel attaches for the first time, so guard against `undefined` despite the declared type.
+   * Optional channel parameters that configure the behavior of the channel. After the channel attaches this reflects the parameters the server confirmed on the most recent attach, which may differ from those requested via {@link ChannelOptions.params}. It is `undefined` before the channel attaches for the first time, so guard against `undefined` despite the declared type.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#params
    */
   params: ChannelParams;
   /**
-   * An array of {@link ResolvedChannelMode} objects reflecting the modes the server granted on the most recent attach, which may differ from the modes requested via {@link ChannelOptions.modes}. The value is `undefined` before the channel attaches for the first time, and is also `undefined` (rather than an empty array) when the server grants no modes, so callers should guard against `undefined` despite the declared type.
+   * An array of {@link ResolvedChannelMode} objects reflecting the modes the server granted on the most recent attach. The server grants only the modes the key or token capability permits, so this may be a subset of the modes requested via {@link ChannelOptions.modes}.
+   *
+   * It is `undefined` before the channel attaches for the first time, and also when the server grants no modes rather than an empty array, so guard against `undefined` despite the declared type.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#modes
    */
   modes: ResolvedChannelMode[];
   /**
-   * Deregisters the given listener for the specified event name, removing an earlier event-specific subscription. This only removes the local listener and does not detach the channel, so messages may continue to arrive for any other registered listeners.
+   * Deregisters the given listener for the specified event name, removing an earlier event-specific subscription. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
@@ -2701,7 +2703,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(event: string, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener from all event names in the array. This only removes the local listeners and does not detach the channel.
+   * Deregisters the given listener from all event names in the array. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
@@ -2709,21 +2711,21 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(events: Array<string>, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners for the given event name. This only removes the local listeners and does not detach the channel.
+   * Deregisters all listeners for the given event name. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param event - The event name.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(event: string): void;
   /**
-   * Deregisters all listeners for all event names in the array. This only removes the local listeners and does not detach the channel.
+   * Deregisters all listeners for all event names in the array. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param events - An array of event names.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(events: Array<string>): void;
   /**
-   * Deregisters listeners to messages on this channel that match the supplied filter, removing an earlier filtered subscription. This only removes the local listeners and does not detach the channel.
+   * Deregisters listeners to messages on this channel that match the supplied filter, removing an earlier filtered subscription. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
@@ -2731,14 +2733,14 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener (for any/all event names), removing an earlier subscription. This only removes the local listener and does not detach the channel.
+   * Deregisters the given listener from all event names, removing an earlier subscription. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @param listener - An event listener function.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners to messages on this channel, removing all earlier subscriptions. This only removes the local listeners and does not detach the channel, so the channel stays attached.
+   * Deregisters all listeners to messages on this channel, removing all earlier subscriptions. This only removes the local listeners and does not detach the channel. The server keeps sending messages on the channel and they are billed accordingly.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
@@ -2764,7 +2766,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   presence: RealtimePresence;
   /**
-   * A {@link PushChannel} object that manages device push-notification subscriptions for this channel. Accessing this property requires the Push plugin to be registered via {@link ClientOptions.plugins}, which neither the default nor the modular build bundles; if the plugin is absent, the getter throws an {@link ErrorInfo} rather than returning a {@link PushChannel}.
+   * A {@link PushChannel} object that manages device push notification subscriptions for this channel. Accessing this property requires the `Push` plugin to be registered via {@link ClientOptions.plugins}. The default and modular builds do not bundle the `Push` plugin. Import it from `ably/push`. If the plugin is absent, the getter throws an {@link ErrorInfo} rather than returning a {@link PushChannel}.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#push
    */
@@ -2774,7 +2776,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   annotations: RealtimeAnnotations;
   /**
-   * Attach to this channel, ensuring it is created in the Ably system so that messages published on the channel are received by any listeners registered with {@link RealtimeChannel.subscribe | `subscribe()`}, and emitting the resulting state change to any listeners registered via {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`}. As a convenience you need not call this directly: it is invoked implicitly when {@link RealtimeChannel.subscribe | `subscribe()`} is called, when {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on this channel's {@link RealtimePresence} object, or when `get()` is called on its `RealtimeObject`. The returned promise rejects with an {@link ErrorInfo} if the connection is unusable or the channel transitions to `detached`, `suspended`, or `failed` instead of attaching.
+   * Attach to this channel so that messages published on it are received by any listeners registered with {@link RealtimeChannel.subscribe | `subscribe()`}. It also emits the resulting state change to any registered listeners.
+   *
+   * As a convenience you need not call this directly. It is invoked implicitly by `subscribe()`, by presence `enter()`, `subscribe()`, `update()`, or `get()`, or by LiveObjects `get()`.
+   *
+   * The returned promise rejects with an {@link ErrorInfo} if the connection is unusable or the channel transitions to `detaching`, `detached`, `suspended`, or `failed` instead of attaching.
    *
    * @returns A promise which, upon success, if the channel became attached will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be fulfilled with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
    * @example
@@ -2785,7 +2791,13 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   attach(): Promise<ChannelStateChange | null>;
   /**
-   * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel is released in the Ably service within two minutes. Detaching from a `suspended` or already `detached` channel resolves without further action, but detaching from a `failed` channel rejects with an {@link ErrorInfo}, in which case release the channel and get it again to start afresh.
+   * Detach from this channel. Any resulting channel state change is emitted to any registered listeners.
+   *
+   * Detaching stops the server sending messages on this channel to the client. Locally registered listeners remain registered.
+   *
+   * Once all clients globally have detached from the channel, the channel is released in the Ably service within two minutes.
+   *
+   * Detaching from a channel in the `suspended` or `detached` state resolves without further action. Calling `detach()` while the channel is already detaching does not start a second detach, and the returned promise resolves once the channel reaches `detached`. Detaching from a channel in the `failed` state rejects with an {@link ErrorInfo}. Release the channel with {@link Channels.release | `release()`} and get it again with {@link Channels.get | `get()`} to start afresh.
    *
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    * @example
@@ -2796,7 +2808,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   detach(): Promise<void>;
   /**
-   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. Messages are returned from durable storage only when message persistence is enabled for the channel by a channel rule; without it, only messages from the last two minutes, the service's default retention, are returned.
+   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. Messages are returned from storage only when message persistence is enabled for the channel by a rule. If message persistence is not enabled, only messages from the last two minutes are returned.
    *
    * @param params - A set of parameters which are used to specify which messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2823,7 +2835,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<InboundMessage>>): void;
   /**
-   * Sets the {@link ChannelOptions} for the channel. If the channel is already attached or attaching and the new {@link ChannelOptions.modes} or {@link ChannelOptions.params} differ from the current ones, this triggers a live re-attach to apply them, and the returned promise resolves only once the server confirms the new options, rejecting with an {@link ErrorInfo} if the channel detaches or fails in the meantime. Otherwise the new options are stored for the next attach. The promise also rejects with an {@link ErrorInfo} when the supplied options are invalid.
+   * Sets the {@link ChannelOptions} for the channel.
+   *
+   * Changing {@link ChannelOptions.modes} or {@link ChannelOptions.params} while the channel is attached or attaching re-attaches it to apply them, and the promise resolves only once the server confirms the new options. It rejects with an {@link ErrorInfo} if the channel detaches or fails first. Otherwise the new options are stored for the next attach.
+   *
+   * The promise also rejects with an {@link ErrorInfo} when the supplied options are invalid.
    *
    * @param options - A {@link ChannelOptions} object.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2835,7 +2851,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   setOptions(options: ChannelOptions): Promise<void>;
   /**
-   * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers messages, so the listener silently never fires and a warning is logged rather than the call rejecting (or it rejects with a hinted {@link ErrorInfo} when {@link ClientOptions.strictMode} is enabled).
+   * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
@@ -2848,7 +2864,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(event: string, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel for multiple event name values. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers messages, so the listener silently never fires and a warning is logged rather than the call rejecting (or it rejects with a hinted {@link ErrorInfo} when {@link ClientOptions.strictMode} is enabled).
+   * Registers a listener for messages on this channel for multiple event name values. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
@@ -2863,7 +2879,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * {@label WITH_MESSAGE_FILTER}
    *
-   * Registers a listener for messages on this channel that match the supplied filter. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers messages, so the listener silently never fires and a warning is logged rather than the call rejecting (or it rejects with a hinted {@link ErrorInfo} when {@link ClientOptions.strictMode} is enabled).
+   * Registers a listener for messages on this channel that match the supplied filter. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
@@ -2876,7 +2892,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers messages, so the listener silently never fires and a warning is logged rather than the call rejecting (or it rejects with a hinted {@link ErrorInfo} when {@link ClientOptions.strictMode} is enabled).
+   * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires.
    *
    * @param callback - An event listener function.
    * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
@@ -2903,7 +2919,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): void;
   /**
-   * Publishes a single message to the channel with the given event name and payload. Publishing does not attach the channel, so unlike {@link RealtimeChannel.subscribe | `subscribe()`}, {@link RealtimePresence.enter | `enter()`}, and {@link RealtimePresence.get | `get()`} a publish-only client need not attach or subscribe first.
+   * Publishes a single message to the channel with the given event name and payload.
    *
    * @param name - The event name.
    * @param data - The message payload.
@@ -2917,7 +2933,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   publish(name: string, data: any, options?: PublishOptions): Promise<PublishResult>;
   /**
-   * Publishes an array of messages to the channel. Publishing does not attach the channel, so unlike {@link RealtimeChannel.subscribe | `subscribe()`}, {@link RealtimePresence.enter | `enter()`}, and {@link RealtimePresence.get | `get()`} a publish-only client need not attach or subscribe first.
+   * Publishes an array of messages to the channel.
    *
    * @param messages - An array of {@link Message} objects.
    * @param options - Optional parameters sent as part of the protocol message.
@@ -2930,7 +2946,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   publish(messages: Message[], options?: PublishOptions): Promise<PublishResult>;
   /**
-   * Publish a message to the channel. Publishing does not attach the channel, so unlike {@link RealtimeChannel.subscribe | `subscribe()`}, {@link RealtimePresence.enter | `enter()`}, and {@link RealtimePresence.get | `get()`} a publish-only client need not attach or subscribe first.
+   * Publishes a message to the channel.
    *
    * @param message - A {@link Message} object.
    * @param options - Optional parameters sent as part of the protocol message.
@@ -2958,7 +2974,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   publish(name: string, data: any, callback: ErrorCallback): void;
   /**
-   * If the channel is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves with the {@link ChannelStateChange} the next time the channel transitions to the given state.
+   * If the channel is already in the given state, resolves immediately with `null`. Otherwise resolves with the {@link ChannelStateChange} the next time the channel transitions to the given state.
    *
    * @param targetState - The channel state to wait for.
    * @example
@@ -2969,7 +2985,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   whenState(targetState: ChannelState): Promise<ChannelStateChange | null>;
   /**
-   * Retrieves the latest version of a specific message by its serial identifier. Retrievable messages require message interactions (mutable messages) to be enabled for the channel by a channel rule. The supplied serial or {@link Message} must carry a populated `serial`, which is present on a {@link Message} received from a subscribe callback but not on a freshly constructed one; if the serial is missing the promise rejects with an {@link ErrorInfo}.
+   * Retrieves the latest version of a specific message by its serial identifier.
+   *
+   * The channel must be configured to allow message updates, enabled by a rule.
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param serialOrMessage - Either the serial identifier string of the message to retrieve, or a {@link Message} object containing a populated `serial` field.
    * @returns A promise which, upon success, will be fulfilled with a {@link Message} object representing the latest version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2981,7 +3001,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   getMessage(serialOrMessage: string | Message): Promise<Message>;
   /**
-   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged. The namespace must have message interactions (updates) enabled by a channel rule, and the supplied `message` must carry the `serial` it was given when published (pass the {@link Message} received in a subscribe callback, not a freshly constructed object); otherwise the promise rejects with an {@link ErrorInfo}.
+   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged.
+   *
+   * The channel must be configured to allow message updates, enabled by a rule.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
@@ -2995,7 +3019,13 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object). Requires message interactions (deletes) to be enabled for the channel by a channel rule, and the message must carry a `serial`, so pass the {@link Message} you received from a subscribe callback rather than a freshly constructed object; otherwise the call rejects with an {@link ErrorInfo}.
+   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible.
+   *
+   * Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message replace the corresponding fields, while null fields are left unchanged.
+   *
+   * The channel must be configured to allow message deletes, enabled by a rule.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
@@ -3009,7 +3039,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided. Requires message interactions (mutable messages) to be enabled for the channel by a channel rule, and the supplied {@link Message} must carry the `serial` it received from a subscribe callback, otherwise the call rejects with an {@link ErrorInfo}.
+   * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
+   *
+   * The channel must be configured to allow message appends, enabled by a rule.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
@@ -3023,7 +3057,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations. The message must carry a `serial`, so pass the {@link Message} from a subscribe callback or its serial string, otherwise the call rejects with an {@link ErrorInfo}. Message versions exist only when message interactions (updates and deletes) are enabled for the channel by a channel rule.
+   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message versions exist only when the channel is configured to allow updating and deleting messages, enabled by a rule.
    *
    * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
    * @param params - Optional parameters sent as part of the query string.
