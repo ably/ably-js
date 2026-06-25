@@ -1985,14 +1985,22 @@ export declare interface RealtimeClient {
  */
 export declare interface Auth {
   /**
-   * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [identified clients](https://ably.com/docs/core-features/authentication#identified-clients).
+   * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/auth#client-id
    */
   clientId: string;
 
   /**
-   * Instructs the library to get a new token immediately. On a realtime client it re-authenticates the live connection, or initiates a connection if not connected, and the returned promise resolves only once the new token has taken effect on a `connected` connection, rejecting with an {@link ErrorInfo} if re-authentication fails or the connection cannot be (re)established. The client must be able to issue tokens, so a `key`, `authUrl`, or `authCallback` must be configured in {@link ClientOptions}, otherwise the call rejects with an {@link ErrorInfo}; `authorize()` cannot change the API key, so passing an `authOptions.key` that differs from the one the client was constructed with also rejects. Any {@link TokenParams} and {@link AuthOptions} passed in are stored as the new defaults for all subsequent token requests and entirely replace, rather than merge with, the current saved values.
+   * Instructs the library to get a new token immediately.
+   *
+   * On a realtime client it re-authenticates the live connection, or initiates a connection if not currently connected. The returned promise resolves only once the new token has taken effect on a `connected` connection. It rejects with an {@link ErrorInfo} if re-authentication fails or the connection cannot be (re)established.
+   *
+   * The client must be able to issue tokens, so a `key`, `authUrl`, or `authCallback` must be configured in {@link ClientOptions}. If one of these is not configured the call rejects with an {@link ErrorInfo}.
+   *
+   * `authorize()` cannot change the API key, so passing an `authOptions.key` that differs from the one the client was constructed with is rejected with an {@link ErrorInfo}.
+   *
+   * Any {@link TokenParams} and {@link AuthOptions} passed in are stored as the new defaults for all subsequent token requests and entirely replace, rather than merge with, the current saved values.
    *
    * @param tokenParams - A {@link TokenParams} object.
    * @param authOptions - An {@link AuthOptions} object.
@@ -2024,7 +2032,11 @@ export declare interface Auth {
     callback: StandardCallback<TokenDetails>,
   ): void;
   /**
-   * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Use this to implement an Ably Token request callback for use by other clients. An API `key` value must be available locally to sign the request, supplied either in the client's {@link ClientOptions} or as `key` in the `authOptions` argument; without one the call rejects with an {@link ErrorInfo}, since a token-authenticated client cannot construct token requests itself and must instead obtain the {@link TokenRequest} from the key owner. Both {@link TokenParams} and {@link AuthOptions} are optional; when omitted or `null`, the client library's stored defaults (those set at construction or by a later `authorize` call) are used, and any values passed in replace, rather than merge with, those defaults.
+   * Creates and signs an Ably {@link TokenRequest} based on the specified {@link TokenParams} and {@link AuthOptions}. If none are specified it uses those previously stored by the library. Use this to implement an Ably Token request callback for use by other clients.
+   *
+   * An API `key` value must be available locally to sign the request, supplied either in the client's {@link ClientOptions} or as `key` in the `authOptions` argument. Without a `key` the call rejects with an {@link ErrorInfo}, since a token-authenticated client cannot construct token requests itself and must instead obtain the {@link TokenRequest} from the key owner.
+   *
+   * Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the client's stored defaults are used, as specified at instantiation or later updated by an `authorize()` request. Any values passed in replace, rather than merge with, those defaults.
    *
    * @param tokenParams - A {@link TokenParams} object.
    * @param authOptions - An {@link AuthOptions} object.
@@ -2056,7 +2068,9 @@ export declare interface Auth {
     callback: StandardCallback<TokenRequest>,
   ): void;
   /**
-   * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both are optional; when omitted or `null`, the client's stored defaults are used, as specified in the {@link ClientOptions} at instantiation or later updated by an `authorize` request, and any values passed in are used instead of, rather than merged with, those defaults. The client must have a usable way to obtain a token, so the resolved {@link AuthOptions} must include one of `authCallback`, `authUrl`, or `key`; a client given only a literal token or `tokenDetails` with no renewal mechanism cannot request a new token and the call rejects with an {@link ErrorInfo}.
+   * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the client's stored defaults are used, as specified at instantiation or later updated by an `authorize()` request. Any values passed in replace, rather than merge with, those defaults.
+   *
+   * The client must have a way to obtain a token, so the resolved {@link AuthOptions} must include one of `authCallback`, `authUrl`, or `key`. A client given only a literal token or `tokenDetails` with no renewal mechanism cannot request a new token and the call rejects with an {@link ErrorInfo}.
    *
    * @param TokenParams - A {@link TokenParams} object.
    * @param authOptions - An {@link AuthOptions} object.
@@ -2089,10 +2103,10 @@ export declare interface Auth {
   ): void;
   /**
    * Revokes the tokens specified by the provided array of {@link TokenRevocationTargetSpecifier}s.
-   * The client must be authenticated with an API key (basic auth), not a token; a
-   * token-authenticated client cannot revoke tokens and the call rejects with an {@link ErrorInfo}.
-   * Only tokens issued by an API key that had revocable tokens enabled before the token was issued
-   * can be revoked.
+   *
+   * The client making this call must be authenticated with an API key (basic auth), not a token. A token-authenticated client cannot revoke tokens and the call rejects with an {@link ErrorInfo}.
+   *
+   * Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked.
    *
    * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
    * @param options - A set of options which are used to modify the revocation request.
