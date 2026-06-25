@@ -111,6 +111,37 @@ class Admin {
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     await Resource.post(client, '/push/publish', requestBody, headers, params, null, true);
   }
+
+  async createApnsBroadcast(options: { messageStoragePolicy: 0 | 1 }): Promise<{ id: string; apnsChannelId: string }> {
+    const client = this.client;
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(client.options),
+      params = {};
+
+    Utils.mixin(headers, client.options.headers);
+
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
+
+    const requestBody = Utils.encodeBody(
+      { messageStoragePolicy: options.messageStoragePolicy },
+      client._MsgPack,
+      format,
+    );
+    const response = await Resource.post(
+      client,
+      '/push/apnsBroadcastChannels',
+      requestBody,
+      headers,
+      params,
+      null,
+      true,
+    );
+
+    return (response.unpacked ? response.body : Utils.decodeBody(response.body, client._MsgPack, format)) as {
+      id: string;
+      apnsChannelId: string;
+    };
+  }
 }
 
 class DeviceRegistrations {

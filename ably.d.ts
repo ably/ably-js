@@ -3703,6 +3703,39 @@ export declare interface PushAdmin {
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
   publish(recipient: any, payload: any): Promise<void>;
+  /**
+   * Creates an APNs broadcast channel for use with an iOS Live Activity. Call once before starting the Live Activity and persist the returned ids for the session.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param options - Options for the broadcast, including the `messageStoragePolicy`.
+   * @returns A promise resolving to the broadcast `{ id, apnsChannelId }`.
+   */
+  createApnsBroadcast(options: PushApnsBroadcastOptions): Promise<PushApnsBroadcast>;
+}
+
+/**
+ * Options for creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcastOptions {
+  /**
+   * Set to `1` to cache the last update payload so late-joining devices receive the current content state immediately on subscription. Set to `0` to disable caching.
+   */
+  messageStoragePolicy: 0 | 1;
+}
+
+/**
+ * The result of creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcast {
+  /**
+   * The opaque Ably broadcast id.
+   */
+  id: string;
+  /**
+   * The Apple-assigned channel id.
+   */
+  apnsChannelId: string;
 }
 
 /**
