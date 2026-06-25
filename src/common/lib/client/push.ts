@@ -90,11 +90,13 @@ class Admin {
   client: BaseClient;
   deviceRegistrations: DeviceRegistrations;
   channelSubscriptions: ChannelSubscriptions;
+  liveActivity: LiveActivity;
 
   constructor(client: BaseClient) {
     this.client = client;
     this.deviceRegistrations = new DeviceRegistrations(client);
     this.channelSubscriptions = new ChannelSubscriptions(client);
+    this.liveActivity = new LiveActivity(client);
   }
 
   async publish(recipient: any, payload: any): Promise<void> {
@@ -120,8 +122,6 @@ class Admin {
 
     Utils.mixin(headers, client.options.headers);
 
-    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
     const requestBody = Utils.encodeBody(
       { messageStoragePolicy: options.messageStoragePolicy },
       client._MsgPack,
@@ -141,6 +141,72 @@ class Admin {
       id: string;
       apnsChannelId: string;
     };
+  }
+}
+
+class LiveActivity {
+  client: BaseClient;
+
+  constructor(client: BaseClient) {
+    this.client = client;
+  }
+
+  async start(params: {
+    recipient: { channels?: string[]; deviceId?: string };
+    apnsBroadcast: string;
+    apns: any;
+    headers?: Record<string, any>;
+  }): Promise<void> {
+    const { recipient, apnsBroadcast, apns, headers } = params;
+    const body: Record<string, any> = { apns };
+    if (recipient.channels) {
+      body.channels = recipient.channels;
+    }
+    if (recipient.deviceId) {
+      body.deviceId = recipient.deviceId;
+    }
+    if (headers) {
+      body.headers = headers;
+    }
+    await this._post(apnsBroadcast, 'start', body);
+  }
+
+  async update(params: { apnsBroadcast: string; apns: any; headers?: Record<string, any> }): Promise<void> {
+    const { apnsBroadcast, apns, headers } = params;
+    const body: Record<string, any> = { apns };
+    if (headers) {
+      body.headers = headers;
+    }
+    await this._post(apnsBroadcast, 'broadcast', body);
+  }
+
+  async end(params: { apnsBroadcast: string; apns: any; headers?: Record<string, any> }): Promise<void> {
+    const { apnsBroadcast, apns, headers } = params;
+    const body: Record<string, any> = { apns };
+    if (headers) {
+      body.headers = headers;
+    }
+    await this._post(apnsBroadcast, 'end', body);
+  }
+
+  private async _post(apnsBroadcast: string, action: string, body: Record<string, any>): Promise<void> {
+    const client = this.client;
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
+    const requestHeaders = Defaults.defaultPostHeaders(client.options);
+    const params = {};
+
+    Utils.mixin(requestHeaders, client.options.headers);
+
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
+    await Resource.post(
+      client,
+      '/push/apnsBroadcastChannels/' + encodeURIComponent(apnsBroadcast) + '/' + action,
+      requestBody,
+      requestHeaders,
+      params,
+      null,
+      true,
+    );
   }
 }
 
@@ -248,8 +314,6 @@ class DeviceRegistrations {
     }
 
     Utils.mixin(headers, client.options.headers);
-
-    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     await Resource['delete'](
       client,
