@@ -109,6 +109,21 @@ const minifiedLiveObjectsPluginCdnConfig = {
   minify: true,
 };
 
+const materializerPluginConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/materializer/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyMessageMaterializerPlugin', amdNamedModule: false })],
+  outfile: 'build/materializer.js',
+};
+
+const materializerPluginEsmConfig = {
+  ...createBaseConfig(),
+  format: 'esm',
+  plugins: [],
+  entryPoints: ['src/plugins/materializer/index.ts'],
+  outfile: 'build/materializer.mjs',
+};
+
 module.exports = {
   webConfig,
   minifiedWebConfig,
@@ -121,4 +136,6 @@ module.exports = {
   liveObjectsPluginEsmConfig,
   liveObjectsPluginCdnConfig,
   minifiedLiveObjectsPluginCdnConfig,
+  materializerPluginConfig,
+  materializerPluginEsmConfig,
 };
