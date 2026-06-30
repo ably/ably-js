@@ -446,7 +446,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Unable to detach; channel state = failed',
           code: 90001,
           statusCode: 400,
-          hint: 'Release it via channels.release(name) and call channels.get(name) again to start a fresh channel.',
+          hint: 'A failed channel is not attached, so there is nothing to detach. Inspect channel.errorReason for the cause; call channel.attach() to recover the channel, or channels.release(name) to discard it.',
         });
       }
       default:
@@ -988,7 +988,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel attach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The SDK will retry automatically once the connection is healthy; check connection.state and connection.errorReason.',
+          hint: 'The channel is now suspended. The SDK retries the attach automatically while the connection is connected, and you can call channel.attach() to retry immediately. Inspect channel.errorReason if it keeps timing out.',
         });
         this.notifyState('suspended', err);
         break;
@@ -998,7 +998,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel detach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The channel has reverted to attached; retry detach() once the connection is stable.',
+          hint: 'The detach timed out and the channel is back in the attached state. Call channel.detach() again to retry; inspect channel.errorReason if it keeps timing out.',
         });
         this.notifyState('attached', err);
         break;

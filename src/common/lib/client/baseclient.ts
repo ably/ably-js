@@ -80,7 +80,7 @@ class BaseClient {
           message: msg,
           code: 40400,
           statusCode: 404,
-          hint: 'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you only have a token, use ClientOptions.token / tokenDetails instead. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+          hint: 'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
         });
       }
       normalOptions.keyName = keyMatch[1];
@@ -93,14 +93,14 @@ class BaseClient {
           message: 'clientId must be either a string or null',
           code: 40012,
           statusCode: 400,
-          hint: 'For an anonymous client omit clientId or pass null; to identify the client pass a stable string such as a user id. To authenticate as any clientId, use a wildcard token (defaultTokenParams: { clientId: "*" }) rather than setting clientId here.',
+          hint: 'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
         });
       } else if (normalOptions.clientId === '*') {
         throw new ErrorInfo({
           message: 'Can’t use "*" as a clientId as that string is reserved.',
           code: 40012,
           statusCode: 400,
-          hint: 'Move "*" out of ClientOptions.clientId. For a wildcard identity, set defaultTokenParams: { clientId: "*" } on the client instead. A client using a raw API key can already assume any clientId, so a wildcard token request succeeds by default; it is rejected only when the token or key issuing it is itself restricted to a single clientId.',
+          hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client (the "*" belongs in the token request, not in ClientOptions.clientId).',
         });
       }
     }
