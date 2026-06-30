@@ -76,7 +76,7 @@ class RealtimeAnnotations {
           "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
         code: 93001,
         statusCode: 400,
-        hint: 'Re-create the channel with annotation_subscribe in modes, e.g. realtime.channels.get(name, { modes: ["subscribe", "annotation_subscribe"] }), since appending to channel.modes after attach() does not enable the mode server-side. If the subsequent attach is rejected by the server, confirm the channel namespace has "Message annotations, updates, appends, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which namespaces have it enabled and `ably auth keys list` shows the capabilities of your key.',
+        hint: 'Enable the mode on the channel with channel.setOptions({ modes: ["subscribe", "annotation_subscribe"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected by the server, confirm the channel namespace has "Message annotations, updates, appends, and deletes" enabled in the Ably dashboard and that your API key has annotation-subscribe capability on this channel. If you have the Ably CLI installed, `ably apps rules list` shows which namespaces have it enabled and `ably auth keys list` shows the capabilities of your key.',
       });
     }
   }

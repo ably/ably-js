@@ -161,7 +161,7 @@ class Auth {
           message: msg,
           code: 40160,
           statusCode: 401,
-          hint: 'Pass one of ClientOptions.{ key, authUrl, authCallback, token, tokenDetails }. For production, prefer authUrl or authCallback so the API key stays on your server.',
+          hint: 'Set one of the following in ClientOptions: key, authUrl, authCallback, token, or tokenDetails. For production use, prefer authUrl or authCallback for client-side (browser, mobile apps), or key for server-side.',
         });
       }
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
@@ -274,10 +274,10 @@ class Auth {
      * just check if it doesn't clash and assume we're generating a token from it */
     if (authOptions && authOptions.key && this.authOptions.key !== authOptions.key) {
       throw new ErrorInfo({
-        message: 'Unable to update auth options with incompatible key',
+        message: 'authorize called with a key that does not match the existing key being used by the client',
         code: 40102,
         statusCode: 401,
-        hint: 'auth.authorize() cannot change the API key - the new authOptions.key differs from the one the client was constructed with. To use a different key, construct a new Ably client.',
+        hint: 'To use a different key, construct a new Ably client with the key as a client option.',
       });
     }
 
@@ -525,7 +525,7 @@ class Auth {
                 message: 'authUrl JSON response exceeded the maximum permitted length of 128 KB',
                 code: 40170,
                 statusCode: 401,
-                hint: 'Make your authUrl endpoint return only the token payload (a TokenDetails or TokenRequest object, or a token string), not an envelope wrapping it in extra fields. If a TokenDetails genuinely needs a large capability, narrow the capability to the channels and operations the client actually needs.',
+                hint: 'Two things commonly cause this. If your authUrl wraps the Ably token in an envelope with extra fields, return only the token payload (a token string, or a TokenRequest/TokenDetails object). If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
               });
               cb(err, null);
               return;
@@ -687,7 +687,7 @@ class Auth {
               message: 'Token string is empty',
               code: 40170,
               statusCode: 401,
-              hint: 'Return a non-empty value from your authCallback/authUrl: a token string, a TokenRequest, or a TokenDetails object. The callback returned an empty string.',
+              hint: 'Return a non-empty value from your authCallback/authUrl: a token string, a TokenRequest, or a TokenDetails object.',
             });
             reject(err);
           } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
@@ -695,7 +695,7 @@ class Auth {
               message: 'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
               code: 40170,
               statusCode: 401,
-              hint: 'Return only the bare signed token string from your authCallback/authUrl, not an envelope, debug output, or a stringified TokenDetails wrapping it, since tokens must serialise to under 128 KB. If the token capability is genuinely this large, narrow it to the channels and operations the client needs.',
+              hint: 'Return only the bare signed token string from your authCallback/authUrl, not an envelope, debug output, or a stringified TokenDetails wrapping it, since a token must serialise to under 128 KB. If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
             });
             reject(err);
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
@@ -732,7 +732,7 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'authCallback must invoke its callback with (err, tokenStringOrTokenDetailsOrTokenRequest). authUrl must respond with a token string or TokenDetails/TokenRequest JSON.',
+            hint: 'If authenticating with an authCallback, update it to callback with (err, tokenStringOrTokenDetailsOrTokenRequest). If authenticating with an authUrl, update the server to respond with a token string or TokenDetails/TokenRequest JSON.',
           });
           reject(err);
           return;
@@ -744,7 +744,7 @@ class Auth {
               'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
             code: 40170,
             statusCode: 401,
-            hint: 'Token objects must serialise to under 128 KB. Trim unused fields from your TokenDetails/TokenRequest, and if a large capability is required, narrow it to the channels and operations the client actually needs.',
+            hint: 'The TokenRequest/TokenDetails object must serialise to under 128 KB. Trim any unused fields, and if it carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
           });
           reject(err);
           return;
@@ -762,7 +762,7 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Return a token string, a TokenRequest (an object with a `keyName` field), or a TokenDetails (an object with an `issued` field) from your authCallback/authUrl. The returned object had neither field, so it matched neither shape; note that a bare `token` field is not enough to identify a TokenDetails here, the `issued` field is what the SDK keys on.',
+            hint: 'Return a token string, a TokenRequest, or a TokenDetails object from your authCallback/authUrl. The object returned had neither a `keyName` field (which identifies a TokenRequest) nor an `issued` field (which identifies a TokenDetails), so it matched neither shape.',
           });
           reject(err);
           return;
@@ -839,7 +839,7 @@ class Auth {
         message: 'No key specified',
         code: 40101,
         statusCode: 403,
-        hint: 'createTokenRequest needs an API key. Pass ClientOptions.key on the client or { key } in the authOptions argument. Token-auth clients cannot construct token requests themselves.',
+        hint: 'Pass ClientOptions.key on the client or { key } in the authOptions argument to createTokenRequest.',
       });
     }
     const keyParts = key.split(':'),
@@ -1060,7 +1060,7 @@ class Auth {
         message: 'Can’t use "*" as a clientId as that string is reserved',
         code: 40012,
         statusCode: 400,
-        hint: 'Move "*" out of ClientOptions.clientId; for a wildcard identity set defaultTokenParams: { clientId: "*" } on the client, or pass { clientId: "*" } to authorize() as a tokenParam. A client using a raw API key can already assume any clientId, so a wildcard token request succeeds by default; it is rejected only when the token or key issuing it is itself restricted to a single clientId.',
+        hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client (the "*" belongs in the token request, not in ClientOptions.clientId).',
       });
     } else {
       const err = this._uncheckedSetClientId(clientId);

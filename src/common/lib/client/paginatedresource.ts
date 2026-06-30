@@ -151,7 +151,7 @@ export class PaginatedResult<T> {
       message: 'No link to the first page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'The public PaginatedResult surface exposes no boolean guard for first(), so wrap the call in try/catch or attach a .catch handler to the promise it returns rather than pre-checking. A first-page link exists only on a page whose paginated REST response carried a Link header with rel="first", so expect first() to reject on results that were not produced by such a query.',
+      hint: 'first() is only available on results from a paginated REST query (such as channel history, presence, or stats), whose response includes a link to the first page. This result has no such link, so there is no first page to return.',
     });
   }
 
@@ -164,7 +164,7 @@ export class PaginatedResult<T> {
       message: 'No link to the current page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'Call current() only on a PaginatedResult returned by a paginated REST query (such as channel history, presence, or stats) whose response carried pagination Link headers. This page has no rel="current" navigation link, so there is nothing to reload; if you only need to walk pages, use next() together with isLast() instead, since those are the public navigation methods this result type exposes.',
+      hint: 'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link; to page through results, use next() with hasNext() or isLast() instead.',
     });
   }
 

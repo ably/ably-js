@@ -213,7 +213,7 @@ class RealtimePresence extends EventEmitter {
         throw new PartialErrorInfo({
           message: 'Unable to leave presence channel while in ' + channel.state + ' state',
           code: 90001,
-          hint: 'Inspect channel.errorReason for the cause, then await channel.attach() and retry presence.leave() if the channel state is "failed". If the state is "initialized" no member was ever entered, so there is nothing to leave and no action is needed.',
+          hint: 'presence.leave() only works while the channel is attached. From "suspended" or "attaching", await channel.attach() and retry, since your presence membership is restored when the channel re-attaches. From "initialized", "detached", or "failed" there is nothing to leave: either no member was entered, or the SDK already cleared your membership when the channel left the attached state.',
         });
       }
     }

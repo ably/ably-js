@@ -572,7 +572,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Re-create the channel with the required mode via realtime.channels.get(name, { modes: [..., "${expectedMode}"] }); appending to channel.modes after attach() does not enable the mode server-side, since that array reflects only what the server already granted. If the subsequent attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
       });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
@@ -581,7 +581,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Re-create the channel with the required mode via realtime.channels.get(name, { modes: [..., "${expectedMode}"] }); appending to channel.modes after attach() does not enable the mode server-side, since that array reflects only what the server already granted. If the subsequent attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
       });
     }
   }
