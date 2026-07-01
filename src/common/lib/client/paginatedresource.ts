@@ -147,7 +147,12 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.first);
     }
 
-    throw new ErrorInfo('No link to the first page of results', 40400, 404);
+    throw new ErrorInfo({
+      message: 'No link to the first page of results',
+      code: 40400,
+      statusCode: 404,
+      hint: 'first() is only available on results from a paginated REST query (such as channel history, presence, or stats), whose response includes a link to the first page. This result has no such link, so there is no first page to return.',
+    });
   }
 
   async current(): Promise<PaginatedResult<T>> {
@@ -155,7 +160,12 @@ export class PaginatedResult<T> {
       return this.get(this._relParams!.current);
     }
 
-    throw new ErrorInfo('No link to the current page of results', 40400, 404);
+    throw new ErrorInfo({
+      message: 'No link to the current page of results',
+      code: 40400,
+      statusCode: 404,
+      hint: 'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link; to page through results, use next() with hasNext() or isLast() instead.',
+    });
   }
 
   async next(): Promise<PaginatedResult<T> | null> {

@@ -9,6 +9,9 @@ import { getW3CPushDeviceDetails } from './getW3CDeviceDetails';
 import type BaseClient from 'common/lib/client/baseclient';
 import type { PaginatedResult } from 'common/lib/client/paginatedresource';
 
+const PUSH_NOT_AVAILABLE_HINT =
+  'push.activate() registers the current process as a push target - supported in browser environments with service-worker support. In Node.js or other server contexts there is no device to register; use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+
 const persistKeys = {
   deviceId: 'ably.push.deviceId',
   deviceSecret: 'ably.push.deviceSecret',
@@ -62,11 +65,21 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>> {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        throw new this.rest.ErrorInfo({
+          message: 'Push activation is not available on this platform',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
       }
 
       if (!this.id) {
-        throw new this.rest.ErrorInfo('Device not activated', 40000, 400);
+        throw new this.rest.ErrorInfo({
+          message: 'Device not activated',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Call client.push.activate(registerCallback) and await its completion before listing subscriptions or other device-scoped operations.',
+        });
       }
 
       if (!this.deviceIdentityToken) {
@@ -96,7 +109,12 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     loadPersisted() {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        throw new this.rest.ErrorInfo({
+          message: 'Push activation is not available on this platform',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
       }
       this.platform = Platform.Config.push.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
@@ -117,7 +135,12 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     persist() {
       const config = this.rest.Platform.Config;
       if (!config.push) {
-        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+        throw new this.rest.ErrorInfo({
+          message: 'Push activation is not available on this platform',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
       }
       if (this.id) {
         config.push.storage.set(persistKeys.deviceId, this.id);
@@ -193,7 +216,12 @@ export class ActivationStateMachine {
 
   get pushConfig() {
     if (!this._pushConfig) {
-      throw new this.client.ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400);
+      throw new this.client.ErrorInfo({
+        message: 'This platform is not supported as a target of push notifications',
+        code: 40000,
+        statusCode: 400,
+        hint: PUSH_NOT_AVAILABLE_HINT,
+      });
     }
     return this._pushConfig;
   }
@@ -229,11 +257,14 @@ export class ActivationStateMachine {
       }
 
       if (!deviceRegistration) {
-        this.handleEvent(
-          new GettingDeviceRegistrationFailed(
-            new this.client.ErrorInfo('registerCallback did not return deviceRegistration', 40000, 400),
-          ),
-        );
+        const err = new this.client.ErrorInfo({
+          message: 'registerCallback did not return deviceRegistration',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Your registerCallback must invoke its callback with (null, deviceRegistration).',
+        });
+        this.handleEvent(new GettingDeviceRegistrationFailed(err));
+        return;
       }
 
       if (isNew) {

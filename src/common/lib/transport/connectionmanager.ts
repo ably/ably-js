@@ -1898,7 +1898,12 @@ class ConnectionManager extends EventEmitter {
 
   async ping(): Promise<number> {
     if (this.state.state !== 'connected') {
-      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
+      throw new ErrorInfo({
+        message: 'Unable to ping service; not connected',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …).',
+      });
     }
 
     const transport = this.activeProtocol?.getTransport();
@@ -1962,11 +1967,25 @@ class ConnectionManager extends EventEmitter {
     } else if (err.statusCode === HttpStatusCodes.Forbidden) {
       const msg = 'Client configured authentication provider returned 403; failing the connection';
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
-      this.notifyState({ state: 'failed', error: new ErrorInfo(msg, 80019, 403, err) });
+      const wrapped = new ErrorInfo({
+        message: msg,
+        code: 80019,
+        statusCode: 403,
+        cause: err,
+        hint: 'Inspect cause for the underlying error: a 403 here means either your authUrl/authCallback rejected the request, or the Ably server refused the resulting TokenRequest. If the latter, narrow the requested capability to what your API key actually grants.',
+      });
+      this.notifyState({ state: 'failed', error: wrapped });
     } else {
       const msg = 'Client configured authentication provider request failed';
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
-      this.notifyState({ state: this.state.failState as string, error: new ErrorInfo(msg, 80019, 401, err) });
+      const wrapped = new ErrorInfo({
+        message: msg,
+        code: 80019,
+        statusCode: 401,
+        cause: err,
+        hint: 'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape; the underlying error is in cause.',
+      });
+      this.notifyState({ state: this.state.failState as string, error: wrapped });
     }
   }
 

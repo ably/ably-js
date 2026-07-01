@@ -24,11 +24,13 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
       break;
   }
   if (!messageSerial || typeof messageSerial !== 'string') {
-    throw new ErrorInfo(
-      'First argument of annotations.publish() must be either a Message (or at least an object with a string `serial` property) or a message serial (string)',
-      40003,
-      400,
-    );
+    throw new ErrorInfo({
+      message:
+        'First argument of annotations.publish() must be either a Message (or at least an object with a string `serial` property) or a message serial (string)',
+      code: 40003,
+      statusCode: 400,
+      hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
+    });
   }
   return messageSerial;
 }
@@ -40,11 +42,12 @@ export function constructValidateAnnotation(
   const messageSerial = serialFromMsgOrSerial(msgOrSerial);
 
   if (!annotationValues || typeof annotationValues !== 'object') {
-    throw new ErrorInfo(
-      'Second argument of annotations.publish() must be an object (the intended annotation to publish)',
-      40003,
-      400,
-    );
+    throw new ErrorInfo({
+      message: 'Second argument of annotations.publish() must be an object (the intended annotation to publish)',
+      code: 40003,
+      statusCode: 400,
+      hint: 'Pass an Annotation-shaped object as the second argument, e.g. { type: "reaction:unique.v1", name: "👍" }.',
+    });
   }
 
   const annotation = Annotation.fromValues(annotationValues);

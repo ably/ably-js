@@ -15,6 +15,9 @@ import type {
 import Platform from 'common/platform';
 import type { ErrCallback } from 'common/types/utils';
 
+const PUSH_NOT_AVAILABLE_HINT =
+  'push.activate() registers the current process as a push target - supported in browser environments with service-worker support. In Node.js or other server contexts there is no device to register; use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+
 class Push {
   client: BaseClient;
   admin: Admin;
@@ -37,11 +40,23 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        const err = new ErrorInfo({
+          message: 'This platform is not supported as a target of push notifications',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
+        reject(err);
         return;
       }
       if (this.stateMachine.activatedCallback) {
-        reject(new ErrorInfo('Activation already in progress', 40000, 400));
+        const err = new ErrorInfo({
+          message: 'Activation already in progress',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await the in-flight push.activate() before calling it again.',
+        });
+        reject(err);
         return;
       }
       this.stateMachine.activatedCallback = (err: ErrorInfo) => {
@@ -65,11 +80,23 @@ class Push {
         return;
       }
       if (!this.stateMachine) {
-        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        const err = new ErrorInfo({
+          message: 'This platform is not supported as a target of push notifications',
+          code: 40000,
+          statusCode: 400,
+          hint: PUSH_NOT_AVAILABLE_HINT,
+        });
+        reject(err);
         return;
       }
       if (this.stateMachine.deactivatedCallback) {
-        reject(new ErrorInfo('Deactivation already in progress', 40000, 400));
+        const err = new ErrorInfo({
+          message: 'Deactivation already in progress',
+          code: 40000,
+          statusCode: 400,
+          hint: 'Await the in-flight push.deactivate() before calling it again.',
+        });
+        reject(err);
         return;
       }
       this.stateMachine.deactivatedCallback = (err: ErrorInfo) => {
@@ -156,11 +183,12 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      throw new ErrorInfo(
-        'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
-        40000,
-        400,
-      );
+      throw new ErrorInfo({
+        message: 'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Pass either the device id string (the local device id, e.g. from client.device().id after push.activate() completes, or the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save()), or a DeviceDetails object with a non-empty .id field.',
+      });
     }
 
     Utils.mixin(headers, client.options.headers);
@@ -209,11 +237,12 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      throw new ErrorInfo(
-        'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
-        40000,
-        400,
-      );
+      throw new ErrorInfo({
+        message: 'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
+        code: 40000,
+        statusCode: 400,
+        hint: 'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.',
+      });
     }
 
     Utils.mixin(headers, client.options.headers);

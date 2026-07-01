@@ -106,11 +106,12 @@ class RestChannel {
       messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
-      throw new ErrorInfo(
-        'The single-argument form of publish() expects a message object or an array of message objects',
-        40013,
-        400,
-      );
+      throw new ErrorInfo({
+        message: 'The single-argument form of publish() expects a message object or an array of message objects',
+        code: 40013,
+        statusCode: 400,
+        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
+      });
     }
 
     if (!params) {
@@ -139,11 +140,12 @@ class RestChannel {
     const size = getMessagesSize(wireMessages),
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
-      throw new ErrorInfo(
-        `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
-        40009,
-        400,
-      );
+      throw new ErrorInfo({
+        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        code: 40009,
+        statusCode: 400,
+        hint: 'Split the publish into multiple calls so each batch is under the limit. If you set ClientOptions.maxMessageSize yourself, raise it (it can only restrict below your account limit, not above it); to lift the account limit itself, contact Ably support.',
+      });
     }
 
     return this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);

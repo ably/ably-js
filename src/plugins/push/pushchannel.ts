@@ -50,7 +50,12 @@ class PushChannel {
     const client = this.client;
     const clientId = this.client.auth.clientId;
     if (!clientId) {
-      throw new this.client.ErrorInfo('Cannot subscribe from client without client ID', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot subscribe from client without client ID',
+        code: 50000,
+        statusCode: 500,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling pushChannel.subscribeClient().',
+      });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { clientId: clientId, channel: this.channel.name },
@@ -67,7 +72,12 @@ class PushChannel {
 
     const clientId = this.client.auth.clientId;
     if (!clientId) {
-      throw new this.client.ErrorInfo('Cannot unsubscribe from client without client ID', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot unsubscribe from client without client ID',
+        code: 50000,
+        statusCode: 500,
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling pushChannel.unsubscribeClient().',
+      });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       headers = client.Defaults.defaultPostHeaders(client.options);
@@ -105,7 +115,12 @@ class PushChannel {
     if (deviceIdentityToken) {
       return deviceIdentityToken;
     } else {
-      throw new this.client.ErrorInfo('Cannot subscribe from client without deviceIdentityToken', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot subscribe or unsubscribe this device without a deviceIdentityToken',
+        code: 50000,
+        statusCode: 500,
+        hint: 'Activate this device first by awaiting client.push.activate(registerCallback).',
+      });
     }
   }
 

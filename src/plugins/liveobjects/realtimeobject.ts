@@ -568,11 +568,21 @@ export class RealtimeObject {
   private _throwIfMissingChannelMode(expectedMode: 'object_subscribe' | 'object_publish'): void {
     // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2a2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+      });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
     if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2b2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+      });
     }
   }
 
