@@ -28,12 +28,21 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
   const permission = await Notification.requestPermission();
 
   if (permission !== 'granted') {
-    const err = new ErrorInfo({
-      message: 'User denied permission to send notifications',
-      code: 40000,
-      statusCode: 400,
-      hint: 'Tell the user to re-enable notifications for this site in their browser settings, then call push.activate() again to retry registration. A re-request will not prompt while the browser permission stays at "denied"; if it was instead merely dismissed (the permission is "default"), surface UI explaining the value of notifications before retrying so the browser prompts again.',
-    });
+    const err =
+      permission === 'denied'
+        ? new ErrorInfo({
+            message: 'User denied permission to send notifications: browser notification permission is "denied"',
+            code: 40000,
+            statusCode: 400,
+            hint: 'Tell the user to re-enable notifications for this site in their browser settings, then call push.activate() again to retry registration. A re-request will not prompt while the permission stays "denied".',
+          })
+        : new ErrorInfo({
+            message:
+              'Notification permission prompt was dismissed without a choice: browser notification permission is "default"',
+            code: 40000,
+            statusCode: 400,
+            hint: 'Surface UI explaining the value of notifications, then call push.activate() again to retry registration. The browser will show the permission prompt again.',
+          });
     machine.handleEvent(new GettingPushDeviceDetailsFailed(err));
     return;
   }

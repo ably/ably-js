@@ -9,8 +9,10 @@ import { getW3CPushDeviceDetails } from './getW3CDeviceDetails';
 import type BaseClient from 'common/lib/client/baseclient';
 import type { PaginatedResult } from 'common/lib/client/paginatedresource';
 
-const PUSH_NOT_AVAILABLE_HINT =
-  'push.activate() registers the current process as a push target - supported in browser environments with service-worker support. In Node.js or other server contexts there is no device to register; use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+// Keep this byte-identical to the copy in src/common/lib/client/push.ts. This plugin only
+// type-imports from common client modules, so a value import from there is not viable for the build.
+const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
+  'Run push.activate() in a browser environment with service worker support. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
 
 const persistKeys = {
   deviceId: 'ably.push.deviceId',
@@ -66,10 +68,11 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
-          message: 'Push activation is not available on this platform',
+          message:
+            'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_NOT_AVAILABLE_HINT,
+          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
 
@@ -78,7 +81,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
           message: 'Device not activated',
           code: 40000,
           statusCode: 400,
-          hint: 'Call client.push.activate(registerCallback) and await its completion before listing subscriptions or other device-scoped operations.',
+          hint: 'Call client.push.activate() and await its completion before listing subscriptions.',
         });
       }
 
@@ -110,10 +113,11 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
-          message: 'Push activation is not available on this platform',
+          message:
+            'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_NOT_AVAILABLE_HINT,
+          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
       this.platform = Platform.Config.push.platform;
@@ -136,10 +140,11 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       const config = this.rest.Platform.Config;
       if (!config.push) {
         throw new this.rest.ErrorInfo({
-          message: 'Push activation is not available on this platform',
+          message:
+            'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_NOT_AVAILABLE_HINT,
+          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
       if (this.id) {
@@ -217,10 +222,11 @@ export class ActivationStateMachine {
   get pushConfig() {
     if (!this._pushConfig) {
       throw new this.client.ErrorInfo({
-        message: 'This platform is not supported as a target of push notifications',
+        message:
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
         code: 40000,
         statusCode: 400,
-        hint: PUSH_NOT_AVAILABLE_HINT,
+        hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
       });
     }
     return this._pushConfig;

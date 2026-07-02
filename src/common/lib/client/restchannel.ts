@@ -107,7 +107,8 @@ class RestChannel {
       params = args[1];
     } else {
       throw new ErrorInfo({
-        message: 'The single-argument form of publish() expects a message object or an array of message objects',
+        message:
+          'publish() expects an event name (string or null), a message object, or an array of message objects as its first argument',
         code: 40013,
         statusCode: 400,
         hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
@@ -141,10 +142,10 @@ class RestChannel {
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
       throw new ErrorInfo({
-        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         code: 40009,
         statusCode: 400,
-        hint: 'Split the publish into multiple calls so each batch is under the limit. If you set ClientOptions.maxMessageSize yourself, raise it (it can only restrict below your account limit, not above it); to lift the account limit itself, contact Ably support.',
+        hint: 'Split the publish into multiple calls so each batch is under the limit. If you set ClientOptions.maxMessageSize yourself, raise it (it can only restrict below your account limit, not above it). To lift the account limit, contact Ably support.',
       });
     }
 

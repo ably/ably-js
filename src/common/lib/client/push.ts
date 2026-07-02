@@ -15,8 +15,13 @@ import type {
 import Platform from 'common/platform';
 import type { ErrCallback } from 'common/types/utils';
 
-const PUSH_NOT_AVAILABLE_HINT =
-  'push.activate() registers the current process as a push target - supported in browser environments with service-worker support. In Node.js or other server contexts there is no device to register; use client.push.admin to manage other devices from a server: client.push.admin.publish(recipient, payload) to send to a device or clientId, client.push.admin.deviceRegistrations.save(device) to register a device record.';
+// Keep this byte-identical to the copy in src/plugins/push/pushactivation.ts. The plugin only
+// type-imports from common client modules, so a value import here is not viable for the build.
+const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
+  'Run push.activate() in a browser environment with service worker support. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
+
+const PUSH_DEACTIVATION_NOT_AVAILABLE_HINT =
+  'Run push.deactivate() in a browser environment with service worker support. From a server, call client.push.admin.deviceRegistrations.remove(deviceId) to remove a device registration.';
 
 class Push {
   client: BaseClient;
@@ -41,10 +46,11 @@ class Push {
       }
       if (!this.stateMachine) {
         const err = new ErrorInfo({
-          message: 'This platform is not supported as a target of push notifications',
+          message:
+            'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_NOT_AVAILABLE_HINT,
+          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
         reject(err);
         return;
@@ -81,10 +87,11 @@ class Push {
       }
       if (!this.stateMachine) {
         const err = new ErrorInfo({
-          message: 'This platform is not supported as a target of push notifications',
+          message:
+            'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_NOT_AVAILABLE_HINT,
+          hint: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
         });
         reject(err);
         return;
@@ -295,7 +302,7 @@ class DeviceRegistrations {
         message: 'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
         code: 40000,
         statusCode: 400,
-        hint: 'Pass either the device id string (the local device id, e.g. from client.device().id after push.activate() completes, or the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save()), or a DeviceDetails object with a non-empty .id field.',
+        hint: 'Pass either the device id string or a DeviceDetails object with a non-empty .id field. The local device id is available from client.device().id after push.activate() completes. Alternatively pass the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save().',
       });
     }
 

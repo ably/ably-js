@@ -610,7 +610,7 @@ class Auth {
         message: msg,
         code: 40171,
         statusCode: 403,
-        hint: 'Initialise the client with one of ClientOptions.{ key, authUrl, authCallback } so the SDK can refresh tokens. A bare token/tokenDetails alone cannot be renewed once expired.',
+        hint: 'Initialise the client with one of ClientOptions.{ key, authUrl, authCallback } so the SDK can refresh tokens.',
       });
     }
 
@@ -704,7 +704,7 @@ class Auth {
               message: 'Token string was literal null/undefined',
               code: 40170,
               statusCode: 401,
-              hint: 'Return the token itself, not "undefined"/"null"; callbacks that have no value to return should pass an error instead.',
+              hint: 'Return the token itself, not "undefined"/"null". Callbacks that have no value to return should pass an error instead.',
             });
             reject(err);
           } else if (
@@ -756,13 +756,13 @@ class Auth {
         }
         if (!('keyName' in tokenRequestOrDetails)) {
           const msg =
-            'Expected token request callback to call back with a token string, token request object, or token details object';
+            'Expected token request callback to call back with a token string, token request object, or token details object. The returned object has neither a keyName nor an issued field.';
           Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
           const err = new ErrorInfo({
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Return a token string, a TokenRequest, or a TokenDetails object from your authCallback/authUrl. The object returned had neither a `keyName` field (which identifies a TokenRequest) nor an `issued` field (which identifies a TokenDetails), so it matched neither shape.',
+            hint: 'Return a token string, a TokenRequest (an object with a `keyName` field), or a TokenDetails (an object with an `issued` field) from your authCallback/authUrl.',
           });
           reject(err);
           return;
@@ -839,7 +839,7 @@ class Auth {
         message: 'No key specified',
         code: 40101,
         statusCode: 403,
-        hint: 'Pass ClientOptions.key on the client or { key } in the authOptions argument to createTokenRequest.',
+        hint: 'Pass { key } in the authOptions argument, or set ClientOptions.key and omit the authOptions argument. A passed authOptions replaces the stored options rather than merging.',
       });
     }
     const keyParts = key.split(':'),
@@ -848,10 +848,10 @@ class Auth {
 
     if (!keySecret) {
       throw new ErrorInfo({
-        message: 'Invalid key specified',
+        message: 'Invalid key specified: the key has no colon-separated secret',
         code: 40101,
         statusCode: 403,
-        hint: 'Copy the full "appId.keyId:secret" key including the colon and secret from the Ably dashboard, since the key you passed has no colon-separated secret. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        hint: 'Copy the full "appId.keyId:secret" key including the colon and secret from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
       });
     }
 
@@ -986,7 +986,7 @@ class Auth {
             'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
           code: 40102,
           statusCode: 403,
-          hint: 'Issue the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it. The two cannot diverge.',
+          hint: 'Issue the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it.',
         });
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
@@ -1053,7 +1053,7 @@ class Auth {
         message: 'clientId must be either a string or null',
         code: 40012,
         statusCode: 400,
-        hint: 'Pass a string (e.g. a user id) or null for an anonymous client. Numbers and objects are not accepted.',
+        hint: 'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
       });
     } else if (clientId === '*') {
       throw new ErrorInfo({
@@ -1078,7 +1078,7 @@ class Auth {
         message: msg,
         code: 40102,
         statusCode: 401,
-        hint: 'A clientId from the token does not match ClientOptions.clientId. Issue the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
+        hint: 'Issue the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
       });
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
       return err;

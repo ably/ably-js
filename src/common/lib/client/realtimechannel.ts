@@ -62,7 +62,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
           message: 'Invalid channel mode: ' + currentMode,
           code: 40000,
           statusCode: 400,
-          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server also enforces this - your token/API-key capability must permit the requested modes on this channel, otherwise the subsequent attach is rejected. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server grants only the modes the key or token capability permits and silently drops the rest on attach. After attach, channel.modes shows what was granted. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
         });
         return err;
       }
@@ -198,7 +198,7 @@ class RealtimeChannel extends EventEmitter {
       code: 90001,
       statusCode: 400,
       cause: this.errorReason || undefined,
-      hint: 'Inspect channel.errorReason for the underlying cause. From "failed", call channel.attach() to recover; "suspended" recovers automatically once the underlying connection is re-established.',
+      hint: 'Inspect channel.errorReason for the underlying cause. It may be null after a clean detach. From "failed" or "detached", call channel.attach() to recover. From "suspended" the SDK re-attaches automatically, or call channel.attach() to retry now.',
     });
     return err;
   }
@@ -307,10 +307,10 @@ class RealtimeChannel extends EventEmitter {
     const size = getMessagesSize(wireMessages);
     if (size > maxMessageSize) {
       throw new ErrorInfo({
-        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         code: 40009,
         statusCode: 400,
-        hint: 'Split the publish into multiple calls so each batch is under the limit, or contact support to raise maxMessageSize for your app.',
+        hint: 'Split the publish into multiple calls so each batch is under the limit. If a single message exceeds the limit, reduce its payload size. To lift the account limit, contact Ably support.',
       });
     }
 
@@ -443,10 +443,10 @@ class RealtimeChannel extends EventEmitter {
       // RTL5b
       case 'failed': {
         throw new ErrorInfo({
-          message: 'Unable to detach; channel state = failed',
+          message: 'Unable to detach as channel state is failed',
           code: 90001,
           statusCode: 400,
-          hint: 'A failed channel is not attached, so there is nothing to detach. Inspect channel.errorReason for the cause; call channel.attach() to recover the channel, or channels.release(name) to discard it.',
+          hint: 'A failed channel is not attached, so there is nothing to detach. Inspect channel.errorReason for the cause. Call channel.attach() to recover the channel, or channels.release(name) to discard it.',
         });
       }
       default:
@@ -998,7 +998,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel detach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The detach timed out and the channel is back in the attached state. Call channel.detach() again to retry; inspect channel.errorReason if it keeps timing out.',
+          hint: 'The detach timed out and the channel is back in the attached state. Call channel.detach() again to retry. Inspect channel.errorReason if it keeps timing out.',
         });
         this.notifyState('attached', err);
         break;
@@ -1073,10 +1073,10 @@ class RealtimeChannel extends EventEmitter {
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
         throw new ErrorInfo({
-          message: 'option untilAttach requires the channel to be attached',
+          message: 'option untilAttach requires the channel to be attached, was: ' + this.state,
           code: 40000,
           statusCode: 400,
-          hint: 'Await channel.attach() (or channel.whenState("attached")) before calling history({ untilAttach: true }).',
+          hint: 'Await channel.attach() before calling history({ untilAttach: true }).',
         });
       }
       if (!this.properties.attachSerial) {
@@ -1084,7 +1084,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'untilAttach was specified and channel is attached, but attachSerial is not defined',
           code: 40000,
           statusCode: 400,
-          hint: 'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) to force the SDK to record a fresh attachSerial, then retry history({ untilAttach: true }).',
+          hint: 'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) so the SDK records the attachSerial from the new attach, then retry history({ untilAttach: true }).',
         });
       }
       delete params.untilAttach;
@@ -1106,7 +1106,7 @@ class RealtimeChannel extends EventEmitter {
     }
     const err = new ErrorInfo({
       message:
-        'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' +
+        'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed). The current state is ' +
         s,
       code: 90001,
       statusCode: 400,
@@ -1175,10 +1175,10 @@ class RealtimeChannel extends EventEmitter {
   ): Promise<API.UpdateDeleteResult> {
     if (!message.serial) {
       throw new ErrorInfo({
-        message: 'This message lacks a serial and cannot be updated',
+        message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message you received from a subscribe callback (which carries .serial), not a freshly constructed object. The channel namespace must have "Message annotations, updates, appends, and deletes" enabled in the Ably dashboard. If you have the Ably CLI installed, `ably apps rules list` shows which namespaces have it enabled.',
+        hint: 'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object.',
       });
     }
 

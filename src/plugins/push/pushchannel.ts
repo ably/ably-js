@@ -54,7 +54,7 @@ class PushChannel {
         message: 'Cannot subscribe from client without client ID',
         code: 50000,
         statusCode: 500,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling pushChannel.subscribeClient().',
+        hint: 'Set ClientOptions.clientId before calling pushChannel.subscribeClient(). On a realtime client, a clientId carried in the token also satisfies this once the connection has connected. On a REST client, only ClientOptions.clientId works.',
       });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
@@ -76,7 +76,7 @@ class PushChannel {
         message: 'Cannot unsubscribe from client without client ID',
         code: 50000,
         statusCode: 500,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling pushChannel.unsubscribeClient().',
+        hint: 'Set ClientOptions.clientId before calling pushChannel.unsubscribeClient(). On a realtime client, a clientId carried in the token also satisfies this once the connection has connected. On a REST client, only ClientOptions.clientId works.',
       });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
@@ -119,7 +119,7 @@ class PushChannel {
         message: 'Cannot subscribe or unsubscribe this device without a deviceIdentityToken',
         code: 50000,
         statusCode: 500,
-        hint: 'Activate this device first by awaiting client.push.activate(registerCallback).',
+        hint: 'Activate this device first by awaiting client.push.activate().',
       });
     }
   }

@@ -164,7 +164,7 @@ export class PaginatedResult<T> {
       message: 'No link to the current page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link; to page through results, use next() with hasNext() or isLast() instead.',
+      hint: 'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link. To page through results, use next() with hasNext() or isLast() instead.',
     });
   }
 

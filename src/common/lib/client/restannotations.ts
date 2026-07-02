@@ -26,7 +26,7 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
   if (!messageSerial || typeof messageSerial !== 'string') {
     throw new ErrorInfo({
       message:
-        'First argument of annotations.publish() must be either a Message (or at least an object with a string `serial` property) or a message serial (string)',
+        'The message argument of annotations.publish()/delete()/get() must be either a Message (or at least an object with a non-empty string `serial` property) or a message serial (non-empty string)',
       code: 40003,
       statusCode: 400,
       hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',

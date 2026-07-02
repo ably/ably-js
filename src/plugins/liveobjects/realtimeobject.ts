@@ -256,7 +256,7 @@ export class RealtimeObject {
     const size = encodedMsgs.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
       throw new this._client.ErrorInfo(
-        `Maximum size of object messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        `Maximum size of object messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         40009,
         400,
       );
@@ -572,7 +572,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+        hint: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
       });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
@@ -581,7 +581,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Enable the mode on the channel with channel.setOptions({ modes: [..., "${expectedMode}"] }), which re-attaches with the new mode (calling channels.get(name, { modes }) on an existing channel throws, and appending to channel.modes does not enable it server-side). If the re-attach is rejected, check that the channel namespace has LiveObjects enabled in the Ably dashboard and that your API key has the corresponding capability on this channel. If you have the Ably CLI installed, \`ably apps rules list\` shows channel-namespace settings and \`ably auth keys list\` shows the capabilities granted to your key.`,
+        hint: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
       });
     }
   }
