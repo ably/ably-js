@@ -180,7 +180,12 @@ describe('uts/objects/unit/live_map', function () {
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
     // Pre-set data
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '02',
@@ -213,7 +218,12 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9-stale');
 
     const map = createZeroMap(channel, 'map:test@1000');
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '05', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '05',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '03',
@@ -240,7 +250,12 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9-eq');
 
     const map = createZeroMap(channel, 'map:test@1000');
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '05', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '05',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '05',
@@ -270,7 +285,12 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9b');
 
     const map = createZeroMap(channel, 'map:test@1000');
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     // ably-js throws ErrorInfo for empty serial at _canApplyOperation level
     const msg = makeObjectMessage(client, {
@@ -301,7 +321,12 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: undefined, tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: undefined,
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -380,7 +405,12 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '02',
@@ -452,7 +482,12 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     (map as any)._clearTimeserial = '05';
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '04', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '04',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '03',
@@ -485,9 +520,24 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
-    getDataMap(map).set('old', { data: { string: 'old' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('new', { data: { string: 'new' }, timeserial: '06', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('same', { data: { string: 'same' }, timeserial: '04', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('old', {
+      data: { string: 'old' },
+      timeserial: '02',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('new', {
+      data: { string: 'new' },
+      timeserial: '06',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('same', {
+      data: { string: 'same' },
+      timeserial: '04',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '04',
@@ -688,7 +738,12 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     getDataMap(map).set('age', { data: { number: 30 }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
     (map as any)._siteTimeserials = { site1: '00' };
 
@@ -728,9 +783,7 @@ describe('uts/objects/unit/live_map', function () {
 
     // Tombstone the score counter
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLM14', [
-        buildObjectDelete('counter:score@1000', 't:1', 'bbb', 1700000000000),
-      ]),
+      buildObjectMessage('test-RTLM14', [buildObjectDelete('counter:score@1000', 't:1', 'bbb', 1700000000000)]),
     );
     await flushAsync();
 
@@ -749,7 +802,12 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM6');
 
     const map = createZeroMap(channel, 'map:test@1000');
-    getDataMap(map).set('old', { data: { string: 'old' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('old', {
+      data: { string: 'old' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     (map as any)._createOperationIsMerged = true;
 
     const stateMsg = makeObjectMessage(client, {
@@ -869,9 +927,24 @@ describe('uts/objects/unit/live_map', function () {
     const realtimeObject = getRealtimeObject(channel);
     realtimeObject.gcGracePeriod = gracePeriod;
 
-    getDataMap(map).set('recent_dead', { data: undefined, timeserial: '01', tombstone: true, tombstonedAt: now - 1000 });
-    getDataMap(map).set('old_dead', { data: undefined, timeserial: '01', tombstone: true, tombstonedAt: now - gracePeriod - 1 });
-    getDataMap(map).set('alive', { data: { string: 'ok' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('recent_dead', {
+      data: undefined,
+      timeserial: '01',
+      tombstone: true,
+      tombstonedAt: now - 1000,
+    });
+    getDataMap(map).set('old_dead', {
+      data: undefined,
+      timeserial: '01',
+      tombstone: true,
+      tombstonedAt: now - gracePeriod - 1,
+    });
+    getDataMap(map).set('alive', {
+      data: { string: 'ok' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const originalNow = Date.now;
     Date.now = () => now;
@@ -897,10 +970,30 @@ describe('uts/objects/unit/live_map', function () {
     const map = createZeroMap(channel, 'map:test@1000');
 
     // Set up previous state
-    getDataMap(map).set('removed', { data: { string: 'gone' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('changed', { data: { string: 'old' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('unchanged', { data: { string: 'same' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('was_dead', { data: undefined, timeserial: '01', tombstone: true, tombstonedAt: 1700000000000 });
+    getDataMap(map).set('removed', {
+      data: { string: 'gone' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('changed', {
+      data: { string: 'old' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('unchanged', {
+      data: { string: 'same' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('was_dead', {
+      data: undefined,
+      timeserial: '01',
+      tombstone: true,
+      tombstonedAt: 1700000000000,
+    });
 
     // Replace with new state via overrideWithObjectState, which computes diff
     const stateMsg = makeObjectMessage(client, {
@@ -1002,9 +1095,7 @@ describe('uts/objects/unit/live_map', function () {
 
     // Tombstone the score counter referenced by root
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLM14c', [
-        buildObjectDelete('counter:score@1000', 't:1', 'bbb', 1700000000000),
-      ]),
+      buildObjectMessage('test-RTLM14c', [buildObjectDelete('counter:score@1000', 't:1', 'bbb', 1700000000000)]),
     );
     await flushAsync();
 
@@ -1061,9 +1152,24 @@ describe('uts/objects/unit/live_map', function () {
 
     const map = createZeroMap(channel, 'map:test@1000');
     const capture = captureNotifyUpdated(map);
-    getDataMap(map).set('before', { data: { string: 'a' }, timeserial: '03', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('after', { data: { string: 'b' }, timeserial: '07', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('no_ts', { data: { string: 'c' }, timeserial: undefined, tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('before', {
+      data: { string: 'a' },
+      timeserial: '03',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('after', {
+      data: { string: 'b' },
+      timeserial: '07',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('no_ts', {
+      data: { string: 'c' },
+      timeserial: undefined,
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const msg = makeObjectMessage(client, {
       serial: '05',
@@ -1097,7 +1203,12 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM6f');
 
     const map = createZeroMap(channel, 'map:test@1000');
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const stateMsg = makeObjectMessage(client, {
       object: {
@@ -1137,7 +1248,12 @@ describe('uts/objects/unit/live_map', function () {
     const newCounter = pool.createZeroValueObjectIfNotExists('counter:new@2000');
 
     // Set up map entry pointing to old counter
-    getDataMap(map).set('ref', { data: { objectId: 'counter:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('ref', {
+      data: { objectId: 'counter:old@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     // Simulate existing parentReference: old counter knows map:parentref@1000 references it at key 'ref'
     oldCounter.addParentReference(map, 'ref');
 
@@ -1217,7 +1333,12 @@ describe('uts/objects/unit/live_map', function () {
     const oldCounter = pool.createZeroValueObjectIfNotExists('counter:old@1000');
 
     // Set up map entry pointing to old counter
-    getDataMap(map).set('ref', { data: { objectId: 'counter:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('ref', {
+      data: { objectId: 'counter:old@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     oldCounter.addParentReference(map, 'ref');
 
     const capture = captureNotifyUpdated(map);
@@ -1259,7 +1380,12 @@ describe('uts/objects/unit/live_map', function () {
     const newMap = pool.createZeroValueObjectIfNotExists('map:new@2000');
 
     // Set up map entry pointing to old map
-    getDataMap(map).set('child', { data: { objectId: 'map:old@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('child', {
+      data: { objectId: 'map:old@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     oldMap.addParentReference(map, 'child');
 
     const capture = captureNotifyUpdated(map);
@@ -1301,7 +1427,12 @@ describe('uts/objects/unit/live_map', function () {
     const childCounter = pool.createZeroValueObjectIfNotExists('counter:child@1000');
 
     // Set up map entry pointing to child counter
-    getDataMap(map).set('score', { data: { objectId: 'counter:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('score', {
+      data: { objectId: 'counter:child@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     childCounter.addParentReference(map, 'score');
 
     const capture = captureNotifyUpdated(map);
@@ -1339,7 +1470,12 @@ describe('uts/objects/unit/live_map', function () {
     pool.set('map:parentref6@1000', map);
 
     // Set up map entry with primitive value
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     const capture = captureNotifyUpdated(map);
     const msg = makeObjectMessage(client, {
@@ -1379,10 +1515,30 @@ describe('uts/objects/unit/live_map', function () {
     const counterB = pool.createZeroValueObjectIfNotExists('counter:b@1000');
 
     // Set up map entries: two objectId refs, one primitive, one newer (kept after clear)
-    getDataMap(map).set('ref_a', { data: { objectId: 'counter:a@1000' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('ref_b', { data: { objectId: 'counter:b@1000' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('primitive', { data: { string: 'hello' }, timeserial: '02', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('newer', { data: { string: 'kept' }, timeserial: '09', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('ref_a', {
+      data: { objectId: 'counter:a@1000' },
+      timeserial: '02',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('ref_b', {
+      data: { objectId: 'counter:b@1000' },
+      timeserial: '02',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('primitive', {
+      data: { string: 'hello' },
+      timeserial: '02',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('newer', {
+      data: { string: 'kept' },
+      timeserial: '09',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
 
     counterA.addParentReference(map, 'ref_a');
     counterB.addParentReference(map, 'ref_b');
@@ -1430,9 +1586,24 @@ describe('uts/objects/unit/live_map', function () {
     const childMap = pool.createZeroValueObjectIfNotExists('map:child@1000');
 
     // Set up map entries: two objectId refs and one primitive
-    getDataMap(map).set('counter_ref', { data: { objectId: 'counter:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('map_ref', { data: { objectId: 'map:child@1000' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
-    getDataMap(map).set('name', { data: { string: 'Alice' }, timeserial: '01', tombstone: false, tombstonedAt: undefined });
+    getDataMap(map).set('counter_ref', {
+      data: { objectId: 'counter:child@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('map_ref', {
+      data: { objectId: 'map:child@1000' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
+    getDataMap(map).set('name', {
+      data: { string: 'Alice' },
+      timeserial: '01',
+      tombstone: false,
+      tombstonedAt: undefined,
+    });
     (map as any)._siteTimeserials = { site1: '00' };
 
     childCounter.addParentReference(map, 'counter_ref');

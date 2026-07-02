@@ -13,12 +13,7 @@
 
 import { expect } from 'chai';
 import { restoreAll, flushAsync } from '../../helpers';
-import {
-  setupSyncedChannel,
-  buildObjectMessage,
-  buildCounterInc,
-  buildMapSet,
-} from '../helpers/standard_test_pool';
+import { setupSyncedChannel, buildObjectMessage, buildCounterInc, buildMapSet } from '../helpers/standard_test_pool';
 
 describe('uts/objects/unit/instance', function () {
   afterEach(function () {
@@ -189,9 +184,7 @@ describe('uts/objects/unit/instance', function () {
     const sub = counterInst.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTINS16', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -206,7 +199,9 @@ describe('uts/objects/unit/instance', function () {
     const { root } = await setupSyncedChannel('test-RTINS16c');
 
     const nameInst = root.instance()!.get('name')!;
-    expect(() => nameInst.subscribe(() => {})).to.throw().with.property('code', 92007);
+    expect(() => nameInst.subscribe(() => {}))
+      .to.throw()
+      .with.property('code', 92007);
   });
 
   // UTS: objects/unit/RTINS16e2/subscription-event-message-0
@@ -218,9 +213,7 @@ describe('uts/objects/unit/instance', function () {
     rootInst.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16e2', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTINS16e2', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -244,9 +237,7 @@ describe('uts/objects/unit/instance', function () {
     sub.unsubscribe();
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16f', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTINS16f', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -271,9 +262,7 @@ describe('uts/objects/unit/instance', function () {
 
     // Increment the ORIGINAL counter
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTINS16g', [
-        buildCounterInc('counter:score@1000', 10, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTINS16g', [buildCounterInc('counter:score@1000', 10, '100', 'remote')]),
     );
     await flushAsync();
 

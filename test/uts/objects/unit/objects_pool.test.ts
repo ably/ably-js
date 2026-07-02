@@ -130,7 +130,7 @@ async function setupManualChannel(
     key: 'appId.keyId:keySecret',
     autoConnect: false,
     useBinaryProtocol: false,
-    plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    plugins: { LiveObjects: LiveObjectsPlugin },
   });
   trackClient(client);
   client.connect();
@@ -253,17 +253,25 @@ describe('uts/objects/unit/objects_pool', function () {
           // Send OBJECT_SYNC with empty cursor (complete in one message)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: { name: { data: { string: 'Alice' }, timeserial: 't:0' } },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: MAP_SEMANTICS_LWW,
+                    entries: { name: { data: { string: 'Alice' }, timeserial: 't:0' } },
+                  },
+                  createOp: mapCreateOp('root'),
                 },
-                createOp: mapCreateOp('root'),
-              }),
-              buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-                counter: { count: 42 },
-                createOp: counterCreateOp('counter:abc@1000', 42),
-              }),
+              ),
+              buildObjectState(
+                'counter:abc@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 42 },
+                  createOp: counterCreateOp('counter:abc@1000', 42),
+                },
+              ),
             ]),
           );
         }
@@ -294,22 +302,34 @@ describe('uts/objects/unit/objects_pool', function () {
           // First sync (partial, with cursor)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'seq1:more', [
-              buildObjectState('counter:old@1000', { aaa: 't:0' }, {
-                counter: { count: 10 },
-              }),
+              buildObjectState(
+                'counter:old@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 10 },
+                },
+              ),
             ]),
           );
           // New sync sequence (different id, empty cursor = complete)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'seq2:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-                createOp: mapCreateOp('root'),
-              }),
-              buildObjectState('counter:new@1000', { aaa: 't:0' }, {
-                counter: { count: 99 },
-                createOp: counterCreateOp('counter:new@1000', 99),
-              }),
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+                  createOp: mapCreateOp('root'),
+                },
+              ),
+              buildObjectState(
+                'counter:new@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 99 },
+                  createOp: counterCreateOp('counter:new@1000', 99),
+                },
+              ),
             ]),
           );
         }
@@ -340,24 +360,32 @@ describe('uts/objects/unit/objects_pool', function () {
           // First partial sync message (no createOp — partial)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:more', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: { name: { data: { string: 'Alice' }, timeserial: 't:0' } },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: MAP_SEMANTICS_LWW,
+                    entries: { name: { data: { string: 'Alice' }, timeserial: 't:0' } },
+                  },
                 },
-              }),
+              ),
             ]),
           );
           // Second partial sync message (completes sync, includes createOp)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: { age: { data: { number: 30 }, timeserial: 't:0' } },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: MAP_SEMANTICS_LWW,
+                    entries: { age: { data: { number: 30 }, timeserial: 't:0' } },
+                  },
+                  createOp: mapCreateOp('root'),
                 },
-                createOp: mapCreateOp('root'),
-              }),
+              ),
             ]),
           );
         }
@@ -388,10 +416,14 @@ describe('uts/objects/unit/objects_pool', function () {
     });
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c2', 'sync2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -427,9 +459,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send an OBJECT message while SYNCING
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO8a', [
-        buildCounterInc('counter:abc@1000', 5, '01', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO8a', [buildCounterInc('counter:abc@1000', 5, '01', 'site1')]),
     );
     await flushAsync();
 
@@ -459,9 +489,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send OBJECT message during SYNCING (will be buffered)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO5c6', [
-        buildCounterInc('counter:abc@1000', 10, '02', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO5c6', [buildCounterInc('counter:abc@1000', 10, '02', 'site1')]),
     );
     await flushAsync();
 
@@ -471,14 +499,22 @@ describe('uts/objects/unit/objects_pool', function () {
     // Now complete the sync with counter:abc@1000 at count 100
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c6', 'sync1:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
-        buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-          counter: { count: 100 },
-          createOp: counterCreateOp('counter:abc@1000', 0),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
+        buildObjectState(
+          'counter:abc@1000',
+          { aaa: 't:0' },
+          {
+            counter: { count: 100 },
+            createOp: counterCreateOp('counter:abc@1000', 0),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -498,9 +534,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send OBJECT with null operation
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO9a1', [
-        { serial: '01', siteCode: 'site1', operation: null },
-      ]),
+      buildObjectMessage('test-RTO9a1', [{ serial: '01', siteCode: 'site1', operation: null }]),
     );
     await flushAsync();
 
@@ -536,9 +570,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send counter increment for non-existent counter
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO6', [
-        buildCounterInc('counter:new@2000', 5, '01', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO6', [buildCounterInc('counter:new@2000', 5, '01', 'site1')]),
     );
     await flushAsync();
 
@@ -549,9 +581,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send map set for non-existent map
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO6', [
-        buildMapSet('map:new@2000', 'key', { string: 'val' }, 't:1', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO6', [buildMapSet('map:new@2000', 'key', { string: 'val' }, 't:1', 'site1')]),
     );
     await flushAsync();
 
@@ -574,10 +604,14 @@ describe('uts/objects/unit/objects_pool', function () {
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
               { object: null },
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-                createOp: mapCreateOp('root'),
-              }),
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+                  createOp: mapCreateOp('root'),
+                },
+              ),
             ]),
           );
         }
@@ -603,10 +637,14 @@ describe('uts/objects/unit/objects_pool', function () {
           });
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-                createOp: mapCreateOp('root'),
-              }),
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+                  createOp: mapCreateOp('root'),
+                },
+              ),
               // Object with no map or counter field — unsupported type
               { object: { objectId: 'unknown:xyz@1000', siteTimeserials: {} } },
             ]),
@@ -647,10 +685,14 @@ describe('uts/objects/unit/objects_pool', function () {
     // Now complete sync so we reach SYNCED state
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5e', 'sync1:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -659,9 +701,13 @@ describe('uts/objects/unit/objects_pool', function () {
     // Send a new OBJECT_SYNC without preceding ATTACHED — should transition to SYNCING
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5e', 'sync2:more', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -687,13 +733,17 @@ describe('uts/objects/unit/objects_pool', function () {
     });
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c7', 'sync2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: {
-            semantics: MAP_SEMANTICS_LWW,
-            entries: { name: { data: { string: 'Bob' }, timeserial: 't:0' } },
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: {
+              semantics: MAP_SEMANTICS_LWW,
+              entries: { name: { data: { string: 'Bob' }, timeserial: 't:0' } },
+            },
+            createOp: mapCreateOp('root'),
           },
-          createOp: mapCreateOp('root'),
-        }),
+        ),
       ]),
     );
     await flushAsync();
@@ -718,23 +768,35 @@ describe('uts/objects/unit/objects_pool', function () {
           // First message with counter (value = count + createOp.count = 10 + 0 = 10)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:more', [
-              buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-                counter: { count: 10 },
-                createOp: counterCreateOp('counter:abc@1000', 0),
-              }),
+              buildObjectState(
+                'counter:abc@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 10 },
+                  createOp: counterCreateOp('counter:abc@1000', 0),
+                },
+              ),
             ]),
           );
           // Second message with same counter (partial — should be rejected by RTO5f2b)
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-                createOp: mapCreateOp('root'),
-              }),
-              buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-                counter: { count: 5 },
-                createOp: counterCreateOp('counter:abc@1000', 0),
-              }),
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+                  createOp: mapCreateOp('root'),
+                },
+              ),
+              buildObjectState(
+                'counter:abc@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 5 },
+                  createOp: counterCreateOp('counter:abc@1000', 0),
+                },
+              ),
             ]),
           );
         }
@@ -770,9 +832,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Buffer an OBJECT message during SYNCING
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO4d', [
-        buildCounterInc('counter:abc@1000', 5, '01', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO4d', [buildCounterInc('counter:abc@1000', 5, '01', 'site1')]),
     );
     await flushAsync();
 
@@ -805,10 +865,14 @@ describe('uts/objects/unit/objects_pool', function () {
           // Partial sync
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:more', [
-              buildObjectState('counter:old@1000', { aaa: 't:0' }, {
-                counter: { count: 10 },
-                createOp: counterCreateOp('counter:old@1000', 10),
-              }),
+              buildObjectState(
+                'counter:old@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 10 },
+                  createOp: counterCreateOp('counter:old@1000', 10),
+                },
+              ),
             ]),
           );
         }
@@ -831,14 +895,22 @@ describe('uts/objects/unit/objects_pool', function () {
     // Complete the new sync sequence
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO4-5', 'sync2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
-        buildObjectState('counter:new@1000', { aaa: 't:0' }, {
-          counter: { count: 99 },
-          createOp: counterCreateOp('counter:new@1000', 99),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
+        buildObjectState(
+          'counter:new@1000',
+          { aaa: 't:0' },
+          {
+            counter: { count: 99 },
+            createOp: counterCreateOp('counter:new@1000', 99),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -870,9 +942,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Buffer an OBJECT message during SYNCING
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO5-7', [
-        buildCounterInc('counter:abc@1000', 5, '01', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO5-7', [buildCounterInc('counter:abc@1000', 5, '01', 'site1')]),
     );
     await flushAsync();
 
@@ -882,14 +952,22 @@ describe('uts/objects/unit/objects_pool', function () {
     // New OBJECT_SYNC sequence (different id) — buffer should be preserved
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5-7', 'seq2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
-        buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-          counter: { count: 100 },
-          createOp: counterCreateOp('counter:abc@1000', 0),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
+        buildObjectState(
+          'counter:abc@1000',
+          { aaa: 't:0' },
+          {
+            counter: { count: 100 },
+            createOp: counterCreateOp('counter:abc@1000', 0),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -924,9 +1002,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Send OBJECT before sync completes
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO7-8', [
-        buildCounterInc('counter:abc@1000', 5, '01', 'site1'),
-      ]),
+      buildObjectMessage('test-RTO7-8', [buildCounterInc('counter:abc@1000', 5, '01', 'site1')]),
     );
     await flushAsync();
 
@@ -954,10 +1030,14 @@ describe('uts/objects/unit/objects_pool', function () {
     });
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c9', 'sync2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-          createOp: mapCreateOp('root'),
-        }),
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+            createOp: mapCreateOp('root'),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -1033,24 +1113,28 @@ describe('uts/objects/unit/objects_pool', function () {
           });
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: {},
-                  clearTimeserial: '05',
-                },
-                createOp: {
-                  action: OBJ_OP.MAP_CREATE,
-                  objectId: 'root',
-                  mapCreate: {
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
                     semantics: MAP_SEMANTICS_LWW,
-                    entries: {
-                      old_key: { data: { string: 'old' }, timeserial: '03' },
-                      new_key: { data: { string: 'new' }, timeserial: '07' },
+                    entries: {},
+                    clearTimeserial: '05',
+                  },
+                  createOp: {
+                    action: OBJ_OP.MAP_CREATE,
+                    objectId: 'root',
+                    mapCreate: {
+                      semantics: MAP_SEMANTICS_LWW,
+                      entries: {
+                        old_key: { data: { string: 'old' }, timeserial: '03' },
+                        new_key: { data: { string: 'new' }, timeserial: '07' },
+                      },
                     },
                   },
                 },
-              }),
+              ),
             ]),
           );
         }
@@ -1110,19 +1194,27 @@ describe('uts/objects/unit/objects_pool', function () {
           // First sync: counter:abc@1000 is a child of root
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: {
-                    counter_key: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:0' },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: MAP_SEMANTICS_LWW,
+                    entries: {
+                      counter_key: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:0' },
+                    },
                   },
+                  createOp: mapCreateOp('root'),
                 },
-                createOp: mapCreateOp('root'),
-              }),
-              buildObjectState('counter:abc@1000', { aaa: 't:0' }, {
-                counter: { count: 10 },
-                createOp: counterCreateOp('counter:abc@1000', 10),
-              }),
+              ),
+              buildObjectState(
+                'counter:abc@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 10 },
+                  createOp: counterCreateOp('counter:abc@1000', 10),
+                },
+              ),
             ]),
           );
         }
@@ -1147,28 +1239,40 @@ describe('uts/objects/unit/objects_pool', function () {
     });
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c10-resync', 'sync2:', [
-        buildObjectState('root', { aaa: 't:1' }, {
-          map: {
-            semantics: MAP_SEMANTICS_LWW,
-            entries: {
-              wrapper: { data: { objectId: 'map:wrapper@1000' }, timeserial: 't:1' },
+        buildObjectState(
+          'root',
+          { aaa: 't:1' },
+          {
+            map: {
+              semantics: MAP_SEMANTICS_LWW,
+              entries: {
+                wrapper: { data: { objectId: 'map:wrapper@1000' }, timeserial: 't:1' },
+              },
             },
+            createOp: mapCreateOp('root'),
           },
-          createOp: mapCreateOp('root'),
-        }),
-        buildObjectState('map:wrapper@1000', { aaa: 't:1' }, {
-          map: {
-            semantics: MAP_SEMANTICS_LWW,
-            entries: {
-              moved_counter: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:1' },
+        ),
+        buildObjectState(
+          'map:wrapper@1000',
+          { aaa: 't:1' },
+          {
+            map: {
+              semantics: MAP_SEMANTICS_LWW,
+              entries: {
+                moved_counter: { data: { objectId: 'counter:abc@1000' }, timeserial: 't:1' },
+              },
             },
+            createOp: mapCreateOp('map:wrapper@1000'),
           },
-          createOp: mapCreateOp('map:wrapper@1000'),
-        }),
-        buildObjectState('counter:abc@1000', { aaa: 't:1' }, {
-          counter: { count: 20 },
-          createOp: counterCreateOp('counter:abc@1000', 20),
-        }),
+        ),
+        buildObjectState(
+          'counter:abc@1000',
+          { aaa: 't:1' },
+          {
+            counter: { count: 20 },
+            createOp: counterCreateOp('counter:abc@1000', 20),
+          },
+        ),
       ]),
     );
     await flushAsync();
@@ -1202,19 +1306,27 @@ describe('uts/objects/unit/objects_pool', function () {
           // First sync: root has a child counter
           ws.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: MAP_SEMANTICS_LWW,
-                  entries: {
-                    child: { data: { objectId: 'counter:child@1000' }, timeserial: 't:0' },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: MAP_SEMANTICS_LWW,
+                    entries: {
+                      child: { data: { objectId: 'counter:child@1000' }, timeserial: 't:0' },
+                    },
                   },
+                  createOp: mapCreateOp('root'),
                 },
-                createOp: mapCreateOp('root'),
-              }),
-              buildObjectState('counter:child@1000', { aaa: 't:0' }, {
-                counter: { count: 1 },
-                createOp: counterCreateOp('counter:child@1000', 1),
-              }),
+              ),
+              buildObjectState(
+                'counter:child@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 1 },
+                  createOp: counterCreateOp('counter:child@1000', 1),
+                },
+              ),
             ]),
           );
         }

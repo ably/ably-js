@@ -30,12 +30,7 @@ import { createProxySession, waitForProxy, ProxySession } from '../../../realtim
 function waitForState(client: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for state '${targetState}' (current: ${client.connection.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for state '${targetState}' (current: ${client.connection.state})`)),
       timeout,
     );
     if (client.connection.state === targetState) {
@@ -57,12 +52,7 @@ function waitForState(client: any, targetState: string, timeout = 15000): Promis
 function waitForChannelState(channel: any, targetState: string, timeout = 15000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Timed out waiting for channel state '${targetState}' (current: ${channel.state})`,
-          ),
-        ),
+      () => reject(new Error(`Timed out waiting for channel state '${targetState}' (current: ${channel.state})`)),
       timeout,
     );
     if (channel.state === targetState) {
@@ -136,7 +126,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 
@@ -182,7 +172,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       endpoint: 'nonprod:sandbox',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientA);
 
@@ -211,7 +201,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientB);
 
@@ -287,7 +277,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 
@@ -378,7 +368,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 
@@ -437,7 +427,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       endpoint: 'nonprod:sandbox',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientA);
 
@@ -473,7 +463,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
       tls: false,
       useBinaryProtocol: false,
       autoConnect: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientB);
 

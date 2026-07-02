@@ -10,11 +10,7 @@
 
 import { expect } from 'chai';
 import { restoreAll, flushAsync } from '../../helpers';
-import {
-  setupSyncedChannel,
-  buildObjectMessage,
-  buildMapSet,
-} from '../helpers/standard_test_pool';
+import { setupSyncedChannel, buildObjectMessage, buildMapSet } from '../helpers/standard_test_pool';
 
 describe('uts/objects/unit/path_object', function () {
   afterEach(function () {
@@ -53,7 +49,9 @@ describe('uts/objects/unit/path_object', function () {
   it('RTPO5b - get() throws on non-string key', async function () {
     const { root } = await setupSyncedChannel('test-RTPO5b');
 
-    expect(() => (root as any).get(123)).to.throw().with.property('code', 40003);
+    expect(() => (root as any).get(123))
+      .to.throw()
+      .with.property('code', 40003);
   });
 
   // UTS: objects/unit/RTPO6/at-parses-path-0
@@ -77,7 +75,9 @@ describe('uts/objects/unit/path_object', function () {
   it('RTPO6b - at() throws for non-string input', async function () {
     const { root } = await setupSyncedChannel('test-RTPO6b');
 
-    expect(() => (root as any).at(123)).to.throw().with.property('code', 40003);
+    expect(() => (root as any).at(123))
+      .to.throw()
+      .with.property('code', 40003);
   });
 
   // UTS: objects/unit/RTPO7/value-counter-0

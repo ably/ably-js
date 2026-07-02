@@ -50,7 +50,7 @@ describe('uts/objects/integration/objects_sync', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 
@@ -84,7 +84,7 @@ describe('uts/objects/integration/objects_sync', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientA);
 
@@ -93,7 +93,7 @@ describe('uts/objects/integration/objects_sync', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientB);
 
@@ -146,7 +146,7 @@ describe('uts/objects/integration/objects_sync', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 
@@ -220,7 +220,7 @@ describe('uts/objects/integration/objects_sync', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
 

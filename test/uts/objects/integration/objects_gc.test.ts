@@ -72,7 +72,7 @@ describe('uts/objects/integration/objects_gc', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
 
@@ -137,7 +137,7 @@ describe('uts/objects/integration/objects_gc', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
 

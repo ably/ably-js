@@ -36,9 +36,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     const sub = root.get('score').subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -82,19 +80,27 @@ describe('uts/objects/unit/path_object_subscribe', function () {
           });
           mockWs.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', [
-              buildObjectState('root', { aaa: 't:0' }, {
-                map: {
-                  semantics: 0,
-                  entries: {
-                    score: { data: { objectId: 'counter:score@1000' }, timeserial: 't:0' },
+              buildObjectState(
+                'root',
+                { aaa: 't:0' },
+                {
+                  map: {
+                    semantics: 0,
+                    entries: {
+                      score: { data: { objectId: 'counter:score@1000' }, timeserial: 't:0' },
+                    },
                   },
+                  createOp: { action: 0, objectId: 'root', mapCreate: { semantics: 0, entries: {} } },
                 },
-                createOp: { action: 0, objectId: 'root', mapCreate: { semantics: 0, entries: {} } },
-              }),
-              buildObjectState('counter:score@1000', { aaa: 't:0' }, {
-                counter: { count: 0 },
-                createOp: { action: 3, objectId: 'counter:score@1000', counterCreate: { count: 0 } },
-              }),
+              ),
+              buildObjectState(
+                'counter:score@1000',
+                { aaa: 't:0' },
+                {
+                  counter: { count: 0 },
+                  createOp: { action: 3, objectId: 'counter:score@1000', counterCreate: { count: 0 } },
+                },
+              ),
             ]),
           );
         }
@@ -106,7 +112,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -141,14 +147,18 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   it('RTPO19c1a - subscribe() with depth 0 throws 40003', async function () {
     const { root } = await setupSyncedChannel('test-RTPO19c1a-zero');
 
-    expect(() => root.subscribe(() => {}, { depth: 0 })).to.throw().with.property('code', 40003);
+    expect(() => root.subscribe(() => {}, { depth: 0 }))
+      .to.throw()
+      .with.property('code', 40003);
   });
 
   // UTS: objects/unit/RTPO19c1a/subscribe-negative-depth-throws-0
   it('RTPO19c1a - subscribe() with negative depth throws 40003', async function () {
     const { root } = await setupSyncedChannel('test-RTPO19c1a-neg');
 
-    expect(() => root.subscribe(() => {}, { depth: -1 })).to.throw().with.property('code', 40003);
+    expect(() => root.subscribe(() => {}, { depth: -1 }))
+      .to.throw()
+      .with.property('code', 40003);
   });
 
   // UTS: objects/unit/RTPO19c1/subscribe-depth-1-self-only-0
@@ -160,9 +170,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Self event: MAP_SET on root map
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d1', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-d1', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -170,9 +178,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event: counter increment at depth 2 (should NOT be received)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d1', [
-        buildCounterInc('counter:score@1000', 7, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-d1', [buildCounterInc('counter:score@1000', 7, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -194,9 +200,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Self event: MAP_SET on root map (depth calc: 0-0+1=1 <= 2)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d2', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-d2', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -204,9 +208,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event: counter at path ['score'] (depth calc: 1-0+1=2 <= 2)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d2', [
-        buildCounterInc('counter:score@1000', 7, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-d2', [buildCounterInc('counter:score@1000', 7, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -233,9 +235,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Self event on root
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-all', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-all', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -243,9 +243,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event (counter at depth 2)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-all', [
-        buildCounterInc('counter:score@1000', 7, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-all', [buildCounterInc('counter:score@1000', 7, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -273,9 +271,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     sub.unsubscribe();
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19d', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19d', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -290,9 +286,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19e1', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19e1', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -309,9 +303,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.get('score').subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19e2', [
-        buildCounterInc('counter:score@1000', 42, 'serial-1', 'site-a'),
-      ]),
+      buildObjectMessage('test-RTPO19e2', [buildCounterInc('counter:score@1000', 42, 'serial-1', 'site-a')]),
     );
     await flushAsync();
 
@@ -345,10 +337,14 @@ describe('uts/objects/unit/path_object_subscribe', function () {
       channel: 'test-RTPO19e2-no-op',
       channelSerial: 'sync2:',
       state: [
-        buildObjectState('counter:score@1000', { aaa: 't:1' }, {
-          counter: { count: 200 },
-          createOp: { counterCreate: { count: 200 } },
-        }),
+        buildObjectState(
+          'counter:score@1000',
+          { aaa: 't:1' },
+          {
+            counter: { count: 200 },
+            createOp: { counterCreate: { count: 200 } },
+          },
+        ),
       ],
     });
     await flushAsync();
@@ -377,9 +373,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Increment the NEW counter at "score"
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19f', [
-        buildCounterInc('counter:new@2000', 10, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19f', [buildCounterInc('counter:new@2000', 10, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -407,9 +401,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.get('name').subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19-prim', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19-prim', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -425,9 +417,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19-clear', [
-        buildMapClear('root', 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19-clear', [buildMapClear('root', 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -453,9 +443,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event (nested counter)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19-bubble', [
-        buildCounterInc('counter:nested@1000', 3, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19-bubble', [buildCounterInc('counter:nested@1000', 3, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -487,9 +475,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event: nested counter at ['profile', 'nested_counter'] (depth calc: 2-1+1=2 <= 2)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [
-        buildCounterInc('counter:nested@1000', 3, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:nested@1000', 3, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -526,9 +512,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Child event: nested counter at ['profile', 'nested_counter'] (depth calc: 2-1+1=2 > 1) NO
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1-d1', [
-        buildCounterInc('counter:nested@1000', 3, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24c1-d1', [buildCounterInc('counter:nested@1000', 3, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -544,17 +528,13 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Change at "score" — "profile" is not a prefix of "score"
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1-prefix', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24c1-prefix', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
     // Change at "name" — "profile" is not a prefix of "name"
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1-prefix', [
-        buildMapSet('root', 'name', { string: 'Bob' }, '100', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24c1-prefix', [buildMapSet('root', 'name', { string: 'Bob' }, '100', 'remote')]),
     );
     await flushAsync();
 
@@ -597,13 +577,13 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTO24b2c');
 
     const events: any[] = [];
-    root.subscribe(() => { throw new Error('boom'); });
+    root.subscribe(() => {
+      throw new Error('boom');
+    });
     root.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24b2c', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24b2c', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -631,9 +611,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Increment counter:score@1000 — getFullPaths returns ["score"] and ["alias"]
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24b1', [
-        buildCounterInc('counter:score@1000', 5, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24b1', [buildCounterInc('counter:score@1000', 5, '99', 'remote')]),
     );
     await flushAsync();
 

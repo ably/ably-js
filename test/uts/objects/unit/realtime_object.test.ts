@@ -83,7 +83,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -136,7 +136,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -198,7 +198,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -217,9 +217,7 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(attachSent).to.be.true;
 
     // Now send the sync data to complete the sync
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO23c', 'sync1:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO23c', 'sync1:', STANDARD_POOL_OBJECTS));
 
     const root = await getFuture;
     expect(root).to.exist;
@@ -264,7 +262,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -304,7 +302,9 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             objectsGCGracePeriod: 86400000,
-            // No siteCode
+            // Explicitly clear the mock default siteCode ('test') so this test
+            // genuinely simulates a CONNECTED with no siteCode (RTO20c1).
+            siteCode: undefined,
           },
         });
       },
@@ -330,7 +330,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -384,7 +384,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -415,9 +415,7 @@ describe('uts/objects/unit/realtime_object', function () {
     const incFuture = root.get('score').increment(10);
 
     // Complete the re-sync
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO20e', 'sync2:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO20e', 'sync2:', STANDARD_POOL_OBJECTS));
 
     await incFuture;
 
@@ -494,7 +492,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -516,9 +514,7 @@ describe('uts/objects/unit/realtime_object', function () {
     }
 
     // Complete sync
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO17', 'sync1:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO17', 'sync1:', STANDARD_POOL_OBJECTS));
 
     await getFuture;
 
@@ -530,7 +526,9 @@ describe('uts/objects/unit/realtime_object', function () {
     const { channel, mockWs } = await setupSyncedChannel('test-RTO18d');
 
     let callCount = 0;
-    const listener = () => { callCount++; };
+    const listener = () => {
+      callCount++;
+    };
     channel.object.on('synced', listener);
     channel.object.on('synced', listener);
 
@@ -541,9 +539,7 @@ describe('uts/objects/unit/realtime_object', function () {
       channelSerial: 'sync2:cursor',
       flags: HAS_OBJECTS,
     });
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO18d', 'sync2:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO18d', 'sync2:', STANDARD_POOL_OBJECTS));
 
     const deadline = Date.now() + 5000;
     while (callCount < 2 && Date.now() < deadline) {
@@ -558,7 +554,9 @@ describe('uts/objects/unit/realtime_object', function () {
     const { channel, mockWs } = await setupSyncedChannel('test-RTO19');
 
     let callCount = 0;
-    const listener = () => { callCount++; };
+    const listener = () => {
+      callCount++;
+    };
     const sub = channel.object.on('synced', listener);
     sub.off();
 
@@ -569,9 +567,7 @@ describe('uts/objects/unit/realtime_object', function () {
       channelSerial: 'sync2:cursor',
       flags: HAS_OBJECTS,
     });
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO19', 'sync2:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO19', 'sync2:', STANDARD_POOL_OBJECTS));
     await flushAsync();
 
     expect(callCount).to.equal(0);
@@ -614,7 +610,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -643,9 +639,7 @@ describe('uts/objects/unit/realtime_object', function () {
     // setupSyncedChannel uses serial format 't:${msgSerial+1}:${i}' for ACK serials
     // The first OBJECT message gets msgSerial 0, so ACK serial is 't:1:0'
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO20-echo', [
-        buildCounterInc('counter:score@1000', 10, 't:1:0', 'test'),
-      ]),
+      buildObjectMessage('test-RTO20-echo', [buildCounterInc('counter:score@1000', 10, 't:1:0', 'test')]),
     );
     await flushAsync();
     const scoreAfterEcho = root.get('score').value();
@@ -678,9 +672,7 @@ describe('uts/objects/unit/realtime_object', function () {
     // publishAndApply will generate from the ACK: serial='ack-0:0', siteCode='test'
     // (from connectionDetails.siteCode in setupSyncedChannelNoAck).
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO20-ack-after-echo', [
-        buildCounterInc('counter:score@1000', 10, 'ack-0:0', 'test'),
-      ]),
+      buildObjectMessage('test-RTO20-ack-after-echo', [buildCounterInc('counter:score@1000', 10, 'ack-0:0', 'test')]),
     );
     await flushAsync();
 
@@ -706,9 +698,7 @@ describe('uts/objects/unit/realtime_object', function () {
       channelSerial: 'sync2:cursor',
       flags: HAS_OBJECTS,
     });
-    mockWs.active_connection!.send_to_client(
-      buildObjectSyncMessage('test-RTO5c9', 'sync2:', STANDARD_POOL_OBJECTS),
-    );
+    mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO5c9', 'sync2:', STANDARD_POOL_OBJECTS));
     await flushAsync();
 
     // After re-sync, the score is back to 100 (from pool state)
@@ -766,7 +756,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -806,9 +796,7 @@ describe('uts/objects/unit/realtime_object', function () {
 
       // Delete the counter object (tombstone it)
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10', [
-          buildObjectDelete('counter:score@1000', '99', 'site1', 1000),
-        ]),
+        buildObjectMessage('test-RTO10', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
       );
       await flushAsync();
 
@@ -872,7 +860,7 @@ describe('uts/objects/unit/realtime_object', function () {
         key: 'appId.keyId:keySecret',
         autoConnect: false,
         useBinaryProtocol: false,
-        plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+        plugins: { LiveObjects: LiveObjectsPlugin },
       });
       trackClient(client);
       client.connect();
@@ -883,9 +871,7 @@ describe('uts/objects/unit/realtime_object', function () {
 
       // Delete the counter (tombstone it)
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10b1', [
-          buildObjectDelete('counter:score@1000', '99', 'site1', 1000),
-        ]),
+        buildObjectMessage('test-RTO10b1', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
       );
       await flushAsync();
 
@@ -939,7 +925,7 @@ describe('uts/objects/unit/realtime_object', function () {
         key: 'appId.keyId:keySecret',
         autoConnect: false,
         useBinaryProtocol: false,
-        plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+        plugins: { LiveObjects: LiveObjectsPlugin },
       });
       trackClient(client);
       client.connect();
@@ -1055,7 +1041,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1115,7 +1101,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1171,7 +1157,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1239,7 +1225,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1305,7 +1291,7 @@ describe('uts/objects/unit/realtime_object', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1385,7 +1371,7 @@ describe('uts/objects/unit/realtime_object', function () {
       autoConnect: false,
       useBinaryProtocol: false,
       echoMessages: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -1419,9 +1405,7 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // Trigger an update on the score counter (serial must be > 't:0' from standard pool)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24a', [
-        buildCounterInc('counter:score@1000', 5, 't:1', 'aaa'),
-      ]),
+      buildObjectMessage('test-RTO24a', [buildCounterInc('counter:score@1000', 5, 't:1', 'aaa')]),
     );
 
     const deadline = Date.now() + 5000;
@@ -1453,9 +1437,7 @@ describe('uts/objects/unit/realtime_object', function () {
     // Update a direct child of root (path ["score"]) -- depth 1 from root
     // Serial must be > 't:0' from standard pool
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [
-        buildCounterInc('counter:score@1000', 5, 't:1', 'aaa'),
-      ]),
+      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:score@1000', 5, 't:1', 'aaa')]),
     );
 
     const deadline1 = Date.now() + 5000;
@@ -1465,9 +1447,7 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // Update a nested object (path ["profile", "nested_counter"]) -- depth 2 from root
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [
-        buildCounterInc('counter:nested@1000', 1, 't:2', 'aaa'),
-      ]),
+      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:nested@1000', 1, 't:2', 'aaa')]),
     );
 
     const deadline2 = Date.now() + 5000;

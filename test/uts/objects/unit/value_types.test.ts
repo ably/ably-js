@@ -77,9 +77,7 @@ async function setupCapturingChannel(channelName: string): Promise<{
           channelSerial: 'sync1:',
           flags: HAS_OBJECTS,
         });
-        mockWs.active_connection!.send_to_client(
-          buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-        );
+        mockWs.active_connection!.send_to_client(buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS));
       } else if (msg.action === PM_ACTION.OBJECT) {
         captured.push({ raw: msg, state: msg.state || [] });
         // Auto-ACK with serials
@@ -94,7 +92,7 @@ async function setupCapturingChannel(channelName: string): Promise<{
     key: 'appId.keyId:keySecret',
     autoConnect: false,
     useBinaryProtocol: false,
-    plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    plugins: { LiveObjects: LiveObjectsPlugin },
   });
   trackClient(client);
   client.connect();
@@ -306,13 +304,16 @@ describe('uts/objects/unit/value_types', function () {
   it('RTLMV4d - entry value type mapping', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLMV4d');
 
-    await root.set('name', LiveObjectsPlugin.LiveMap.create({
-      str: 'hello',
-      num: 42,
-      bool: true,
-      json_arr: [1, 2, 3] as any,
-      json_obj: { key: 'value' } as any,
-    }));
+    await root.set(
+      'name',
+      LiveObjectsPlugin.LiveMap.create({
+        str: 'hello',
+        num: 42,
+        bool: true,
+        json_arr: [1, 2, 3] as any,
+        json_obj: { key: 'value' } as any,
+      }),
+    );
     await flushAsync();
 
     const allOps = captured.flatMap((c) => c.state);
@@ -349,8 +350,7 @@ describe('uts/objects/unit/value_types', function () {
 
     // Filter out the MAP_SET operation — we only want the CREATE operations
     const createOps = allOps.filter(
-      (op: any) =>
-        op.operation?.action === OBJ_OP.COUNTER_CREATE || op.operation?.action === OBJ_OP.MAP_CREATE,
+      (op: any) => op.operation?.action === OBJ_OP.COUNTER_CREATE || op.operation?.action === OBJ_OP.MAP_CREATE,
     );
 
     // Depth-first: inner counter, inner map, outer map
@@ -453,10 +453,9 @@ describe('uts/objects/unit/value_types', function () {
       if (scenario.isJson && typeof actual === 'string') {
         actual = JSON.parse(actual);
       }
-      expect(
-        actual,
-        `expected ${scenario.expectedField} for input ${JSON.stringify(scenario.input)}`,
-      ).to.deep.equal(scenario.expectedValue);
+      expect(actual, `expected ${scenario.expectedField} for input ${JSON.stringify(scenario.input)}`).to.deep.equal(
+        scenario.expectedValue,
+      );
 
       restoreAll();
     }

@@ -19,6 +19,8 @@ const DEFAULT_CONNECTED = {
     maxIdleInterval: 15000,
     maxMessageSize: 65536,
     serverId: 'test-server',
+    siteCode: 'test',
+    objectsGCGracePeriod: 86400000,
   },
   error: null as any,
 };

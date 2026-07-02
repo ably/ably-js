@@ -332,7 +332,10 @@ describe('uts/objects/unit/parent_references', function () {
 
     const paths = leaf.getFullPaths();
     expect(paths.length).to.equal(2);
-    assertPathsContain(paths, [['a', 'x'], ['b', 'y']]);
+    assertPathsContain(paths, [
+      ['a', 'x'],
+      ['b', 'y'],
+    ]);
   });
 
   // UTS: objects/unit/RTLO4f/single-parent-multiple-keys-0
@@ -415,7 +418,10 @@ describe('uts/objects/unit/parent_references', function () {
 
     const paths = target.getFullPaths();
     expect(paths.length).to.equal(2);
-    assertPathsContain(paths, [['left', 'mid', 'target'], ['right', 'target']]);
+    assertPathsContain(paths, [
+      ['left', 'mid', 'target'],
+      ['right', 'target'],
+    ]);
   });
 
   // =========================================================================
@@ -487,27 +493,35 @@ describe('uts/objects/unit/parent_references', function () {
 
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c10a-stale', 'sync2:', [
-        buildObjectState('root', { aaa: 't:1' }, {
-          map: {
-            semantics: MAP_SEMANTICS_LWW,
-            entries: {
-              points: { data: { objectId: 'counter:score@1000' }, timeserial: 't:1' },
+        buildObjectState(
+          'root',
+          { aaa: 't:1' },
+          {
+            map: {
+              semantics: MAP_SEMANTICS_LWW,
+              entries: {
+                points: { data: { objectId: 'counter:score@1000' }, timeserial: 't:1' },
+              },
+            },
+            createOp: {
+              action: OBJ_OP.MAP_CREATE,
+              objectId: 'root',
+              mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
             },
           },
-          createOp: {
-            action: OBJ_OP.MAP_CREATE,
-            objectId: 'root',
-            mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+        ),
+        buildObjectState(
+          'counter:score@1000',
+          { aaa: 't:1' },
+          {
+            counter: { count: 20 },
+            createOp: {
+              action: OBJ_OP.COUNTER_CREATE,
+              objectId: 'counter:score@1000',
+              counterCreate: { count: 20 },
+            },
           },
-        }),
-        buildObjectState('counter:score@1000', { aaa: 't:1' }, {
-          counter: { count: 20 },
-          createOp: {
-            action: OBJ_OP.COUNTER_CREATE,
-            objectId: 'counter:score@1000',
-            counterCreate: { count: 20 },
-          },
-        }),
+        ),
       ]),
     );
     await flushAsync();
@@ -544,27 +558,35 @@ describe('uts/objects/unit/parent_references', function () {
 
     mockWs.active_connection!.send_to_client(
       buildObjectSyncMessage('test-RTO5c10-orphan', 'sync2:', [
-        buildObjectState('root', { aaa: 't:0' }, {
-          map: {
-            semantics: MAP_SEMANTICS_LWW,
-            entries: {
-              name: { data: { string: 'Alice' }, timeserial: 't:0' },
+        buildObjectState(
+          'root',
+          { aaa: 't:0' },
+          {
+            map: {
+              semantics: MAP_SEMANTICS_LWW,
+              entries: {
+                name: { data: { string: 'Alice' }, timeserial: 't:0' },
+              },
+            },
+            createOp: {
+              action: OBJ_OP.MAP_CREATE,
+              objectId: 'root',
+              mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
             },
           },
-          createOp: {
-            action: OBJ_OP.MAP_CREATE,
-            objectId: 'root',
-            mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+        ),
+        buildObjectState(
+          'counter:orphan@1000',
+          { aaa: 't:0' },
+          {
+            counter: { count: 42 },
+            createOp: {
+              action: OBJ_OP.COUNTER_CREATE,
+              objectId: 'counter:orphan@1000',
+              counterCreate: { count: 42 },
+            },
           },
-        }),
-        buildObjectState('counter:orphan@1000', { aaa: 't:0' }, {
-          counter: { count: 42 },
-          createOp: {
-            action: OBJ_OP.COUNTER_CREATE,
-            objectId: 'counter:orphan@1000',
-            counterCreate: { count: 42 },
-          },
-        }),
+        ),
       ]),
     );
     await flushAsync();

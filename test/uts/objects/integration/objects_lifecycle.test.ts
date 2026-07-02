@@ -50,7 +50,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
 
@@ -84,7 +84,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
 
@@ -93,7 +93,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
 
@@ -117,13 +117,16 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     rootB.subscribe(() => {
       // subscription active
     });
-    await pollUntil(() => {
-      try {
-        return rootB.get('greeting').value() === 'hello' ? true : null;
-      } catch {
-        return null;
-      }
-    }, { interval: 200, timeout: 10000 });
+    await pollUntil(
+      () => {
+        try {
+          return rootB.get('greeting').value() === 'hello' ? true : null;
+        } catch {
+          return null;
+        }
+      },
+      { interval: 200, timeout: 10000 },
+    );
 
     expect(rootB.get('greeting').value()).to.equal('hello');
 
@@ -146,7 +149,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
 
@@ -155,7 +158,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
 
@@ -175,13 +178,16 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     await rootA.set('my_counter', LiveObjectsPlugin.LiveCounter.create(42));
 
     rootB.subscribe(() => {});
-    await pollUntil(() => {
-      try {
-        return rootB.get('my_counter').value() === 42 ? true : null;
-      } catch {
-        return null;
-      }
-    }, { interval: 200, timeout: 10000 });
+    await pollUntil(
+      () => {
+        try {
+          return rootB.get('my_counter').value() === 42 ? true : null;
+        } catch {
+          return null;
+        }
+      },
+      { interval: 200, timeout: 10000 },
+    );
 
     expect(rootB.get('my_counter').value()).to.equal(42);
     expect(rootB.get('my_counter').instance()).to.not.be.null;
@@ -205,7 +211,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
 
@@ -214,7 +220,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
 
@@ -235,24 +241,30 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     await rootA.set('hits', LiveObjectsPlugin.LiveCounter.create(0));
 
     rootB.subscribe(() => {});
-    await pollUntil(() => {
-      try {
-        return rootB.get('hits').value() === 0 ? true : null;
-      } catch {
-        return null;
-      }
-    }, { interval: 200, timeout: 10000 });
+    await pollUntil(
+      () => {
+        try {
+          return rootB.get('hits').value() === 0 ? true : null;
+        } catch {
+          return null;
+        }
+      },
+      { interval: 200, timeout: 10000 },
+    );
 
     // Increment it
     await rootA.get('hits').increment(10);
 
-    await pollUntil(() => {
-      try {
-        return rootB.get('hits').value() === 10 ? true : null;
-      } catch {
-        return null;
-      }
-    }, { interval: 200, timeout: 10000 });
+    await pollUntil(
+      () => {
+        try {
+          return rootB.get('hits').value() === 10 ? true : null;
+        } catch {
+          return null;
+        }
+      },
+      { interval: 200, timeout: 10000 },
+    );
 
     expect(rootA.get('hits').value()).to.equal(10);
     expect(rootB.get('hits').value()).to.equal(10);
@@ -276,7 +288,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
 
@@ -285,7 +297,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
 
@@ -302,19 +314,25 @@ describe('uts/objects/integration/objects_lifecycle', function () {
     const rootA = await channelA.object.get();
     const rootB = await channelB.object.get();
 
-    await rootA.set('settings', LiveObjectsPlugin.LiveMap.create({
-      theme: 'dark',
-      fontSize: 14,
-    }));
+    await rootA.set(
+      'settings',
+      LiveObjectsPlugin.LiveMap.create({
+        theme: 'dark',
+        fontSize: 14,
+      }),
+    );
 
     rootB.subscribe(() => {});
-    await pollUntil(() => {
-      try {
-        return rootB.get('settings').get('theme').value() === 'dark' ? true : null;
-      } catch {
-        return null;
-      }
-    }, { interval: 200, timeout: 10000 });
+    await pollUntil(
+      () => {
+        try {
+          return rootB.get('settings').get('theme').value() === 'dark' ? true : null;
+        } catch {
+          return null;
+        }
+      },
+      { interval: 200, timeout: 10000 },
+    );
 
     expect(rootB.get('settings').get('theme').value()).to.equal('dark');
     expect(rootB.get('settings').get('fontSize').value()).to.equal(14);
@@ -338,7 +356,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
 
     const restChannel = restClient.channels.get(channelName);
@@ -353,7 +371,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
 

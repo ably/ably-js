@@ -143,7 +143,12 @@ export function buildObjectDelete(objectId: string, serial: string, siteCode: st
   };
 }
 
-export function buildCounterCreate(objectId: string, counterCreate: { count: number }, serial: string, siteCode: string) {
+export function buildCounterCreate(
+  objectId: string,
+  counterCreate: { count: number },
+  serial: string,
+  siteCode: string,
+) {
   return {
     serial,
     siteCode,
@@ -244,69 +249,89 @@ export function buildPublicObjectMessage(objectMessage: any, channelName: string
 // --- Standard test pool fixtures ---
 
 export const STANDARD_POOL_OBJECTS = [
-  buildObjectState('root', { aaa: 't:0' }, {
-    map: {
-      semantics: MAP_SEMANTICS_LWW,
-      entries: {
-        name: { data: { string: 'Alice' }, timeserial: 't:0' },
-        age: { data: { number: 30 }, timeserial: 't:0' },
-        active: { data: { boolean: true }, timeserial: 't:0' },
-        score: { data: { objectId: 'counter:score@1000' }, timeserial: 't:0' },
-        profile: { data: { objectId: 'map:profile@1000' }, timeserial: 't:0' },
-        data: { data: { json: JSON.stringify({ tags: ['a', 'b'] }) }, timeserial: 't:0' },
-        avatar: { data: { bytes: 'AQID' }, timeserial: 't:0' },
+  buildObjectState(
+    'root',
+    { aaa: 't:0' },
+    {
+      map: {
+        semantics: MAP_SEMANTICS_LWW,
+        entries: {
+          name: { data: { string: 'Alice' }, timeserial: 't:0' },
+          age: { data: { number: 30 }, timeserial: 't:0' },
+          active: { data: { boolean: true }, timeserial: 't:0' },
+          score: { data: { objectId: 'counter:score@1000' }, timeserial: 't:0' },
+          profile: { data: { objectId: 'map:profile@1000' }, timeserial: 't:0' },
+          data: { data: { json: JSON.stringify({ tags: ['a', 'b'] }) }, timeserial: 't:0' },
+          avatar: { data: { bytes: 'AQID' }, timeserial: 't:0' },
+        },
+      },
+      createOp: {
+        action: OBJ_OP.MAP_CREATE,
+        objectId: 'root',
+        mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
       },
     },
-    createOp: {
-      action: OBJ_OP.MAP_CREATE,
-      objectId: 'root',
-      mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-    },
-  }),
-  buildObjectState('counter:score@1000', { aaa: 't:0' }, {
-    counter: { count: 0 },
-    createOp: {
-      action: OBJ_OP.COUNTER_CREATE,
-      objectId: 'counter:score@1000',
-      counterCreate: { count: 100 },
-    },
-  }),
-  buildObjectState('map:profile@1000', { aaa: 't:0' }, {
-    map: {
-      semantics: MAP_SEMANTICS_LWW,
-      entries: {
-        email: { data: { string: 'alice@example.com' }, timeserial: 't:0' },
-        nested_counter: { data: { objectId: 'counter:nested@1000' }, timeserial: 't:0' },
-        prefs: { data: { objectId: 'map:prefs@1000' }, timeserial: 't:0' },
+  ),
+  buildObjectState(
+    'counter:score@1000',
+    { aaa: 't:0' },
+    {
+      counter: { count: 0 },
+      createOp: {
+        action: OBJ_OP.COUNTER_CREATE,
+        objectId: 'counter:score@1000',
+        counterCreate: { count: 100 },
       },
     },
-    createOp: {
-      action: OBJ_OP.MAP_CREATE,
-      objectId: 'map:profile@1000',
-      mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
-    },
-  }),
-  buildObjectState('counter:nested@1000', { aaa: 't:0' }, {
-    counter: { count: 0 },
-    createOp: {
-      action: OBJ_OP.COUNTER_CREATE,
-      objectId: 'counter:nested@1000',
-      counterCreate: { count: 5 },
-    },
-  }),
-  buildObjectState('map:prefs@1000', { aaa: 't:0' }, {
-    map: {
-      semantics: MAP_SEMANTICS_LWW,
-      entries: {
-        theme: { data: { string: 'dark' }, timeserial: 't:0' },
+  ),
+  buildObjectState(
+    'map:profile@1000',
+    { aaa: 't:0' },
+    {
+      map: {
+        semantics: MAP_SEMANTICS_LWW,
+        entries: {
+          email: { data: { string: 'alice@example.com' }, timeserial: 't:0' },
+          nested_counter: { data: { objectId: 'counter:nested@1000' }, timeserial: 't:0' },
+          prefs: { data: { objectId: 'map:prefs@1000' }, timeserial: 't:0' },
+        },
+      },
+      createOp: {
+        action: OBJ_OP.MAP_CREATE,
+        objectId: 'map:profile@1000',
+        mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
       },
     },
-    createOp: {
-      action: OBJ_OP.MAP_CREATE,
-      objectId: 'map:prefs@1000',
-      mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+  ),
+  buildObjectState(
+    'counter:nested@1000',
+    { aaa: 't:0' },
+    {
+      counter: { count: 0 },
+      createOp: {
+        action: OBJ_OP.COUNTER_CREATE,
+        objectId: 'counter:nested@1000',
+        counterCreate: { count: 5 },
+      },
     },
-  }),
+  ),
+  buildObjectState(
+    'map:prefs@1000',
+    { aaa: 't:0' },
+    {
+      map: {
+        semantics: MAP_SEMANTICS_LWW,
+        entries: {
+          theme: { data: { string: 'dark' }, timeserial: 't:0' },
+        },
+      },
+      createOp: {
+        action: OBJ_OP.MAP_CREATE,
+        objectId: 'map:prefs@1000',
+        mapCreate: { semantics: MAP_SEMANTICS_LWW, entries: {} },
+      },
+    },
+  ),
 ];
 
 // --- Synced channel setup ---
@@ -345,9 +370,7 @@ export async function setupSyncedChannel(channelName: string): Promise<SyncedCha
           channelSerial: 'sync1:',
           flags: HAS_OBJECTS,
         });
-        mockWs.active_connection!.send_to_client(
-          buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-        );
+        mockWs.active_connection!.send_to_client(buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS));
       } else if (msg.action === PM_ACTION.OBJECT) {
         const serials = (msg.state || []).map((_: any, i: number) => `t:${msg.msgSerial + 1}:${i}`);
         mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
@@ -360,7 +383,7 @@ export async function setupSyncedChannel(channelName: string): Promise<SyncedCha
     key: 'appId.keyId:keySecret',
     autoConnect: false,
     useBinaryProtocol: false,
-    plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    plugins: { LiveObjects: LiveObjectsPlugin },
   });
   trackClient(client);
   client.connect();
@@ -399,9 +422,7 @@ export async function setupSyncedChannelNoAck(channelName: string): Promise<Sync
           channelSerial: 'sync1:',
           flags: HAS_OBJECTS,
         });
-        mockWs.active_connection!.send_to_client(
-          buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
-        );
+        mockWs.active_connection!.send_to_client(buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS));
       }
     },
   });
@@ -411,7 +432,7 @@ export async function setupSyncedChannelNoAck(channelName: string): Promise<Sync
     key: 'appId.keyId:keySecret',
     autoConnect: false,
     useBinaryProtocol: false,
-    plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+    plugins: { LiveObjects: LiveObjectsPlugin },
   });
   trackClient(client);
   client.connect();

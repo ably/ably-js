@@ -34,9 +34,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     const sub = instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -53,9 +51,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     // First: a real counter increment
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4c1', [
-        buildCounterInc('counter:score@1000', 5, '01', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4c1', [buildCounterInc('counter:score@1000', 5, '01', 'remote')]),
     );
     await flushAsync();
 
@@ -100,9 +96,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b-map', [
-        buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b-map', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
     );
     await flushAsync();
 
@@ -129,9 +123,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     // First update should be received
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b7-unsub', [
-        buildCounterInc('counter:score@1000', 5, '01', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b7-unsub', [buildCounterInc('counter:score@1000', 5, '01', 'remote')]),
     );
     await flushAsync();
 
@@ -142,9 +134,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     // Second update should NOT be received
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b7-unsub', [
-        buildCounterInc('counter:score@1000', 10, '02', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b7-unsub', [buildCounterInc('counter:score@1000', 10, '02', 'remote')]),
     );
     await flushAsync();
 
@@ -176,9 +166,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     // Send OBJECT_DELETE which causes a tombstone LiveObjectUpdate
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4c3c', [
-        buildObjectDelete('counter:score@1000', '50', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4c3c', [buildObjectDelete('counter:score@1000', '50', 'remote')]),
     );
     await flushAsync();
 
@@ -188,9 +176,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     // Send another update — listeners should have been deregistered by tombstone
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4c3c', [
-        buildCounterInc('counter:score@1000', 3, '51', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4c3c', [buildCounterInc('counter:score@1000', 3, '51', 'remote')]),
     );
     await flushAsync();
 
@@ -208,9 +194,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4d', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4d', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
@@ -233,9 +217,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4e-true', [
-        buildObjectDelete('counter:score@1000', '50', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4e-true', [buildObjectDelete('counter:score@1000', '50', 'remote')]),
     );
     await flushAsync();
 
@@ -254,9 +236,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b4e-false', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLO4b4e-false', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 

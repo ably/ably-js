@@ -152,7 +152,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -220,7 +220,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -288,7 +288,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -357,7 +357,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -427,7 +427,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -506,7 +506,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -605,7 +605,7 @@ describe('uts/objects/unit/live_map_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();

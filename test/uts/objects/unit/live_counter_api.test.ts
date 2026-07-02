@@ -22,11 +22,7 @@ import {
 import { MockWebSocket } from '../../mock_websocket';
 import { Ably, installMockWebSocket, trackClient } from '../../helpers';
 import * as LiveObjectsPlugin from '../../../../src/plugins/liveobjects';
-import {
-  buildObjectSyncMessage,
-  STANDARD_POOL_OBJECTS,
-  HAS_OBJECTS,
-} from '../helpers/standard_test_pool';
+import { buildObjectSyncMessage, STANDARD_POOL_OBJECTS, HAS_OBJECTS } from '../helpers/standard_test_pool';
 
 describe('uts/objects/unit/live_counter_api', function () {
   afterEach(function () {
@@ -86,7 +82,7 @@ describe('uts/objects/unit/live_counter_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -197,7 +193,7 @@ describe('uts/objects/unit/live_counter_api', function () {
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      plugins: { LiveObjects: LiveObjectsPlugin.LiveObjects },
+      plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
     client.connect();
@@ -221,9 +217,7 @@ describe('uts/objects/unit/live_counter_api', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLC11', [
-        buildCounterInc('counter:score@1000', 7, '99', 'remote'),
-      ]),
+      buildObjectMessage('test-RTLC11', [buildCounterInc('counter:score@1000', 7, '99', 'remote')]),
     );
     await flushAsync();
 
