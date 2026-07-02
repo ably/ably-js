@@ -3703,6 +3703,147 @@ export declare interface PushAdmin {
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
   publish(recipient: any, payload: any): Promise<void>;
+  /**
+   * Creates an APNs broadcast channel for use with an iOS Live Activity. Call once before starting the Live Activity and persist the returned ids for the session.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param options - Options for the broadcast, including the `messageStoragePolicy`.
+   * @returns A promise resolving to the broadcast `{ id, apnsChannelId }`.
+   */
+  createApnsBroadcast(options: PushApnsBroadcastOptions): Promise<PushApnsBroadcast>;
+  /**
+   * Controls the lifecycle of iOS Live Activities over an APNs broadcast channel created with {@link PushAdmin.createApnsBroadcast}.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   */
+  liveActivity: PushLiveActivity;
+}
+
+/**
+ * Controls the lifecycle of an iOS Live Activity over an APNs broadcast channel.
+ *
+ * @experimental This is a preview feature and may change in a future non-major release.
+ */
+export declare interface PushLiveActivity {
+  /**
+   * Sends a push-to-start notification to all devices subscribed to the given Ably channels. Each targeted device starts a new Live Activity using its registered push-to-start token.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The recipient channels, the broadcast `id`, and a valid APNs Live Activity start payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  start(params: PushLiveActivityStartParams): Promise<void>;
+  /**
+   * Sends a `content-state` update to all devices with an active Live Activity on the broadcast channel. A single push is sent to the channel; APNs handles fan-out to all subscribed devices.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The broadcast `id` and a valid APNs Live Activity update payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  update(params: PushLiveActivityUpdateParams): Promise<void>;
+  /**
+   * Ends the Live Activity on all subscribed devices and cleans up the APNs channel. After this call, the broadcast `id` is no longer valid.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The broadcast `id` and a valid APNs Live Activity end payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  end(params: PushLiveActivityEndParams): Promise<void>;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.start}.
+ */
+export declare interface PushLiveActivityStartParams {
+  /**
+   * The targeted recipients of the push-to-start notification.
+   */
+  recipient: {
+    /**
+     * One or more Ably channel names. Devices subscribed to any of these channels will receive the push-to-start notification. Provide either `channels` or `deviceId`.
+     */
+    channels?: string[];
+    /**
+     * Restrict the push-to-start notification to a single device. Provide either `channels` or `deviceId`.
+     */
+    deviceId?: string;
+  };
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity start payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: any;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.update}.
+ */
+export declare interface PushLiveActivityUpdateParams {
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity update payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: any;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.end}.
+ */
+export declare interface PushLiveActivityEndParams {
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity end payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: any;
+}
+
+/**
+ * Options for creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcastOptions {
+  /**
+   * Set to `1` to cache the last update payload so late-joining devices receive the current content state immediately on subscription. Set to `0` to disable caching.
+   */
+  messageStoragePolicy: 0 | 1;
+}
+
+/**
+ * The result of creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcast {
+  /**
+   * The opaque Ably broadcast id.
+   */
+  id: string;
+  /**
+   * The Apple-assigned channel id.
+   */
+  apnsChannelId: string;
 }
 
 /**
