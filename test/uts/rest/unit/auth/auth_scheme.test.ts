@@ -198,8 +198,6 @@ describe('uts/rest/unit/auth/auth_scheme', function () {
    */
   // UTS: rest/unit/RSC1b/no-auth-method-error-0
   it('RSC1b - Error when no auth method available', function () {
-    // DEVIATION: see deviations.md
-    if (!process.env.RUN_DEVIATIONS) this.skip();
     const captured: any[] = [];
     installMockHttp(simpleMock(captured));
 
