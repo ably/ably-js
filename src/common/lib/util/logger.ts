@@ -118,13 +118,12 @@ class Logger {
   }
 
   /**
-   * Suffix appended to silent-failure warnings emitted when `clientOptions.strictMode` is off,
-   * so the reader (human or LLM) knows the same path will throw in a future major version.
-   * The suffix is for log output only — do not put it into `ErrorInfo.hint`, because the hint
-   * is also surfaced when the throw fires (strictMode on), where the suffix is misleading.
+   * Suffix appended to the silent-failure warning emitted when `ClientOptions.strictMode` is off, so the reader knows the same call will reject with an error in a future major version.
+   *
+   * The suffix is for log output only. Do not put it into `ErrorInfo.hint`. The hint is also surfaced on the error when `ClientOptions.strictMode` is enabled, where the suffix would be misleading.
    */
   static silentFailureLogSuffix(): string {
-    return ' This call currently fails silently because clientOptions.strictMode is not enabled. In a future major version this will throw — set clientOptions.strictMode: true to enable the throw now.';
+    return ' This call currently fails silently because clientOptions.strictMode is not enabled. A future major version will change the default to true. Set clientOptions.strictMode: true to make this call reject with an error now.';
   }
 
   private logAction(level: LogLevels, action: string, message?: string) {
