@@ -289,11 +289,11 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
   if (typeof args[n - 1] !== 'function') return;
   if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
   throw new ErrorInfo({
-    message: 'v1 callback signature is no longer supported.',
+    message: 'v1 callback signature is no longer supported: v2 methods return a promise.',
     code: 40025,
     statusCode: 400,
     hint:
-      'v2 uses Promises - drop the trailing callback and `await` the returned promise. ' +
+      'Drop the trailing callback and `await` the returned promise. ' +
       'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md.',
   });
 }
@@ -474,10 +474,12 @@ export function matchDerivedChannel(name: string) {
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
     throw new ErrorInfo({
-      message: 'Channel name does not match the [filter=...]name shape required for derived channels',
+      message: 'Channel name is empty or could not be parsed',
       code: 40010,
       statusCode: 400,
-      hint: 'Format the name as [filter=<expr>]<channelName>, for example "[filter=...]foo". See https://ably.com/docs/channels#derived.',
+      hint:
+        'Pass a non-empty channel name to channels.getDerived(name, { filter: ... }) and put the filter expression in the filter option, not in the name. ' +
+        'A channel-params prefix such as "[?rewind=1]foo" is allowed. See https://ably.com/docs/channels#derived.',
     });
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
@@ -512,11 +514,24 @@ export function arrEquals(a: any[], b: any[]) {
 }
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
+  // Push and LiveObjects are not exported by the modular variant; each has its own entry point.
+  let hint: string;
+  switch (pluginName) {
+    case 'Push':
+      hint = 'Import Push from "ably/push" and pass it in ClientOptions.plugins: { Push }.';
+      break;
+    case 'LiveObjects':
+      hint = 'Import { LiveObjects } from "ably/liveobjects" and pass it in ClientOptions.plugins: { LiveObjects }.';
+      break;
+    default:
+      hint = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`;
+      break;
+  }
   const err = new ErrorInfo({
     message: `${pluginName} plugin not provided`,
     code: 40019,
     statusCode: 400,
-    hint: `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`,
+    hint,
   });
   return err;
 }

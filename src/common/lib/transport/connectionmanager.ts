@@ -1899,10 +1899,10 @@ class ConnectionManager extends EventEmitter {
   async ping(): Promise<number> {
     if (this.state.state !== 'connected') {
       throw new ErrorInfo({
-        message: 'Unable to ping service; not connected',
+        message: 'Unable to ping service: not connected',
         code: 40000,
         statusCode: 400,
-        hint: 'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …).',
+        hint: 'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …). From the "closed" or "failed" state, or "initialized" with autoConnect disabled, the SDK does not connect automatically, so call connection.connect() first.',
       });
     }
 
@@ -1965,14 +1965,14 @@ class ConnectionManager extends EventEmitter {
     } else if (err.code === 40102) {
       this.notifyState({ state: 'failed', error: err });
     } else if (err.statusCode === HttpStatusCodes.Forbidden) {
-      const msg = 'Client configured authentication provider returned 403; failing the connection';
+      const msg = 'Client configured authentication provider returned 403, failing the connection';
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
       const wrapped = new ErrorInfo({
         message: msg,
         code: 80019,
         statusCode: 403,
         cause: err,
-        hint: 'Inspect cause for the underlying error: a 403 here means either your authUrl/authCallback rejected the request, or the Ably server refused the resulting TokenRequest. If the latter, narrow the requested capability to what your API key actually grants.',
+        hint: 'Inspect cause for the underlying error, then fix your authUrl/authCallback so it does not respond 403 for a valid client.',
       });
       this.notifyState({ state: 'failed', error: wrapped });
     } else {
@@ -1983,7 +1983,7 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 401,
         cause: err,
-        hint: 'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape; the underlying error is in cause.',
+        hint: 'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape. Inspect cause for the underlying error.',
       });
       this.notifyState({ state: this.state.failState as string, error: wrapped });
     }

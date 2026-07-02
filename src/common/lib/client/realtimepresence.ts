@@ -66,7 +66,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to enter a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter() again; once a clientId is set the enter still requires the API key or token to grant the presence capability on this channel (and the channel must reach the attached state), or the server rejects it. To enter on behalf of another identity, use presence.enterClient(otherId, data), which additionally requires a wildcard clientId on your API key or token.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter() again. To enter on behalf of another identity, use presence.enterClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
@@ -83,7 +83,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to update presence data',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update() again; once a clientId is set the update still requires the API key or token to grant the presence capability on this channel, or the server rejects it. To update on behalf of another identity, use presence.updateClient(otherId, data), which additionally requires a wildcard clientId on your API key or token.',
+        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update() again. To update on behalf of another identity, use presence.updateClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
@@ -167,7 +167,7 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must have been specified to enter or leave a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before retrying presence.leave(), or call presence.leaveClient(otherId) to leave on behalf of another identity. Either way the API key or token must also carry the presence capability for this channel server-side, and leaveClient for a different identity additionally requires a wildcard clientId, otherwise the server rejects the request.',
+        hint: 'To leave a member entered on behalf of another identity, call presence.leaveClient(otherId). A client that never had a clientId has no self-entered member to leave. leaveClient requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this.leaveClient(undefined, data);
@@ -272,7 +272,7 @@ class RealtimePresence extends EventEmitter {
           message: 'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
           code: 40000,
           statusCode: 400,
-          hint: 'Await channel.attach() (or channel.whenState("attached")) before calling presence.history({ untilAttach: true }).',
+          hint: 'Await channel.attach() before calling presence.history({ untilAttach: true }).',
         });
       }
     }
@@ -449,7 +449,7 @@ class RealtimePresence extends EventEmitter {
           code: 91004,
           statusCode: 400,
           cause: err,
-          hint: 'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached.',
+          hint: 'Listen for the channel "update" event and call presence.enter(...) again (or presence.enterClient(clientId, data) for a member entered on behalf of another clientId) once the channel is attached.',
         });
         Logger.logAction(
           this.logger,
