@@ -63,7 +63,6 @@ describe('uts/realtime/unit/client/client_options', function () {
    */
   // UTS: realtime/unit/RTC12/invalid-arguments-error-1.1
   it('RSC1b - no credentials raises error', function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
       new Ably.Realtime({ autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
@@ -77,14 +76,13 @@ describe('uts/realtime/unit/client/client_options', function () {
     try {
       new Ably.Realtime({ useTokenAuth: true, autoConnect: false } as any);
       expect.fail('Expected constructor to throw');
-    } catch (e) {
-      expect(e).to.be.an('error');
+    } catch (e: any) {
+      expect(e.code).to.equal(40106);
     }
   });
 
   // UTS: realtime/unit/RTC12/invalid-arguments-error-1.3
   it('RSC1b - clientId alone raises error', function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js uses 40160 instead of 40106; see #2204
     try {
       new Ably.Realtime({ clientId: 'test', autoConnect: false } as any);
       expect.fail('Expected constructor to throw');

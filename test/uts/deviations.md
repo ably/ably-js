@@ -38,18 +38,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### client_options: RSC1b - wrong error code for missing credentials
-
-**Spec (RSC1b)**: Error code should be 40106.
-
-**ably-js behavior**: Uses error code 40160 instead of 40106. Additionally, `{ useTokenAuth: true }` alone throws with no error code set.
-
-**Tests**: `RSC1b - no credentials raises error`, `RSC1b - clientId alone raises error` (realtime), `RSC1b - Error when no auth method available` (REST).
-
-**Issue**: [#2204](https://github.com/ably/ably-js/issues/2204)
-
----
-
 ### channel_publish: RTL6i3 / RSL1e - null fields included in wire JSON
 
 **Spec (RTL6i3/RSL1e)**: Null values should be omitted from wire JSON.

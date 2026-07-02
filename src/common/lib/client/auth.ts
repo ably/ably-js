@@ -84,7 +84,7 @@ function logAndValidateTokenAuthMethod(authOptions: AuthOptions, logger: Logger)
   } else {
     const msg = 'authOptions must include valid authentication parameters';
     Logger.logAction(logger, Logger.LOG_ERROR, 'Auth()', msg);
-    throw new Error(msg);
+    throw new ErrorInfo(msg, 40106, 401);
   }
 }
 
@@ -158,7 +158,7 @@ class Auth {
         const msg =
           'No authentication options provided; need one of: key, authUrl, or authCallback (or for testing only, token or tokenDetails)';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth()', msg);
-        throw new ErrorInfo(msg, 40160, 401);
+        throw new ErrorInfo(msg, 40106, 401);
       }
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
       this._saveBasicOptions(options);
