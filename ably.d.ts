@@ -3767,13 +3767,13 @@ export declare interface PushLiveActivityStartParams {
         /**
          * One or more Ably channel names. Devices subscribed to any of these channels will receive the push-to-start notification. Provide either `channels` or `deviceId`.
          */
-        channels?: string[];
+        channels: string[];
       }
     | {
         /**
          * Restrict the push-to-start notification to a single device. Provide either `channels` or `deviceId`.
          */
-        deviceId?: string;
+        deviceId: string;
       };
   /**
    * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
@@ -3831,6 +3831,8 @@ export declare interface PushLiveActivityEndParams {
 export declare interface PushApnsBroadcastOptions {
   /**
    * Set to `1` to cache the last update payload so late-joining devices receive the current content state immediately on subscription. Set to `0` to disable caching.
+   *
+   * @see https://developer.apple.com/documentation/usernotifications/sending-channel-management-requests-to-apns
    */
   messageStoragePolicy: 0 | 1;
 }
