@@ -76,7 +76,7 @@ class RealtimeAnnotations {
           "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
         code: 93001,
         statusCode: 400,
-        hint: 'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). If the attach is then rejected, the channel namespace does not have "Message annotations, updates, appends, and deletes" enabled (`ably apps rules list` shows which namespaces do). If the attach succeeds but annotations still are not delivered, your API key lacks the annotation-subscribe capability and the server silently dropped the mode (`ably auth keys list` shows your key\'s capabilities).',
+        hint: 'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. The server only grants the mode if your key or token has the annotation-subscribe capability. Without it the attach succeeds but the server silently drops the mode and annotations are never delivered. `ably auth keys list` shows your key\'s capabilities.',
       });
       Logger.logActionNoStrip(
         this.logger,
