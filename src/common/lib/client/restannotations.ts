@@ -28,7 +28,7 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message, methodName:
       message:
         'The message argument of annotations.' +
         methodName +
-        '() must be either a Message (or at least an object with a non-empty string `serial` property) or a message serial (non-empty string)',
+        '() must be either a Message or other object carrying a non-empty string `serial` property, or a message serial as a non-empty string',
       code: 40003,
       statusCode: 400,
       hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
