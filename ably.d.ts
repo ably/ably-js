@@ -2154,13 +2154,13 @@ export declare interface Presence {
  */
 export declare interface RealtimePresence {
   /**
-   * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete, and back to `false` whenever a new sync starts (typically after a (re)attach). The value is also `true` after the local presence set is cleared (when the channel becomes detached or failed, or attaches without the server reporting any presence members), so it indicates only that no sync is in progress (though it is initially `false`, before any sync has started), not that the channel is attached or that a sync ever ran. To wait for an in-progress sync, call {@link RealtimePresence.get | `get()`}, which by default resolves only once the sync completes.
+   * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete, and back to `false` whenever a new sync starts, typically after a re-attach. The value is initially `false`, before any sync has started. It is also `true` after the local presence set is cleared, which happens when the channel becomes detached or failed, or attaches without the server reporting any presence members. It therefore indicates only that no sync is in progress, not that the channel is attached or that a sync ever ran. To wait for an in-progress sync, call {@link RealtimePresence.get | `get()`}, which by default resolves only once the sync completes.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#sync-complete
    */
   syncComplete: boolean;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This only removes the local listener; it does not detach the channel or remove this client from the presence set (use {@link RealtimePresence.leave | `leave()`} for that), and presence events may continue to arrive for any other registered listeners.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This only removes the local listener. It does not detach the channel or remove this client from the presence set, and presence events may continue to arrive for any other registered listeners. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
    *
    * @param presence - A specific {@link PresenceAction} to deregister the listener for.
    * @param listener - An event listener function.
@@ -2208,7 +2208,7 @@ export declare interface RealtimePresence {
   unsubscribe(): void;
 
   /**
-   * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Implicitly attaches the channel if it is not already attached. Requires the `presence_subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); without it the call resolves with an empty array rather than rejecting (or it rejects with a hinted {@link ErrorInfo} when {@link ClientOptions.strictMode} is enabled).
+   * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Implicitly attaches the channel if it is not already attached. Requires the `presence_subscribe` mode. Without it the call resolves with an empty array rather than rejecting. When {@link ClientOptions.strictMode} is enabled, it instead rejects with a hinted {@link ErrorInfo}.
    *
    * @param params - A set of parameters which are used to specify which presence members should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2234,7 +2234,7 @@ export declare interface RealtimePresence {
    */
   get(params: RealtimePresenceParams | null, callback: StandardCallback<PresenceMessage[]>): void;
   /**
-   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. Presence messages are retrievable for up to 72 hours in the past when message persistence is enabled for the channel by a channel rule; without it, only presence messages from the last two minutes, the service's default retention, are returned.
+   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. Presence messages are retrievable for up to 72 hours in the past when message persistence is enabled for the channel by a [rule](https://ably.com/docs/channels#rules). If message persistence is not enabled, only presence messages from the last two minutes are returned.
    *
    * @param params - A set of parameters which are used to specify which presence messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2243,7 +2243,6 @@ export declare interface RealtimePresence {
    * const result = await channel.presence.history();
    * ```
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#history
-   * @see https://ably.com/docs/storage-history/storage
    */
   history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
   /**
@@ -2261,7 +2260,7 @@ export declare interface RealtimePresence {
    */
   history(params: RealtimeHistoryParams | null, callback: StandardCallback<PaginatedResult<PresenceMessage>>): void;
   /**
-   * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `presence_subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers presence events, so the listener silently never fires: the call still resolves and nothing is logged.
+   * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `presence_subscribe` mode. If the channel attaches without it the server never delivers presence events, so the listener silently never fires. The call still resolves and nothing is logged.
    *
    * @param action - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
    * @param listener - An event listener function.
@@ -2274,7 +2273,7 @@ export declare interface RealtimePresence {
    */
   subscribe(action: PresenceAction | Array<PresenceAction>, listener?: messageCallback<PresenceMessage>): Promise<void>;
   /**
-   * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `presence_subscribe` mode (granted by default unless {@link ChannelOptions.modes} excludes it); if the channel attaches without it the server never delivers presence events, so the listener silently never fires: the call still resolves and nothing is logged.
+   * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Requires the `presence_subscribe` mode. If the channel attaches without it the server never delivers presence events, so the listener silently never fires. The call still resolves and nothing is logged.
    *
    * @param listener - An event listener function.
    * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure. When {@link ChannelOptions.attachOnSubscribe} is `false`, no attach is performed.
@@ -2305,7 +2304,7 @@ export declare interface RealtimePresence {
     callback: ErrorCallback,
   ): void;
   /**
-   * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required: if the client has no `clientId` (or the wildcard `*`), the call rejects with an {@link ErrorInfo}; set a `clientId` in {@link ClientOptions} or in the token, or use {@link RealtimePresence.enterClient | `enterClient()`} to enter on behalf of another identity. Implicitly attaches the channel if it is not already attached. Once entered, the member is automatically re-entered whenever the channel re-attaches after a disconnection; if that re-enter fails, the failure surfaces as a channel `update` event carrying the {@link ErrorInfo}, not as a rejection.
+   * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required: if the client has no `clientId`, or only the wildcard `*`, the call rejects with an {@link ErrorInfo}. Set a `clientId` in {@link ClientOptions} or in the token, or use {@link RealtimePresence.enterClient | `enterClient()`} to enter on behalf of another identity. Implicitly attaches the channel if it is not already attached. Once entered, the member is automatically re-entered whenever the channel re-attaches after a disconnection; if that re-enter fails, the failure surfaces as a channel `update` event carrying the {@link ErrorInfo}, not as a rejection.
    *
    * @param data - The payload associated with the presence member.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2331,7 +2330,7 @@ export declare interface RealtimePresence {
    */
   enter(data: any, callback: ErrorCallback): void;
   /**
-   * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceActions.ENTER} event. Requires an identified client: if the client has no `clientId` (or the wildcard `*`) set in the {@link ClientOptions} or the token, the call rejects with an {@link ErrorInfo} (use {@link RealtimePresence.updateClient | `updateClient()`} to update on behalf of another identity). Implicitly attaches the channel if it is not already attached.
+   * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceActions.ENTER} event. Requires an identified client: if the client has no `clientId`, or only the wildcard `*`, set in the {@link ClientOptions} or the token, the call rejects with an {@link ErrorInfo}. Use {@link RealtimePresence.updateClient | `updateClient()`} to update on behalf of another identity. Implicitly attaches the channel if it is not already attached.
    *
    * @param data - The payload to update for the presence member.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
