@@ -100,7 +100,7 @@ class BaseClient {
           message: 'Can’t use "*" as a clientId as that string is reserved',
           code: 40012,
           statusCode: 400,
-          hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client (the "*" belongs in the token request, not in ClientOptions.clientId).',
+          hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
         });
       }
     }

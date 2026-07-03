@@ -145,7 +145,7 @@ class RestChannel {
         message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         code: 40009,
         statusCode: 400,
-        hint: 'Split the publish into multiple calls so each batch is under the limit. If you set ClientOptions.maxMessageSize yourself, raise it (it can only restrict below your account limit, not above it). To lift the account limit, contact Ably support.',
+        hint: 'Split the publish into multiple calls so each batch is under the limit. If you set ClientOptions.maxMessageSize yourself, raise it. It can only restrict below your account limit, not above it. To lift the account limit, contact Ably support.',
       });
     }
 
