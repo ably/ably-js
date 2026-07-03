@@ -2806,9 +2806,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   presence: RealtimePresence;
   /**
-   * A {@link PushChannel} object that manages device push notification subscriptions for this channel.
-   *
-   * Accessing this property requires the `Push` plugin to be registered via {@link ClientOptions.plugins}. If the plugin is absent, the getter throws an {@link ErrorInfo}.
+   * A {@link PushChannel} object that manages device push notification subscriptions for this channel. Accessing this property requires the `Push` plugin to be registered via {@link ClientOptions.plugins}. The default and modular builds do not bundle the `Push` plugin. If the plugin is absent, the getter throws an {@link ErrorInfo} rather than returning a {@link PushChannel}.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#push
    */
@@ -2852,7 +2850,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel.
    *
-   * Messages are returned from storage only when message persistence is enabled for the channel by a rule. If message persistence is not enabled, only messages from the last two minutes are returned.
+   * Messages are returned from storage only when message persistence is enabled for the channel by a [rule](https://ably.com/docs/channels#rules). If message persistence is not enabled, only messages from the last two minutes are returned.
    *
    * @param params - A set of parameters which are used to specify which messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2861,7 +2859,6 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * const result = await channel.history({ limit: 25 });
    * ```
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#history
-   * @see https://ably.com/docs/storage-history/storage
    */
   history(params?: RealtimeHistoryParams): Promise<PaginatedResult<InboundMessage>>;
   /**
