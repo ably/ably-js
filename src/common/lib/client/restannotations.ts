@@ -13,7 +13,7 @@ export interface RestGetAnnotationsParams {
   limit?: number;
 }
 
-export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
+export function serialFromMsgOrSerial(msgOrSerial: string | Message, methodName: string): string {
   let messageSerial: string | undefined;
   switch (typeof msgOrSerial) {
     case 'string':
@@ -26,7 +26,9 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
   if (!messageSerial || typeof messageSerial !== 'string') {
     throw new ErrorInfo({
       message:
-        'The message argument of annotations.publish()/delete()/get() must be either a Message (or at least an object with a non-empty string `serial` property) or a message serial (non-empty string)',
+        'The message argument of annotations.' +
+        methodName +
+        '() must be either a Message or other object carrying a non-empty string `serial` property, or a message serial as a non-empty string',
       code: 40003,
       statusCode: 400,
       hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
@@ -38,12 +40,14 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
 export function constructValidateAnnotation(
   msgOrSerial: string | Message,
   annotationValues: Partial<Properties<Annotation>>,
+  methodName: string,
 ): Annotation {
-  const messageSerial = serialFromMsgOrSerial(msgOrSerial);
+  const messageSerial = serialFromMsgOrSerial(msgOrSerial, methodName);
 
   if (!annotationValues || typeof annotationValues !== 'object') {
     throw new ErrorInfo({
-      message: 'Second argument of annotations.publish() must be an object (the intended annotation to publish)',
+      message:
+        'Second argument of annotations.' + methodName + '() must be an object (the intended annotation to publish)',
       code: 40003,
       statusCode: 400,
       hint: 'Pass an Annotation-shaped object as the second argument, e.g. { type: "reaction:unique.v1", name: "👍" }.',
@@ -72,7 +76,20 @@ class RestAnnotations {
   }
 
   async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
-    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
+    return this._publish(msgOrSerial, annotationValues, 'publish');
+  }
+
+  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    annotationValues.action = 'annotation.delete';
+    return this._publish(msgOrSerial, annotationValues, 'delete');
+  }
+
+  private async _publish(
+    msgOrSerial: string | Message,
+    annotationValues: Partial<Properties<Annotation>>,
+    methodName: string,
+  ): Promise<void> {
+    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues, methodName);
     const wireAnnotation = await annotation.encode();
 
     const client = this.channel.client,
@@ -96,17 +113,12 @@ class RestAnnotations {
     );
   }
 
-  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
-    annotationValues.action = 'annotation.delete';
-    return this.publish(msgOrSerial, annotationValues);
-  }
-
   async get(
     msgOrSerial: string | Message,
     params: RestGetAnnotationsParams | null,
   ): Promise<PaginatedResult<Annotation>> {
     const client = this.channel.client,
-      messageSerial = serialFromMsgOrSerial(msgOrSerial),
+      messageSerial = serialFromMsgOrSerial(msgOrSerial, 'get'),
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = client.http.supportsLinkHeaders ? undefined : format,
       headers = Defaults.defaultGetHeaders(client.options);
