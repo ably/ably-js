@@ -449,7 +449,7 @@ class RealtimePresence extends EventEmitter {
           code: 91004,
           statusCode: 400,
           cause: err,
-          hint: 'Listen for the channel "update" event and call presence.enter(...) again (or presence.enterClient(clientId, data) for a member entered on behalf of another clientId) once the channel is attached.',
+          hint: 'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached. For a member entered on behalf of another clientId, call presence.enterClient(clientId, data) instead.',
         });
         Logger.logAction(
           this.logger,

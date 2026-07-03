@@ -661,7 +661,7 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Add logging to your authCallback/authUrl to find where it stalls, and make sure it always resolves (and that authUrl is reachable). If the work legitimately takes longer, raise ClientOptions.realtimeRequestTimeout.',
+            hint: 'Add logging to your authCallback/authUrl to find where it stalls, and make sure it always resolves and that authUrl is reachable. If the work legitimately takes longer, raise ClientOptions.realtimeRequestTimeout.',
           });
           reject(err);
         }, timeoutLength);
@@ -1060,7 +1060,7 @@ class Auth {
         message: 'Can’t use "*" as a clientId as that string is reserved',
         code: 40012,
         statusCode: 400,
-        hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client (the "*" belongs in the token request, not in ClientOptions.clientId).',
+        hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
       });
     } else {
       const err = this._uncheckedSetClientId(clientId);
