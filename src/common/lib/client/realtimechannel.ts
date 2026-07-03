@@ -522,7 +522,7 @@ class RealtimeChannel extends EventEmitter {
           'The channel was attached without the subscribe mode, so the server will not deliver messages to this listener.',
         code: 90009,
         statusCode: 400,
-        hint: 'Include "subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel (this triggers a reattach). Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        hint: 'Include "subscribe" in the channel modes: realtime.channels.get(name, { modes: ["subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
       });
       if (this.client.options.strictMode === true) {
         // The listener stays registered despite the throw, matching subscribe()'s existing
