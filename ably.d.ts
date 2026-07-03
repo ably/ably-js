@@ -2112,7 +2112,7 @@ export declare interface Auth {
    *
    * The client making this call must be authenticated with an API key (basic auth), not a token. A token-authenticated client cannot revoke tokens and the call rejects with an {@link ErrorInfo}.
    *
-   * Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked.
+   * Only tokens issued by an API key that had [revocable tokens](https://ably.com/docs/auth/revocation) enabled before the token was issued can be revoked.
    *
    * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
    * @param options - A set of options which are used to modify the revocation request.
@@ -2122,7 +2122,6 @@ export declare interface Auth {
    * const result = await rest.auth.revokeTokens([{ type: 'clientId', value: 'bob' }]);
    * ```
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/auth#revoke-tokens
-   * @see https://ably.com/docs/auth/revocation
    */
   revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
