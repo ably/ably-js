@@ -23,8 +23,9 @@ import {
   pollUntil,
 } from '../../realtime/integration/sandbox';
 import * as LiveObjectsPlugin from '../../../../src/plugins/liveobjects';
+import { describeWithProtocols } from './protocol_variants';
 
-describe('uts/objects/integration/objects_lifecycle', function () {
+describeWithProtocols('uts/objects/integration/objects_lifecycle', function (useBinaryProtocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -49,7 +50,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);
@@ -83,7 +84,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
@@ -92,7 +93,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
@@ -148,7 +149,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
@@ -157,7 +158,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
@@ -210,7 +211,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
@@ -219,7 +220,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
@@ -287,7 +288,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientA);
@@ -296,7 +297,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(clientB);
@@ -351,7 +352,9 @@ describe('uts/objects/integration/objects_lifecycle', function () {
   it('RTPO15 - client syncs pre-existing data provisioned via REST', async function () {
     const channelName = uniqueChannelName('objects-rest-provision');
 
-    // Provision data via REST before any realtime client connects
+    // Provision data via REST before any realtime client connects. The spec's
+    // provision_objects_via_rest helper is a raw JSON POST, so the provisioning
+    // client stays on json regardless of the protocol variant under test.
     const restClient = new Ably.Rest({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
@@ -370,7 +373,7 @@ describe('uts/objects/integration/objects_lifecycle', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     });
     trackClient(client);

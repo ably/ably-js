@@ -1,13 +1,13 @@
 /**
  * UTS Proxy Integration: Objects Fault Tests
  *
- * Spec points: RTO5a2, RTO7, RTO8, RTO17, RTO20e, RTO5c6
+ * Spec points: RTO5a2, RTO7, RTO8, RTO17, RTO20e, RTO20e1, RTO5c6
  * Source: specification/uts/objects/integration/proxy/objects_faults.md
  *
  * Tests LiveObjects fault tolerance: sync interrupted by disconnect,
  * mutations buffered during re-sync, server-initiated detach triggers
- * re-sync, publishAndApply fails when channel enters FAILED, and
- * publish during sync with delayed OBJECT_SYNC.
+ * re-sync, in-flight publish fails when channel enters FAILED during
+ * the sync wait, and publish during sync with delayed OBJECT_SYNC.
  */
 
 import { expect } from 'chai';
@@ -337,21 +337,25 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
   });
 
   /**
-   * RTO20e - publishAndApply fails when channel enters FAILED during SYNCING
+   * RTO20e, RTO20e1 - publishAndApply fails when channel enters FAILED during SYNCING
    *
-   * Client sets up a channel with objects, then the proxy injects a channel
-   * ERROR (action 9) to transition to FAILED. A PathObject mutation (which
-   * uses publishAndApply internally) should fail.
+   * The client syncs the channel, is forced back into SYNCING by an injected
+   * ATTACHED carrying the HAS_OBJECTS flag (RTO4c), then issues a mutation
+   * *while* SYNCING. The publish and its ACK complete against the real
+   * server, so publishAndApply parks in the RTO20e wait for SYNCED. The
+   * proxy then injects a channel ERROR so the channel enters FAILED whilst
+   * the operation is waiting; the pending mutation must fail with 92008,
+   * statusCode 400, cause = channel errorReason (RTO20e1).
    *
-   * DEVIATION: UTS spec expects error code 92008, but the ably-js implementation
-   * throws 90001 (invalid channel state) because set() calls
-   * throwIfInvalidWriteApiConfiguration() before reaching publishAndApply's
-   * sync-wait logic. The 92008 path is only reachable when the channel
-   * transitions to FAILED *during* the sync wait, but in this test sync has
-   * already completed before the channel enters FAILED. We assert 90001 instead.
+   * Note: the mutation must be in flight *before* the channel fails. A
+   * mutation issued on a channel already in DETACHED/FAILED/SUSPENDED fails
+   * the RTO26b write precondition with 90001 and never reaches
+   * publishAndApply -- that is different behaviour, not this test. The
+   * unit-tier test with UTS ID objects/unit/RTO20e1/fails-on-channel-failed-0
+   * (in test/uts/objects/unit/realtime_object.test.ts) uses the same sequence.
    */
   // UTS: objects/proxy/RTO20e/publish-fails-on-channel-failed-0
-  it('RTO20e - publishAndApply fails when channel enters FAILED', async function () {
+  it('RTO20e, RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait', async function () {
     const channelName = uniqueChannelName('objects-publish-failed');
 
     session = await createProxySession({
@@ -381,7 +385,42 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
 
     const root = await channel.object.get();
 
-    // Inject channel ERROR (action 9) to transition to FAILED
+    // Force the objects back into SYNCING: inject an ATTACHED (action 11) carrying the
+    // HAS_OBJECTS flag (bit 7, i.e. flags: 128). RTO4c starts a new sync sequence on
+    // every ATTACHED protocol message; the server never sent this ATTACHED, so no
+    // OBJECT_SYNC follows and the objects remain SYNCING. The channel stays ATTACHED.
+    await session.triggerAction({
+      type: 'inject_to_client',
+      message: { action: 11, channel: channelName, flags: 128 },
+    });
+
+    // Mutate WHILE SYNCING: the channel is ATTACHED so the write preconditions (RTO26)
+    // pass and the publish + ACK complete against the real server; publishAndApply then
+    // waits for a SYNCED that will never arrive (RTO20e). Do not await yet -- attach a
+    // handler immediately so the later rejection is never unhandled.
+    const pending = root.set('key', 'value');
+    const pendingError = pending.then(
+      () => null,
+      (err: any) => err,
+    );
+
+    // Ensure the operation is in the RTO20e sync-wait, not still publishing: wait until
+    // the proxy log shows the server's ACK (action 1) for the OBJECT publish, then allow
+    // a brief real-time yield for the client to move the ACKed operation into the wait.
+    await pollUntil(
+      async () => {
+        const log = await session!.getLog();
+        return log.some(
+          (event) => event.type === 'ws_frame' && event.direction === 'server_to_client' && event.message?.action === 1,
+        )
+          ? true
+          : null;
+      },
+      { interval: 200, timeout: 10000 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // The channel enters FAILED whilst the operation waits for SYNCED (RTO20e1)
     await session.triggerAction({
       type: 'inject_to_client',
       message: {
@@ -393,18 +432,14 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
 
     await waitForChannelState(channel, 'failed', 15000);
 
-    // Attempt a mutation -- should fail since channel is FAILED
-    let mutationError: any = null;
-    try {
-      await root.set('key', 'value');
-      expect.fail('set() should have failed on FAILED channel');
-    } catch (err: any) {
-      mutationError = err;
-    }
+    const mutationError = await pendingError;
 
-    expect(mutationError).to.not.be.null;
-    // DEVIATION: See comment above -- 90001 (invalid channel state) instead of 92008
-    expect(mutationError.code).to.equal(90001);
+    expect(mutationError, 'set() should have failed when channel entered FAILED during sync wait').to.not.be.null;
+    expect(mutationError.code).to.equal(92008);
+    expect(mutationError.statusCode).to.equal(400);
+    // RTO20e1: cause is set to RealtimeChannel.errorReason -- the injected channel ERROR
+    expect(mutationError.cause).to.exist;
+    expect(mutationError.cause.code).to.equal(90000);
 
     await closeAndWait(client);
   });
