@@ -23,8 +23,9 @@ import {
   uniqueChannelName,
   pollUntil,
 } from '../../realtime/integration/sandbox';
+import { describeWithProtocols } from './protocol_variants';
 
-describe('uts/objects/integration/objects_sync', function () {
+describeWithProtocols('uts/objects/integration/objects_sync', function (useBinaryProtocol) {
   this.timeout(30000);
 
   before(async function () {
@@ -49,7 +50,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
@@ -83,7 +84,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientA);
@@ -92,7 +93,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(clientB);
@@ -145,7 +146,7 @@ describe('uts/objects/integration/objects_sync', function () {
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
@@ -205,21 +206,16 @@ describe('uts/objects/integration/objects_sync', function () {
    * Channel attached with only OBJECT_SUBSCRIBE mode. Server
    * sends HAS_OBJECTS, sync completes, root is an empty LiveMap.
    *
-   * DEVIATION: The UTS spec title says "without OBJECT_SUBSCRIBE" but the
-   * pseudocode uses modes: ["OBJECT_SUBSCRIBE"]. We follow the pseudocode
-   * since OBJECT_SUBSCRIBE is required for channel.object.get() to work
-   * (RTO2a). The test verifies that get() resolves even without
-   * OBJECT_PUBLISH mode, and the root has no entries.
    */
   // UTS: objects/integration/RTO4/attach-subscribe-only-0
-  it('RTO4 - attach with OBJECT_SUBSCRIBE only resolves get() with empty pool', async function () {
+  it('RTO4 - Attach without OBJECT_PUBLISH still resolves get() with empty pool', async function () {
     const channelName = uniqueChannelName('objects-subscribe-only');
 
     const client = new Ably.Realtime({
       key: getApiKey(),
       endpoint: SANDBOX_ENDPOINT,
       autoConnect: false,
-      useBinaryProtocol: false,
+      useBinaryProtocol,
       plugins: { LiveObjects: LiveObjectsPlugin },
     } as any);
     trackClient(client);
