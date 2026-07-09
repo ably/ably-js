@@ -1057,10 +1057,11 @@ class Auth {
       });
     } else if (clientId === '*') {
       throw new ErrorInfo({
-        message: 'Can’t use "*" as a clientId as that string is reserved',
+        message:
+          'Can’t use "*" as a clientId as that string is reserved. clientId sets a single fixed identity for the client',
         code: 40012,
         statusCode: 400,
-        hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
+        hint: 'Omit clientId and specify the identity per operation instead, for example with presence.enterClient(otherId, data) or by setting clientId on each message you publish. This requires the library to be instantiated with an API key or a token bound to a wildcard clientId. To request a wildcard token, set defaultTokenParams: { clientId: "*" } in ClientOptions. A wildcard token lets the client claim any clientId per operation but does not give it an identity of its own.',
       });
     } else {
       const err = this._uncheckedSetClientId(clientId);
