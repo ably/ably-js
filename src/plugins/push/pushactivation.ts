@@ -72,7 +72,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
             'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
 
@@ -81,7 +81,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
           message: 'Device not activated',
           code: 40000,
           statusCode: 400,
-          hint: 'Call client.push.activate() and await its completion before listing subscriptions.',
+          remediation: 'Call client.push.activate() and await its completion before listing subscriptions.',
         });
       }
 
@@ -117,7 +117,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
             'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
       this.platform = Platform.Config.push.platform;
@@ -144,7 +144,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
             'Push activation is not available on this platform: it requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
       if (this.id) {
@@ -226,7 +226,7 @@ export class ActivationStateMachine {
           'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
         code: 40000,
         statusCode: 400,
-        hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+        remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
       });
     }
     return this._pushConfig;
@@ -267,7 +267,7 @@ export class ActivationStateMachine {
           message: 'registerCallback did not return deviceRegistration',
           code: 40000,
           statusCode: 400,
-          hint: 'Your registerCallback must invoke its callback with (null, deviceRegistration).',
+          remediation: 'Your registerCallback must invoke its callback with (null, deviceRegistration).',
         });
         this.handleEvent(new GettingDeviceRegistrationFailed(err));
         return;

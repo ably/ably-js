@@ -151,7 +151,8 @@ export class PaginatedResult<T> {
       message: 'No link to the first page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'first() is only available on results from a paginated REST query (such as channel history, presence, or stats), whose response includes a link to the first page. This result has no such link, so there is no first page to return.',
+      remediation:
+        'first() is only available on results from a paginated REST query (such as channel history, presence, or stats), whose response includes a link to the first page. This result has no such link, so there is no first page to return.',
     });
   }
 
@@ -164,7 +165,8 @@ export class PaginatedResult<T> {
       message: 'No link to the current page of results',
       code: 40400,
       statusCode: 404,
-      hint: 'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link. To page through results, use next() with hasNext() or isLast() instead.',
+      remediation:
+        'current() reloads the current page and is only available on results from a paginated REST query (such as channel history, presence, or stats). This result has no such link. To page through results, use next() with hasNext() or isLast() instead.',
     });
   }
 

@@ -179,7 +179,8 @@ function checkHost(host: string): void {
       message: 'host must be a string: was of type ' + typeof host,
       code: 40000,
       statusCode: 400,
-      hint: 'Make every entry of `fallbackHosts` a string. If you set `restHost` or `realtimeHost`, pass each as a single string, not an array or object.',
+      remediation:
+        'Make every entry of `fallbackHosts` a string. If you set `restHost` or `realtimeHost`, pass each as a single string, not an array or object.',
     });
   }
   if (!host.length) {
@@ -187,7 +188,7 @@ function checkHost(host: string): void {
       message: 'host must not be zero-length: an entry of `fallbackHosts` is an empty string',
       code: 40000,
       statusCode: 400,
-      hint: 'Remove any empty-string entry from the `fallbackHosts` array.',
+      remediation: 'Remove any empty-string entry from the `fallbackHosts` array.',
     });
   }
 }
@@ -266,7 +267,8 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
         'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
       code: 40106,
       statusCode: 400,
-      hint: 'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
+      remediation:
+        'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
     });
   }
 
@@ -277,7 +279,8 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
       message: 'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
       code: 40106,
       statusCode: 400,
-      hint: 'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
+      remediation:
+        'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
     });
   }
 }

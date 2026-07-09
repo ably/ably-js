@@ -1902,7 +1902,8 @@ class ConnectionManager extends EventEmitter {
         message: 'Unable to ping service: not connected',
         code: 40000,
         statusCode: 400,
-        hint: 'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …). From the "closed" or "failed" state, or "initialized" with autoConnect disabled, the SDK does not connect automatically, so call connection.connect() first.',
+        remediation:
+          'Wait for connection.state to be "connected" before calling ping(). Use await connection.whenState("connected") or connection.once("connected", …). From the "closed" or "failed" state, or "initialized" with autoConnect disabled, the SDK does not connect automatically, so call connection.connect() first.',
       });
     }
 
@@ -1972,7 +1973,8 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 403,
         cause: err,
-        hint: 'Inspect cause for the underlying error, then fix your authUrl/authCallback so it does not respond 403 for a valid client.',
+        remediation:
+          'Inspect cause for the underlying error, then fix your authUrl/authCallback so it does not respond 403 for a valid client.',
       });
       this.notifyState({ state: 'failed', error: wrapped });
     } else {
@@ -1983,7 +1985,8 @@ class ConnectionManager extends EventEmitter {
         code: 80019,
         statusCode: 401,
         cause: err,
-        hint: 'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape. Inspect cause for the underlying error.',
+        remediation:
+          'Check network connectivity to your authUrl/authCallback endpoint and that it returns a valid token shape. Inspect cause for the underlying error.',
       });
       this.notifyState({ state: this.state.failState as string, error: wrapped });
     }

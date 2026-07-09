@@ -80,7 +80,8 @@ class BaseClient {
           message: msg,
           code: 40400,
           statusCode: 404,
-          hint: 'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+          remediation:
+            'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
         });
       }
       normalOptions.keyName = keyMatch[1];
@@ -93,14 +94,16 @@ class BaseClient {
           message: 'clientId must be either a string or null',
           code: 40012,
           statusCode: 400,
-          hint: 'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
+          remediation:
+            'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
         });
       } else if (normalOptions.clientId === '*') {
         throw new ErrorInfo({
           message: 'Can’t use "*" as a clientId as that string is reserved',
           code: 40012,
           statusCode: 400,
-          hint: 'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
+          remediation:
+            'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
         });
       }
     }

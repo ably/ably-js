@@ -34,7 +34,7 @@ Since webpack builds are slow, commands are also available to only build the out
 
 ## Coding conventions
 
-Coding conventions, including how to write `ErrorInfo` error messages and hints, are documented in [CLAUDE.md](./CLAUDE.md).
+Coding conventions, including how to write `ErrorInfo` error messages and remediations, are documented in [CLAUDE.md](./CLAUDE.md).
 
 ## Test suite
 

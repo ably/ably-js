@@ -68,7 +68,8 @@ export class RestChannelMixin {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
+        remediation:
+          'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
       });
     }
 
@@ -102,7 +103,8 @@ export class RestChannelMixin {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object.',
+        remediation:
+          'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object.',
       });
     }
 
@@ -145,7 +147,8 @@ export class RestChannelMixin {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
+        remediation:
+          'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
       });
     }
 

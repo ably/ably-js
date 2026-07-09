@@ -66,7 +66,8 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to enter a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter() again. To enter on behalf of another identity, use presence.enterClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
+        remediation:
+          'Set ClientOptions.clientId (or include clientId in the token) before calling presence.enter() again. To enter on behalf of another identity, use presence.enterClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
@@ -83,7 +84,8 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must be specified to update presence data',
         code: 40012,
         statusCode: 400,
-        hint: 'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update() again. To update on behalf of another identity, use presence.updateClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
+        remediation:
+          'Set ClientOptions.clientId (or include clientId in the token) before calling presence.update() again. To update on behalf of another identity, use presence.updateClient(otherId, data), which requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this._enterOrUpdateClient(undefined, undefined, data, 'update');
@@ -167,7 +169,8 @@ class RealtimePresence extends EventEmitter {
         message: 'clientId must have been specified to enter or leave a presence channel',
         code: 40012,
         statusCode: 400,
-        hint: 'To leave a member entered on behalf of another identity, call presence.leaveClient(otherId). A client that never had a clientId has no self-entered member to leave. leaveClient requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
+        remediation:
+          'To leave a member entered on behalf of another identity, call presence.leaveClient(otherId). A client that never had a clientId has no self-entered member to leave. leaveClient requires the library to be instantiated with an API key or a token bound to a wildcard clientId.',
       });
     }
     return this.leaveClient(undefined, data);
@@ -213,7 +216,8 @@ class RealtimePresence extends EventEmitter {
         throw new PartialErrorInfo({
           message: 'Unable to leave presence channel while in ' + channel.state + ' state',
           code: 90001,
-          hint: 'presence.leave() only works while the channel is attached. From "suspended" or "attaching", await channel.attach() and retry, since your presence membership is restored when the channel re-attaches. From "initialized", "detached", or "failed" there is nothing to leave: either no member was entered, or the SDK already cleared your membership when the channel left the attached state.',
+          remediation:
+            'presence.leave() only works while the channel is attached. From "suspended" or "attaching", await channel.attach() and retry, since your presence membership is restored when the channel re-attaches. From "initialized", "detached", or "failed" there is nothing to leave: either no member was entered, or the SDK already cleared your membership when the channel left the attached state.',
         });
       }
     }
@@ -238,7 +242,8 @@ class RealtimePresence extends EventEmitter {
           statusCode: 400,
           code: 91005,
           message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
-          hint: 'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.',
+          remediation:
+            'Wait for the channel to reach "attached" before calling presence.get(), or pass { waitForSync: false } to read the last known (stale) members.',
         });
       }
       return toMessages(this.members);
@@ -272,7 +277,7 @@ class RealtimePresence extends EventEmitter {
           message: 'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
           code: 40000,
           statusCode: 400,
-          hint: 'Await channel.attach() before calling presence.history({ untilAttach: true }).',
+          remediation: 'Await channel.attach() before calling presence.history({ untilAttach: true }).',
         });
       }
     }
@@ -449,7 +454,8 @@ class RealtimePresence extends EventEmitter {
           code: 91004,
           statusCode: 400,
           cause: err,
-          hint: 'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached. For a member entered on behalf of another clientId, call presence.enterClient(clientId, data) instead.',
+          remediation:
+            'Listen for the channel "update" event and call presence.enter(...) again once the channel is attached. For a member entered on behalf of another clientId, call presence.enterClient(clientId, data) instead.',
         });
         Logger.logAction(
           this.logger,

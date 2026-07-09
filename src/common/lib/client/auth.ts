@@ -161,7 +161,8 @@ class Auth {
           message: msg,
           code: 40106,
           statusCode: 401,
-          hint: 'Set one of the following in ClientOptions: key, authUrl, authCallback, token, or tokenDetails. For production use, prefer authUrl or authCallback for client-side (browser, mobile apps), or key for server-side.',
+          remediation:
+            'Set one of the following in ClientOptions: key, authUrl, authCallback, token, or tokenDetails. For production use, prefer authUrl or authCallback for client-side (browser, mobile apps), or key for server-side.',
         });
       }
       Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
@@ -277,7 +278,7 @@ class Auth {
         message: 'authorize called with a key that does not match the existing key being used by the client',
         code: 40102,
         statusCode: 401,
-        hint: 'To use a different key, construct a new Ably client with the key as a client option.',
+        remediation: 'To use a different key, construct a new Ably client with the key as a client option.',
       });
     }
 
@@ -499,7 +500,8 @@ class Auth {
               message: 'authUrl response is missing a Content-Type header',
               code: 40170,
               statusCode: 401,
-              hint: 'Set a Content-Type response header on your authUrl endpoint: application/json for a TokenDetails/TokenRequest object, text/plain for a token string, or application/jwt for a JWT.',
+              remediation:
+                'Set a Content-Type response header on your authUrl endpoint: application/json for a TokenDetails/TokenRequest object, text/plain for a token string, or application/jwt for a JWT.',
             });
             cb(err, null);
             return;
@@ -514,7 +516,8 @@ class Auth {
                 '. Expected one of: text/plain, application/jwt or application/json',
               code: 40170,
               statusCode: 401,
-              hint: 'Change your authUrl endpoint to respond with a Content-Type the SDK can parse: application/json (TokenDetails/TokenRequest), text/plain (token string), or application/jwt (JWT).',
+              remediation:
+                'Change your authUrl endpoint to respond with a Content-Type the SDK can parse: application/json (TokenDetails/TokenRequest), text/plain (token string), or application/jwt (JWT).',
             });
             cb(err, null);
             return;
@@ -525,7 +528,8 @@ class Auth {
                 message: 'authUrl JSON response exceeded the maximum permitted length of 128 KB',
                 code: 40170,
                 statusCode: 401,
-                hint: 'Two things commonly cause this. If your authUrl wraps the Ably token in an envelope with extra fields, return only the token payload (a token string, or a TokenRequest/TokenDetails object). If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
+                remediation:
+                  'Two things commonly cause this. If your authUrl wraps the Ably token in an envelope with extra fields, return only the token payload (a token string, or a TokenRequest/TokenDetails object). If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
               });
               cb(err, null);
               return;
@@ -610,7 +614,8 @@ class Auth {
         message: msg,
         code: 40171,
         statusCode: 403,
-        hint: 'Initialise the client with one of ClientOptions.{ key, authUrl, authCallback } so the SDK can refresh tokens.',
+        remediation:
+          'Initialise the client with one of ClientOptions.{ key, authUrl, authCallback } so the SDK can refresh tokens.',
       });
     }
 
@@ -661,7 +666,8 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Add logging to your authCallback/authUrl to find where it stalls, and make sure it always resolves and that authUrl is reachable. If the work legitimately takes longer, raise ClientOptions.realtimeRequestTimeout.',
+            remediation:
+              'Add logging to your authCallback/authUrl to find where it stalls, and make sure it always resolves and that authUrl is reachable. If the work legitimately takes longer, raise ClientOptions.realtimeRequestTimeout.',
           });
           reject(err);
         }, timeoutLength);
@@ -687,7 +693,8 @@ class Auth {
               message: 'Token string is empty',
               code: 40170,
               statusCode: 401,
-              hint: 'Return a non-empty value from your authCallback/authUrl: a token string, a TokenRequest, or a TokenDetails object.',
+              remediation:
+                'Return a non-empty value from your authCallback/authUrl: a token string, a TokenRequest, or a TokenDetails object.',
             });
             reject(err);
           } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
@@ -695,7 +702,8 @@ class Auth {
               message: 'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
               code: 40170,
               statusCode: 401,
-              hint: 'Return only the bare signed token string from your authCallback/authUrl, not an envelope, debug output, or a stringified TokenDetails wrapping it, since a token must serialise to under 128 KB. If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
+              remediation:
+                'Return only the bare signed token string from your authCallback/authUrl, not an envelope, debug output, or a stringified TokenDetails wrapping it, since a token must serialise to under 128 KB. If the token carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
             });
             reject(err);
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
@@ -704,7 +712,8 @@ class Auth {
               message: 'Token string was literal null/undefined',
               code: 40170,
               statusCode: 401,
-              hint: 'Return the token itself, not "undefined"/"null". Callbacks that have no value to return should pass an error instead.',
+              remediation:
+                'Return the token itself, not "undefined"/"null". Callbacks that have no value to return should pass an error instead.',
             });
             reject(err);
           } else if (
@@ -715,7 +724,8 @@ class Auth {
               message: 'Token was double-encoded',
               code: 40170,
               statusCode: 401,
-              hint: 'Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
+              remediation:
+                'Return TokenDetails/TokenRequest as a parsed object, or set Content-Type: application/jwt for JWT tokens.',
             });
             reject(err);
           } else {
@@ -732,7 +742,8 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'If authenticating with an authCallback, update it to callback with (err, tokenStringOrTokenDetailsOrTokenRequest). If authenticating with an authUrl, update the server to respond with a token string or TokenDetails/TokenRequest JSON.',
+            remediation:
+              'If authenticating with an authCallback, update it to callback with (err, tokenStringOrTokenDetailsOrTokenRequest). If authenticating with an authUrl, update the server to respond with a token string or TokenDetails/TokenRequest JSON.',
           });
           reject(err);
           return;
@@ -744,7 +755,8 @@ class Auth {
               'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
             code: 40170,
             statusCode: 401,
-            hint: 'The TokenRequest/TokenDetails object must serialise to under 128 KB. Trim any unused fields, and if it carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
+            remediation:
+              'The TokenRequest/TokenDetails object must serialise to under 128 KB. Trim any unused fields, and if it carries a very large capability, narrow it: grant a wildcard resource such as "*" or "namespace:*" instead of listing every channel.',
           });
           reject(err);
           return;
@@ -762,7 +774,8 @@ class Auth {
             message: msg,
             code: 40170,
             statusCode: 401,
-            hint: 'Return a token string, a TokenRequest (an object with a `keyName` field), or a TokenDetails (an object with an `issued` field) from your authCallback/authUrl.',
+            remediation:
+              'Return a token string, a TokenRequest (an object with a `keyName` field), or a TokenDetails (an object with an `issued` field) from your authCallback/authUrl.',
           });
           reject(err);
           return;
@@ -839,7 +852,8 @@ class Auth {
         message: 'No key specified',
         code: 40101,
         statusCode: 403,
-        hint: 'Pass { key } in the authOptions argument, or set ClientOptions.key and omit the authOptions argument. A passed authOptions replaces the stored options rather than merging.',
+        remediation:
+          'Pass { key } in the authOptions argument, or set ClientOptions.key and omit the authOptions argument. A passed authOptions replaces the stored options rather than merging.',
       });
     }
     const keyParts = key.split(':'),
@@ -851,7 +865,8 @@ class Auth {
         message: 'Invalid key specified: the key has no colon-separated secret',
         code: 40101,
         statusCode: 403,
-        hint: 'Copy the full "appId.keyId:secret" key including the colon and secret from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        remediation:
+          'Copy the full "appId.keyId:secret" key including the colon and secret from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
       });
     }
 
@@ -860,7 +875,7 @@ class Auth {
         message: 'clientId can’t be an empty string',
         code: 40012,
         statusCode: 400,
-        hint: 'Pass a non-empty clientId, or omit the field entirely for an anonymous token.',
+        remediation: 'Pass a non-empty clientId, or omit the field entirely for an anonymous token.',
       });
     }
 
@@ -986,7 +1001,8 @@ class Auth {
             'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
           code: 40102,
           statusCode: 403,
-          hint: 'Issue the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it.',
+          remediation:
+            'Issue the token with the same clientId as ClientOptions.clientId, or omit ClientOptions.clientId and let the token define it.',
         });
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
@@ -1053,7 +1069,8 @@ class Auth {
         message: 'clientId must be either a string or null',
         code: 40012,
         statusCode: 400,
-        hint: 'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
+        remediation:
+          'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
       });
     } else if (clientId === '*') {
       throw new ErrorInfo({
@@ -1061,7 +1078,8 @@ class Auth {
           'Can’t use "*" as a clientId as that string is reserved. clientId sets a single fixed identity for the client',
         code: 40012,
         statusCode: 400,
-        hint: 'Omit clientId and specify the identity per operation instead, for example with presence.enterClient(otherId, data) or by setting clientId on each message you publish. This requires the library to be instantiated with an API key or a token bound to a wildcard clientId. To request a wildcard token, set defaultTokenParams: { clientId: "*" } in ClientOptions. A wildcard token lets the client claim any clientId per operation but does not give it an identity of its own.',
+        remediation:
+          'Omit clientId and specify the identity per operation instead, for example with presence.enterClient(otherId, data) or by setting clientId on each message you publish. This requires the library to be instantiated with an API key or a token bound to a wildcard clientId. To request a wildcard token, set defaultTokenParams: { clientId: "*" } in ClientOptions. A wildcard token lets the client claim any clientId per operation but does not give it an identity of its own.',
       });
     } else {
       const err = this._uncheckedSetClientId(clientId);
@@ -1079,7 +1097,8 @@ class Auth {
         message: msg,
         code: 40102,
         statusCode: 401,
-        hint: 'Issue the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
+        remediation:
+          'Issue the token with the matching clientId, or omit ClientOptions.clientId and let the token define it.',
       });
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
       return err;

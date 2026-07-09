@@ -37,7 +37,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
       message: 'options.params must be an object',
       code: 40000,
       statusCode: 400,
-      hint: 'Pass an object map of channel params (e.g. { rewind: "1" }), not a string or array.',
+      remediation: 'Pass an object map of channel params (e.g. { rewind: "1" }), not a string or array.',
     });
     return err;
   }
@@ -47,7 +47,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
         message: 'options.modes must be an array',
         code: 40000,
         statusCode: 400,
-        hint: 'Pass an array of ChannelMode strings, e.g. { modes: ["publish", "subscribe"] }.',
+        remediation: 'Pass an array of ChannelMode strings, e.g. { modes: ["publish", "subscribe"] }.',
       });
       return err;
     }
@@ -62,7 +62,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
           message: 'Invalid channel mode: ' + currentMode,
           code: 40000,
           statusCode: 400,
-          hint: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server grants only the modes the key or token capability permits and silently drops the rest on attach. After attach, channel.modes shows what was granted. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+          remediation: `Valid ChannelMode values are: ${channelModes.join(', ').toLowerCase()}. The server grants only the modes the key or token capability permits and silently drops the rest on attach. After attach, channel.modes shows what was granted. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
         });
         return err;
       }
@@ -198,7 +198,8 @@ class RealtimeChannel extends EventEmitter {
       code: 90001,
       statusCode: 400,
       cause: this.errorReason || undefined,
-      hint: 'Inspect channel.errorReason for the underlying cause. It may be null after a clean detach. From "failed" or "detached", call channel.attach() to recover. From "suspended" the SDK re-attaches automatically, or call channel.attach() to retry now.',
+      remediation:
+        'Inspect channel.errorReason for the underlying cause. It may be null after a clean detach. From "failed" or "detached", call channel.attach() to recover. From "suspended" the SDK re-attaches automatically, or call channel.attach() to retry now.',
     });
     return err;
   }
@@ -297,7 +298,8 @@ class RealtimeChannel extends EventEmitter {
         message: 'The single-argument form of publish() expects a message object or an array of message objects',
         code: 40013,
         statusCode: 400,
-        hint: 'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
+        remediation:
+          'Call publish(name, data) for a single event, or publish(message | message[]) with a Message-shaped object.',
       });
     }
     const maxMessageSize = this.client.options.maxMessageSize;
@@ -310,7 +312,8 @@ class RealtimeChannel extends EventEmitter {
         message: `Maximum size of messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         code: 40009,
         statusCode: 400,
-        hint: 'Split the publish into multiple calls so each batch is under the limit. If a single message exceeds the limit, reduce its payload size. To lift the account limit, contact Ably support.',
+        remediation:
+          'Split the publish into multiple calls so each batch is under the limit. If a single message exceeds the limit, reduce its payload size. To lift the account limit, contact Ably support.',
       });
     }
 
@@ -446,7 +449,8 @@ class RealtimeChannel extends EventEmitter {
           message: 'Unable to detach as channel state is failed',
           code: 90001,
           statusCode: 400,
-          hint: 'A failed channel is not attached, so there is nothing to detach. Inspect channel.errorReason for the cause. Call channel.attach() to recover the channel, or channels.release(name) to discard it.',
+          remediation:
+            'A failed channel is not attached, so there is nothing to detach. Inspect channel.errorReason for the cause. Call channel.attach() to recover the channel, or channels.release(name) to discard it.',
         });
       }
       default:
@@ -535,7 +539,7 @@ class RealtimeChannel extends EventEmitter {
       case 'initialized':
       case 'detaching':
       case 'detached': {
-        // sync() is an internal SDK method, so no fix-it hint here — user/LLM code shouldn't reach this throw.
+        // sync() is an internal SDK method, so no fix-it remediation here — user/LLM code shouldn't reach this throw.
         throw new PartialErrorInfo({
           message: 'Unable to sync to channel; not attached',
           code: 40000,
@@ -988,7 +992,8 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel attach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The channel is now suspended. The SDK retries the attach automatically while the connection is connected, and you can call channel.attach() to retry immediately. Inspect channel.errorReason if it keeps timing out.',
+          remediation:
+            'The channel is now suspended. The SDK retries the attach automatically while the connection is connected, and you can call channel.attach() to retry immediately. Inspect channel.errorReason if it keeps timing out.',
         });
         this.notifyState('suspended', err);
         break;
@@ -998,7 +1003,8 @@ class RealtimeChannel extends EventEmitter {
           message: 'Channel detach timed out',
           code: 90007,
           statusCode: 408,
-          hint: 'The detach timed out and the channel is back in the attached state. Call channel.detach() again to retry. Inspect channel.errorReason if it keeps timing out.',
+          remediation:
+            'The detach timed out and the channel is back in the attached state. Call channel.detach() again to retry. Inspect channel.errorReason if it keeps timing out.',
         });
         this.notifyState('attached', err);
         break;
@@ -1076,7 +1082,7 @@ class RealtimeChannel extends EventEmitter {
           message: 'option untilAttach requires the channel to be attached, was: ' + this.state,
           code: 40000,
           statusCode: 400,
-          hint: 'Await channel.attach() before calling history({ untilAttach: true }).',
+          remediation: 'Await channel.attach() before calling history({ untilAttach: true }).',
         });
       }
       if (!this.properties.attachSerial) {
@@ -1084,7 +1090,8 @@ class RealtimeChannel extends EventEmitter {
           message: 'untilAttach was specified and channel is attached, but attachSerial is not defined',
           code: 40000,
           statusCode: 400,
-          hint: 'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) so the SDK records the attachSerial from the new attach, then retry history({ untilAttach: true }).',
+          remediation:
+            'Detach the channel (await channel.detach()) and re-attach (await channel.attach()) so the SDK records the attachSerial from the new attach, then retry history({ untilAttach: true }).',
         });
       }
       delete params.untilAttach;
@@ -1110,7 +1117,8 @@ class RealtimeChannel extends EventEmitter {
         s,
       code: 90001,
       statusCode: 400,
-      hint: 'Call channel.detach() and wait for the channel to reach "detached" before calling channels.release(name).',
+      remediation:
+        'Call channel.detach() and wait for the channel to reach "detached" before calling channels.release(name).',
     });
     return err;
   }
@@ -1178,7 +1186,8 @@ class RealtimeChannel extends EventEmitter {
         message: 'This message lacks a serial',
         code: 40003,
         statusCode: 400,
-        hint: 'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object.',
+        remediation:
+          'Pass the Message received from a subscribe callback (which carries .serial), not a freshly constructed object.',
       });
     }
 

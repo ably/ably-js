@@ -292,7 +292,7 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
     message: 'v1 callback signature is no longer supported: v2 methods return a promise.',
     code: 40025,
     statusCode: 400,
-    hint:
+    remediation:
       'Drop the trailing callback and `await` the returned promise. ' +
       'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md.',
   });
@@ -477,7 +477,7 @@ export function matchDerivedChannel(name: string) {
       message: 'Channel name is empty or could not be parsed',
       code: 40010,
       statusCode: 400,
-      hint:
+      remediation:
         'Pass a non-empty channel name to channels.getDerived(name, { filter: ... }) and put the filter expression in the filter option, not in the name. ' +
         'A channel-params prefix such as "[?rewind=1]foo" is allowed. See https://ably.com/docs/channels#derived.',
     });
@@ -488,7 +488,7 @@ export function matchDerivedChannel(name: string) {
       message: `cannot use a derived option with a ${match[2]} channel`,
       code: 40010,
       statusCode: 400,
-      hint: `Use a base channel name instead, without the "${match[2]}" qualifier.`,
+      remediation: `Use a base channel name instead, without the "${match[2]}" qualifier.`,
     });
   }
   // Return match values to be added to derive channel quantifier.
@@ -515,23 +515,24 @@ export function arrEquals(a: any[], b: any[]) {
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
   // Push and LiveObjects are not exported by the modular variant; each has its own entry point.
-  let hint: string;
+  let remediation: string;
   switch (pluginName) {
     case 'Push':
-      hint = 'Import Push from "ably/push" and pass it in ClientOptions.plugins: { Push }.';
+      remediation = 'Import Push from "ably/push" and pass it in ClientOptions.plugins: { Push }.';
       break;
     case 'LiveObjects':
-      hint = 'Import { LiveObjects } from "ably/liveobjects" and pass it in ClientOptions.plugins: { LiveObjects }.';
+      remediation =
+        'Import { LiveObjects } from "ably/liveobjects" and pass it in ClientOptions.plugins: { LiveObjects }.';
       break;
     default:
-      hint = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`;
+      remediation = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`;
       break;
   }
   const err = new ErrorInfo({
     message: `${pluginName} plugin not provided`,
     code: 40019,
     statusCode: 400,
-    hint,
+    remediation,
   });
   return err;
 }
@@ -592,7 +593,7 @@ export async function* listenerToAsyncIterator<T>(
             message: 'Concurrent next() calls are not supported',
             code: 40000,
             statusCode: 400,
-            hint: 'Drive the async iterator from a single for-await-of loop.',
+            remediation: 'Drive the async iterator from a single for-await-of loop.',
           });
         }
 

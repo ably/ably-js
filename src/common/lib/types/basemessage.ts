@@ -136,7 +136,8 @@ export function encodeData(
     message: 'Data type is unsupported',
     code: 40013,
     statusCode: 400,
-    hint: 'Message data must be a string, Buffer/ArrayBuffer/TypedArray, plain object, or array. Convert other types (e.g. Date, Map, Set) to one of these before publishing.',
+    remediation:
+      'Message data must be a string, Buffer/ArrayBuffer/TypedArray, plain object, or array. Convert other types (e.g. Date, Map, Set) to one of these before publishing.',
   });
 }
 
@@ -221,7 +222,7 @@ export async function decodeData(
                 message: 'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
                 code: 40019,
                 statusCode: 400,
-                hint: 'Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.',
+                remediation: 'Install @ably/vcdiff-decoder and pass it in ClientOptions.plugins.vcdiff.',
               });
             }
             if (typeof Uint8Array === 'undefined') {
@@ -229,7 +230,8 @@ export async function decodeData(
                 message: 'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
                 code: 40020,
                 statusCode: 400,
-                hint: 'Disable channel deltas (do not set delta in channel params) on environments without typed-array support, or upgrade the JavaScript runtime.',
+                remediation:
+                  'Disable channel deltas (do not set delta in channel params) on environments without typed-array support, or upgrade the JavaScript runtime.',
               });
             }
             try {
@@ -251,7 +253,8 @@ export async function decodeData(
                 message: 'Vcdiff delta decode failed with ' + e,
                 code: 40018,
                 statusCode: 400,
-                hint: 'The SDK recovers automatically by re-attaching from the last successfully processed message, and the server re-sends the affected message in full before deltas resume. If this recurs, disable deltas for this channel by removing delta from the channel params.',
+                remediation:
+                  'The SDK recovers automatically by re-attaching from the last successfully processed message, and the server re-sends the affected message in full before deltas resume. If this recurs, disable deltas for this channel by removing delta from the channel params.',
               });
             }
             continue;
@@ -265,7 +268,7 @@ export async function decodeData(
         message: `Error processing the ${xform} encoding, decoder returned ‘${err.message}’`,
         code: err.code || 40013,
         statusCode: 400,
-        hint: err.hint,
+        remediation: err.remediation,
       });
     } finally {
       finalEncoding =

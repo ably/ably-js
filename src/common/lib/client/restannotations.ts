@@ -29,7 +29,8 @@ export function serialFromMsgOrSerial(msgOrSerial: string | Message): string {
         'The message argument of annotations.publish()/delete()/get() must be either a Message (or at least an object with a non-empty string `serial` property) or a message serial (non-empty string)',
       code: 40003,
       statusCode: 400,
-      hint: 'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
+      remediation:
+        'Pass the Message received from a subscribe callback (which carries .serial), or its serial string. Newly constructed Message objects do not have a serial.',
     });
   }
   return messageSerial;
@@ -46,7 +47,8 @@ export function constructValidateAnnotation(
       message: 'Second argument of annotations.publish() must be an object (the intended annotation to publish)',
       code: 40003,
       statusCode: 400,
-      hint: 'Pass an Annotation-shaped object as the second argument, e.g. { type: "reaction:unique.v1", name: "👍" }.',
+      remediation:
+        'Pass an Annotation-shaped object as the second argument, e.g. { type: "reaction:unique.v1", name: "👍" }.',
     });
   }
 

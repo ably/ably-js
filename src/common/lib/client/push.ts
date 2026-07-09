@@ -50,7 +50,7 @@ class Push {
             'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
         reject(err);
         return;
@@ -60,7 +60,7 @@ class Push {
           message: 'Activation already in progress',
           code: 40000,
           statusCode: 400,
-          hint: 'Await the in-flight push.activate() before calling it again.',
+          remediation: 'Await the in-flight push.activate() before calling it again.',
         });
         reject(err);
         return;
@@ -91,7 +91,7 @@ class Push {
             'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
           code: 40000,
           statusCode: 400,
-          hint: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
+          remediation: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
         });
         reject(err);
         return;
@@ -101,7 +101,7 @@ class Push {
           message: 'Deactivation already in progress',
           code: 40000,
           statusCode: 400,
-          hint: 'Await the in-flight push.deactivate() before calling it again.',
+          remediation: 'Await the in-flight push.deactivate() before calling it again.',
         });
         reject(err);
         return;
@@ -302,7 +302,8 @@ class DeviceRegistrations {
         message: 'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
         code: 40000,
         statusCode: 400,
-        hint: 'Pass either the device id string or a DeviceDetails object with a non-empty .id field. The local device id is available from client.device().id after push.activate() completes. Alternatively pass the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save().',
+        remediation:
+          'Pass either the device id string or a DeviceDetails object with a non-empty .id field. The local device id is available from client.device().id after push.activate() completes. Alternatively pass the .id of a DeviceDetails returned by push.admin.deviceRegistrations.save().',
       });
     }
 
@@ -356,7 +357,8 @@ class DeviceRegistrations {
         message: 'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
         code: 40000,
         statusCode: 400,
-        hint: 'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.',
+        remediation:
+          'Pass either the device id string or the DeviceDetails object (with a non-empty .id field). To deactivate the local device, call client.push.deactivate() instead.',
       });
     }
 

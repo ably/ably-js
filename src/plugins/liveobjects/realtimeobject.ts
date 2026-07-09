@@ -572,7 +572,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+        remediation: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
       });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
@@ -581,7 +581,7 @@ export class RealtimeObject {
         message: `"${expectedMode}" channel mode must be set for this operation`,
         code: 40024,
         statusCode: 400,
-        hint: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+        remediation: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
       });
     }
   }
