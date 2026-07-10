@@ -130,6 +130,7 @@ describe('uts/objects/unit/path_object_mutations', function () {
       expect.fail('should have thrown');
     } catch (err: any) {
       expect(err.code).to.equal(92005);
+      expect(err.statusCode).to.equal(400);
     }
   });
 
@@ -142,6 +143,7 @@ describe('uts/objects/unit/path_object_mutations', function () {
       expect.fail('should have thrown');
     } catch (err: any) {
       expect(err.code).to.equal(92005);
+      expect(err.statusCode).to.equal(400);
     }
   });
 });

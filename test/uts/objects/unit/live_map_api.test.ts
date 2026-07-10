@@ -11,7 +11,7 @@
  * Deviations:
  * - RTLM24 (clear) skipped: LiveMap#clear() is not yet implemented in ably-js.
  * - RTLM20/set-invalid-values-table-0: 'symbol' test case uses Symbol('test').
- * - RTLM12 (keys): uses root.instance().keys() since PathObject does not expose keys().
+ * - RTLM12 (keys): read via root.instance().keys() — RTLM12 is an internal LiveMap-level point.
  */
 
 import { expect } from 'chai';
@@ -93,7 +93,8 @@ describe('uts/objects/unit/live_map_api', function () {
   // ---------- RTLM12: keys() ----------
 
   // UTS: objects/unit/RTLM12/keys-0
-  // Deviation: uses root.instance().keys() since PathObject does not expose keys() directly.
+  // RTLM12 is an internal LiveMap-level point, so it is read via instance().keys(). (PathObject also
+  // exposes keys() directly — see the RTPO10 tests — so this is a level-appropriate route, not a deviation.)
   it('RTLM12 - keys() yields only keys', async function () {
     const { root } = await setupSyncedChannel('test-RTLM12');
 
@@ -621,8 +622,9 @@ describe('uts/objects/unit/live_map_api', function () {
   });
 
   // ---------- RTLM24: clear() sends MAP_CLEAR message ----------
-  // Skipped: LiveMap#clear() is not yet implemented in ably-js.
-  // UTS: objects/unit/RTLM24/clear-sends-map-clear-0
+  // Skipped: LiveMap#clear() is not yet implemented in ably-js (see deviations.md).
+  // No UTS Test ID: the spec has no public clear() API test section; this is a
+  // placeholder to be tagged when clear() is implemented and specced.
   it.skip('RTLM24 - clear() sends MAP_CLEAR message (not yet implemented)', function () {
     // Placeholder: LiveMap#clear() does not exist yet.
   });

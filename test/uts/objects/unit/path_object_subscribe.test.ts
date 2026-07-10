@@ -9,7 +9,7 @@
  */
 
 import { expect } from 'chai';
-import { Ably, restoreAll, installMockWebSocket, trackClient, flushAsync } from '../../helpers';
+import { Ably, restoreAll, installMockWebSocket, trackClient, flushAsync, pollUntil } from '../../helpers';
 import { MockWebSocket } from '../../mock_websocket';
 import {
   setupSyncedChannel,
@@ -18,12 +18,16 @@ import {
   buildObjectState,
   buildCounterInc,
   buildMapSet,
+  remoteSerial,
   buildMapClear,
   PM_ACTION,
 } from '../helpers/standard_test_pool';
 import * as LiveObjectsPlugin from '../../../../src/plugins/liveobjects';
 
 describe('uts/objects/unit/path_object_subscribe', function () {
+  // test:uts runs mocha with --no-config, so the shared root-hooks timeout does not apply; raise
+  // the 2s default so pollUntil's 5s quiescence deadline can elapse and fail on the real assertion.
+  this.timeout(6000);
   afterEach(function () {
     restoreAll();
   });
@@ -170,7 +174,9 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Self event: MAP_SET on root map
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d1', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTPO19c1-d1', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
     await flushAsync();
 
@@ -186,21 +192,21 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTPO19c1/subscribe-depth-2-children-0
-  // Deviation: UTS spec expects MAP_SET on profile.email (a grandchild) to NOT
-  // trigger at depth 2. But ably-js generates the event at the profile map's path
-  // (depth 2 from root), not at the email key path (depth 3). So depth-2 subscription
-  // at root correctly receives it. We verify depth-2 allows self + children, and verify
-  // that deeper events (prefs.theme at effective depth 3 from root via counter path)
-  // are included because ably-js events fire at the modified LiveObject's path.
-  it('RTPO19c1 - subscribe() with depth 2 receives self and children', async function () {
+  it('RTPO19c1 - subscribe() with depth 2 receives self and children only', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTPO19c1-d2');
 
     const events: any[] = [];
     root.subscribe((event: any) => events.push(event), { depth: 2 });
 
+    // Quiescence control: unlimited-depth listener sees every dispatch
+    const controlEvents: any[] = [];
+    root.subscribe((event: any) => controlEvents.push(event));
+
     // Self event: MAP_SET on root map (depth calc: 0-0+1=1 <= 2)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d2', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTPO19c1-d2', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
     await flushAsync();
 
@@ -214,16 +220,17 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     expect(events).to.have.length(2);
 
-    // MAP_SET on profile map generates event at ['profile'] (depth calc: 1-0+1=2 <= 2)
-    // So depth-2 subscription at root DOES receive this
+    // Grandchild event: nested counter at ['profile', 'nested_counter'] (depth calc:
+    // 2-0+1=3 > 2) -- a single-candidate COUNTER_INC, so NOT received at depth 2
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-d2', [
-        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, 't:2', 'remote'),
-      ]),
+      buildObjectMessage('test-RTPO19c1-d2', [buildCounterInc('counter:nested@1000', 1, '101', 'remote')]),
     );
-    await flushAsync();
 
-    expect(events).to.have.length(3);
+    // Quiescence: the control listener proves the grandchild dispatch happened
+    await pollUntil(() => controlEvents.length >= 3);
+    expect(controlEvents).to.have.length(3);
+
+    expect(events).to.have.length(2);
   });
 
   // UTS: objects/unit/RTPO19c1/subscribe-unlimited-depth-0
@@ -235,7 +242,9 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     // Self event on root
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19c1-all', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTPO19c1-all', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
     await flushAsync();
 
@@ -252,7 +261,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // Deep descendant event (prefs.theme at depth 4)
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTPO19c1-all', [
-        buildMapSet('map:prefs@1000', 'theme', { string: 'light' }, 't:2', 'remote'),
+        buildMapSet('map:prefs@1000', 'theme', { string: 'light' }, remoteSerial(1), 'remote'),
       ]),
     );
     await flushAsync();
@@ -319,19 +328,20 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTPO19e2/event-message-omitted-no-operation-0
-  // Deviation: ably-js does not currently fire subscription events for sync-triggered
-  // updates (OBJECT_SYNC with changed state). The subscription dispatch only fires for
-  // OBJECT protocol messages with operations. Skip until sync-triggered events are implemented.
+  // Sync-triggered updates (OBJECT_SYNC with changed state) DO fire path subscription events
+  // (realtimeobject.ts _applySync -> notifyUpdated); the event's `message` is omitted because the
+  // source ObjectMessage carries no `operation` field (liveobject.ts).
   it('RTPO19e2 - subscribe() event omits message when objectMessage has no operation', async function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't fire events for sync-triggered updates
     const { root, mockWs } = await setupSyncedChannel('test-RTPO19e2-no-op');
 
     const events: any[] = [];
     root.subscribe((event: any) => events.push(event));
 
-    // Send an OBJECT_SYNC that changes counter:score@1000's state
-    // without an operation field — this triggers an update via replaceData
-    // which has no objectMessage.operation
+    // Send an OBJECT_SYNC that changes counter:score@1000's state without an operation field —
+    // an update via replaceData which has no objectMessage.operation. The sync intentionally
+    // omits root: per RTO5c2a root is never removed from the pool, so it is retained and still
+    // references "score" — counter:score stays reachable and its sync-triggered update dispatches
+    // to the root subscription (message omitted).
     mockWs.active_connection!.send_to_client({
       action: PM_ACTION.OBJECT_SYNC,
       channel: 'test-RTPO19e2-no-op',
@@ -341,8 +351,8 @@ describe('uts/objects/unit/path_object_subscribe', function () {
           'counter:score@1000',
           { aaa: 't:1' },
           {
-            counter: { count: 200 },
-            createOp: { counterCreate: { count: 200 } },
+            counter: { count: 0 },
+            createOp: { action: 3, objectId: 'counter:score@1000', counterCreate: { count: 200 } },
           },
         ),
       ],
@@ -366,7 +376,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // Replace the counter at "score" with a new counter
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTPO19f', [
-        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, 't:1', 'remote'),
+        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
@@ -401,7 +411,9 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.get('name').subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO19-prim', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTPO19-prim', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
     await flushAsync();
 
@@ -434,7 +446,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // Self event on profile map
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTPO19-bubble', [
-        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, 't:1', 'remote'),
+        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
@@ -451,22 +463,29 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTO24c1/depth-filtering-formula-0
-  // Deviation: UTS spec expects MAP_SET on prefs.theme (grandchild of profile) to NOT
-  // trigger with depth 2. But ably-js generates the event at the prefs map's path
-  // ['profile', 'prefs'] (depth calc: 2-1+1=2 <= 2), not at ['profile', 'prefs', 'theme']
-  // (depth 3). Events fire at the modified LiveObject, not at the leaf key. So the
-  // depth-2 filter at profile correctly includes it. We verify the formula works by
-  // confirming depth-1 at profile would exclude the children.
   it('RTO24c1 - depth filtering formula with depth 2 at profile', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTO24c1');
+
+    // Seed a counter at profile.prefs.deep BEFORE subscribing (RTO6 zero-value-creates
+    // counter:deep@3000), so a later grandchild update yields a single candidate path
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO24c1', [
+        buildMapSet('map:prefs@1000', 'deep', { objectId: 'counter:deep@3000' }, '50', 'remote'),
+      ]),
+    );
+    await flushAsync();
 
     const events: any[] = [];
     root.get('profile').subscribe((event: any) => events.push(event), { depth: 2 });
 
+    // Quiescence control: unlimited-depth listener at root sees every dispatch
+    const controlEvents: any[] = [];
+    root.subscribe((event: any) => controlEvents.push(event));
+
     // Self event: MAP_SET on profile (depth calc: 1-1+1=1 <= 2)
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTO24c1', [
-        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, 't:1', 'remote'),
+        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
@@ -481,16 +500,17 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     expect(events).to.have.length(2);
 
-    // Prefs MAP_SET generates event at ['profile', 'prefs'] (depth calc: 2-1+1=2 <= 2)
-    // This IS within depth 2, so it IS received
+    // Grandchild event: counter:deep at ['profile', 'prefs', 'deep'] (depth calc:
+    // 3-1+1=3 > 2) -- a single-candidate COUNTER_INC, so NOT received at depth 2
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [
-        buildMapSet('map:prefs@1000', 'theme', { string: 'light' }, 't:2', 'remote'),
-      ]),
+      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:deep@3000', 1, '101', 'remote')]),
     );
-    await flushAsync();
 
-    expect(events).to.have.length(3);
+    // Quiescence: the root control listener proves the grandchild dispatch happened
+    await pollUntil(() => controlEvents.length >= 3);
+    expect(controlEvents).to.have.length(3);
+
+    expect(events).to.have.length(2);
   });
 
   // Additional depth formula test: depth 1 at profile excludes children
@@ -503,7 +523,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // Self event: MAP_SET on profile (depth calc: 1-1+1=1 <= 1) YES
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTO24c1-d1', [
-        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, 't:1', 'remote'),
+        buildMapSet('map:profile@1000', 'email', { string: 'bob@example.com' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
@@ -525,6 +545,11 @@ describe('uts/objects/unit/path_object_subscribe', function () {
 
     const profileEvents: any[] = [];
     root.get('profile').subscribe((event: any) => profileEvents.push(event));
+    // Quiescence control: an unlimited-depth root listener covers the out-of-scope paths below,
+    // so it fires on both sends and gives us a delivery to await before asserting profileEvents
+    // is unchanged (Negative-assertion quiescence, helpers/standard_test_pool).
+    const controlEvents: any[] = [];
+    root.subscribe((event: any) => controlEvents.push(event));
 
     // Change at "score" — "profile" is not a prefix of "score"
     mockWs.active_connection!.send_to_client(
@@ -532,21 +557,27 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     );
     await flushAsync();
 
-    // Change at "name" — "profile" is not a prefix of "name"
+    // Change at "name" — "profile" is not a prefix of "name". Serial "t:1" sorts after the pool
+    // baseline "t:0", so this MAP_SET genuinely applies (with a stale sub-"t:0" serial it would be
+    // rejected and this half of the negative assertion would be vacuous).
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1-prefix', [buildMapSet('root', 'name', { string: 'Bob' }, '100', 'remote')]),
+      buildObjectMessage('test-RTO24c1-prefix', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
-    await flushAsync();
 
+    // Quiescence: await the control listener (fires for both sends) so any profileEvents callback
+    // would also have run, THEN assert the out-of-scope subscription stayed silent.
+    await pollUntil(() => controlEvents.length >= 2);
+    expect(controlEvents).to.have.length(2);
     expect(profileEvents).to.have.length(0);
   });
 
   // UTS: objects/unit/RTO24b2a/candidate-paths-map-keys-0
-  // Deviation: ably-js does not currently generate candidate paths from map update keys
-  // (RTO24b2a2). A MAP_SET on root with key "score" only fires at the root path, not at
-  // the ["score"] child path. Skip until candidate path construction includes map keys.
+  // For a LiveMapUpdate, candidate paths include pathToThis extended by each updated key
+  // (RTO24b2a2), so a MAP_SET on root key "score" fires the ["score"] child subscription
+  // (liveobject.ts candidate-path construction).
   it('RTO24b2a - candidate path construction includes map update keys', async function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't generate map-key candidate paths
     const { root, mockWs } = await setupSyncedChannel('test-RTO24b2a');
 
     const scoreEvents: any[] = [];
@@ -562,7 +593,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // Both subscriptions should fire
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTO24b2a', [
-        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, '99', 'remote'),
+        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
@@ -583,7 +614,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     root.subscribe((event: any) => events.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24b2c', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTO24b2c', [buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote')]),
     );
     await flushAsync();
 
@@ -622,12 +653,10 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTO24b2b/fires-once-per-dispatch-0
-  // Deviation: ably-js does not fire subscription events for MAP_SET with objectId values
-  // (reference changes). The test requires MAP_SET on root with key "score" pointing to a
-  // new objectId to generate candidate paths [] and ["score"], then verify only one fires.
-  // Skip until reference-change events and candidate path dedup are implemented.
+  // A MAP_SET on root key "score" pointing to a new objectId generates candidate paths [] and
+  // ["score"]; each subscription fires exactly once for the first covered candidate
+  // (pathobjectsubscriptionregister.ts notifyPathEvent).
   it('RTO24b2b - subscription fires exactly once per dispatch', async function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip(); // ably-js doesn't fire events for objectId MAP_SET
     const { root, mockWs } = await setupSyncedChannel('test-RTO24b2b');
 
     const events: any[] = [];
@@ -639,12 +668,19 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // the first candidate (pathToThis = [])
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTO24b2b', [
-        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, '99', 'remote'),
+        buildMapSet('root', 'score', { objectId: 'counter:new@2000' }, remoteSerial(0), 'remote'),
       ]),
     );
     await flushAsync();
 
-    // Exactly one event per dispatch, even though multiple candidates match
-    expect(events).to.have.length(1);
+    // Single-candidate control dispatch: COUNTER_INC on the just-created object —
+    // exactly one further event, proving delivery continued past the first dispatch
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO24b2b', [buildCounterInc('counter:new@2000', 1, '100', 'remote')]),
+    );
+    await flushAsync();
+
+    // Exactly one event per dispatch, even though the first had multiple candidates
+    expect(events).to.have.length(2);
   });
 });

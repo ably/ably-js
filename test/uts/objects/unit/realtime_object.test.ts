@@ -12,15 +12,24 @@
  * - RTO10/RTO10b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
  *   not Platform.Config.setTimeout. Tests stub Date.now and use a short
  *   gcInterval to trigger GC, then restore originals.
- * - RTO20f (siteTimeserials): _siteTimeserials is protected on LiveObject
- *   and _value is private on DefaultInstance. Test accesses via (instance as any)._value._siteTimeserials.
+ * - RTO20f (siteTimeserials): verified observably — after a local increment, a later inbound
+ *   COUNTER_INC from SITE_CODE with a non-ACK serial ("t:0:9", below the ACK serial) still applies
+ *   to 120, proving the LOCAL apply-on-ACK left siteTimeserials untouched (RTLC7c). No private access.
  * - RTO17-RTO18 scenario "re-attach after detach": ably-js channel goes through
  *   SUSPENDED (not directly to DETACHED) on server DETACHED, so this scenario
  *   is verified via a fresh setupSyncedChannel + server-initiated ATTACHED instead.
  */
 
 import { expect } from 'chai';
-import { Ably, installMockWebSocket, trackClient, restoreAll, flushAsync, enableFakeTimers } from '../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  trackClient,
+  restoreAll,
+  flushAsync,
+  enableFakeTimers,
+  pollUntil,
+} from '../../helpers';
 import * as LiveObjectsPlugin from '../../../../src/plugins/liveobjects';
 import { MockWebSocket } from '../../mock_websocket';
 import {
@@ -31,15 +40,22 @@ import {
   buildAckMessage,
   buildCounterInc,
   buildMapSet,
+  remoteSerial,
+  belowAckSerial,
   buildObjectDelete,
   STANDARD_POOL_OBJECTS,
   PM_ACTION,
   HAS_OBJECTS,
   OBJ_OP,
+  SITE_CODE,
+  ackSerial,
 } from '../helpers/standard_test_pool';
 import { DEFAULTS } from '../../../../src/plugins/liveobjects/defaults';
 
 describe('uts/objects/unit/realtime_object', function () {
+  // test:uts runs mocha with --no-config, so the shared root-hooks timeout does not apply; raise
+  // the 2s default so pollUntil's 5s quiescence deadline can elapse and fail on the real assertion.
+  this.timeout(6000);
   afterEach(function () {
     restoreAll();
   });
@@ -100,10 +116,8 @@ describe('uts/objects/unit/realtime_object', function () {
     }
   });
 
-  // UTS: objects/unit/RTO23b/get-throws-detached-0
-  // Deviation: ably-js ensureAttached() only throws 90001 for FAILED state (for DETACHED
-  // it retries attach). We use a channel ERROR PM to put channel into FAILED state.
-  it('RTO23b - get() throws on FAILED channel', async function () {
+  // UTS: objects/unit/RTO23e/get-reattaches-detached-0
+  it('RTO23e - get() re-attaches a DETACHED channel and resolves', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mockWs.active_connection = conn;
@@ -127,6 +141,11 @@ describe('uts/objects/unit/realtime_object', function () {
           mockWs.active_connection!.send_to_client(
             buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS),
           );
+        } else if (msg.action === PM_ACTION.DETACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.DETACHED,
+            channel: msg.channel,
+          });
         }
       },
     });
@@ -142,26 +161,21 @@ describe('uts/objects/unit/realtime_object', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTO23b', { modes: ['OBJECT_SUBSCRIBE'] });
+    const channel = client.channels.get('test-RTO23e-detached', { modes: ['OBJECT_SUBSCRIBE'] });
 
     // First get the channel to attached state
     await channel.object.get();
 
-    // Send a channel ERROR PM to put channel into FAILED state
-    mockWs.active_connection!.send_to_client({
-      action: PM_ACTION.ERROR,
-      channel: 'test-RTO23b',
-      error: { code: 90000, statusCode: 400, message: 'Channel error' },
-    });
+    // Detach the channel
+    await channel.detach();
     await flushAsync();
-    expect(channel.state).to.equal('failed');
+    expect(channel.state).to.equal('detached');
 
-    try {
-      await channel.object.get();
-      expect.fail('should have thrown');
-    } catch (err: any) {
-      expect(err.code).to.equal(90001);
-    }
+    // RTO23e/RTL33b: get() performs ensure-active-channel, which re-attaches the
+    // DETACHED channel and resolves with the root PathObject
+    const root = await channel.object.get();
+    expect(root.path()).to.equal('');
+    expect(channel.state).to.equal('attached');
   });
 
   // UTS: objects/unit/RTO23c/get-waits-for-synced-0
@@ -210,10 +224,7 @@ describe('uts/objects/unit/realtime_object', function () {
     const getFuture = channel.object.get();
 
     // Wait until attach is sent
-    const deadline = Date.now() + 5000;
-    while (!attachSent && Date.now() < deadline) {
-      await flushAsync();
-    }
+    await pollUntil(() => attachSent);
     expect(attachSent).to.be.true;
 
     // Now send the sync data to complete the sync
@@ -414,6 +425,17 @@ describe('uts/objects/unit/realtime_object', function () {
     // Start increment -- it will wait for sync to complete
     const incFuture = root.get('score').increment(10);
 
+    // RTO20e: while still SYNCING, the operation must not have completed and the
+    // local value must not yet reflect the increment
+    let settled = false;
+    incFuture.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await flushAsync();
+    expect(settled).to.equal(false);
+    expect(root.get('score').value()).to.equal(100);
+
     // Complete the re-sync
     mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO20e', 'sync2:', STANDARD_POOL_OBJECTS));
 
@@ -422,7 +444,7 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(root.get('score').value()).to.equal(110);
   });
 
-  // UTS: objects/unit/RTO20e1/fails-on-channel-failed-0
+  // UTS: objects/unit/RTO20e1/fails-on-channel-detached-0
   // Deviation: ably-js receiving DETACHED while ATTACHED triggers re-attach (not FAILED/SUSPENDED).
   // We use a channel ERROR PM to put the channel into FAILED state, which triggers the 92008 error.
   it('RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait', async function () {
@@ -508,10 +530,7 @@ describe('uts/objects/unit/realtime_object', function () {
     const getFuture = channel.object.get();
 
     // Wait for SYNCING event
-    const deadline = Date.now() + 5000;
-    while (events.length < 1 && Date.now() < deadline) {
-      await flushAsync();
-    }
+    await pollUntil(() => events.length >= 1);
 
     // Complete sync
     mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO17', 'sync1:', STANDARD_POOL_OBJECTS));
@@ -541,10 +560,7 @@ describe('uts/objects/unit/realtime_object', function () {
     });
     mockWs.active_connection!.send_to_client(buildObjectSyncMessage('test-RTO18d', 'sync2:', STANDARD_POOL_OBJECTS));
 
-    const deadline = Date.now() + 5000;
-    while (callCount < 2 && Date.now() < deadline) {
-      await flushAsync();
-    }
+    await pollUntil(() => callCount >= 2);
 
     expect(callCount).to.equal(2);
   });
@@ -635,11 +651,10 @@ describe('uts/objects/unit/realtime_object', function () {
     await root.get('score').increment(10);
     const scoreAfterApply = root.get('score').value();
 
-    // Send echo with the same serial that was used in the ACK
-    // setupSyncedChannel uses serial format 't:${msgSerial+1}:${i}' for ACK serials
-    // The first OBJECT message gets msgSerial 0, so ACK serial is 't:1:0'
+    // Send echo with the same serial that was used in the ACK: the first OBJECT
+    // message gets msgSerial 0, so the auto-ACK serial is ackSerial(0, 0)
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO20-echo', [buildCounterInc('counter:score@1000', 10, 't:1:0', 'test')]),
+      buildObjectMessage('test-RTO20-echo', [buildCounterInc('counter:score@1000', 10, ackSerial(0, 0), SITE_CODE)]),
     );
     await flushAsync();
     const scoreAfterEcho = root.get('score').value();
@@ -650,16 +665,21 @@ describe('uts/objects/unit/realtime_object', function () {
 
   // UTS: objects/unit/RTO20f/ack-no-site-timeserials-update-0
   it('RTO20f - Apply-on-ACK does not update siteTimeserials', async function () {
-    const { root } = await setupSyncedChannel('test-RTO20f');
-
-    const counterInstance = root.get('score').instance();
-    const siteSerialsBefore = { ...(counterInstance as any)._value._siteTimeserials };
+    const { root, mockWs } = await setupSyncedChannel('test-RTO20f');
 
     await root.get('score').increment(10);
+    expect(root.get('score').value()).to.equal(110);
 
-    const siteSerialsAfter = { ...(counterInstance as any)._value._siteTimeserials };
-
-    expect(siteSerialsAfter).to.deep.equal(siteSerialsBefore);
+    // Inbound COUNTER_INC from the same siteCode as the ACK (SITE_CODE) but with serial "t:0:9":
+    // NOT the apply-on-ACK serial (so RTO9a3 echo-dedup does not discard it), yet sorting below
+    // "t:1:0". If LOCAL had wrongly written siteTimeserials[SITE_CODE] = "t:1:0" the newness check
+    // would reject this as stale (value stays 110); if LOCAL correctly left siteTimeserials
+    // untouched (RTLC7c), SITE_CODE has no entry and the op applies, reaching 120.
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO20f', [buildCounterInc('counter:score@1000', 10, belowAckSerial(9), SITE_CODE)]),
+    );
+    await pollUntil(() => root.get('score').value() === 120);
+    expect(root.get('score').value()).to.equal(120);
   });
 
   // UTS: objects/unit/RTO20/ack-after-echo-no-double-apply-0
@@ -669,15 +689,17 @@ describe('uts/objects/unit/realtime_object', function () {
     const incFuture = root.get('score').increment(10);
 
     // Send the echo BEFORE the ACK. The serial and siteCode must match what
-    // publishAndApply will generate from the ACK: serial='ack-0:0', siteCode='test'
+    // publishAndApply will generate from the ACK: ackSerial(0, 0) and SITE_CODE
     // (from connectionDetails.siteCode in setupSyncedChannelNoAck).
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO20-ack-after-echo', [buildCounterInc('counter:score@1000', 10, 'ack-0:0', 'test')]),
+      buildObjectMessage('test-RTO20-ack-after-echo', [
+        buildCounterInc('counter:score@1000', 10, ackSerial(0, 0), SITE_CODE),
+      ]),
     );
     await flushAsync();
 
     // Now send the ACK with the same serial
-    mockWs.active_connection!.send_to_client(buildAckMessage(0, ['ack-0:0']));
+    mockWs.active_connection!.send_to_client(buildAckMessage(0, [ackSerial(0, 0)]));
 
     await incFuture;
 
@@ -703,6 +725,17 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // After re-sync, the score is back to 100 (from pool state)
     expect(root.get('score').value()).to.equal(100);
+
+    // Replay the same serial the apply-on-ACK used (ackSerial(0, 0) from
+    // setupSyncedChannel's auto-ACK, siteCode SITE_CODE). If appliedOnAckSerials was
+    // cleared per RTO5c9 this applies normally; if not, dedup (RTO9a3) would reject
+    // it and score stays 100.
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTO5c9', [buildCounterInc('counter:score@1000', 10, ackSerial(0, 0), SITE_CODE)]),
+    );
+    await flushAsync();
+
+    expect(root.get('score').value()).to.equal(110);
   });
 
   // UTS: objects/unit/RTO20/subscription-fires-on-ack-apply-0
@@ -939,10 +972,7 @@ describe('uts/objects/unit/realtime_object', function () {
       const getFuture = channel.object.get();
 
       // Wait for SYNCING
-      const deadline = Date.now() + 5000;
-      while (events.length < 1 && Date.now() < deadline) {
-        await flushAsync();
-      }
+      await pollUntil(() => events.length >= 1);
 
       mockWs.active_connection!.send_to_client(
         buildObjectSyncMessage('test-RTO17-initial', 'sync1:', STANDARD_POOL_OBJECTS),
@@ -969,10 +999,7 @@ describe('uts/objects/unit/realtime_object', function () {
         buildObjectSyncMessage('test-RTO17-resync', 'sync3:', STANDARD_POOL_OBJECTS),
       );
 
-      const deadline = Date.now() + 5000;
-      while (events.length < 2 && Date.now() < deadline) {
-        await flushAsync();
-      }
+      await pollUntil(() => events.length >= 2);
 
       expect(events).to.deep.equal(['SYNCING', 'SYNCED']);
     });
@@ -991,16 +1018,11 @@ describe('uts/objects/unit/realtime_object', function () {
         flags: 0,
       });
 
-      const deadline = Date.now() + 5000;
-      while (events.length < 1 && Date.now() < deadline) {
-        await flushAsync();
-      }
+      await pollUntil(() => events.length >= 2);
 
-      // Deviation: ably-js emits SYNCING then SYNCED even without HAS_OBJECTS
-      // because onAttached() always calls _startNewSync() (which emits SYNCING)
-      // before checking hasObjects. If no HAS_OBJECTS, it immediately calls _endSync()
-      // which emits SYNCED. So the sequence is ['SYNCING', 'SYNCED'] not just ['SYNCED'].
-      expect(events).to.include('SYNCED');
+      // RTO4c emits SYNCING on any ATTACHED; without HAS_OBJECTS the sync completes
+      // immediately (RTO4b4), so the sequence is exactly ['SYNCING', 'SYNCED']
+      expect(events).to.deep.equal(['SYNCING', 'SYNCED']);
     });
   });
 
@@ -1060,9 +1082,8 @@ describe('uts/objects/unit/realtime_object', function () {
   });
 
   // UTS: objects/unit/RTO25b/access-throws-detached-0
-  // Deviation: channel.object.get() calls ensureAttached() which re-attaches for DETACHED.
-  // RTO25 applies to PathObject/Instance access API methods (value, get, entries, etc.),
-  // which call throwIfInvalidAccessApiConfiguration(). We test via root.value() instead.
+  // Deviation: the spec reaches DETACHED via a server-initiated DETACHED PM; ably-js
+  // re-attaches on an unsolicited DETACHED (RTL13a), so the test detaches client-side.
   it('RTO25b - Access API precondition throws on DETACHED channel', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1118,7 +1139,8 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(channel.state).to.equal('detached');
 
     try {
-      root.value();
+      // keys() is a generator — the RTO25b precondition throws on first iteration
+      [...root.keys()];
       expect.fail('should have thrown');
     } catch (err: any) {
       expect(err.code).to.equal(90001);
@@ -1126,8 +1148,8 @@ describe('uts/objects/unit/realtime_object', function () {
     }
   });
 
-  // UTS: objects/unit/RTO25b/access-throws-failed-0
-  it('RTO25b - Access API precondition throws on FAILED channel', async function () {
+  // UTS: objects/unit/RTO23e/get-rejects-failed-0
+  it('RTO23e - get() on a FAILED channel rejects with 90001', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mockWs.active_connection = conn;
@@ -1167,20 +1189,35 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // Trigger attach which will fail, putting channel into FAILED state
     channel.attach();
-    await new Promise<void>((resolve) => {
-      const deadline = Date.now() + 5000;
-      const check = async () => {
-        while (channel.state !== 'failed' && Date.now() < deadline) {
-          await flushAsync();
-        }
-        resolve();
-      };
-      check();
-    });
+    await pollUntil(() => channel.state === 'failed');
     expect(channel.state).to.equal('failed');
 
     try {
       await channel.object.get();
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(90001);
+      expect(err.statusCode).to.equal(400);
+    }
+  });
+
+  // UTS: objects/unit/RTO25b/access-throws-failed-0
+  it('RTO25b - Access API precondition throws on FAILED channel', async function () {
+    // Root is obtained while ATTACHED; the channel then enters FAILED via a
+    // server-sent channel ERROR, and an access method must throw 90001
+    const { channel, root, mockWs } = await setupSyncedChannel('test-RTO25b-failed-keys');
+
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ERROR,
+      channel: 'test-RTO25b-failed-keys',
+      error: { code: 90000, statusCode: 400, message: 'Channel error' },
+    });
+    await flushAsync();
+    expect(channel.state).to.equal('failed');
+
+    try {
+      // keys() is a generator — the RTO25b precondition throws on first iteration
+      [...root.keys()];
       expect.fail('should have thrown');
     } catch (err: any) {
       expect(err.code).to.equal(90001);
@@ -1408,10 +1445,7 @@ describe('uts/objects/unit/realtime_object', function () {
       buildObjectMessage('test-RTO24a', [buildCounterInc('counter:score@1000', 5, 't:1', 'aaa')]),
     );
 
-    const deadline = Date.now() + 5000;
-    while (eventsScore.length < 1 && Date.now() < deadline) {
-      await flushAsync();
-    }
+    await pollUntil(() => eventsScore.length >= 1);
 
     // Both subscriptions are managed by the same register and both fire
     expect(eventsRoot.length).to.be.greaterThanOrEqual(1);
@@ -1425,37 +1459,32 @@ describe('uts/objects/unit/realtime_object', function () {
     const shallowEvents: any[] = [];
     const deepEvents: any[] = [];
 
-    // Subscribe at root with depth constraint -- covers root and immediate children only
-    // PathObject.subscribe(listener, options?) — listener first, options second.
-    // Deviation: ably-js depth semantics count the subscription level itself as depth 1,
-    // so depth=2 means "self + direct children" (UTS spec uses depth=1 for same meaning).
-    root.subscribe((event: any) => shallowEvents.push(event), { depth: 2 });
+    // Subscribe at root with depth 1 -- covers only the subscription's own path
+    // (relativeDepth = candidateLen - subLen + 1; a child of root is depth 2).
+    // PathObject.subscribe(listener, options?) — listener first, options second
+    // (the spec pseudocode passes options first).
+    root.subscribe((event: any) => shallowEvents.push(event), { depth: 1 });
 
     // Subscribe at root with no depth limit -- covers everything
     root.subscribe((event: any) => deepEvents.push(event));
 
-    // Update a direct child of root (path ["score"]) -- depth 1 from root
-    // Serial must be > 't:0' from standard pool
+    // MAP_SET on root itself -- candidate path is root's own path, seen by both.
+    // Serial "t:1" sorts after the pool entry timeserial "t:0" (RTLM9 string LWW).
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:score@1000', 5, 't:1', 'aaa')]),
+      buildObjectMessage('test-RTO24c1', [buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote')]),
     );
 
-    const deadline1 = Date.now() + 5000;
-    while (deepEvents.length < 1 && Date.now() < deadline1) {
-      await flushAsync();
-    }
+    // Quiescence: wait for the shallow listener itself to receive the root update
+    await pollUntil(() => shallowEvents.length >= 1);
 
-    // Update a nested object (path ["profile", "nested_counter"]) -- depth 2 from root
+    // COUNTER_INC on a direct child of root (path ["score"], depth 2) -- deep only
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:nested@1000', 1, 't:2', 'aaa')]),
+      buildObjectMessage('test-RTO24c1', [buildCounterInc('counter:score@1000', 5, 't:2', 'remote')]),
     );
 
-    const deadline2 = Date.now() + 5000;
-    while (deepEvents.length < 2 && Date.now() < deadline2) {
-      await flushAsync();
-    }
+    await pollUntil(() => deepEvents.length >= 2);
 
-    // Shallow subscription (depth 1) only sees the direct child update
+    // Shallow subscription (depth 1) only sees the update on its own path
     expect(shallowEvents.length).to.equal(1);
 
     // Deep subscription (no depth limit) sees both updates

@@ -44,10 +44,13 @@ export class ObjectsPool {
 
   /**
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
+   *
+   * @spec RTO5c2 - remove objects whose ids were not received during the sync sequence
+   * @spec RTO5c2a - the root object must never be removed (RTO3b), even if absent from the sync
    */
   deleteExtraObjectIds(objectIds: string[]): void {
     const poolObjectIds = [...this._pool.keys()];
-    const extraObjectIds = poolObjectIds.filter((x) => !objectIds.includes(x));
+    const extraObjectIds = poolObjectIds.filter((x) => !objectIds.includes(x) && x !== ROOT_OBJECT_ID);
 
     extraObjectIds.forEach((x) => this._pool.delete(x));
   }

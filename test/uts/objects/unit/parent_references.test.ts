@@ -514,7 +514,7 @@ describe('uts/objects/unit/parent_references', function () {
           'counter:score@1000',
           { aaa: 't:1' },
           {
-            counter: { count: 20 },
+            counter: { count: 0 },
             createOp: {
               action: OBJ_OP.COUNTER_CREATE,
               objectId: 'counter:score@1000',
@@ -579,7 +579,7 @@ describe('uts/objects/unit/parent_references', function () {
           'counter:orphan@1000',
           { aaa: 't:0' },
           {
-            counter: { count: 42 },
+            counter: { count: 0 },
             createOp: {
               action: OBJ_OP.COUNTER_CREATE,
               objectId: 'counter:orphan@1000',

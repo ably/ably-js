@@ -240,12 +240,12 @@ describe('uts/objects/unit/path_object', function () {
     expect(result['profile']['prefs']['theme']).to.equal('dark');
   });
 
-  // UTS: objects/unit/RTPO13b5/compact-cycle-detection-0
-  it('RTPO13b5 - compact() handles cycles via shared reference', async function () {
-    const { root, mockWs } = await setupSyncedChannel('test-RTPO13b5');
+  // UTS: objects/unit/RTPO13c5/compact-cycle-detection-0
+  it('RTPO13c5 - compact() handles cycles via shared reference', async function () {
+    const { root, mockWs } = await setupSyncedChannel('test-RTPO13c5');
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTPO13b5', [
+      buildObjectMessage('test-RTPO13c5', [
         buildMapSet('map:prefs@1000', 'back_ref', { objectId: 'map:profile@1000' }, 't:1', 'remote'),
       ]),
     );

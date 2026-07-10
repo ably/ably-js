@@ -24,6 +24,7 @@ import {
   enableFakeTimers,
   restoreAll,
   flushAsync,
+  pollUntil,
 } from '../../../helpers';
 
 describe('uts/realtime/unit/auth/auth_callback_errors', function () {
@@ -150,10 +151,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
     await clock.tickAsync(11000);
 
     // Allow promise rejections and state transitions to propagate
-    for (let i = 0; i < 10; i++) {
-      await flushAsync();
-      if (client.connection.state === 'disconnected') break;
-    }
+    await pollUntil(() => client.connection.state === 'disconnected', 1000);
 
     // RSA4c2: Connection transitioned to DISCONNECTED
     expect(client.connection.state).to.equal('disconnected');
@@ -223,10 +221,7 @@ describe('uts/realtime/unit/auth/auth_callback_errors', function () {
     mock.active_connection!.send_to_client({ action: 17 }); // AUTH
 
     // Wait for the auth callback to be called a second time (the failure)
-    for (let i = 0; i < 10; i++) {
-      await flushAsync();
-      if (authCallbackCount >= 2) break;
-    }
+    await pollUntil(() => authCallbackCount >= 2, 1000);
 
     // RSA4c3: Connection remains CONNECTED
     expect(client.connection.state).to.equal('connected');
