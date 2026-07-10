@@ -1014,10 +1014,11 @@ export interface AnyPathObject
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
 
   /**
-   * Get the specific object instance currently at this path.
-   * If the path does not resolve to any specific instance, returns `undefined`.
+   * Get an instance wrapping the value currently at this path, whether it is a
+   * {@link LiveMap}, {@link LiveCounter} or a primitive value.
+   * If the path does not resolve, returns `undefined`.
    *
-   * @returns The object instance at this path, or `undefined` if none exists.
+   * @returns An {@link Instance} wrapping the value at this path, or `undefined` if the path does not resolve.
    */
   instance<T extends Value = Value>(): Instance<T> | undefined;
 

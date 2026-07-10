@@ -133,11 +133,14 @@ describe('uts/objects/unit/path_object', function () {
     expect(mapInst!.id).to.equal('map:profile@1000');
   });
 
-  // UTS: objects/unit/RTPO8c/instance-primitive-null-0
-  it('RTPO8c - instance() returns undefined for primitive', async function () {
-    const { root } = await setupSyncedChannel('test-RTPO8c');
+  // UTS: objects/unit/RTPO8f/instance-primitive-wrapped-0
+  it('RTPO8f - instance() returns Instance for primitive', async function () {
+    const { root } = await setupSyncedChannel('test-RTPO8f');
 
-    expect(root.get('name').instance()).to.be.undefined;
+    const nameInst = root.get('name').instance();
+    expect(nameInst).to.exist;
+    expect(nameInst!.id).to.be.undefined;
+    expect(nameInst!.value()).to.equal('Alice');
   });
 
   // UTS: objects/unit/RTPO9/entries-yields-pairs-0

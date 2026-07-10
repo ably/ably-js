@@ -222,7 +222,7 @@ export class DefaultPathObject implements AnyPathObject {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
     try {
-      return this._resolveInstance();
+      return this._resolveInstance<T>();
     } catch (error) {
       if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
         // ignore path resolution errors and return undefined
@@ -419,8 +419,10 @@ export class DefaultPathObject implements AnyPathObject {
   async batch<T extends LiveObjectType = LiveObjectType>(fn: BatchFunction<T>): Promise<void> {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
-    const instance = this._resolveInstance();
-    if (!instance) {
+    // _resolveInstance now wraps primitives too (RTPO8f), so check the resolved value
+    // is a LiveObject explicitly before batching
+    const resolved = this._resolvePath(this._path);
+    if (!(resolved instanceof LiveObject)) {
       throw new this._client.ErrorInfo(
         `Cannot batch operations on a non-LiveObject at path: ${this._escapePath(this._path).join('.')}`,
         92007,
@@ -428,6 +430,7 @@ export class DefaultPathObject implements AnyPathObject {
       );
     }
 
+    const instance = new DefaultInstance(this._realtimeObject, resolved) as unknown as Instance<Value>;
     const ctx = new RootBatchContext(this._realtimeObject, instance);
     try {
       fn(ctx as unknown as BatchContext<T>);
@@ -467,16 +470,11 @@ export class DefaultPathObject implements AnyPathObject {
     return current;
   }
 
-  private _resolveInstance<T extends Value = Value>(): Instance<T> | undefined {
+  private _resolveInstance<T extends Value = Value>(): Instance<T> {
     const value = this._resolvePath(this._path);
 
-    if (value instanceof LiveObject) {
-      // only return an Instance for LiveObject values
-      return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
-    }
-
-    // return undefined for non live objects
-    return undefined;
+    // wrap the resolved value in an Instance, whether a LiveObject or a primitive (RTPO8c, RTPO8f)
+    return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
   }
 
   private _escapePath(path: Path): Path {
