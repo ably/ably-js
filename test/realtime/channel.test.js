@@ -719,7 +719,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               try {
                 expect(err.code).to.equal(40000, 'Check error code');
                 expect(err.statusCode).to.equal(400, 'Check error status code');
-                expect(err.message.includes('setOptions'), 'Check error message').to.be.ok;
+                expect(err.remediation.includes('setOptions'), 'Check error remediation points at setOptions').to.be.ok;
                 helper.closeAndFinish(done, realtime);
               } catch (err) {
                 helper.closeAndFinish(done, realtime, err);
