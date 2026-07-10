@@ -76,21 +76,36 @@ class BaseClient {
       if (!keyMatch) {
         const msg = 'invalid key parameter';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
-        throw new ErrorInfo(msg, 40400, 404);
+        throw new ErrorInfo({
+          message: msg,
+          code: 40400,
+          statusCode: 404,
+          remediation:
+            'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        });
       }
       normalOptions.keyName = keyMatch[1];
       normalOptions.keySecret = keyMatch[2];
     }
 
     if ('clientId' in normalOptions) {
-      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null))
-        throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      else if (normalOptions.clientId === '*')
-        throw new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400,
-        );
+      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null)) {
+        throw new ErrorInfo({
+          message: 'clientId must be either a string or null',
+          code: 40012,
+          statusCode: 400,
+          remediation:
+            'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
+        });
+      } else if (normalOptions.clientId === '*') {
+        throw new ErrorInfo({
+          message: 'Can’t use "*" as a clientId as that string is reserved',
+          code: 40012,
+          statusCode: 400,
+          remediation:
+            'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
+        });
+      }
     }
 
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);

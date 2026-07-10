@@ -32,6 +32,10 @@ To build the library, simply run `npm run build`. Building the library currently
 
 Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands
 
+## Coding conventions
+
+Coding conventions, including how to write `ErrorInfo` error messages and remediations, are documented in [CLAUDE.md](./CLAUDE.md).
+
 ## Test suite
 
 To run the Mocha tests, simply run the following command:

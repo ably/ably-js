@@ -4088,13 +4088,13 @@ export declare class ErrorInfo extends Error {
    */
   detail?: Record<string, string>;
   /**
-   * Actionable remediation guidance describing *how* to fix the error — distinct from
+   * Actionable guidance describing *how* to fix the error — distinct from
    * `message`, which summarises *what* went wrong. Written as prose suitable for an
    * agent or human to act on without further lookup (typically including the
    * canonical replacement call and a doc link where applicable). Present only on
    * SDK-originating errors that have meaningful remediation steps.
    */
-  hint?: string;
+  remediation?: string;
 
   /**
    * Construct an ErrorInfo object.
