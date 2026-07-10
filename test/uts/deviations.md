@@ -128,7 +128,7 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 **ably-js behavior**: `shouldFallback` only receives the error object, not response headers. The `Server` header is not inspected anywhere in the fallback decision path.
 
-**Test**: `RSC15l4 - CloudFront Server header triggers fallback`.
+**Tests**: `RSC15l4 - CloudFront Server header triggers fallback` (unit, `rest/unit/fallback.test.ts`; also skipped at integration tier in `rest/integration/proxy/rest_fallback.test.ts`).
 
 **Issue**: [#2197](https://github.com/ably/ably-js/issues/2197)
 
@@ -216,9 +216,77 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
+### objects/live_map_api: RTLM24 - clear() not implemented
+
+**Spec (RTLM24)**: `LiveMap#clear()` sends a MAP_CLEAR operation.
+
+**ably-js behavior**: `LiveMap#clear()` does not exist yet; the incoming MAP*CLEAR \_apply* path (RTLM24a-c) is implemented and tested.
+
+**Test**: `RTLM24 - clear() sends MAP_CLEAR message (not yet implemented)` — an `it.skip` placeholder in `objects/unit/live_map_api.test.ts`.
+
+---
+
 ## Adapted Deviations (tests modified to match ably-js behavior)
 
 These tests have been adapted from the UTS spec to account for ably-js API differences. The test still validates the underlying behavior but uses ably-js's actual API surface.
+
+### objects/value_types: RTLMV4b - key-type validation untranslatable to JavaScript
+
+**Spec (RTLMV4b)**: `objects/unit/RTLMV4b/evaluate-validates-keys-0` — LiveMap value type consumption validates that entry keys are strings.
+
+**ably-js behavior**: JavaScript object keys are always coerced to strings, so a non-string key cannot reach the validation. The test is omitted (the only spec Test ID without a derived test); the sibling RTLMV4a/RTLMV4c validation tests cover the reachable cases.
+
+---
+
+### objects (all files): spec `null` absent values asserted as `undefined`
+
+**Spec**: UTS spec assertions use `== null` for absent values (nonexistent keys, tombstoned entries, failed value()/instance()/size()/compact() lookups). The features spec (`objects-features.md` RTLM5d1/RTLM5d2h/RTLM5e etc.) defines these as "undefined/null", deliberately language-mapped.
+
+**ably-js behavior**: Returns `undefined`, the idiomatic JavaScript mapping.
+
+**Tests**: Systematic across `objects/unit/path_object.test.ts`, `instance.test.ts`, `live_map_api.test.ts`, `path_object_mutations.test.ts` and the `objects/integration` suites — assertions use `to.be.undefined` wherever the spec says `== null`.
+
+---
+
+### objects/live_object_subscribe: RTLC9h - missing-number COUNTER_INC not treated as noop
+
+**Spec (RTLC9h, via RTLO4b4c1)**: A COUNTER_INC whose `counterInc` carries no `number` is a noop — it must not fire subscription listeners.
+
+**ably-js behavior**: `_applyCounterInc` (`src/plugins/liveobjects/livecounter.ts`) applies `op.number` unconditionally, so a missing number becomes `NaN` and an update event fires. Related to the RTLC9 NaN deviation documented in `live_counter.test.ts`.
+
+**Test**: `objects/unit/RTLO4b4c1/noop-no-trigger-0` — adapted to use a COUNTER_CREATE for an object whose create op is already merged (RTLC8), a genuine noop in ably-js, so the RTLO4b4c1 suppression path is still exercised; the spec's follow-up control increment and `updates.length == 2` assertion are kept.
+
+---
+
+### objects/live_counter: RTLC9 / RTLC16 - missing-field counter ops applied instead of noop
+
+**Spec (RTLC9, RTLC16)**: A COUNTER_INC whose `counterInc.number` is absent is a noop (RTLC9), and a COUNTER_CREATE whose `count` is absent is a noop (RTLC16).
+
+**ably-js behavior**: `_applyCounterInc` applies the missing number as `undefined`, so the counter's data becomes `NaN` (RTLC9); a missing `count` is treated as `0` and produces a normal update (`amount: 0`) with `createOperationIsMerged = true` (RTLC16). The listener-facing side of the RTLC9 gap is the RTLC9h entry above.
+
+**Tests** (`objects/unit/live_counter.test.ts`): `RTLC9 - COUNTER_INC with missing number results in NaN (deviation: spec expects noop)`, `RTLC16 - COUNTER_CREATE with missing count defaults to 0 (deviation: spec expects noop)` — adapted to assert the applied result.
+
+---
+
+### objects/live_counter & live_map: RTLO4a / RTLC7d3 / RTLM9b / RTLM15d4 - applyOperation throws instead of returning false
+
+**Spec**: `canApplyOperation`/`applyOperation` return `false` (with a logged warning) for an empty `serial`/`siteCode` (RTLO4a), an unsupported counter action (RTLC7d3), both serials empty (RTLM9b, via the RTLO4a3/RTLM15b gate), and an unsupported map action (RTLM15d4).
+
+**ably-js behavior**: all four paths throw `ErrorInfo` 92000 at the same gate instead of returning `false` — one throw-instead-of-false family.
+
+**Tests**: `RTLO4a - canApplyOperation throws on empty serial or siteCode (deviation: spec expects false)` and `RTLC7d3 - Unsupported action throws (deviation: spec expects false)` (`live_counter.test.ts`); `RTLM9b - both serials empty rejects operation (deviation: throws on empty serial)` and `RTLM15d4 - unsupported action throws (deviation: spec expects false)` (`live_map.test.ts`) — all adapted to assert the throw.
+
+---
+
+### objects/live_counter_api: RTLC12e1 - null increment amount defaults to 1 instead of failing
+
+**Spec (RTLC12e1)**: `increment(null)` is one of the invalid-amount table rows and must fail with 40003.
+
+**ably-js behavior**: the API signature is `increment(amount?: number)` and the implementation treats null as "no argument" (`amount ?? 1`), so `increment(null)` succeeds as `increment(1)` — the null row is unreachable as an error.
+
+**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`objects/unit/live_counter_api.test.ts`) — the null row is excluded; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
+
+---
 
 ### objects/live_object_subscribe: RTLO4b4d - objectMessage exposed as `.message`
 
@@ -258,33 +326,45 @@ These tests have been adapted from the UTS spec to account for ably-js API diffe
 
 ---
 
-### objects/realtime_object: RTO25b/RTO26b - channel.object.get() re-attaches on DETACHED
+### objects/realtime_object: RTO25b - DETACHED reached via client-side detach
 
-**Spec (RTO25b/RTO26b)**: Access/write API should throw 90001 on DETACHED channel.
+**Spec (RTO25b)**: The access-precondition test reaches DETACHED via a server-initiated DETACHED protocol message.
 
-**ably-js behavior**: `channel.object.get()` calls `ensureAttached()` which re-attaches for DETACHED. The precondition check (`throwIfInvalidAccessApiConfiguration`) is on PathObject/Instance methods, not on `channel.object.get()`.
+**ably-js behavior**: An unsolicited DETACHED while ATTACHED triggers an automatic re-attach (RTL13a), so the channel never stays DETACHED. The test detaches client-side (`channel.detach()`) instead; the precondition assertion (`root.keys()` throws 90001) is unchanged.
 
-**Test**: Adapted to call `root.value()` / `root.set()` instead of `channel.object.get()` to trigger the precondition.
-
----
-
-### objects/realtime_object: RTO24c1 - depth semantics
-
-**Spec (RTO24c1)**: `depth: 1` covers "root and immediate children".
-
-**ably-js behavior**: Depth counts the subscription level itself as depth 1. So `depth: 2` means "self + direct children" (matching the spec's `depth: 1` semantics). Also, `PathObject.subscribe(listener, options?)` takes listener first, not options first.
-
-**Test**: Adapted to use `depth: 2` and correct argument order.
+Note: the former, broader entry here ("channel.object.get() re-attaches on DETACHED") retired with [specification#499](https://github.com/ably/specification/pull/499) — the re-attach behavior is now spec-mandated (RTO23e/RTL33), and RTO25b tests exercise `root.keys()`.
 
 ---
 
-### objects/instance: RTINS16e2 - MAP_SET serial must exceed entry timeserial
+### objects: PathObject.subscribe argument order
 
-**Spec (RTINS16e2)**: Tests InstanceSubscriptionEvent.message from a MAP_SET operation.
+**Spec**: pseudocode passes options first — `subscribe({ depth: n }, listener)`.
 
-**ably-js behavior**: MAP_SET uses LWW conflict resolution with string-compared serials. The test's original serial `'99'` was less than the standard pool entry timeserial `'t:0'` (since `'9' < 't'` in string ordering), causing the operation to be rejected as stale.
+**ably-js behavior**: `PathObject.subscribe(listener, options?)` takes the listener first.
 
-**Test**: Adapted to use serial `'t:1'` which sorts after `'t:0'`.
+**Tests**: All subscribe-with-options tests use the ably-js argument order. (The former depth-_semantics_ entry retired with [specification#499](https://github.com/ably/specification/pull/499), which adopted ably-js's self-counts-as-depth-1 model.)
+
+---
+
+### objects/realtime_object: RTO20e1 - channel forced to FAILED via ERROR instead of DETACHED
+
+**Spec (RTO20e1)**: If the channel enters DETACHED/SUSPENDED/FAILED while publishAndApply waits for SYNCED, the pending operation fails with 92008. The unit spec injects a DETACHED protocol message to trigger this.
+
+**ably-js behavior**: Receiving DETACHED while ATTACHED triggers an automatic re-attach (RTL13a) rather than leaving the channel in DETACHED, so the sync wait never observes the state change. The 92008 path is exercised instead by injecting a channel ERROR, which puts the channel into FAILED.
+
+**Test**: `objects/unit/RTO20e1/fails-on-channel-detached-0` (`RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait`) — adapted to inject ERROR (FAILED) instead of DETACHED. The proxy integration test `objects/proxy/RTO20e/publish-fails-on-channel-failed-0` uses the same ERROR-based sequence, which the spec itself adopted in [specification#501](https://github.com/ably/specification/pull/501).
+
+---
+
+## Spec Points Under Review (compliant, but questioned)
+
+### objects/realtime_object: RTO18d - additive listener registration is a questioned spec point
+
+**Spec (RTO18d / RTE4)**: registering the same listener instance twice for a sync-state event makes it fire twice per emission (additive registration).
+
+**ably-js behavior**: **compliant** — ably-js's `EventEmitter` is list-backed, so the same listener registered twice fires twice; `RTO18d - Duplicate listener registered twice fires twice` passes.
+
+**Why it's here**: the spec point itself is considered questionable — a listener registered twice runs identical logic, so invoking it twice for one event has no practical purpose. ably-java intentionally deviates (its core `EventEmitter` deduplicates by listener instance, firing once) and documents this as a deliberate deviation. Recorded here as a flag for spec reconsideration; ably-js is **not** changed (its behavior currently follows the spec). If the spec point is removed/relaxed, or if alignment on de-duplication is agreed, this becomes a no-op.
 
 ---
 

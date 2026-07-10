@@ -17,6 +17,7 @@ import {
   buildObjectMessage,
   buildCounterInc,
   buildMapSet,
+  remoteSerial,
   buildObjectDelete,
   OBJ_OP,
 } from '../helpers/standard_test_pool';
@@ -57,24 +58,39 @@ describe('uts/objects/unit/live_object_subscribe', function () {
 
     expect(updates).to.have.length(1);
 
-    // Second: a noop (same serial "01" from "remote" site code, empty counterInc)
+    // Second: a noop. Serial "02" passes the newness check (RTLO4a6) so the noop
+    // path itself suppresses the event, not the site-serial dedup.
+    // Deviation (RTLC9h): the spec's noop is a COUNTER_INC with no `number`, but
+    // ably-js applies missing/zero increments (NaN) instead of nooping — see
+    // deviations.md. A COUNTER_CREATE for an object whose create op is already
+    // merged (RTLC8) is a genuine noop in ably-js, so that is used to exercise
+    // the RTLO4b4c1 suppression path instead.
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTLO4b4c1', [
         {
-          serial: '01',
+          serial: '02',
           siteCode: 'remote',
           operation: {
-            action: OBJ_OP.COUNTER_INC,
+            action: OBJ_OP.COUNTER_CREATE,
             objectId: 'counter:score@1000',
-            counterInc: {},
+            counterCreate: { count: 999 },
           },
         },
       ]),
     );
     await flushAsync();
 
-    // Should still be 1 - the noop should not trigger the listener
-    expect(updates).to.have.length(1);
+    // Third: a real follow-up increment delivered through the same dispatch chain —
+    // proves delivery still works after the noop (quiescence control per spec)
+    mockWs.active_connection!.send_to_client(
+      buildObjectMessage('test-RTLO4b4c1', [buildCounterInc('counter:score@1000', 3, '03', 'remote')]),
+    );
+    await flushAsync();
+
+    // Exactly 2 events: the first inc and the follow-up inc — the noop fired nothing
+    expect(updates).to.have.length(2);
+    // The noop applied nothing: 100 from pool create + 5 + 3 from the two incs
+    expect(root.get('score').value()).to.equal(108);
   });
 
   // UTS: objects/unit/RTLO4b6/subscribe-no-side-effects-0
@@ -96,7 +112,9 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     instance.subscribe((event: any) => updates.push(event));
 
     mockWs.active_connection!.send_to_client(
-      buildObjectMessage('test-RTLO4b-map', [buildMapSet('root', 'name', { string: 'Bob' }, 't:1', 'remote')]),
+      buildObjectMessage('test-RTLO4b-map', [
+        buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(0), 'remote'),
+      ]),
     );
     await flushAsync();
 

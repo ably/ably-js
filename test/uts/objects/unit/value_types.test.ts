@@ -420,6 +420,9 @@ describe('uts/objects/unit/value_types', function () {
   // JSON values on the wire are double-encoded (JSON-stringified strings),
   // so we parse them before comparison.
   it('RTLMV4d - table-driven value type mapping via MapCreate', async function () {
+    // Each scenario performs a real publish/ACK round-trip (~150ms); the aggregate
+    // sits right at mocha's default 2s timeout, so give it explicit headroom.
+    this.timeout(30000);
     const scenarios = [
       { input: 'hello', expectedField: 'string', expectedValue: 'hello', isJson: false },
       { input: 42, expectedField: 'number', expectedValue: 42, isJson: false },

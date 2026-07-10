@@ -34,6 +34,7 @@ import {
   buildAckMessage,
   setupSyncedChannel,
   STANDARD_POOL_OBJECTS,
+  captureNotifyUpdated,
 } from '../helpers/standard_test_pool';
 
 /**
@@ -164,20 +165,19 @@ describe('uts/objects/unit/objects_pool', function () {
   });
 
   // UTS: objects/unit/RTO3/pool-init-root-0
-  it('RTO3 - pool contains root LiveMap after sync', async function () {
-    const { root } = await setupSyncedChannel('test-RTO3');
+  it('RTO3 - pool initialized with zero-value root LiveMap', async function () {
+    // No attach/sync: the pool must contain the zero-value root on initialization (RTO3b1)
+    const { channel } = await setupManualChannel('test-RTO3');
 
-    // root is a PathObject wrapping the root LiveMap
-    expect(root).to.exist;
-    expect(root.path()).to.equal('');
-    // root is a LiveMap, so value() returns undefined (RTPO7d)
-    expect(root.value()).to.be.undefined;
-    // root has entries from STANDARD_POOL_OBJECTS
-    expect(root.size()).to.equal(7);
-    // Verify root instance has objectId "root"
-    const inst = root.instance();
-    expect(inst).to.exist;
-    expect(inst!.id).to.equal('root');
+    const rto = getRealtimeObject(channel);
+    const rootMap = rto.getPool().get('root');
+
+    expect(rootMap).to.exist;
+    // esbuild may rename the class (LiveMap -> _LiveMap), so match by name
+    expect(rootMap.constructor.name).to.match(/LiveMap$/);
+    expect(rootMap.getObjectId()).to.equal('root');
+    // zero-value root: empty data (public size() avoids coupling to internal _dataRef)
+    expect(rootMap.size()).to.equal(0);
   });
 
   // UTS: objects/unit/RTO4/attached-has-objects-syncing-0
@@ -216,6 +216,12 @@ describe('uts/objects/unit/objects_pool', function () {
     const updates: any[] = [];
     root.subscribe((event: any) => updates.push(event));
 
+    // Capture the internal update passed to the root LiveMap's notifyUpdated so the
+    // spec's update-diff and objectMessage assertions (RTO4b2a) can be verified
+    const rto = getRealtimeObject(channel);
+    const rootMap = rto.getPool().get('root');
+    const capture = captureNotifyUpdated(rootMap);
+
     // Send a new ATTACHED without HAS_OBJECTS (re-attach scenario)
     mockWs.active_connection!.send_to_client({
       action: PM_ACTION.ATTACHED,
@@ -223,8 +229,8 @@ describe('uts/objects/unit/objects_pool', function () {
       flags: 0,
     });
     await flushAsync();
+    capture.restore();
 
-    const rto = getRealtimeObject(channel);
     expect(rto._state).to.equal('synced');
 
     // Root should still exist but be cleared
@@ -235,8 +241,16 @@ describe('uts/objects/unit/objects_pool', function () {
 
     // Should have received update events
     expect(updates.length).to.be.greaterThanOrEqual(1);
-    // RTO4b2a: objectMessage should not be populated on sync-completion updates
-    expect(updates[0].objectMessage).to.be.undefined;
+    // RTO4b2: the emitted LiveMapUpdate marks the cleared entries as removed
+    // (spec setup has only "name"; the standard pool root also carries "score" etc.)
+    const capturedUpdate = capture.getUpdate();
+    expect(capturedUpdate).to.exist;
+    expect(capturedUpdate.update.name).to.equal('removed');
+    expect(capturedUpdate.update.score).to.equal('removed');
+    // RTO4b2a: objectMessage is not populated on sync-completion updates.
+    // PathObject subscription events expose it as `.message` (RTLO4b4d adaptation).
+    expect(capturedUpdate.objectMessage).to.be.undefined;
+    expect(updates[0].message).to.be.undefined;
   });
 
   // UTS: objects/unit/RTO5/sync-complete-sequence-0
@@ -268,7 +282,7 @@ describe('uts/objects/unit/objects_pool', function () {
                 'counter:abc@1000',
                 { aaa: 't:0' },
                 {
-                  counter: { count: 42 },
+                  counter: { count: 0 },
                   createOp: counterCreateOp('counter:abc@1000', 42),
                 },
               ),
@@ -326,7 +340,7 @@ describe('uts/objects/unit/objects_pool', function () {
                 'counter:new@1000',
                 { aaa: 't:0' },
                 {
-                  counter: { count: 99 },
+                  counter: { count: 0 },
                   createOp: counterCreateOp('counter:new@1000', 99),
                 },
               ),
@@ -869,7 +883,7 @@ describe('uts/objects/unit/objects_pool', function () {
                 'counter:old@1000',
                 { aaa: 't:0' },
                 {
-                  counter: { count: 10 },
+                  counter: { count: 0 },
                   createOp: counterCreateOp('counter:old@1000', 10),
                 },
               ),
@@ -907,7 +921,7 @@ describe('uts/objects/unit/objects_pool', function () {
           'counter:new@1000',
           { aaa: 't:0' },
           {
-            counter: { count: 99 },
+            counter: { count: 0 },
             createOp: counterCreateOp('counter:new@1000', 99),
           },
         ),
@@ -1211,7 +1225,7 @@ describe('uts/objects/unit/objects_pool', function () {
                 'counter:abc@1000',
                 { aaa: 't:0' },
                 {
-                  counter: { count: 10 },
+                  counter: { count: 0 },
                   createOp: counterCreateOp('counter:abc@1000', 10),
                 },
               ),
@@ -1269,7 +1283,7 @@ describe('uts/objects/unit/objects_pool', function () {
           'counter:abc@1000',
           { aaa: 't:1' },
           {
-            counter: { count: 20 },
+            counter: { count: 0 },
             createOp: counterCreateOp('counter:abc@1000', 20),
           },
         ),
@@ -1323,7 +1337,7 @@ describe('uts/objects/unit/objects_pool', function () {
                 'counter:child@1000',
                 { aaa: 't:0' },
                 {
-                  counter: { count: 1 },
+                  counter: { count: 0 },
                   createOp: counterCreateOp('counter:child@1000', 1),
                 },
               ),

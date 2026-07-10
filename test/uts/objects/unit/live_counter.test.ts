@@ -256,6 +256,7 @@ describe('uts/objects/unit/live_counter', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC8-already');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
     (counter as any)._dataRef.data = 42;
     (counter as any)._createOperationIsMerged = true;
     (counter as any)._siteTimeserials = { site1: '00' };
@@ -276,6 +277,7 @@ describe('uts/objects/unit/live_counter', function () {
     // applyOperation returns true even for noop (the noop is internal to notifyUpdated)
     // The operation was "processed" (serial check passed), even if the create was skipped
     expect(result).to.equal(true);
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // UTS: objects/unit/RTLC16/counter-create-no-count-0

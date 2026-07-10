@@ -13,13 +13,10 @@
  * Deviations:
  * - RTLM15d4 (unsupported action): ably-js throws ErrorInfo (92000) rather than
  *   silently returning false. Test expects the throw.
- * - RTLM9b (both serials empty): ably-js throws on empty serial at
- *   _canApplyOperation level (before reaching entry-level check). Cannot test
- *   through normal path; tested by setting entry timeserial to empty string
- *   and calling with a different siteCode to bypass site check.
- * - RTLM24 (MAP_CLEAR): ably-js uses strict > comparison for entry removal
- *   (entrySerial < clearTimeserial), so entries with serial == clearTimeserial
- *   are KEPT. UTS spec says entries with serial <= clearTimeserial are removed.
+ * - RTLM9b (both serials empty): the spec expects applyOperation to return false
+ *   via the object-level empty-serial gate (RTLO4a3/RTLM15b); ably-js throws
+ *   ErrorInfo 92000 at that same gate instead of returning false — the same
+ *   throw-instead-of-false family as RTLM15d4 below. The test asserts the throw.
  * - RTLM7g (objectId creates zero-value): Tested via pool from channel, since
  *   standalone LiveMap needs a pool reference.
  * - RTLM14c (tombstoned ref check): Tested via protocol messages + pool, since
@@ -45,6 +42,7 @@ import {
   OBJ_OP,
   MAP_SEMANTICS_LWW,
   STANDARD_POOL_OBJECTS,
+  captureNotifyUpdated,
 } from '../helpers/standard_test_pool';
 import { LiveMap, LiveMapEntry } from '../../../../src/plugins/liveobjects/livemap';
 import { ObjectMessage } from '../../../../src/plugins/liveobjects/objectmessage';
@@ -84,23 +82,6 @@ function makeObjectMessage(client: any, values: any): ObjectMessage {
  */
 function getDataMap(map: LiveMap): Map<string, LiveMapEntry> {
   return (map as any)._dataRef.data;
-}
-
-/**
- * Helper to capture the update passed to notifyUpdated() during applyOperation().
- * Since applyOperation() returns boolean, we intercept notifyUpdated to capture the
- * internal update object for assertions on update.update, objectMessage, tombstone, etc.
- */
-function captureNotifyUpdated(map: LiveMap): { getUpdate: () => any } {
-  let capturedUpdate: any = undefined;
-  const origNotify = (map as any).notifyUpdated.bind(map);
-  (map as any).notifyUpdated = (update: any) => {
-    capturedUpdate = update;
-    origNotify(update);
-  };
-  return {
-    getUpdate: () => capturedUpdate,
-  };
 }
 
 /**
@@ -163,7 +144,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.timeserial).to.equal('01');
     expect(entry!.tombstone).to.equal(false);
     expect(result).to.equal(true);
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'updated' });
     expect(update.objectMessage).to.equal(msg);
@@ -203,7 +184,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.data).to.deep.equal({ string: 'Bob' });
     expect(entry!.timeserial).to.equal('02');
     expect(result).to.equal(true);
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'updated' });
     expect(update.objectMessage).to.equal(msg);
@@ -218,6 +199,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9-stale');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', {
       data: { string: 'Alice' },
       timeserial: '05',
@@ -239,6 +221,7 @@ describe('uts/objects/unit/live_map', function () {
 
     const entry = getDataMap(map).get('name');
     expect(entry!.data).to.deep.equal({ string: 'Alice' }); // unchanged
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -250,6 +233,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9-eq');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     getDataMap(map).set('name', {
       data: { string: 'Alice' },
       timeserial: '05',
@@ -271,6 +255,7 @@ describe('uts/objects/unit/live_map', function () {
 
     const entry = getDataMap(map).get('name');
     expect(entry!.data).to.deep.equal({ string: 'Alice' }); // unchanged
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -278,9 +263,10 @@ describe('uts/objects/unit/live_map', function () {
   // =====================================================================
 
   // UTS: objects/unit/RTLM9b/both-empty-reject-0
-  // Deviation: ably-js throws on empty serial at _canApplyOperation level.
-  // We test the entry-level check (_canApplyMapEntryOperation) by using
-  // a different siteCode so the site-level check passes.
+  // Deviation: the spec expects applyOperation to return false — the empty
+  // ObjectMessage.serial is rejected by the object-level gate (RTLO4a3/RTLM15b)
+  // before the entry-level RTLM9b comparison. ably-js throws ErrorInfo 92000 at
+  // that same gate instead of returning false (same family as RTLM15d4).
   it('RTLM9b - both serials empty rejects operation (deviation: throws on empty serial)', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9b');
 
@@ -341,7 +327,7 @@ describe('uts/objects/unit/live_map', function () {
     map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect(getDataMap(map).get('name')!.data).to.deep.equal({ string: 'Bob' });
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'updated' });
     expect(update.objectMessage).to.equal(msg);
@@ -356,6 +342,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM7h');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     (map as any)._clearTimeserial = '05';
 
     const msg = makeObjectMessage(client, {
@@ -371,6 +358,7 @@ describe('uts/objects/unit/live_map', function () {
     map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect(getDataMap(map).has('name')).to.equal(false);
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -431,7 +419,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.timeserial).to.equal('02');
     expect(entry!.tombstonedAt).to.equal(1700000000000);
     expect(result).to.equal(true);
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'removed' });
     expect(update.objectMessage).to.equal(msg);
@@ -466,7 +454,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.tombstone).to.equal(true);
     expect(entry!.tombstonedAt).to.equal(1700000000000);
     expect(result).to.equal(true);
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ ghost: 'removed' });
     expect(update.objectMessage).to.equal(msg);
@@ -481,6 +469,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM8g');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     (map as any)._clearTimeserial = '05';
     getDataMap(map).set('name', {
       data: { string: 'Alice' },
@@ -505,6 +494,7 @@ describe('uts/objects/unit/live_map', function () {
     const entry = getDataMap(map).get('name');
     expect(entry!.data).to.deep.equal({ string: 'Alice' }); // unchanged
     expect(entry!.tombstone).to.equal(false);
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -512,9 +502,6 @@ describe('uts/objects/unit/live_map', function () {
   // =====================================================================
 
   // UTS: objects/unit/RTLM24/map-clear-basic-0
-  // Deviation: ably-js uses strict > for clear comparison (entrySerial < clearTimeserial),
-  // so entries with serial == clearTimeserial are KEPT, not removed.
-  // UTS spec says entries with serial <= clearTimeserial are removed.
   it('RTLM24 - MAP_CLEAR sets clearTimeserial and removes older entries', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM24-basic');
 
@@ -554,14 +541,12 @@ describe('uts/objects/unit/live_map', function () {
     expect((map as any)._clearTimeserial).to.equal('04');
     expect(getDataMap(map).has('old')).to.equal(false); // '02' < '04'
     expect(getDataMap(map).has('new')).to.equal(true); // '06' > '04'
-    // Deviation: 'same' (serial '04') is KEPT in ably-js (strict > comparison)
-    // UTS spec expects it to be removed (serial <= clearTimeserial)
-    expect(getDataMap(map).has('same')).to.equal(true); // ably-js keeps it
-    // UTS: update.update and update.objectMessage assertions
-    // Deviation: UTS expects { old: 'removed', same: 'removed' } but ably-js only removes 'old'
+    // RTLM24e1: removal only when the clear serial is strictly greater, so 'same'
+    // (serial '04', equal to the clear serial) is KEPT
+    expect(getDataMap(map).has('same')).to.equal(true);
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
-    expect(update.update['old']).to.equal('removed');
-    expect(update.update).to.not.have.property('new');
+    expect(update.update).to.deep.equal({ old: 'removed' });
     expect(update.objectMessage).to.equal(msg);
   });
 
@@ -574,6 +559,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM24c');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     (map as any)._clearTimeserial = '10';
 
     const msg = makeObjectMessage(client, {
@@ -589,6 +575,7 @@ describe('uts/objects/unit/live_map', function () {
     map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect((map as any)._clearTimeserial).to.equal('10'); // unchanged
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -624,7 +611,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(getDataMap(map).get('removed_key')!.tombstone).to.equal(true);
     expect((map as any)._createOperationIsMerged).to.equal(true);
     expect(result).to.equal(true);
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'updated', removed_key: 'removed' });
     expect(update.objectMessage).to.equal(msg);
@@ -639,6 +626,7 @@ describe('uts/objects/unit/live_map', function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM16b');
 
     const map = createZeroMap(channel, 'map:test@1000');
+    const capture = captureNotifyUpdated(map);
     (map as any)._createOperationIsMerged = true;
     (map as any)._siteTimeserials = { site1: '00' };
 
@@ -660,6 +648,7 @@ describe('uts/objects/unit/live_map', function () {
     map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
     expect(getDataMap(map).has('name')).to.equal(false); // noop, not merged
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
   });
 
   // =====================================================================
@@ -763,7 +752,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(map.isTombstoned()).to.equal(true);
     expect(getDataMap(map).size).to.equal(0); // data cleared
     expect(result).to.equal(true);
-    // UTS: update.update, update.tombstone, and update.objectMessage assertions
+    // spec: update.update, update.tombstone, and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'removed', age: 'removed' });
     expect(update.tombstone).to.equal(true);
@@ -835,7 +824,7 @@ describe('uts/objects/unit/live_map', function () {
     // Check update diff
     expect((update as any).update['old']).to.equal('removed');
     expect((update as any).update['new']).to.equal('updated');
-    // UTS: update.objectMessage assertion
+    // spec: update.objectMessage assertion
     expect((update as any).objectMessage).to.equal(stateMsg);
   });
 
@@ -1136,7 +1125,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(entry!.data).to.deep.equal({ string: 'Alice' });
     expect(entry!.tombstone).to.equal(false);
     expect(entry!.tombstonedAt).to.be.undefined;
-    // UTS: update.update and update.objectMessage assertions
+    // spec: update.update and update.objectMessage assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ name: 'updated' });
     expect(update.objectMessage).to.equal(msg);
@@ -1186,7 +1175,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(getDataMap(map).has('before')).to.equal(false); // '03' < '05'
     expect(getDataMap(map).has('no_ts')).to.equal(false); // null < any
     expect(getDataMap(map).get('after')!.data).to.deep.equal({ string: 'b' }); // '07' > '05'
-    // UTS: update assertions
+    // spec: update assertions
     const update = capture.getUpdate();
     expect(update.update).to.have.property('before');
     expect(update.update).to.have.property('no_ts');
@@ -1275,7 +1264,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(hasParentRef(oldCounter, map, 'ref')).to.equal(false);
     // addParentReference was called on the new child
     expect(hasParentRef(newCounter, map, 'ref')).to.equal(true);
-    // UTS: update assertions
+    // spec: update assertions
     const update = capture.getUpdate();
     expect(update.update).to.deep.equal({ ref: 'updated' });
     expect(update.objectMessage).to.equal(msg);
@@ -1312,7 +1301,7 @@ describe('uts/objects/unit/live_map', function () {
     expect(getDataMap(map).get('score')!.data).to.deep.equal({ objectId: 'counter:child@1000' });
     // addParentReference was called on the child
     expect(hasParentRef(childCounter, map, 'score')).to.equal(true);
-    // UTS: update.objectMessage assertion
+    // spec: update.objectMessage assertion
     const update = capture.getUpdate();
     expect(update.objectMessage).to.equal(msg);
   });

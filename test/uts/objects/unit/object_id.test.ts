@@ -21,7 +21,7 @@ describe('uts/objects/unit/object_id', function () {
     restoreAll();
   });
 
-  // UTS: objects/unit/RTO14/format-counter-0
+  // UTS: objects/unit/RTO14/objectid-format-counter-0
   it('RTO14 - counter objectId has correct format', function () {
     const id = ObjectId.fromInitialValue(Platform, 'counter', 'test-initial-value', 'test-nonce', 1000);
     const str = id.toString();
@@ -31,7 +31,7 @@ describe('uts/objects/unit/object_id', function () {
     expect(id.hash.length).to.be.greaterThan(0);
   });
 
-  // UTS: objects/unit/RTO14/format-map-0
+  // UTS: objects/unit/RTO14/objectid-format-map-0
   it('RTO14 - map objectId has correct format', function () {
     const id = ObjectId.fromInitialValue(Platform, 'map', 'test-initial-value', 'test-nonce', 1000);
     const str = id.toString();
@@ -53,7 +53,7 @@ describe('uts/objects/unit/object_id', function () {
     expect(id1.toString()).to.not.equal(id2.toString());
   });
 
-  // UTS: objects/unit/RTO14/base64url-no-padding-0
+  // UTS: objects/unit/RTO14b/base64url-encoding-0
   it('RTO14 - hash uses base64url encoding without padding', function () {
     const id = ObjectId.fromInitialValue(Platform, 'counter', 'test-value', 'test-nonce', 3000);
     expect(id.hash).to.not.match(/[+/=]/);

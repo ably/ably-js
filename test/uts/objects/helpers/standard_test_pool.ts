@@ -45,6 +45,47 @@ export const OBJ_OP = {
 // LWW semantics (numeric)
 export const MAP_SEMANTICS_LWW = 0;
 
+/**
+ * Canonical constants (spec: helpers/standard_test_pool.md "Canonical Constants").
+ * Tests that reuse the apply-on-ACK serial/siteCode must reference these — never
+ * hardcode a literal. The ack serial must sort AFTER the standard pool's "t:0"
+ * entry timeserials under the string LWW comparison (RTLM9).
+ */
+export const SITE_CODE = 'test-site';
+
+/**
+ * The baseline timeserial every standard-pool entry/object is seeded with. Every synthetic
+ * serial below is chosen relative to this value under the lexicographic string LWW comparison
+ * (RTLM9e). The pool builder spells it out literally as 't:0' for readability.
+ */
+export const POOL_SERIAL = 't:0';
+
+export function ackSerial(msgSerial: number, i: number): string {
+  return `t:${msgSerial + 1}:${i}`;
+}
+
+/**
+ * Serial for a REMOTE inbound MAP_SET / MAP_REMOVE on an EXISTING pool entry (siteCode 'remote').
+ * Sorts AFTER POOL_SERIAL so it wins the per-entry LWW comparison (RTLM9e) — a bare number like
+ * '99' sorts BEFORE 't:0' ('9' < 't') and would be rejected as stale. 0-based: remoteSerial(0) === 't:1'.
+ * (Counter increments and other object-level ops from a fresh siteCode compare per-site, not per-entry,
+ *  so they apply regardless of serial value and need NOT use this helper.)
+ */
+export function remoteSerial(i: number): string {
+  return `t:${i + 1}`;
+}
+
+/**
+ * A serial that is NOT an ackSerial (so it escapes the RTO9a3 apply-on-ACK echo dedup) yet sorts
+ * BELOW the first ackSerial (ackSerial(0, 0) === 't:1:0'), while still after POOL_SERIAL. Used by
+ * RTO20f to prove a LOCAL apply-on-ACK left siteTimeserials untouched (RTLC7c): had the LOCAL apply
+ * wrongly recorded siteTimeserials[SITE_CODE] = 't:1:0', this lower serial would be rejected by the
+ * per-site newness check. 0-based: belowAckSerial(9) === 't:0:9'.
+ */
+export function belowAckSerial(i: number): string {
+  return `t:0:${i}`;
+}
+
 // --- Protocol message builders ---
 
 export function buildObjectSyncMessage(channel: string, channelSerial: string, objectMessages: any[]) {
@@ -357,7 +398,7 @@ export async function setupSyncedChannel(channelName: string): Promise<SyncedCha
           maxMessageSize: 65536,
           serverId: 'test-server',
           clientId: null,
-          siteCode: 'test',
+          siteCode: SITE_CODE,
           objectsGCGracePeriod: 86400000,
         },
       });
@@ -372,7 +413,7 @@ export async function setupSyncedChannel(channelName: string): Promise<SyncedCha
         });
         mockWs.active_connection!.send_to_client(buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS));
       } else if (msg.action === PM_ACTION.OBJECT) {
-        const serials = (msg.state || []).map((_: any, i: number) => `t:${msg.msgSerial + 1}:${i}`);
+        const serials = (msg.state || []).map((_: any, i: number) => ackSerial(msg.msgSerial, i));
         mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
       }
     },
@@ -409,7 +450,7 @@ export async function setupSyncedChannelNoAck(channelName: string): Promise<Sync
           maxMessageSize: 65536,
           serverId: 'test-server',
           clientId: null,
-          siteCode: 'test',
+          siteCode: SITE_CODE,
           objectsGCGracePeriod: 86400000,
         },
       });
@@ -442,4 +483,24 @@ export async function setupSyncedChannelNoAck(channelName: string): Promise<Sync
   const root = await channel.object.get();
 
   return { client, channel, root, mockWs };
+}
+
+/**
+ * Intercepts `notifyUpdated` on an internal LiveObject to capture the update diff passed during
+ * apply/sync paths (applyOperation returns only a boolean), forwarding to the original.
+ * Call `restore()` when done so the patch does not outlive the assertion it serves.
+ */
+export function captureNotifyUpdated(obj: any): { getUpdate: () => any; restore: () => void } {
+  let capturedUpdate: any = undefined;
+  const origNotify = obj.notifyUpdated.bind(obj);
+  obj.notifyUpdated = (update: any) => {
+    capturedUpdate = update;
+    origNotify(update);
+  };
+  return {
+    getUpdate: () => capturedUpdate,
+    restore: () => {
+      obj.notifyUpdated = origNotify;
+    },
+  };
 }
