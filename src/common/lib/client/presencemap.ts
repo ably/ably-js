@@ -139,7 +139,7 @@ export class PresenceMap extends EventEmitter {
     );
     /* RTP18a: a new sync replaces any sync already in progress. Exclude
      * tombstones that have already emitted their leave event. */
-    this.residualMembers = {};
+    this.residualMembers = Object.create(null) as Record<string, PresenceMessage>;
     for (const memberKey in map) {
       if (map[memberKey].action !== 'absent') {
         this.residualMembers[memberKey] = map[memberKey];
