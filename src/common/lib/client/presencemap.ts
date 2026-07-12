@@ -137,11 +137,9 @@ export class PresenceMap extends EventEmitter {
       'PresenceMap.startSync()',
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
     );
-    /* we might be called multiple times while a sync is in progress */
-    if (!this.syncInProgress) {
-      this.residualMembers = Utils.copy(map);
-      this.setInProgress(true);
-    }
+    /* RTP18a: a new sync replaces any sync already in progress */
+    this.residualMembers = Utils.copy(map);
+    this.setInProgress(true);
   }
 
   endSync() {

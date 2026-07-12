@@ -44,6 +44,7 @@ class RealtimePresence extends EventEmitter {
   _myMembers: PresenceMap;
   subscriptions: EventEmitter;
   name?: string;
+  private _syncId?: string;
 
   constructor(channel: RealtimeChannel) {
     super(channel.logger);
@@ -312,16 +313,20 @@ class RealtimePresence extends EventEmitter {
       'RealtimePresence.setPresence()',
       'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial,
     );
-    let syncCursor, match;
+    let syncId, syncCursor, match;
     const members = this.members,
       myMembers = this._myMembers,
       broadcastMessages = [],
       connId = this.channel.connectionManager.connectionId;
 
     if (isSync) {
-      this.members.startSync();
-      if (syncChannelSerial && (match = syncChannelSerial.match(/^[\w-]+:(.*)$/))) {
-        syncCursor = match[1];
+      if (syncChannelSerial && (match = syncChannelSerial.match(/^([\w-]+):(.*)$/))) {
+        syncId = match[1];
+        syncCursor = match[2];
+      }
+      if (!this.members.syncInProgress || syncId !== this._syncId) {
+        this.members.startSync();
+        this._syncId = syncId;
       }
     }
 
@@ -350,6 +355,7 @@ class RealtimePresence extends EventEmitter {
     /* if this is the last (or only) message in a sequence of sync updates, end the sync */
     if (isSync && !syncCursor) {
       members.endSync();
+      this._syncId = undefined;
       this.channel.syncChannelSerial = null;
     }
 
