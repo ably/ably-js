@@ -38,6 +38,34 @@ export type LocalDeviceFactory = ReturnType<typeof localDeviceFactory>;
 export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
 
 /**
+ * Push storage writes may be asynchronous (e.g. React Native's AsyncStorage). Several write sites
+ * sit inside synchronous state-machine code and cannot await the result, so any returned promise
+ * is made never-rejecting: failures are logged rather than propagated. Callers in asynchronous
+ * contexts may still await the returned promise to sequence after the write.
+ */
+function loggedStorageWrites(
+  client: BaseClient,
+  op: string,
+  writes: (void | Promise<void>)[],
+): void | Promise<void> {
+  const promises = writes.filter((result): result is Promise<void> => !!result && typeof result.then === 'function');
+  if (promises.length === 0) {
+    return;
+  }
+  return Promise.all(promises).then(
+    () => {},
+    (err) => {
+      client.Logger.logAction(
+        client.logger,
+        client.Logger.LOG_ERROR,
+        'Push.' + op,
+        'failed to persist push state to storage: ' + client.Utils.inspectError(err),
+      );
+    },
+  );
+}
+
+/**
  * LocalDevice extends DeviceDetails, but DeviceDetails is part of core ably-js and LocalDevice is part of the Push plugin
  * In order to avoid bundling the DeviceDetails class in both core ably-js and the plugin, the LocalDevice is exported as
  * a factory, and the DeviceDetails constructor is used to create the class declaration for LocalDevice when the plugin is
@@ -61,6 +89,12 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     static load(rest: BaseClient) {
       const device = new LocalDevice(rest);
       device.loadPersisted();
+      return device;
+    }
+
+    static async loadAsync(rest: BaseClient) {
+      const device = new LocalDevice(rest);
+      await device.loadPersistedAsync();
       return device;
     }
 
@@ -109,7 +143,50 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       }).get({ deviceId: this.id });
     }
 
+    // keep in sync with loadPersistedAsync()
     loadPersisted() {
+      const Platform = this.rest.Platform;
+      if (!Platform.Config.push) {
+        throw new this.rest.ErrorInfo({
+          message:
+            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+          code: 40000,
+          statusCode: 400,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+        });
+      }
+      if (Platform.Config.push.storageIsAsync) {
+        throw new this.rest.ErrorInfo({
+          message: 'The local device cannot be loaded synchronously: push storage on this platform is asynchronous',
+          code: 40000,
+          statusCode: 400,
+          remediation:
+            'Use await client.getDevice() instead of client.device(). device() reads storage synchronously and is deprecated.',
+        });
+      }
+      this.platform = Platform.Config.push.platform;
+      this.clientId = this.rest.auth.clientId ?? undefined;
+      this.formFactor = Platform.Config.push.formFactor;
+      // this path is only reachable with synchronous storage (async storage implies storageIsAsync,
+      // which routes callers to getDevice() and the async load path), so the reads are cast to string
+      this.id = Platform.Config.push.storage.get(persistKeys.deviceId) as string;
+
+      if (this.id) {
+        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret) as string;
+        this.deviceIdentityToken = JSON.parse(
+          (Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) as string) || 'null',
+        );
+        this.push.recipient = JSON.parse(
+          (Platform.Config.push.storage.get(persistKeys.pushRecipient) as string) || 'null',
+        );
+      } else {
+        this.resetId();
+      }
+    }
+
+    // keep in sync with loadPersisted(); awaiting a non-promise is a no-op, so this single
+    // implementation serves both synchronous (web) and asynchronous (React Native) storage
+    async loadPersistedAsync() {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
@@ -123,20 +200,20 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       this.platform = Platform.Config.push.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
       this.formFactor = Platform.Config.push.formFactor;
-      this.id = Platform.Config.push.storage.get(persistKeys.deviceId);
+      this.id = ((await Platform.Config.push.storage.get(persistKeys.deviceId)) ?? undefined) as string;
 
       if (this.id) {
-        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret);
+        this.deviceSecret = ((await Platform.Config.push.storage.get(persistKeys.deviceSecret)) ?? undefined) as string;
         this.deviceIdentityToken = JSON.parse(
-          Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) || 'null',
+          (await Platform.Config.push.storage.get(persistKeys.deviceIdentityToken)) || 'null',
         );
-        this.push.recipient = JSON.parse(Platform.Config.push.storage.get(persistKeys.pushRecipient) || 'null');
+        this.push.recipient = JSON.parse((await Platform.Config.push.storage.get(persistKeys.pushRecipient)) || 'null');
       } else {
-        this.resetId();
+        await this.resetId();
       }
     }
 
-    persist() {
+    persist(): void | Promise<void> {
       const config = this.rest.Platform.Config;
       if (!config.push) {
         throw new this.rest.ErrorInfo({
@@ -147,24 +224,26 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
+      const writes: (void | Promise<void>)[] = [];
       if (this.id) {
-        config.push.storage.set(persistKeys.deviceId, this.id);
+        writes.push(config.push.storage.set(persistKeys.deviceId, this.id));
       }
       if (this.deviceSecret) {
-        config.push.storage.set(persistKeys.deviceSecret, this.deviceSecret);
+        writes.push(config.push.storage.set(persistKeys.deviceSecret, this.deviceSecret));
       }
       if (this.deviceIdentityToken) {
-        config.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken));
+        writes.push(config.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
       }
       if (this.push.recipient) {
-        config.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient));
+        writes.push(config.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
       }
+      return loggedStorageWrites(this.rest, 'LocalDevice.persist()', writes);
     }
 
-    resetId() {
+    resetId(): void | Promise<void> {
       this.id = ulid();
       this.deviceSecret = ulid();
-      this.persist();
+      return this.persist();
     }
 
     getAuthDetails(
@@ -213,7 +292,7 @@ export class ActivationStateMachine {
     this.client = rest;
     this._pushConfig = rest.Platform.Config.push;
     this.current = new ActivationStates[
-      (this.pushConfig.storage.get(persistKeys.activationState) as ActivationStateName) || 'NotActivated'
+      ((this.pushConfig.storage.get(persistKeys.activationState) as string) as ActivationStateName) || 'NotActivated'
     ](null);
     this.pendingEvents = [];
     this.handling = false;
@@ -234,7 +313,9 @@ export class ActivationStateMachine {
 
   persist() {
     if (isPersistentState(this.current)) {
-      this.pushConfig.storage.set(persistKeys.activationState, this.current.name);
+      loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
+        this.pushConfig.storage.set(persistKeys.activationState, this.current.name),
+      ]);
     }
   }
 

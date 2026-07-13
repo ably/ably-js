@@ -1880,8 +1880,16 @@ export declare interface RestClient {
    * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
    *
    * @returns A {@link LocalDevice} object.
+   *
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage synchronously, which is not possible on platforms with asynchronous storage such as React Native. In the next major release `device()` will become asynchronous.
    */
   device(): LocalDevice;
+  /**
+   * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications, loading it from persistent storage if necessary.
+   *
+   * @returns A promise which resolves to a {@link LocalDevice} object.
+   */
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -1976,8 +1984,16 @@ export declare interface RealtimeClient {
    * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
    *
    * @returns A {@link LocalDevice} object.
+   *
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage synchronously, which is not possible on platforms with asynchronous storage such as React Native. In the next major release `device()` will become asynchronous.
    */
   device(): LocalDevice;
+  /**
+   * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications, loading it from persistent storage if necessary.
+   *
+   * @returns A promise which resolves to a {@link LocalDevice} object.
+   */
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -4008,6 +4024,7 @@ export declare class Rest implements RestClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -4068,6 +4085,7 @@ export declare class Realtime implements RealtimeClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**

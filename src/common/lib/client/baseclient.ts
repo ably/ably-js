@@ -54,6 +54,7 @@ class BaseClient {
   readonly _liveObjectsPlugin: typeof LiveObjectsPlugin | null;
   readonly logger: Logger;
   _device?: LocalDevice;
+  private _devicePromise?: Promise<LocalDevice>;
 
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
@@ -145,13 +146,40 @@ class BaseClient {
     return this.rest.push;
   }
 
-  /** RSH8 */
+  /**
+   * RSH8
+   *
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage
+   * synchronously, which is not possible on platforms with asynchronous storage such as React
+   * Native. In the next major release `device()` will become asynchronous.
+   */
   device(): LocalDevice & API.LocalDevice {
     if (!this.options.plugins?.Push || !this.push.LocalDevice) {
       throwMissingPluginError('Push');
     }
     if (!this._device) {
+      if (Platform.Config.push?.storageIsAsync) {
+        throw new ErrorInfo({
+          message: 'client.device() cannot load the local device synchronously: push storage on this platform is asynchronous',
+          code: 40000,
+          statusCode: 400,
+          remediation:
+            'Use await client.getDevice() instead. device() is deprecated and will become asynchronous in the next major release.',
+        });
+      }
       this._device = this.push.LocalDevice.load(this);
+    }
+    return this._device;
+  }
+
+  /** RSH8 */
+  async getDevice(): Promise<LocalDevice & API.LocalDevice> {
+    if (!this.options.plugins?.Push || !this.push.LocalDevice) {
+      throwMissingPluginError('Push');
+    }
+    if (!this._device) {
+      this._devicePromise ??= this.push.LocalDevice.loadAsync(this);
+      this._device = await this._devicePromise;
     }
     return this._device;
   }
