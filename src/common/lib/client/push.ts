@@ -32,9 +32,17 @@ class Push {
   constructor(client: BaseClient) {
     this.client = client;
     this.admin = new Admin(client);
-    if (Platform.Config.push && client.options.plugins?.Push) {
-      this.stateMachine = new client.options.plugins.Push.ActivationStateMachine(client);
-      this.LocalDevice = client.options.plugins.Push.localDeviceFactory(DeviceDetails);
+    const pushPlugin = client.options.plugins?.Push;
+    // a plugin may carry its own platform push config (e.g. ReactNativePush, whose storage and
+    // token acquisition are supplied by the user). The plugin cannot set the Platform singleton
+    // itself without bundling a second copy of it, so it is installed here. First plugin wins:
+    // a subsequent client with a different pushConfig keeps using the first one installed.
+    if (pushPlugin?.pushConfig && !Platform.Config.push) {
+      Platform.Config.push = pushPlugin.pushConfig;
+    }
+    if (Platform.Config.push && pushPlugin) {
+      this.stateMachine = new pushPlugin.ActivationStateMachine(client);
+      this.LocalDevice = pushPlugin.localDeviceFactory(DeviceDetails);
     }
   }
 
