@@ -12,7 +12,7 @@ import type { PaginatedResult } from 'common/lib/client/paginatedresource';
 // Keep this byte-identical to the copy in src/common/lib/client/push.ts. This plugin only
 // type-imports from common client modules, so a value import from there is not viable for the build.
 const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
-  'Run push.activate() in a browser environment with service worker support. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
+  'Run push.activate() in a browser environment with service worker support, or in React Native using the ably/react-native-push plugin. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
 
 const persistKeys = {
   deviceId: 'ably.push.deviceId',
@@ -43,11 +43,7 @@ export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
  * is made never-rejecting: failures are logged rather than propagated. Callers in asynchronous
  * contexts may still await the returned promise to sequence after the write.
  */
-function loggedStorageWrites(
-  client: BaseClient,
-  op: string,
-  writes: (void | Promise<void>)[],
-): void | Promise<void> {
+function loggedStorageWrites(client: BaseClient, op: string, writes: (void | Promise<void>)[]): void | Promise<void> {
   const promises = writes.filter((result): result is Promise<void> => !!result && typeof result.then === 'function');
   if (promises.length === 0) {
     return;
@@ -103,7 +99,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -149,7 +145,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -191,7 +187,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       if (!Platform.Config.push) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -218,7 +214,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       if (!config.push) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -297,7 +293,7 @@ export class ActivationStateMachine {
       // synchronous storage: resolve the persisted activation state immediately. With
       // asynchronous storage the state is resolved by ensureInitialized() instead.
       this.current = new ActivationStates[
-        ((this.pushConfig.storage.get(persistKeys.activationState) as string) as ActivationStateName) || 'NotActivated'
+        (this.pushConfig.storage.get(persistKeys.activationState) as string as ActivationStateName) || 'NotActivated'
       ](null);
     }
     this.pendingEvents = [];
@@ -324,7 +320,7 @@ export class ActivationStateMachine {
     if (!this._pushConfig) {
       throw new this.client.ErrorInfo({
         message:
-          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
         code: 40000,
         statusCode: 400,
         remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,

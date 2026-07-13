@@ -18,10 +18,10 @@ import type { ErrCallback } from 'common/types/utils';
 // Keep this byte-identical to the copy in src/plugins/push/pushactivation.ts. The plugin only
 // type-imports from common client modules, so a value import here is not viable for the build.
 const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
-  'Run push.activate() in a browser environment with service worker support. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
+  'Run push.activate() in a browser environment with service worker support, or in React Native using the ably/react-native-push plugin. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
 
 const PUSH_DEACTIVATION_NOT_AVAILABLE_HINT =
-  'Run push.deactivate() in a browser environment with service worker support. From a server, call client.push.admin.deviceRegistrations.remove(deviceId) to remove a device registration.';
+  'Run push.deactivate() in a browser environment with service worker support, or in React Native using the ably/react-native-push plugin. From a server, call client.push.admin.deviceRegistrations.remove(deviceId) to remove a device registration.';
 
 class Push {
   client: BaseClient;
@@ -55,7 +55,7 @@ class Push {
     if (!machine) {
       throw new ErrorInfo({
         message:
-          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
         code: 40000,
         statusCode: 400,
         remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -104,7 +104,7 @@ class Push {
     if (!machine) {
       throw new ErrorInfo({
         message:
-          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
         code: 40000,
         statusCode: 400,
         remediation: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
