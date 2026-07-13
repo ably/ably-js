@@ -46,8 +46,13 @@ interface PluginInfo {
   external?: string[];
 }
 
-const buildablePlugins: Record<'push' | 'liveobjects', PluginInfo> = {
+const buildablePlugins: Record<'push' | 'reactNativePush' | 'liveobjects', PluginInfo> = {
   push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
+  reactNativePush: {
+    description: 'ReactNativePush',
+    path: './build/react-native-push.js',
+    external: ['ulid', 'react-native'],
+  },
   liveobjects: { description: 'LiveObjects', path: './build/liveobjects.js', external: ['dequal'] },
 };
 
@@ -217,6 +222,10 @@ async function calculatePushPluginSize(): Promise<Output> {
   return calculatePluginSize(buildablePlugins.push);
 }
 
+async function calculateReactNativePushPluginSize(): Promise<Output> {
+  return calculatePluginSize(buildablePlugins.reactNativePush);
+}
+
 async function calculateLiveObjectsPluginSize(): Promise<Output> {
   return calculatePluginSize(buildablePlugins.liveobjects);
 }
@@ -321,6 +330,23 @@ async function checkPushPluginFiles() {
   return checkBundleFiles(pushPluginBundleInfo, allowedFiles, 100);
 }
 
+async function checkReactNativePushPluginFiles() {
+  const { path, external } = buildablePlugins.reactNativePush;
+  const pluginBundleInfo = getBundleInfo(path, undefined, external);
+
+  // These are the files that are allowed to contribute >= `threshold` bytes to the ReactNativePush
+  // bundle. The plugin re-exports the push plugin's state machine, so the push files appear too.
+  const allowedFiles = new Set([
+    'src/plugins/react-native-push/index.ts',
+    'src/plugins/react-native-push/getReactNativePushDeviceDetails.ts',
+    'src/plugins/push/pushchannel.ts',
+    'src/plugins/push/getW3CDeviceDetails.ts',
+    'src/plugins/push/pushactivation.ts',
+  ]);
+
+  return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
+}
+
 async function checkLiveObjectsPluginFiles() {
   const { path, external } = buildablePlugins.liveobjects;
   const pluginBundleInfo = getBundleInfo(path, undefined, external);
@@ -400,6 +426,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
       calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
       calculatePushPluginSize(),
+      calculateReactNativePushPluginSize(),
       calculateLiveObjectsPluginSize(),
     ])
   ).reduce((accum, current) => ({
@@ -409,6 +436,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
 
   output.errors.push(...(await checkBaseRealtimeFiles()));
   output.errors.push(...(await checkPushPluginFiles()));
+  output.errors.push(...(await checkReactNativePushPluginFiles()));
   output.errors.push(...(await checkLiveObjectsPluginFiles()));
 
   const table = new Table({

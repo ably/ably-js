@@ -73,7 +73,14 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push', 'build:liveobjects']);
+  grunt.registerTask('build', [
+    'webpack:all',
+    'build:browser',
+    'build:node',
+    'build:push',
+    'build:react-native-push',
+    'build:liveobjects',
+  ]);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
@@ -130,6 +137,19 @@ module.exports = function (grunt) {
       esbuild.build(esbuildConfig.pushPluginCdnConfig),
       esbuild.build(esbuildConfig.minifiedPushPluginCdnConfig),
     ])
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
+  grunt.registerTask('build:react-native-push', function () {
+    var done = this.async();
+
+    esbuild
+      .build(esbuildConfig.reactNativePushPluginConfig)
       .then(() => {
         done(true);
       })

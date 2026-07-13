@@ -30,6 +30,10 @@
       "types": "./push.d.ts",
       "import": "./build/push.js"
     },
+    "./react-native-push": {
+      "types": "./react-native-push.d.ts",
+      "default": "./build/react-native-push.js"
+    },
     "./liveobjects": {
       "import": {
         "types": "./liveobjects.d.mts",
@@ -60,6 +64,7 @@
     "promises.d.ts",
     "promises.js",
     "push.d.ts",
+    "react-native-push.d.ts",
     "resources/**",
     "src/**",
     "react/**"
@@ -183,6 +188,7 @@
     "build:react:mjs": "tsc --project src/platform/react-hooks/tsconfig.mjs.json && cp src/platform/react-hooks/res/package.mjs.json react/mjs/package.json",
     "build:react:cjs": "tsc --project src/platform/react-hooks/tsconfig.cjs.json && cp src/platform/react-hooks/res/package.cjs.json react/cjs/package.json",
     "build:push": "grunt build:push",
+    "build:react-native-push": "grunt build:react-native-push",
     "build:liveobjects": "grunt build:liveobjects",
     "requirejs": "grunt requirejs",
     "lint": "eslint .",

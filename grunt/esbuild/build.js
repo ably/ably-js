@@ -77,6 +77,17 @@ const minifiedPushPluginCdnConfig = {
   minify: true,
 };
 
+// no CDN (.umd/.umd.min) variants: there is no script-tag consumption path in React Native.
+// 'react-native' stays external so the bundle carries no native module dependency; the UMD
+// wrapper requires externals at module load, which Metro resolves statically in an RN app.
+const reactNativePushPluginConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/react-native-push/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyReactNativePushPlugin', amdNamedModule: false })],
+  outfile: 'build/react-native-push.js',
+  external: ['ulid', 'react-native'],
+};
+
 const liveObjectsPluginConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/plugins/liveobjects/index.ts'],
@@ -117,6 +128,7 @@ module.exports = {
   pushPluginConfig,
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
+  reactNativePushPluginConfig,
   liveObjectsPluginConfig,
   liveObjectsPluginEsmConfig,
   liveObjectsPluginCdnConfig,
