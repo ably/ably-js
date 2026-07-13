@@ -39,84 +39,99 @@ class Push {
   }
 
   async activate(registerCallback?: RegisterCallback, updateFailedCallback?: ErrCallback) {
-    await new Promise<void>((resolve, reject) => {
-      if (!this.client.options.plugins?.Push) {
-        reject(Utils.createMissingPluginError('Push'));
-        return;
-      }
-      if (!this.stateMachine) {
-        const err = new ErrorInfo({
-          message:
-            'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
-          code: 40000,
-          statusCode: 400,
-          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
-        });
-        reject(err);
-        return;
-      }
-      if (this.stateMachine.activatedCallback) {
-        const err = new ErrorInfo({
-          message: 'Activation already in progress',
-          code: 40000,
-          statusCode: 400,
-          remediation: 'Await the in-flight push.activate() before calling it again.',
-        });
-        reject(err);
-        return;
-      }
-      this.stateMachine.activatedCallback = (err: ErrorInfo) => {
+    const pushPlugin = this.client.options.plugins?.Push;
+    if (!pushPlugin) {
+      throw Utils.createMissingPluginError('Push');
+    }
+    const machine = this.stateMachine;
+    if (!machine) {
+      throw new ErrorInfo({
+        message:
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+        code: 40000,
+        statusCode: 400,
+        remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+      });
+    }
+    if (machine.activatedCallback) {
+      throw new ErrorInfo({
+        message: 'Activation already in progress',
+        code: 40000,
+        statusCode: 400,
+        remediation: 'Await the in-flight push.activate() before calling it again.',
+      });
+    }
+    // register the callback synchronously with the in-progress check above, so a concurrent
+    // activate() call is rejected rather than silently replacing this one's callback
+    const activated = new Promise<void>((resolve, reject) => {
+      machine.activatedCallback = (err: ErrorInfo) => {
         if (err) {
           reject(err);
           return;
         }
         resolve();
       };
-      this.stateMachine.updateFailedCallback = updateFailedCallback;
-      this.stateMachine.handleEvent(
-        new this.client.options.plugins.Push.CalledActivate(this.stateMachine, registerCallback),
-      );
+      machine.updateFailedCallback = updateFailedCallback;
     });
+    // the state machine's processEvent handlers read the local device synchronously, so the
+    // device and the persisted machine state must be hydrated before any event is dispatched
+    try {
+      await this.client.getDevice();
+      await machine.ensureInitialized();
+    } catch (err) {
+      delete machine.activatedCallback;
+      delete machine.updateFailedCallback;
+      throw err;
+    }
+    machine.handleEvent(new pushPlugin.CalledActivate(machine, registerCallback));
+    await activated;
   }
 
   async deactivate(deregisterCallback: DeregisterCallback) {
-    await new Promise<void>((resolve, reject) => {
-      if (!this.client.options.plugins?.Push) {
-        reject(Utils.createMissingPluginError('Push'));
-        return;
-      }
-      if (!this.stateMachine) {
-        const err = new ErrorInfo({
-          message:
-            'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
-          code: 40000,
-          statusCode: 400,
-          remediation: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
-        });
-        reject(err);
-        return;
-      }
-      if (this.stateMachine.deactivatedCallback) {
-        const err = new ErrorInfo({
-          message: 'Deactivation already in progress',
-          code: 40000,
-          statusCode: 400,
-          remediation: 'Await the in-flight push.deactivate() before calling it again.',
-        });
-        reject(err);
-        return;
-      }
-      this.stateMachine.deactivatedCallback = (err: ErrorInfo) => {
+    const pushPlugin = this.client.options.plugins?.Push;
+    if (!pushPlugin) {
+      throw Utils.createMissingPluginError('Push');
+    }
+    const machine = this.stateMachine;
+    if (!machine) {
+      throw new ErrorInfo({
+        message:
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+        code: 40000,
+        statusCode: 400,
+        remediation: PUSH_DEACTIVATION_NOT_AVAILABLE_HINT,
+      });
+    }
+    if (machine.deactivatedCallback) {
+      throw new ErrorInfo({
+        message: 'Deactivation already in progress',
+        code: 40000,
+        statusCode: 400,
+        remediation: 'Await the in-flight push.deactivate() before calling it again.',
+      });
+    }
+    // register the callback synchronously with the in-progress check above, so a concurrent
+    // deactivate() call is rejected rather than silently replacing this one's callback
+    const deactivated = new Promise<void>((resolve, reject) => {
+      machine.deactivatedCallback = (err: ErrorInfo) => {
         if (err) {
           reject(err);
           return;
         }
         resolve();
       };
-      this.stateMachine.handleEvent(
-        new this.client.options.plugins.Push.CalledDeactivate(this.stateMachine, deregisterCallback),
-      );
     });
+    // the state machine's processEvent handlers read the local device synchronously, so the
+    // device and the persisted machine state must be hydrated before any event is dispatched
+    try {
+      await this.client.getDevice();
+      await machine.ensureInitialized();
+    } catch (err) {
+      delete machine.deactivatedCallback;
+      throw err;
+    }
+    machine.handleEvent(new pushPlugin.CalledDeactivate(machine, deregisterCallback));
+    await deactivated;
   }
 }
 

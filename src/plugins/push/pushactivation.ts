@@ -271,7 +271,9 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
 
 export class ActivationStateMachine {
   client: BaseClient;
-  current: ActivationState;
+  // set in the constructor with synchronous storage, or by ensureInitialized() with asynchronous storage
+  current!: ActivationState;
+  private _initPromise?: Promise<void>;
   pendingEvents: ActivationEvent[];
   handling: boolean;
   deactivatedCallback?: ErrCallback;
@@ -291,11 +293,31 @@ export class ActivationStateMachine {
   constructor(rest: BaseClient) {
     this.client = rest;
     this._pushConfig = rest.Platform.Config.push;
-    this.current = new ActivationStates[
-      ((this.pushConfig.storage.get(persistKeys.activationState) as string) as ActivationStateName) || 'NotActivated'
-    ](null);
+    if (!this._pushConfig?.storageIsAsync) {
+      // synchronous storage: resolve the persisted activation state immediately. With
+      // asynchronous storage the state is resolved by ensureInitialized() instead.
+      this.current = new ActivationStates[
+        ((this.pushConfig.storage.get(persistKeys.activationState) as string) as ActivationStateName) || 'NotActivated'
+      ](null);
+    }
     this.pendingEvents = [];
     this.handling = false;
+  }
+
+  /**
+   * Resolves the persisted activation state when storage is asynchronous. Must be awaited
+   * before the first handleEvent() call; a no-op with synchronous storage, where the
+   * constructor has already resolved the state.
+   */
+  async ensureInitialized(): Promise<void> {
+    if (this.current) {
+      return;
+    }
+    this._initPromise ??= (async () => {
+      const persistedName = (await this.pushConfig.storage.get(persistKeys.activationState)) as string | null;
+      this.current = new ActivationStates[(persistedName as ActivationStateName) || 'NotActivated'](null);
+    })();
+    return this._initPromise;
   }
 
   get pushConfig() {
@@ -312,7 +334,7 @@ export class ActivationStateMachine {
   }
 
   persist() {
-    if (isPersistentState(this.current)) {
+    if (this.current && isPersistentState(this.current)) {
       loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
         this.pushConfig.storage.set(persistKeys.activationState, this.current.name),
       ]);
@@ -373,7 +395,7 @@ export class ActivationStateMachine {
   }
 
   async updateRegistration() {
-    const localDevice = this.client.device();
+    const localDevice = await this.client.getDevice();
     if (this.registerCallback) {
       this.callCustomRegisterer(localDevice, false);
     } else {
@@ -413,7 +435,7 @@ export class ActivationStateMachine {
   }
 
   async deregister() {
-    const device = this.client.device();
+    const device = await this.client.getDevice();
     if (this.deregisterCallback) {
       this.callCustomDeregisterer(device);
     } else {
@@ -424,7 +446,7 @@ export class ActivationStateMachine {
 
       if (rest.options.headers) this.client.Utils.mixin(headers, rest.options.headers);
 
-      const authDetails = this.client.device().getAuthDetails(this.client, headers, params);
+      const authDetails = device.getAuthDetails(this.client, headers, params);
 
       if (rest.options.pushFullWait) this.client.Utils.mixin(params, { fullWait: 'true' });
 
@@ -610,6 +632,11 @@ type ActivationEvent =
   | DeregistrationFailed;
 
 // States
+//
+// Invariant: processEvent() implementations are synchronous and read the local device via the
+// synchronous machine.client.device(). This relies on Push.activate()/deactivate() pre-hydrating
+// the device (await client.getDevice()) and the machine state (await ensureInitialized()) before
+// dispatching any event. Never add a device() call reachable before that hydration has happened.
 abstract class ActivationState {
   name: ActivationStateName;
 
