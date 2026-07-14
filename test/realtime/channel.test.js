@@ -2120,7 +2120,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     describe('subscribe() without subscribe mode', function () {
-      it('with strictMode:true, attach resolves but subscribe rejects with 90009 and a subscribe-mode hint', async function () {
+      it('with strictMode:true, attach resolves but subscribe rejects with 90009 and a subscribe-mode remediation', async function () {
         const helper = this.test.helper;
         const realtime = helper.AblyRealtime({ strictMode: true });
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
@@ -2135,9 +2135,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }
           expect(caught, 'expected channel.subscribe() to reject').to.exist;
           expect(caught.code).to.equal(90009);
-          expect(caught.hint).to.be.a('string');
-          expect(caught.hint).to.contain('subscribe');
-          expect(caught.hint).to.contain('ably auth keys list');
+          expect(caught.remediation).to.be.a('string');
+          expect(caught.remediation).to.contain('subscribe');
+          expect(caught.remediation).to.contain('ably auth keys list');
         }, realtime);
       });
 

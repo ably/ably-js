@@ -258,14 +258,15 @@ class RealtimePresence extends EventEmitter {
           'The channel was attached without the presence_subscribe mode, so the server has not delivered any members to this client.',
         code: 91008,
         statusCode: 400,
-        hint: 'Include "presence_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["presence_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+        remediation:
+          'Include "presence_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["presence_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
       });
       if (this.channel.client.options.strictMode === true) throw err;
       Logger.logActionNoStrip(
         this.logger,
         Logger.LOG_ERROR,
         'RealtimePresence.get()',
-        err.message + '; hint=' + err.hint + Logger.silentFailureLogSuffix(),
+        err.message + '; remediation=' + err.remediation + Logger.silentFailureLogSuffix(),
       );
     }
 

@@ -120,7 +120,7 @@ class Logger {
   /**
    * Suffix appended to the silent-failure warning emitted when `ClientOptions.strictMode` is off, so the reader knows the same call will reject with an error in a future major version.
    *
-   * The suffix is for log output only. Do not put it into `ErrorInfo.hint`. The hint is also surfaced on the error when `ClientOptions.strictMode` is enabled, where the suffix would be misleading.
+   * The suffix is for log output only. Do not put it into `ErrorInfo.remediation`. The remediation is also surfaced on the error when `ClientOptions.strictMode` is enabled, where the suffix would be misleading.
    */
   static silentFailureLogSuffix(): string {
     return ' This call currently fails silently because clientOptions.strictMode is not enabled. A future major version will change the default to true. Set clientOptions.strictMode: true to make this call reject with an error now.';

@@ -83,7 +83,7 @@ class RealtimeAnnotations {
         this.logger,
         Logger.LOG_MAJOR,
         'RealtimeAnnotations.subscribe()',
-        err.message + '; hint=' + err.hint,
+        err.message + '; remediation=' + err.remediation,
       );
       // The listener stays registered despite the throw, matching subscribe()'s existing
       // semantics: the listener is always added regardless of attach outcome.

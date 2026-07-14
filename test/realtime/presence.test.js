@@ -2503,7 +2503,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     describe('presence.get() without presence_subscribe mode', function () {
-      it('with strictMode:true, rejects with 91008 and hint naming presence_subscribe', function (done) {
+      it('with strictMode:true, rejects with 91008 and remediation naming presence_subscribe', function (done) {
         const helper = this.test.helper;
         const channelName = 'presence-get-without-mode-strict-' + String(Math.random()).slice(2);
         let realtime;
@@ -2520,9 +2520,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 try {
                   expect(err, 'expected presence.get() to reject').to.exist;
                   expect(err.code).to.equal(91008);
-                  expect(err.hint).to.be.a('string');
-                  expect(err.hint).to.contain('presence_subscribe');
-                  expect(err.hint).to.contain('ably auth keys list');
+                  expect(err.remediation).to.be.a('string');
+                  expect(err.remediation).to.contain('presence_subscribe');
+                  expect(err.remediation).to.contain('ably auth keys list');
                   helper.closeAndFinish(done, realtime);
                 } catch (assertionErr) {
                   helper.closeAndFinish(done, realtime, assertionErr);
