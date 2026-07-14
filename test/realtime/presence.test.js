@@ -2503,6 +2503,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     describe('presence.get() without presence_subscribe mode', function () {
+      /**
+       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode enabled
+       *
+       * @spec RTP11f1
+       */
       it('with strictMode:true, rejects with 91008 and remediation naming presence_subscribe', function (done) {
         const helper = this.test.helper;
         const channelName = 'presence-get-without-mode-strict-' + String(Math.random()).slice(2);
@@ -2536,6 +2541,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }
       });
 
+      /**
+       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode off (default)
+       *
+       * @specpartial RTP11f2 - doesn't verify the warning log
+       */
       it('with strictMode disabled (default), logs a warning and resolves to []', function (done) {
         const helper = this.test.helper;
         const channelName = 'presence-get-without-mode-silent-' + String(Math.random()).slice(2);

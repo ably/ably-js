@@ -2120,6 +2120,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     describe('subscribe() without subscribe mode', function () {
+      /**
+       * Subscribe on a channel attached without the subscribe mode, with strictMode enabled
+       *
+       * @specpartial RTL7i1 - doesn't verify the listener remains registered
+       */
       it('with strictMode:true, attach resolves but subscribe rejects with 90009 and a subscribe-mode remediation', async function () {
         const helper = this.test.helper;
         const realtime = helper.AblyRealtime({ strictMode: true });
@@ -2141,6 +2146,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }, realtime);
       });
 
+      /**
+       * Subscribe on a channel attached without the subscribe mode, with strictMode off (default)
+       *
+       * @specpartial RTL7i2 - doesn't verify the warning log
+       */
       it('with strictMode disabled (default), subscribe resolves and the listener is registered without server delivery', async function () {
         const helper = this.test.helper;
         const realtime = helper.AblyRealtime();
