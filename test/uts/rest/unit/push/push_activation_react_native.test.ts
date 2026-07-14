@@ -264,6 +264,32 @@ describe('push_activation_react_native', function () {
     expect(storage.dump()['ably.push.deviceId']).to.equal(device.id);
   });
 
+  it('create() rejects a storage missing required methods', function () {
+    expect(() =>
+      ReactNativePush.create({
+        storage: { getItem: async () => null } as any,
+        requestToken: async () => ({ transportType: 'fcm' as const, token: 't' }),
+      }),
+    ).to.throw(TypeError, /getItem\/setItem\/removeItem/);
+  });
+
+  it('rejects activation when requestToken returns a malformed result', async function () {
+    const captured = mockRegistrationServer();
+    const storage = new FakeAsyncStorage();
+    const client = rnClient(storage, { token: { transportType: 'web', token: '' } as any });
+
+    let thrown: any;
+    try {
+      await client.push.activate();
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).to.exist;
+    expect(thrown.code).to.equal(50000);
+    expect(thrown.message).to.match(/requestToken must return/);
+    expect(captured).to.have.length(0);
+  });
+
   it('rejects activation when requestToken fails and returns to NotActivated', async function () {
     const captured = mockRegistrationServer();
     const storage = new FakeAsyncStorage();

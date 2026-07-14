@@ -4,8 +4,8 @@ import type { ReactNativePushToken } from './index';
 /**
  * React Native equivalent of getW3CPushDeviceDetails: obtains a push token via the user-supplied
  * requestToken callback, records it as the device's push recipient and hands control back to the
- * activation state machine. Invoked by the state machine through the
- * Platform.Config.push.getPushDeviceDetails hook.
+ * activation state machine. Invoked by the state machine through the push config's
+ * getPushDeviceDetails hook.
  */
 export async function getReactNativePushDeviceDetails(
   machine: ActivationStateMachine,
@@ -13,7 +13,18 @@ export async function getReactNativePushDeviceDetails(
 ): Promise<void> {
   const { ErrorInfo } = machine.client;
   try {
-    const { transportType, token } = await requestToken();
+    const result = await requestToken();
+    if (
+      !result ||
+      (result.transportType !== 'fcm' && result.transportType !== 'apns') ||
+      typeof result.token !== 'string' ||
+      result.token.length === 0
+    ) {
+      throw new TypeError(
+        "requestToken must return { transportType: 'fcm' | 'apns', token } with a non-empty token string",
+      );
+    }
+    const { transportType, token } = result;
     const device = await machine.client.getDevice();
     device.push.recipient =
       transportType === 'apns'

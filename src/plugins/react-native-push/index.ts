@@ -49,7 +49,13 @@ function resolvePlatform(): DevicePlatform {
 }
 
 export function create(options: ReactNativePushOptions) {
-  if (!options || typeof options.storage?.getItem !== 'function' || typeof options.requestToken !== 'function') {
+  if (
+    !options ||
+    typeof options.storage?.getItem !== 'function' ||
+    typeof options.storage?.setItem !== 'function' ||
+    typeof options.storage?.removeItem !== 'function' ||
+    typeof options.requestToken !== 'function'
+  ) {
     throw new TypeError(
       'ReactNativePush.create() requires an options object with a storage implementing getItem/setItem/removeItem (e.g. @react-native-async-storage/async-storage) and a requestToken callback returning a { transportType, token } object.',
     );
