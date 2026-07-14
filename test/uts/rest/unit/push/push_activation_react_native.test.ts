@@ -23,11 +23,15 @@ const originalModuleLoad = (Module as any)._load;
 /** In-memory fake of @react-native-async-storage/async-storage. */
 class FakeAsyncStorage {
   private data = new Map<string, string>();
+  failWrites = false;
 
   async getItem(key: string): Promise<string | null> {
     return this.data.has(key) ? this.data.get(key)! : null;
   }
   async setItem(key: string, value: string): Promise<void> {
+    if (this.failWrites) {
+      throw new Error('storage unavailable');
+    }
     this.data.set(key, value);
   }
   async removeItem(key: string): Promise<void> {
@@ -188,6 +192,32 @@ describe('push_activation_react_native', function () {
     expect(storageB.dump()['ably.push.deviceId']).to.equal(bodyB.id);
     expect(storageA.dump()['ably.push.pushRecipient']).to.include('token-a');
     expect(storageB.dump()['ably.push.pushRecipient']).to.include('token-b');
+  });
+
+  it('recovers once a transient storage write failure clears', async function () {
+    const captured = mockRegistrationServer();
+    const storage = new FakeAsyncStorage();
+    storage.failWrites = true;
+    const client = rnClient(storage);
+
+    // the first activation fails while persisting the freshly generated device identifiers
+    let thrown: any;
+    try {
+      await client.push.activate();
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).to.exist;
+    expect(thrown.message).to.match(/storage unavailable/);
+    expect(captured).to.have.length(0);
+
+    // once storage works again the same client can activate: the failed device load is not cached
+    storage.failWrites = false;
+    await client.push.activate();
+    await flushAsync();
+
+    expect(captured).to.have.length(1);
+    expect(storage.dump()['ably.push.activationState']).to.equal('WaitingForNewPushDeviceDetails');
   });
 
   it('deactivates a registered device', async function () {

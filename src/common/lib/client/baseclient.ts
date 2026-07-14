@@ -190,8 +190,16 @@ class BaseClient {
       throwMissingPluginError('Push');
     }
     if (!this._device) {
-      this._devicePromise ??= this.push.LocalDevice.loadAsync(this);
-      this._device = await this._devicePromise;
+      const devicePromise = (this._devicePromise ??= this.push.LocalDevice.loadAsync(this));
+      try {
+        this._device = await devicePromise;
+      } catch (err) {
+        // drop the failed load so a later call can retry after a transient storage failure
+        if (this._devicePromise === devicePromise) {
+          this._devicePromise = undefined;
+        }
+        throw err;
+      }
     }
     return this._device;
   }

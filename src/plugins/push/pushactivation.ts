@@ -39,26 +39,26 @@ export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
 
 /**
  * Push storage writes may be asynchronous (e.g. React Native's AsyncStorage). Several write sites
- * sit inside synchronous state-machine code and cannot await the result, so any returned promise
- * is made never-rejecting: failures are logged rather than propagated. Callers in asynchronous
- * contexts may still await the returned promise to sequence after the write.
+ * sit inside synchronous state-machine code and cannot await the result, so a logging rejection
+ * handler is pre-attached: ignoring the returned promise never causes an unhandled rejection. The
+ * returned promise itself still rejects, so asynchronous callers that await persistence observe
+ * the failure.
  */
 function loggedStorageWrites(client: BaseClient, op: string, writes: (void | Promise<void>)[]): void | Promise<void> {
   const promises = writes.filter((result): result is Promise<void> => !!result && typeof result.then === 'function');
   if (promises.length === 0) {
     return;
   }
-  return Promise.all(promises).then(
-    () => {},
-    (err) => {
-      client.Logger.logAction(
-        client.logger,
-        client.Logger.LOG_ERROR,
-        'Push.' + op,
-        'failed to persist push state to storage: ' + client.Utils.inspectError(err),
-      );
-    },
-  );
+  const allWritten = Promise.all(promises).then(() => {});
+  allWritten.catch((err) => {
+    client.Logger.logAction(
+      client.logger,
+      client.Logger.LOG_ERROR,
+      'Push.' + op,
+      'failed to persist push state to storage: ' + client.Utils.inspectError(err),
+    );
+  });
+  return allWritten;
 }
 
 /**
@@ -267,6 +267,8 @@ export class ActivationStateMachine {
   // set in the constructor with synchronous storage, or by ensureInitialized() with asynchronous storage
   current!: ActivationState;
   private _initPromise?: Promise<void>;
+  // serializes asynchronous activation-state writes; see persist()
+  private _activationStateWrite: Promise<void> = Promise.resolve();
   pendingEvents: ActivationEvent[];
   handling: boolean;
   deactivatedCallback?: ErrCallback;
@@ -307,8 +309,14 @@ export class ActivationStateMachine {
       return;
     }
     this._initPromise ??= (async () => {
-      const persistedName = (await this.pushConfig.storage.get(persistKeys.activationState)) as string | null;
-      this.current = new ActivationStates[(persistedName as ActivationStateName) || 'NotActivated'](null);
+      try {
+        const persistedName = (await this.pushConfig.storage.get(persistKeys.activationState)) as string | null;
+        this.current = new ActivationStates[(persistedName as ActivationStateName) || 'NotActivated'](null);
+      } catch (err) {
+        // drop the failed read so a later activation attempt can retry after a transient storage failure
+        this._initPromise = undefined;
+        throw err;
+      }
     })();
     return this._initPromise;
   }
@@ -327,9 +335,24 @@ export class ActivationStateMachine {
   }
 
   persist() {
-    if (this.current && isPersistentState(this.current)) {
+    if (!(this.current && isPersistentState(this.current))) {
+      return;
+    }
+    const name = this.current.name;
+    if (this.pushConfig.storageIsAsync) {
+      // chain asynchronous writes so an earlier slow write cannot complete after a later
+      // transition and restore stale activation state. Failures are logged by
+      // loggedStorageWrites; the queue swallows them so subsequent writes still run.
+      this._activationStateWrite = this._activationStateWrite
+        .then(() =>
+          loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
+            this.pushConfig.storage.set(persistKeys.activationState, name),
+          ]),
+        )
+        .catch(() => {});
+    } else {
       loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
-        this.pushConfig.storage.set(persistKeys.activationState, this.current.name),
+        this.pushConfig.storage.set(persistKeys.activationState, name),
       ]);
     }
   }
