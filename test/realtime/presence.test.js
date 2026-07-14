@@ -2542,16 +2542,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /**
-       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode off (default)
+       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode off (default).
+       * The call resolves to the (empty) presence set and logs a warning naming strictMode.
        *
-       * @specpartial RTP11f2 - doesn't verify the warning log
+       * @spec RTP11f2
        */
       it('with strictMode disabled (default), logs a warning and resolves to []', function (done) {
         const helper = this.test.helper;
         const channelName = 'presence-get-without-mode-silent-' + String(Math.random()).slice(2);
+        const warnings = [];
         let realtime;
         try {
-          realtime = helper.AblyRealtime();
+          realtime = helper.AblyRealtime({
+            logLevel: 1,
+            logHandler: function (msg) {
+              if (msg.indexOf('RealtimePresence.get()') !== -1) {
+                warnings.push(msg);
+              }
+            },
+          });
           realtime.connection.on('connected', function () {
             const channel = realtime.channels.get(channelName, { modes: ['publish'] });
             Helper.whenPromiseSettles(channel.attach(), function (attachErr) {
@@ -2563,6 +2572,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 try {
                   expect(err, 'expected presence.get() not to throw with strictMode off').to.not.exist;
                   expect(members).to.deep.equal([]);
+                  expect(warnings.length).to.equal(1);
+                  expect(warnings[0]).to.contain('presence_subscribe');
+                  expect(warnings[0]).to.contain('strictMode');
                   helper.closeAndFinish(done, realtime);
                 } catch (assertionErr) {
                   helper.closeAndFinish(done, realtime, assertionErr);
