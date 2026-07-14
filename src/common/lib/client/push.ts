@@ -12,7 +12,6 @@ import type {
   LocalDeviceFactory,
   RegisterCallback,
 } from 'plugins/push/pushactivation';
-import Platform from 'common/platform';
 import type { ErrCallback } from 'common/types/utils';
 
 // Keep this byte-identical to the copy in src/plugins/push/pushactivation.ts. The plugin only
@@ -33,14 +32,10 @@ class Push {
     this.client = client;
     this.admin = new Admin(client);
     const pushPlugin = client.options.plugins?.Push;
-    // a plugin may carry its own platform push config (e.g. ReactNativePush, whose storage and
-    // token acquisition are supplied by the user). The plugin cannot set the Platform singleton
-    // itself without bundling a second copy of it, so it is installed here. First plugin wins:
-    // a subsequent client with a different pushConfig keeps using the first one installed.
-    if (pushPlugin?.pushConfig && !Platform.Config.push) {
-      Platform.Config.push = pushPlugin.pushConfig;
-    }
-    if (Platform.Config.push && pushPlugin) {
+    // client.pushConfig resolves to the plugin-carried push config (e.g. ReactNativePush, whose
+    // storage and token acquisition are supplied per client) or falls back to the platform-level
+    // Platform.Config.push (set statically on web), so each client keeps its own configuration
+    if (client.pushConfig && pushPlugin) {
       this.stateMachine = new pushPlugin.ActivationStateMachine(client);
       this.LocalDevice = pushPlugin.localDeviceFactory(DeviceDetails);
     }

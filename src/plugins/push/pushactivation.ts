@@ -95,8 +95,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     }
 
     async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>> {
-      const Platform = this.rest.Platform;
-      if (!Platform.Config.push) {
+      if (!this.rest.pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
             'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
@@ -141,8 +140,8 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
 
     // keep in sync with loadPersistedAsync()
     loadPersisted() {
-      const Platform = this.rest.Platform;
-      if (!Platform.Config.push) {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
             'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
@@ -151,7 +150,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
-      if (Platform.Config.push.storageIsAsync) {
+      if (pushConfig.storageIsAsync) {
         throw new this.rest.ErrorInfo({
           message: 'The local device cannot be loaded synchronously: push storage on this platform is asynchronous',
           code: 40000,
@@ -160,21 +159,19 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
             'Use await client.getDevice() instead of client.device(). device() reads storage synchronously and is deprecated.',
         });
       }
-      this.platform = Platform.Config.push.platform;
+      this.platform = pushConfig.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
-      this.formFactor = Platform.Config.push.formFactor;
+      this.formFactor = pushConfig.formFactor;
       // this path is only reachable with synchronous storage (async storage implies storageIsAsync,
       // which routes callers to getDevice() and the async load path), so the reads are cast to string
-      this.id = Platform.Config.push.storage.get(persistKeys.deviceId) as string;
+      this.id = pushConfig.storage.get(persistKeys.deviceId) as string;
 
       if (this.id) {
-        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret) as string;
+        this.deviceSecret = pushConfig.storage.get(persistKeys.deviceSecret) as string;
         this.deviceIdentityToken = JSON.parse(
-          (Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) as string) || 'null',
+          (pushConfig.storage.get(persistKeys.deviceIdentityToken) as string) || 'null',
         );
-        this.push.recipient = JSON.parse(
-          (Platform.Config.push.storage.get(persistKeys.pushRecipient) as string) || 'null',
-        );
+        this.push.recipient = JSON.parse((pushConfig.storage.get(persistKeys.pushRecipient) as string) || 'null');
       } else {
         this.resetId();
       }
@@ -183,8 +180,8 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
     // keep in sync with loadPersisted(); awaiting a non-promise is a no-op, so this single
     // implementation serves both synchronous (web) and asynchronous (React Native) storage
     async loadPersistedAsync() {
-      const Platform = this.rest.Platform;
-      if (!Platform.Config.push) {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
             'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
@@ -193,25 +190,25 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
-      this.platform = Platform.Config.push.platform;
+      this.platform = pushConfig.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
-      this.formFactor = Platform.Config.push.formFactor;
-      this.id = ((await Platform.Config.push.storage.get(persistKeys.deviceId)) ?? undefined) as string;
+      this.formFactor = pushConfig.formFactor;
+      this.id = ((await pushConfig.storage.get(persistKeys.deviceId)) ?? undefined) as string;
 
       if (this.id) {
-        this.deviceSecret = ((await Platform.Config.push.storage.get(persistKeys.deviceSecret)) ?? undefined) as string;
+        this.deviceSecret = ((await pushConfig.storage.get(persistKeys.deviceSecret)) ?? undefined) as string;
         this.deviceIdentityToken = JSON.parse(
-          (await Platform.Config.push.storage.get(persistKeys.deviceIdentityToken)) || 'null',
+          (await pushConfig.storage.get(persistKeys.deviceIdentityToken)) || 'null',
         );
-        this.push.recipient = JSON.parse((await Platform.Config.push.storage.get(persistKeys.pushRecipient)) || 'null');
+        this.push.recipient = JSON.parse((await pushConfig.storage.get(persistKeys.pushRecipient)) || 'null');
       } else {
         await this.resetId();
       }
     }
 
     persist(): void | Promise<void> {
-      const config = this.rest.Platform.Config;
-      if (!config.push) {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
             'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
@@ -222,16 +219,16 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       }
       const writes: (void | Promise<void>)[] = [];
       if (this.id) {
-        writes.push(config.push.storage.set(persistKeys.deviceId, this.id));
+        writes.push(pushConfig.storage.set(persistKeys.deviceId, this.id));
       }
       if (this.deviceSecret) {
-        writes.push(config.push.storage.set(persistKeys.deviceSecret, this.deviceSecret));
+        writes.push(pushConfig.storage.set(persistKeys.deviceSecret, this.deviceSecret));
       }
       if (this.deviceIdentityToken) {
-        writes.push(config.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
+        writes.push(pushConfig.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
       }
       if (this.push.recipient) {
-        writes.push(config.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
+        writes.push(pushConfig.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
       }
       return loggedStorageWrites(this.rest, 'LocalDevice.persist()', writes);
     }
@@ -288,7 +285,7 @@ export class ActivationStateMachine {
 
   constructor(rest: BaseClient) {
     this.client = rest;
-    this._pushConfig = rest.Platform.Config.push;
+    this._pushConfig = rest.pushConfig;
     if (!this._pushConfig?.storageIsAsync) {
       // synchronous storage: resolve the persisted activation state immediately. With
       // asynchronous storage the state is resolved by ensureInitialized() instead.

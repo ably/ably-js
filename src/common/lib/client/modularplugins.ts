@@ -43,8 +43,9 @@ export interface ModularPlugins {
   MessageInteractions?: typeof FilteredSubscriptions;
   // the default-export object shape, which is what consumers actually pass (both the web push
   // plugin's and ReactNativePush.create()'s objects). pushConfig is optional and carried by
-  // plugins that supply their own platform push config (e.g. ReactNativePush); the web push
-  // plugin relies on the statically-set Platform.Config.push.
+  // plugins that supply their own platform push config (e.g. ReactNativePush); it is read per
+  // client via BaseClient.pushConfig. The web push plugin relies on the statically-set
+  // Platform.Config.push fallback.
   Push?: (typeof PushPlugin)['default'] & { pushConfig?: IPlatformPushConfig };
   LiveObjects?: typeof LiveObjectsPlugin; // PC5, PT2b
 }

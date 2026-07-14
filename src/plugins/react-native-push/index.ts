@@ -71,9 +71,9 @@ export function create(options: ReactNativePushOptions) {
     },
   };
 
-  // the same shape as the default export of plugins/push, plus the pushConfig which the core
-  // installs into Platform.Config.push at client construction, so this object registers under
-  // ClientOptions.plugins.Push unchanged
+  // the same shape as the default export of plugins/push, plus a pushConfig which the client
+  // reads per instance (client.pushConfig), so this object registers under
+  // ClientOptions.plugins.Push unchanged and clients never share storage or callbacks
   return {
     ActivationStateMachine,
     localDeviceFactory,

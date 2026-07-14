@@ -18,6 +18,7 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
+import type { IPlatformPushConfig } from 'common/types/IPlatformConfig';
 import EventEmitter from '../util/eventemitter';
 import { MessageEncoding } from '../types/basemessage';
 import type * as LiveObjectsPlugin from 'plugins/liveobjects';
@@ -147,6 +148,16 @@ class BaseClient {
   }
 
   /**
+   * The effective platform push config for this client. A config carried by the client's Push
+   * plugin (e.g. ReactNativePush, whose storage and token callbacks are supplied per client)
+   * takes precedence over the platform-level Platform.Config.push (set statically on web), so
+   * multiple clients never share plugin-supplied storage or callbacks.
+   */
+  get pushConfig(): IPlatformPushConfig | undefined {
+    return this.options.plugins?.Push?.pushConfig ?? Platform.Config.push;
+  }
+
+  /**
    * RSH8
    *
    * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage
@@ -158,9 +169,10 @@ class BaseClient {
       throwMissingPluginError('Push');
     }
     if (!this._device) {
-      if (Platform.Config.push?.storageIsAsync) {
+      if (this.pushConfig?.storageIsAsync) {
         throw new ErrorInfo({
-          message: 'client.device() cannot load the local device synchronously: push storage on this platform is asynchronous',
+          message:
+            'client.device() cannot load the local device synchronously: push storage on this platform is asynchronous',
           code: 40000,
           statusCode: 400,
           remediation:

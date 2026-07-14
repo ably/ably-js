@@ -166,6 +166,30 @@ describe('push_activation_react_native', function () {
     expect(device.deviceIdentityToken).to.equal('ident-token-1');
   });
 
+  it('clients keep independent storage and token callbacks', async function () {
+    const captured = mockRegistrationServer();
+    const storageA = new FakeAsyncStorage();
+    const storageB = new FakeAsyncStorage();
+    const clientA = rnClient(storageA, { token: { transportType: 'fcm', token: 'token-a' } });
+    const clientB = rnClient(storageB, { token: { transportType: 'fcm', token: 'token-b' } });
+
+    await clientA.push.activate();
+    await clientB.push.activate();
+    await flushAsync();
+
+    expect(captured).to.have.length(2);
+    const bodyA = JSON.parse(captured[0].body);
+    const bodyB = JSON.parse(captured[1].body);
+    expect(bodyA.push.recipient.registrationToken).to.equal('token-a');
+    expect(bodyB.push.recipient.registrationToken).to.equal('token-b');
+    // each client registered its own device, persisted to its own storage
+    expect(bodyA.id).to.not.equal(bodyB.id);
+    expect(storageA.dump()['ably.push.deviceId']).to.equal(bodyA.id);
+    expect(storageB.dump()['ably.push.deviceId']).to.equal(bodyB.id);
+    expect(storageA.dump()['ably.push.pushRecipient']).to.include('token-a');
+    expect(storageB.dump()['ably.push.pushRecipient']).to.include('token-b');
+  });
+
   it('deactivates a registered device', async function () {
     const captured = mockRegistrationServer();
     const storage = new FakeAsyncStorage();
