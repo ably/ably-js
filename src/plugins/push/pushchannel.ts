@@ -111,7 +111,7 @@ class PushChannel {
     });
   }
 
-  private _getDeviceIdentityToken(device: ReturnType<BaseClient['device']>) {
+  private _getDeviceIdentityToken(device: Awaited<ReturnType<BaseClient['getDevice']>>) {
     const deviceIdentityToken = device.deviceIdentityToken;
     if (deviceIdentityToken) {
       return deviceIdentityToken;
@@ -125,7 +125,7 @@ class PushChannel {
     }
   }
 
-  private _getPushAuthHeaders(device: ReturnType<BaseClient['device']>) {
+  private _getPushAuthHeaders(device: Awaited<ReturnType<BaseClient['getDevice']>>) {
     const deviceIdentityToken = this._getDeviceIdentityToken(device);
     return { 'X-Ably-DeviceToken': deviceIdentityToken };
   }
