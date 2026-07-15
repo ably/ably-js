@@ -389,6 +389,13 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   autoConnect?: boolean;
 
   /**
+   * When `true`, operations that would otherwise fail silently, such as those gated on a channel mode, reject with an {@link ErrorInfo} whose {@link ErrorInfo.remediation | `remediation`} describes the cause and how to fix it. When `false`, the same paths emit a warning log and return their legacy silent value. The default is `false`. A future major version will make the strict behaviour unconditional.
+   *
+   * @defaultValue `false`
+   */
+  strictMode?: boolean;
+
+  /**
    * When a {@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably {@link TokenRequest | `TokenRequest`s}.
    */
   defaultTokenParams?: TokenParams;

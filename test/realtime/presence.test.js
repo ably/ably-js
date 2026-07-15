@@ -2501,5 +2501,92 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }
       });
     });
+
+    describe('presence.get() without presence_subscribe mode', function () {
+      /**
+       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode enabled
+       *
+       * @spec RTP11f1
+       */
+      it('with strictMode:true, rejects with 91008 and remediation naming presence_subscribe', function (done) {
+        const helper = this.test.helper;
+        const channelName = 'presence-get-without-mode-strict-' + String(Math.random()).slice(2);
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime({ strictMode: true });
+          realtime.connection.on('connected', function () {
+            const channel = realtime.channels.get(channelName, { modes: ['publish'] });
+            Helper.whenPromiseSettles(channel.attach(), function (attachErr) {
+              if (attachErr) {
+                helper.closeAndFinish(done, realtime, attachErr);
+                return;
+              }
+              Helper.whenPromiseSettles(channel.presence.get(), function (err) {
+                try {
+                  expect(err, 'expected presence.get() to reject').to.exist;
+                  expect(err.code).to.equal(91008);
+                  expect(err.remediation).to.be.a('string');
+                  expect(err.remediation).to.contain('presence_subscribe');
+                  expect(err.remediation).to.contain('ably auth keys list');
+                  helper.closeAndFinish(done, realtime);
+                } catch (assertionErr) {
+                  helper.closeAndFinish(done, realtime, assertionErr);
+                }
+              });
+            });
+          });
+          helper.monitorConnection(done, realtime);
+        } catch (err) {
+          helper.closeAndFinish(done, realtime, err);
+        }
+      });
+
+      /**
+       * presence.get() on a channel attached without the presence_subscribe mode, with strictMode off (default).
+       * The call resolves to the (empty) presence set and logs a warning naming strictMode.
+       *
+       * @spec RTP11f2
+       */
+      it('with strictMode disabled (default), logs a warning and resolves to []', function (done) {
+        const helper = this.test.helper;
+        const channelName = 'presence-get-without-mode-silent-' + String(Math.random()).slice(2);
+        const warnings = [];
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime({
+            logLevel: 1,
+            logHandler: function (msg) {
+              if (msg.indexOf('RealtimePresence.get()') !== -1) {
+                warnings.push(msg);
+              }
+            },
+          });
+          realtime.connection.on('connected', function () {
+            const channel = realtime.channels.get(channelName, { modes: ['publish'] });
+            Helper.whenPromiseSettles(channel.attach(), function (attachErr) {
+              if (attachErr) {
+                helper.closeAndFinish(done, realtime, attachErr);
+                return;
+              }
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
+                try {
+                  expect(err, 'expected presence.get() not to throw with strictMode off').to.not.exist;
+                  expect(members).to.deep.equal([]);
+                  expect(warnings.length).to.equal(1);
+                  expect(warnings[0]).to.contain('presence_subscribe');
+                  expect(warnings[0]).to.contain('strictMode');
+                  helper.closeAndFinish(done, realtime);
+                } catch (assertionErr) {
+                  helper.closeAndFinish(done, realtime, assertionErr);
+                }
+              });
+            });
+          });
+          helper.monitorConnection(done, realtime);
+        } catch (err) {
+          helper.closeAndFinish(done, realtime, err);
+        }
+      });
+    });
   });
 });

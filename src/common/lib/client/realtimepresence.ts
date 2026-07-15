@@ -4,6 +4,7 @@ import Logger from '../util/logger';
 import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import type { CipherOptions } from '../types/basemessage';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
+import { flags } from '../types/protocolmessagecommon';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
@@ -250,6 +251,25 @@ class RealtimePresence extends EventEmitter {
     }
 
     await this.channel.ensureAttached();
+
+    if ((this.channel._mode & flags.PRESENCE_SUBSCRIBE) === 0) {
+      const err = new ErrorInfo({
+        message:
+          'The channel was attached without the presence_subscribe mode, so the server has not delivered any members to this client.',
+        code: 91008,
+        statusCode: 400,
+        remediation:
+          'Include "presence_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["presence_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Alternatively, omit modes entirely and ensure your token/API-key capability permits subscribe on this channel. If you have the Ably CLI installed, `ably auth keys list` shows your key\'s capabilities.',
+      });
+      if (this.channel.client.options.strictMode === true) throw err;
+      Logger.logActionNoStrip(
+        this.logger,
+        Logger.LOG_ERROR,
+        'RealtimePresence.get()',
+        err.message + '; remediation=' + err.remediation + Logger.silentFailureLogSuffix(),
+      );
+    }
+
     const members = this.members;
     if (waitForSync) {
       await members.waitSync();
