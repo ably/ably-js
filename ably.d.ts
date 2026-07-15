@@ -2554,43 +2554,85 @@ export declare interface Channel {
   /**
    * Retrieves the latest version of a specific message by its serial identifier.
    *
+   * The channel must be configured to allow message updates, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
    * @param serialOrMessage - Either the serial identifier string of the message to retrieve, or a {@link Message} object containing a populated `serial` field.
    * @returns A promise which, upon success, will be fulfilled with a {@link Message} object representing the latest version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const message = await channel.getMessage(serial);
+   * ```
    */
   getMessage(serialOrMessage: string | Message): Promise<Message>;
   /**
-   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged.
+   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message replace the corresponding fields in the existing message, while null fields are left unchanged.
+   *
+   * The channel must be configured to allow message updates, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * await channel.updateMessage({ ...message, data: 'edited text' });
+   * ```
    */
   updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
+   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible.
+   *
+   * Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message replace the corresponding fields in the existing message, while null fields are left unchanged. A deleted message keeps its previous `data` unless the delete explicitly sets `data` to an empty value.
+   *
+   * The channel must be configured to allow message deletes, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.deleteMessage(message);
+   * ```
    */
   deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
    *
+   * The channel must be configured to allow message appends, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.appendMessage({ ...message, data: ' more text' });
+   * ```
    */
   appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
+   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent update, delete, or append operations.
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message versions exist only when the channel is configured to allow updating, deleting, or appending messages, enabled by a [rule](https://ably.com/docs/channels#rules).
    *
    * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
    * @param params - Optional parameters sent as part of the query string.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Message} objects representing all versions of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const versions = await channel.getMessageVersions(message);
+   * ```
    */
   getMessageVersions(
     serialOrMessage: string | Message,
@@ -2667,7 +2709,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   readonly name: string;
   /**
-   * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any.
+   * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any. This is `null` until an error occurs, for example a transition in channel state to `failed` or `suspended`. Guard against `null` despite the declared type.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#error-reason
    */
   errorReason: ErrorInfo;
   /**
@@ -2675,54 +2719,70 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   readonly state: ChannelState;
   /**
-   * Optional [channel parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) that configure the behavior of the channel.
+   * Optional channel parameters that configure the behavior of the channel. After the channel attaches this reflects the parameters the server confirmed on the most recent attach.
+   *
+   * It is `undefined` before the channel attaches for the first time, so guard against `undefined` despite the declared type.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#params
    */
   params: ChannelParams;
   /**
-   * An array of {@link ResolvedChannelMode} objects.
+   * An array of {@link ResolvedChannelMode} objects reflecting the modes the server granted on the most recent attach. The server grants only the modes the key or token capability permits, so this may be a subset of the modes requested via {@link ChannelOptions.modes}.
+   *
+   * It is `undefined` before the channel attaches for the first time. When the server grants no modes, it is also `undefined`, not an empty array. Guard against `undefined` despite the declared type.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#modes
    */
   modes: ResolvedChannelMode[];
   /**
-   * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
+   * Deregisters the given listener for the specified event name. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(event: string, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener from all event names in the array.
+   * Deregisters the given listener from all event names in the array. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(events: Array<string>, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners for the given event name.
+   * Deregisters all listeners for the given event name. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param event - The event name.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(event: string): void;
   /**
-   * Deregisters all listeners for all event names in the array.
+   * Deregisters all listeners for all event names in the array. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param events - An array of event names.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(events: Array<string>): void;
   /**
-   * Deregisters all listeners to messages on this channel that match the supplied filter.
+   * Deregisters listeners registered with the supplied {@link MessageFilter}. The filter is compared by object identity, so it must be the same object previously passed to {@link RealtimeChannel.subscribe | `subscribe()`}. A filter object not previously passed to `subscribe()` removes nothing and no error is raised. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener (for any/all event names). This removes an earlier subscription.
+   * Deregisters the given listener from all event names. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
    *
    * @param listener - An event listener function.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
+   * Deregisters all listeners to messages on this channel. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(): void;
   /**
@@ -2746,7 +2806,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   presence: RealtimePresence;
   /**
-   * A {@link PushChannel} object.
+   * A {@link PushChannel} object that manages device push notification subscriptions for this channel. Accessing this property requires the `Push` plugin to be registered via {@link ClientOptions.plugins}. The default and modular builds do not bundle the `Push` plugin. If the plugin is absent, the getter throws an {@link ErrorInfo} rather than returning a {@link PushChannel}.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#push
    */
   push: PushChannel;
   /**
@@ -2754,22 +2816,49 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   annotations: RealtimeAnnotations;
   /**
-   * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel, or `get()` is called on the `RealtimeObject` object for this channel.
+   * Attach to this channel so that messages published on it are received by any listeners registered with {@link RealtimeChannel.subscribe | `subscribe()`}. It also emits the resulting channel state change to listeners registered with `on()` or `once()`.
+   *
+   * As a convenience you need not call this directly. It is invoked implicitly by {@link RealtimeChannel.subscribe | `channel.subscribe()`}, by {@link RealtimePresence.enter | `presence.enter()`}, {@link RealtimePresence.enterClient | `presence.enterClient()`}, {@link RealtimePresence.update | `presence.update()`}, {@link RealtimePresence.updateClient | `presence.updateClient()`}, {@link RealtimePresence.subscribe | `presence.subscribe()`}, or {@link RealtimePresence.get | `presence.get()`}, by {@link RealtimeAnnotations.subscribe | `annotations.subscribe()`}, or by LiveObjects `get()`.
+   *
+   * The returned promise rejects with an {@link ErrorInfo} if the connection is in the `suspended`, `closing`, `closed`, or `failed` state. It also rejects if the channel transitions to `detaching`, `detached`, `suspended`, or `failed` instead of attaching.
    *
    * @returns A promise which, upon success, if the channel became attached will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be fulfilled with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @example
+   * ```ts
+   * await channel.attach();
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#attach
    */
   attach(): Promise<ChannelStateChange | null>;
   /**
-   * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+   * Detach from this channel. Any resulting channel state change is emitted to listeners registered with `on()` or `once()`.
+   *
+   * Detaching stops the server sending this channel's messages and any other channel traffic to the client. Locally registered listeners remain registered.
+   *
+   * Once all clients globally have detached from the channel, the channel is released in the Ably service within two minutes.
+   *
+   * Detaching from a channel in the `suspended` or `detached` state resolves without further action. Calling `detach()` on a channel in the `detaching` state does not start a second detach, and the returned promise resolves once the channel transitions to the `detached` state. Detaching from a channel in the `failed` state rejects with an {@link ErrorInfo}. Release the channel with {@link Channels.release | `release()`} and get it again with {@link Channels.get | `get()`} to start afresh.
    *
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.detach();
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#detach
    */
   detach(): Promise<void>;
   /**
-   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+   * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel.
    *
-   * @param params - A set of parameters which are used to specify which presence members should be retrieved.
+   * Messages are returned from storage only when message persistence is enabled for the channel by a [rule](https://ably.com/docs/channels#rules). If message persistence is not enabled, only messages from the last two minutes are returned.
+   *
+   * @param params - A set of parameters which are used to specify which messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.history({ limit: 25 });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#history
    */
   history(params?: RealtimeHistoryParams): Promise<PaginatedResult<InboundMessage>>;
   /**
@@ -2789,41 +2878,70 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * Sets the {@link ChannelOptions} for the channel.
    *
+   * Changing {@link ChannelOptions.modes} or {@link ChannelOptions.params} while the channel is attached or attaching re-attaches it to apply them, and the promise resolves only once the server confirms the new options. It rejects with an {@link ErrorInfo} if the channel transitions to `detached` or `failed` instead. If the channel is not attached or attaching, changed {@link ChannelOptions.modes} or {@link ChannelOptions.params} are stored and applied on the next attach. Other options, such as a cipher, take effect immediately.
+   *
+   * The promise also rejects with an {@link ErrorInfo} when the supplied options are invalid.
+   *
    * @param options - A {@link ChannelOptions} object.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.setOptions({ params: { rewind: '1' } });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#set-options
    */
   setOptions(options: ChannelOptions): Promise<void>;
   /**
-   * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+   * Registers a listener for messages with a given event name on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
-   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. The promise also resolves with `null` when {@link ChannelOptions.attachOnSubscribe} is `false`, in which case no attach is attempted. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @example
+   * ```ts
+   * await channel.subscribe('event', (message) => console.log(message.data));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#subscribe
    */
   subscribe(event: string, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel for multiple event name values.
+   * Registers a listener for messages on this channel for multiple event name values. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
-   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. The promise also resolves with `null` when {@link ChannelOptions.attachOnSubscribe} is `false`, in which case no attach is attempted. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @example
+   * ```ts
+   * await channel.subscribe(['event1', 'event2'], (message) => console.log(message.data));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#subscribe
    */
   subscribe(events: Array<string>, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
    * {@label WITH_MESSAGE_FILTER}
    *
-   * Registers a listener for messages on this channel that match the supplied filter.
+   * Registers a listener for messages on this channel that match the supplied filter. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
-   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. The promise also resolves with `null` when {@link ChannelOptions.attachOnSubscribe} is `false`, in which case no attach is attempted. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @example
+   * ```ts
+   * await channel.subscribe({ name: 'event' }, (message) => console.log(message.data));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#subscribe
    */
   subscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+   * Registers a listener for messages on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
    *
    * @param callback - An event listener function.
-   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. The promise also resolves with `null` when {@link ChannelOptions.attachOnSubscribe} is `false`, in which case no attach is attempted. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
+   * @example
+   * ```ts
+   * await channel.subscribe((message) => console.log(message.data));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#subscribe
    */
   subscribe(callback: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
@@ -2842,28 +2960,43 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(event: string, listener: messageCallback<InboundMessage>, callback: ErrorCallback): void;
   /**
-   * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
+   * Publishes a single message to the channel with the given event name and payload.
    *
    * @param name - The event name.
    * @param data - The message payload.
-   * @param options - Optional parameters sent as part of the protocol message.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * await channel.publish('event', { text: 'hello' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#publish
    */
   publish(name: string, data: any, options?: PublishOptions): Promise<PublishResult>;
   /**
-   * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+   * Publishes an array of messages to the channel.
    *
    * @param messages - An array of {@link Message} objects.
-   * @param options - Optional parameters sent as part of the protocol message.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serials of the published messages. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * await channel.publish([{ name: 'event', data: { text: 'hello' } }]);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#publish
    */
   publish(messages: Message[], options?: PublishOptions): Promise<PublishResult>;
   /**
-   * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+   * Publishes a message to the channel.
    *
    * @param message - A {@link Message} object.
-   * @param options - Optional parameters sent as part of the protocol message.
+   * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * await channel.publish({ name: 'event', data: { text: 'hello' } });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#publish
    */
   publish(message: Message, options?: PublishOptions): Promise<PublishResult>;
   /**
@@ -2882,51 +3015,103 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   publish(name: string, data: any, callback: ErrorCallback): void;
   /**
-   * If the channel is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the channel transitions to the given state.
+   * If the channel is already in the given state, resolves immediately with `null`. Otherwise resolves with the {@link ChannelStateChange} the next time the channel transitions to the given state. If the channel never transitions to the given state, the promise never settles and no error is raised.
    *
    * @param targetState - The channel state to wait for.
+   * @example
+   * ```ts
+   * const stateChange = await channel.whenState('attached');
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#when-state
    */
   whenState(targetState: ChannelState): Promise<ChannelStateChange | null>;
   /**
    * Retrieves the latest version of a specific message by its serial identifier.
    *
+   * The channel must be configured to allow message updates, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
    * @param serialOrMessage - Either the serial identifier string of the message to retrieve, or a {@link Message} object containing a populated `serial` field.
    * @returns A promise which, upon success, will be fulfilled with a {@link Message} object representing the latest version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const message = await channel.getMessage(serial);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#get-message
    */
   getMessage(serialOrMessage: string | Message): Promise<Message>;
   /**
-   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged.
+   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message replace the corresponding fields in the existing message, while null fields are left unchanged.
+   *
+   * The channel must be configured to allow message updates, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * await channel.updateMessage({ ...message, data: 'edited text' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#update-message
    */
   updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
+   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible.
+   *
+   * Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message replace the corresponding fields in the existing message, while null fields are left unchanged. A deleted message keeps its previous `data` unless the delete explicitly sets `data` to an empty value.
+   *
+   * The channel must be configured to allow message deletes, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - A {@link Message} object containing a populated `serial` field.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.deleteMessage(message);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#delete-message
    */
   deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
    * Appends data to an existing message. The supplied `data` field is appended to the previous message's data, while all other fields (`name`, `extras`) replace the previous values if provided.
    *
+   * The channel must be configured to allow message appends, enabled by a [rule](https://ably.com/docs/channels#rules).
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
    * @param message - A {@link Message} object containing a populated `serial` field and the data to append.
    * @param operation - An optional {@link MessageOperation} object containing metadata about the append operation.
    * @param options - Optional parameters to modify how the publish is made.
    * @returns A promise which, upon success, will be fulfilled with an {@link UpdateDeleteResult} object containing the serial of the new version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.appendMessage({ ...message, data: ' more text' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#append-message
    */
   appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
-   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
+   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent update, delete, or append operations.
+   *
+   * The supplied serial or {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message versions exist only when the channel is configured to allow updating, deleting, or appending messages, enabled by a [rule](https://ably.com/docs/channels#rules).
    *
    * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
    * @param params - Optional parameters sent as part of the query string.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Message} objects representing all versions of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const versions = await channel.getMessageVersions(message);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#get-message-versions
    */
   getMessageVersions(
     serialOrMessage: string | Message,
