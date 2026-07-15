@@ -218,6 +218,10 @@ export class DefaultPathObject implements AnyPathObject {
     }
   }
 
+  /**
+   * Get an Instance wrapping the value currently at this path, whether it is a LiveObject or a primitive.
+   * If the path does not resolve, returns `undefined`.
+   */
   instance<T extends Value = Value>(): Instance<T> | undefined {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
@@ -419,8 +423,7 @@ export class DefaultPathObject implements AnyPathObject {
   async batch<T extends LiveObjectType = LiveObjectType>(fn: BatchFunction<T>): Promise<void> {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
 
-    // _resolveInstance now wraps primitives too (RTPO8f), so check the resolved value
-    // is a LiveObject explicitly before batching
+    // a path may resolve to a primitive (RTPO8f), but only LiveObjects can host batch operations
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveObject)) {
       throw new this._client.ErrorInfo(
