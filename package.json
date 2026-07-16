@@ -65,6 +65,7 @@
     "promises.js",
     "push.d.ts",
     "react-native-push.d.ts",
+    "react-native-push.js",
     "resources/**",
     "src/**",
     "react/**"

@@ -67,7 +67,8 @@ describe('push_activation_react_native', function () {
 
   afterEach(function () {
     restoreAll();
-    // the Push constructor installs the plugin-supplied push config into the Platform singleton
+    // the web-style storage test below sets the global Platform.Config.push directly; reset it
+    // so it cannot leak into other tests
     Platform.Config.push = undefined;
     fakeReactNative.Platform.OS = 'android';
   });
@@ -238,6 +239,10 @@ describe('push_activation_react_native', function () {
     expect(persisted['ably.push.activationState']).to.equal('NotActivated');
     // the device id is reset so the deregistered identity is not reused
     expect(persisted['ably.push.deviceId']).to.not.equal(captured[1].params?.deviceId);
+    // the deregistered identity token and recipient are removed from storage, not just from the
+    // in-memory device, so a later load cannot resurrect them
+    expect(persisted).to.not.have.property('ably.push.deviceIdentityToken');
+    expect(persisted).to.not.have.property('ably.push.pushRecipient');
   });
 
   it('device() throws before hydration and returns the cached device after getDevice()', async function () {

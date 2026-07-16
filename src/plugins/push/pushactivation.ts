@@ -859,8 +859,11 @@ class WaitingForDeregistration extends ActivationState {
       const device = machine.client.device();
       delete device.deviceIdentityToken;
       delete device.push.recipient;
+      loggedStorageWrites(machine.client, 'WaitingForDeregistration.processEvent()', [
+        machine.pushConfig.storage.remove(persistKeys.deviceIdentityToken),
+        machine.pushConfig.storage.remove(persistKeys.pushRecipient),
+      ]);
       device.resetId();
-      device.persist();
       machine.callDeactivatedCallback(null);
       return new NotActivated();
     } else if (event instanceof DeregistrationFailed) {
