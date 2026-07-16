@@ -445,6 +445,38 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(root.get('score').value()).to.equal(110);
   });
 
+  // UTS: objects/unit/RTO20e1/fails-on-channel-detached-0
+  it('RTO20e1 - publishAndApply fails when channel enters DETACHED during sync wait', async function () {
+    const { channel, root, mockWs } = await setupSyncedChannel('test-RTO20e1-detached');
+
+    // Trigger re-sync (state becomes SYNCING)
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ATTACHED,
+      channel: 'test-RTO20e1-detached',
+      channelSerial: 'sync2:cursor',
+      flags: HAS_OBJECTS,
+    });
+    await flushAsync();
+
+    // Start increment — publish() will succeed (auto-ACK from setupSyncedChannel),
+    // but publishAndApply waits for sync to complete.
+    const incPromise = root.get('score').increment(10);
+
+    // Give the ACK time to be processed and publishAndApply to register its listener
+    await flushAsync();
+
+    // Detach the channel client-side (an unsolicited server DETACHED would trigger an
+    // RTL13a re-attach); the shared mock answers the outbound DETACH with DETACHED
+    await channel.detach();
+
+    try {
+      await incPromise;
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(92008);
+    }
+  });
+
   // UTS: objects/unit/RTO20e1/fails-on-channel-failed-0
   it('RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTO20e1');

@@ -415,6 +415,11 @@ export async function setupSyncedChannel(channelName: string): Promise<SyncedCha
       } else if (msg.action === PM_ACTION.OBJECT) {
         const serials = (msg.state || []).map((_: any, i: number) => ackSerial(msg.msgSerial, i));
         mockWs.active_connection!.send_to_client(buildAckMessage(msg.msgSerial, serials));
+      } else if (msg.action === PM_ACTION.DETACH) {
+        mockWs.active_connection!.send_to_client({
+          action: PM_ACTION.DETACHED,
+          channel: msg.channel,
+        });
       }
     },
   });
@@ -464,6 +469,11 @@ export async function setupSyncedChannelNoAck(channelName: string): Promise<Sync
           flags: HAS_OBJECTS,
         });
         mockWs.active_connection!.send_to_client(buildObjectSyncMessage(msg.channel, 'sync1:', STANDARD_POOL_OBJECTS));
+      } else if (msg.action === PM_ACTION.DETACH) {
+        mockWs.active_connection!.send_to_client({
+          action: PM_ACTION.DETACHED,
+          channel: msg.channel,
+        });
       }
     },
   });
