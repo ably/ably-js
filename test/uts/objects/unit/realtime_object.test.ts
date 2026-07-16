@@ -293,6 +293,11 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(capturedMessages[0].action).to.equal(PM_ACTION.OBJECT);
     expect(capturedMessages[0].channel).to.equal('test-RTO15');
     expect(capturedMessages[0].state.length).to.equal(1);
+    // RTO15e3 - the state entry is the encoded ObjectMessage for the driven mutation
+    const stateEntry = capturedMessages[0].state[0];
+    expect(stateEntry.operation.action).to.equal(OBJ_OP.COUNTER_INC);
+    expect(stateEntry.operation.objectId).to.equal('counter:score@1000');
+    expect(stateEntry.operation.counterInc.number).to.equal(5);
   });
 
   // UTS: objects/unit/RTO20/publish-and-apply-local-0
@@ -462,8 +467,14 @@ describe('uts/objects/unit/realtime_object', function () {
     // but publishAndApply waits for sync to complete.
     const incPromise = root.get('score').increment(10);
 
-    // Give the ACK time to be processed and publishAndApply to register its listener
+    // The operation must still be parked in the RTO20e wait for SYNCED
+    let settled = false;
+    incPromise.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
     await flushAsync();
+    expect(settled).to.equal(false);
 
     // Detach the channel client-side (an unsolicited server DETACHED would trigger an
     // RTL13a re-attach); the shared mock answers the outbound DETACH with DETACHED
@@ -495,8 +506,14 @@ describe('uts/objects/unit/realtime_object', function () {
     // after the publish resolves and the sync wait begins.
     const incPromise = root.get('score').increment(10);
 
-    // Give the ACK time to be processed and publishAndApply to register its listener
+    // The operation must still be parked in the RTO20e wait for SYNCED
+    let settled = false;
+    incPromise.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
     await flushAsync();
+    expect(settled).to.equal(false);
 
     // Now send ERROR to put channel into FAILED state
     mockWs.active_connection!.send_to_client({
