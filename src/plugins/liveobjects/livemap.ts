@@ -308,12 +308,16 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     const opSerial = msg.serial!;
     const opSiteCode = msg.siteCode!;
     if (!this._canApplyOperation(opSerial, opSiteCode)) {
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MICRO,
-        'LiveMap.applyOperation()',
-        `skipping ${op.action} op: op serial ${opSerial} <= site serial ${this._siteTimeserials[opSiteCode]}; objectId=${this.getObjectId()}`,
-      );
+      // _canApplyOperation already logs a warning for malformed serial values; only log
+      // the newness-check skip when the serials are well-formed
+      if (opSerial && opSiteCode) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'LiveMap.applyOperation()',
+          `skipping ${op.action} op: op serial ${opSerial} <= site serial ${this._siteTimeserials[opSiteCode]}; objectId=${this.getObjectId()}`,
+        );
+      }
       return false; // RTLM15b
     }
 
