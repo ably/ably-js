@@ -52,10 +52,7 @@ describe('uts/objects/unit/path_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTPO19b/subscribe-precondition-detached-0
-  // Deviation: ably-js ensureAttached() only throws 90001 for FAILED state (for DETACHED
-  // it retries attach). We test the precondition using FAILED state instead, which is the
-  // equivalent RTO25 check that ably-js implements.
-  it('RTPO19b - subscribe() checks RTO25 access preconditions (FAILED channel throws 90001)', async function () {
+  it('RTPO19b - subscribe() checks RTO25 access API preconditions on DETACHED channel', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mockWs.active_connection = conn;
@@ -107,6 +104,11 @@ describe('uts/objects/unit/path_object_subscribe', function () {
               ),
             ]),
           );
+        } else if (msg.action === PM_ACTION.DETACH) {
+          mockWs.active_connection!.send_to_client({
+            action: PM_ACTION.DETACHED,
+            channel: msg.channel,
+          });
         }
       },
     });
@@ -129,18 +131,15 @@ describe('uts/objects/unit/path_object_subscribe', function () {
     // First get the channel to attached state and obtain root
     const rootPath = await channel.object.get();
 
-    // Send a channel ERROR PM to put channel into FAILED state
-    mockWs.active_connection!.send_to_client({
-      action: PM_ACTION.ERROR,
-      channel: 'test-precondition',
-      error: { code: 90000, statusCode: 400, message: 'Channel error' },
-    });
+    // Detach the channel client-side (a server-injected DETACHED would trigger an
+    // RTL13a re-attach and the channel would not stay DETACHED)
+    await channel.detach();
     await flushAsync();
-    expect(channel.state).to.equal('failed');
+    expect(channel.state).to.equal('detached');
 
     try {
       rootPath.subscribe(() => {});
-      expect.fail('Expected subscribe() to throw on FAILED channel');
+      expect.fail('Expected subscribe() to throw on DETACHED channel');
     } catch (error: any) {
       expect(error.code).to.equal(90001);
       expect(error.statusCode).to.equal(400);

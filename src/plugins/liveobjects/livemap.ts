@@ -312,7 +312,7 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap.applyOperation()',
-        `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
+        `skipping ${op.action} op: op serial ${opSerial} <= site serial ${this._siteTimeserials[opSiteCode]}; objectId=${this.getObjectId()}`,
       );
       return false; // RTLM15b
     }
@@ -338,20 +338,20 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
       case ObjectOperationAction.MAP_SET:
         if (this._client.Utils.isNil(op.mapSet)) {
-          this._throwNoPayloadError(op);
-        } else {
-          // RTLM15d6
-          update = this._applyMapSet(op.mapSet, opSerial, msg);
+          this._logNoPayloadWarning(op);
+          return false;
         }
+        // RTLM15d6
+        update = this._applyMapSet(op.mapSet, opSerial, msg);
         break;
 
       case ObjectOperationAction.MAP_REMOVE:
         if (this._client.Utils.isNil(op.mapRemove)) {
-          this._throwNoPayloadError(op);
-        } else {
-          // RTLM15d7
-          update = this._applyMapRemove(op.mapRemove, opSerial, msg.serialTimestamp, msg);
+          this._logNoPayloadWarning(op);
+          return false;
         }
+        // RTLM15d7
+        update = this._applyMapRemove(op.mapRemove, opSerial, msg.serialTimestamp, msg);
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
@@ -365,11 +365,14 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         break;
 
       default:
-        throw new this._client.ErrorInfo(
-          `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-          92000,
-          500,
+        // RTLM15d4 - log a warning and discard the message without taking any further action
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'LiveMap.applyOperation()',
+          `object operation message received with unsupported action, skipping message; action=${op.action}, objectId=${this.getObjectId()}`,
         );
+        return false;
     }
 
     this.notifyUpdated(update); // RTLM15d1a, RTLM15d6a, RTLM15d7a, RTLM15d5a, RTLM15d8a
@@ -700,11 +703,14 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return aggregatedUpdate; // RTLM23c
   }
 
-  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
-    throw new this._client.ErrorInfo(
-      `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-      92000,
-      500,
+  private _logNoPayloadWarning(op: ObjectOperation<ObjectData>): void {
+    // a message with a missing operation payload is malformed; log a warning and discard
+    // it without aborting the processing of sibling operations in the same ProtocolMessage
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MAJOR,
+      'LiveMap.applyOperation()',
+      `no payload found for ${op.action} op, skipping message; objectId=${this.getObjectId()}`,
     );
   }
 

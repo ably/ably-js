@@ -59,21 +59,19 @@ describe('uts/objects/unit/live_object_subscribe', function () {
     expect(updates).to.have.length(1);
 
     // Second: a noop. Serial "02" passes the newness check (RTLO4a6) so the noop
-    // path itself suppresses the event, not the site-serial dedup.
-    // Deviation (RTLC9h): the spec's noop is a COUNTER_INC with no `number`, but
-    // ably-js applies missing/zero increments (NaN) instead of nooping — see
-    // deviations.md. A COUNTER_CREATE for an object whose create op is already
-    // merged (RTLC8) is a genuine noop in ably-js, so that is used to exercise
-    // the RTLO4b4c1 suppression path instead.
+    // path itself suppresses the event, not the site-serial dedup. An increment with
+    // no `number` is the noop (RTLC9h) — a raw ObjectMessage with no `number` field is
+    // used so it exercises the real RTLC9h/RTLO4b4c1 noop branch (a `number: 0` would
+    // EXIST per RTLC9g and produce a non-noop update with amount 0).
     mockWs.active_connection!.send_to_client(
       buildObjectMessage('test-RTLO4b4c1', [
         {
           serial: '02',
           siteCode: 'remote',
           operation: {
-            action: OBJ_OP.COUNTER_CREATE,
+            action: OBJ_OP.COUNTER_INC,
             objectId: 'counter:score@1000',
-            counterCreate: { count: 999 },
+            counterInc: {},
           },
         },
       ]),
@@ -171,10 +169,10 @@ describe('uts/objects/unit/live_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTLO4b4c3c/tombstone-deregisters-listeners-0
-  // Deviation: ably-js InstanceSubscriptionEvent does not expose a `tombstone` field.
-  // We verify the deregistration behaviour: both listeners fire for the tombstone event,
-  // and subsequent updates do NOT fire (proving the listeners were deregistered).
-  it('RTLO4b4c3c - tombstone update deregisters all listeners', async function () {
+  // The tombstone flag is internal (RTLO4b4e); the tombstone is identified by the
+  // OBJECT_DELETE operation and verified through the deregistration behaviour: both
+  // listeners fire for the tombstone event, and subsequent updates do NOT fire.
+  it('RTLO4b4c3c - tombstone update deregisters all Instance#subscribe listeners', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4c3c');
     const updatesA: any[] = [];
     const updatesB: any[] = [];
@@ -203,9 +201,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTLO4b4d/update-has-object-message-0
-  // Deviation: ably-js InstanceSubscriptionEvent exposes the public ObjectMessage as `.message`
-  // (not `.objectMessage`). The public message uses string action names (e.g. 'counter.inc').
-  it('RTLO4b4d - LiveObjectUpdate.objectMessage is populated from source ObjectMessage', async function () {
+  it('RTLO4b4d - InstanceSubscriptionEvent.message is populated from source ObjectMessage', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4d');
     const updates: any[] = [];
     const instance = root.get('score').instance()!;
@@ -225,10 +221,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTLO4b4e/tombstone-flag-true-0
-  // Deviation: ably-js InstanceSubscriptionEvent does not expose `tombstone`.
-  // We verify indirectly that the tombstone event is delivered (listener fires)
-  // and that the message carries an OBJECT_DELETE operation.
-  it('RTLO4b4e - LiveObjectUpdate.tombstone is true for tombstone updates', async function () {
+  it('RTLO4b4e - tombstone update identified by OBJECT_DELETE action', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4e-true');
     const updates: any[] = [];
     const instance = root.get('score').instance()!;
@@ -245,9 +238,7 @@ describe('uts/objects/unit/live_object_subscribe', function () {
   });
 
   // UTS: objects/unit/RTLO4b4e/tombstone-flag-false-0
-  // Deviation: ably-js InstanceSubscriptionEvent does not expose `tombstone`.
-  // We verify that a normal (non-tombstone) update is delivered with the correct operation.
-  it('RTLO4b4e - LiveObjectUpdate.tombstone is false for normal updates', async function () {
+  it('RTLO4b4e - normal update carries non-tombstone action', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTLO4b4e-false');
     const updates: any[] = [];
     const instance = root.get('score').instance()!;

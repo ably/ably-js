@@ -9,11 +9,10 @@
  * When consumed by a mutation method, they generate ObjectMessages with
  * v6 wire format fields (counterCreateWithObjectId, mapCreateWithObjectId).
  *
- * Deviation: The UTS spec uses a standalone `consume(vt)` function that
- * directly calls the internal static methods. In ably-js, consumption
- * happens internally when LiveMap#set() is called with a value type.
- * We test consumption by calling root.set() and capturing the wire
- * protocol messages sent over the mock WebSocket.
+ * Consumption ("evaluation by a mutation method" per the UTS spec) happens
+ * internally when LiveMap#set() is called with a value type; the tests drive
+ * root.set() and verify the generated ObjectMessages captured from the mock
+ * WebSocket, using the initialValue JSON string on the *WithObjectId ops.
  */
 
 import { expect } from 'chai';
@@ -180,7 +179,7 @@ describe('uts/objects/unit/value_types', function () {
   });
 
   // UTS: objects/unit/RTLCV4g5/retains-local-counter-create-0
-  // Deviation: _derivedFrom is stripped from wire messages (local-only field).
+  // _derivedFrom is a local-only field stripped from wire messages.
   // We verify CounterCreate data via the initialValue JSON string in
   // counterCreateWithObjectId, which encodes the CounterCreate payload.
   it('RTLCV4g5 - consumption retains local CounterCreate (via initialValue)', async function () {
@@ -277,7 +276,7 @@ describe('uts/objects/unit/value_types', function () {
   });
 
   // UTS: objects/unit/RTLMV4j5/retains-local-map-create-0
-  // Deviation: _derivedFrom is stripped from wire messages (local-only field).
+  // _derivedFrom is a local-only field stripped from wire messages.
   // We verify MapCreate data via the initialValue JSON string in
   // mapCreateWithObjectId, which encodes the MapCreate payload.
   it('RTLMV4j5 - consumption retains local MapCreate (via initialValue)', async function () {
@@ -300,7 +299,7 @@ describe('uts/objects/unit/value_types', function () {
   });
 
   // UTS: objects/unit/RTLMV4d/entry-value-types-0
-  // Deviation: Verify entry types via the initialValue JSON string in mapCreateWithObjectId.
+  // Entry types are verified via the initialValue JSON string in mapCreateWithObjectId.
   it('RTLMV4d - entry value type mapping', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLMV4d');
 
@@ -331,7 +330,7 @@ describe('uts/objects/unit/value_types', function () {
   });
 
   // UTS: objects/unit/RTLMV4d1/nested-value-types-0
-  // Deviation: Verify nested objectId references via the initialValue JSON strings.
+  // Nested objectId references are verified via the initialValue JSON strings.
   it('RTLMV4d1 - nested value types produce depth-first ObjectMessages', async function () {
     const { root, captured } = await setupCapturingChannel('test-RTLMV4d1');
 
@@ -416,7 +415,7 @@ describe('uts/objects/unit/value_types', function () {
   });
 
   // UTS: objects/unit/RTLMV4d/map-set-all-types-table-0
-  // Deviation: Verify entry types via the initialValue JSON string.
+  // Entry types are verified via the initialValue JSON string.
   // JSON values on the wire are double-encoded (JSON-stringified strings),
   // so we parse them before comparison.
   it('RTLMV4d - table-driven value type mapping via MapCreate', async function () {

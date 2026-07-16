@@ -116,7 +116,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveCounter.applyOperation()',
-        `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
+        `skipping ${op.action} op: op serial ${opSerial} <= site serial ${this._siteTimeserials[opSiteCode]}; objectId=${this.getObjectId()}`,
       );
       return false; // RTLC7b
     }
@@ -142,11 +142,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
       case ObjectOperationAction.COUNTER_INC:
         if (this._client.Utils.isNil(op.counterInc)) {
-          this._throwNoPayloadError(op);
-        } else {
-          // RTLC7d5
-          update = this._applyCounterInc(op.counterInc, msg);
+          this._logNoPayloadWarning(op);
+          return false;
         }
+        // RTLC7d5
+        update = this._applyCounterInc(op.counterInc, msg);
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
@@ -155,11 +155,14 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       default:
-        throw new this._client.ErrorInfo(
-          `Invalid ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
-          92000,
-          500,
+        // RTLC7d3 - log a warning and discard the message without taking any further action
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'LiveCounter.applyOperation()',
+          `object operation message received with unsupported action, skipping message; action=${op.action}, objectId=${this.getObjectId()}`,
         );
+        return false;
     }
 
     this.notifyUpdated(update); // RTLC7d1a, RTLC7d5a, RTLC7d4a
@@ -255,30 +258,41 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   protected _mergeInitialDataFromCreateOperation(
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
-  ): LiveCounterUpdate {
+  ): LiveCounterUpdate | LiveObjectUpdateNoop {
     // RTLC16 - resolve counterCreate from either the direct property or the one from which counterCreateWithObjectId was derived
     const counterCreate = objectOperation.counterCreate ?? objectOperation.counterCreateWithObjectId?._derivedFrom;
+    const count = counterCreate?.count;
 
-    // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
+    // RTLC16b - the create op counts as merged even when it carries no count; RTLC8's
+    // duplicate-create skip relies on this flag being set once the op has been processed
+    this._createOperationIsMerged = true;
+
+    if (this._client.Utils.isNil(count)) {
+      // RTLC16d - a create operation without an initial count is a noop (nothing to add per RTLC16a)
+      return { noop: true };
+    }
+
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += counterCreate?.count ?? 0; // RTLC16a
-    this._createOperationIsMerged = true; // RTLC16b
+    this._dataRef.data += count; // RTLC16a
 
     // RTLC16c
     return {
-      update: { amount: counterCreate?.count ?? 0 },
+      update: { amount: count },
       objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };
   }
 
-  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
-    throw new this._client.ErrorInfo(
-      `No payload found for ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
-      92000,
-      500,
+  private _logNoPayloadWarning(op: ObjectOperation<ObjectData>): void {
+    // a message with a missing operation payload is malformed; log a warning and discard
+    // it without aborting the processing of sibling operations in the same ProtocolMessage
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MAJOR,
+      'LiveCounter.applyOperation()',
+      `no payload found for ${op.action} op, skipping message; objectId=${this.getObjectId()}`,
     );
   }
 
@@ -303,7 +317,12 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /** @spec RTLC9, RTLC9a2 */
-  private _applyCounterInc(op: CounterInc, msg: ObjectMessage): LiveCounterUpdate {
+  private _applyCounterInc(op: CounterInc, msg: ObjectMessage): LiveCounterUpdate | LiveObjectUpdateNoop {
+    if (this._client.Utils.isNil(op.number)) {
+      // RTLC9h - a COUNTER_INC without a number is a noop
+      return { noop: true };
+    }
+
     this._dataRef.data += op.number; // RTLC9f
     return {
       update: { amount: op.number }, // RTLC9g

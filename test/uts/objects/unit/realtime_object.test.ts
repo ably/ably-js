@@ -79,6 +79,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -127,6 +128,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -282,16 +284,15 @@ describe('uts/objects/unit/realtime_object', function () {
     const channel = client.channels.get('test-RTO15', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
     await channel.object.get();
 
-    // Trigger a single OBJECT message via a PathObject mutation
+    // Drive the internal publish (RTO15) through a public mutation; the PublishResult
+    // is consumed internally by RTO20 (apply-on-ACK), so only the wire behaviour is asserted.
     const root = await channel.object.get();
-    const result = await root.get('score').increment(5);
+    await root.get('score').increment(5);
 
     expect(capturedMessages.length).to.equal(1);
     expect(capturedMessages[0].action).to.equal(PM_ACTION.OBJECT);
     expect(capturedMessages[0].channel).to.equal('test-RTO15');
     expect(capturedMessages[0].state.length).to.equal(1);
-    // Deviation: ably-js PathObject.increment() returns void (via publishAndApply),
-    // not a PublishResult with serials. The serials are consumed internally for apply-on-ACK.
   });
 
   // UTS: objects/unit/RTO20/publish-and-apply-local-0
@@ -444,9 +445,7 @@ describe('uts/objects/unit/realtime_object', function () {
     expect(root.get('score').value()).to.equal(110);
   });
 
-  // UTS: objects/unit/RTO20e1/fails-on-channel-detached-0
-  // Deviation: ably-js receiving DETACHED while ATTACHED triggers re-attach (not FAILED/SUSPENDED).
-  // We use a channel ERROR PM to put the channel into FAILED state, which triggers the 92008 error.
+  // UTS: objects/unit/RTO20e1/fails-on-channel-failed-0
   it('RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTO20e1');
 
@@ -686,6 +685,10 @@ describe('uts/objects/unit/realtime_object', function () {
   it('RTO20 - ACK after echo does not double-apply', async function () {
     const { root, mockWs } = await setupSyncedChannelNoAck('test-RTO20-ack-after-echo');
 
+    // The spec's poll_until for the outbound OBJECT message before injecting the echo/ACK
+    // is omitted: ably-js is single-threaded and the publish reaches the transport
+    // synchronously before increment() returns, so the ACK can never arrive while no
+    // message is pending on the connection.
     const incFuture = root.get('score').increment(10);
 
     // Send the echo BEFORE the ACK. The serial and siteCode must match what
@@ -1082,8 +1085,6 @@ describe('uts/objects/unit/realtime_object', function () {
   });
 
   // UTS: objects/unit/RTO25b/access-throws-detached-0
-  // Deviation: the spec reaches DETACHED via a server-initiated DETACHED PM; ably-js
-  // re-attaches on an unsolicited DETACHED (RTL13a), so the test detaches client-side.
   it('RTO25b - Access API precondition throws on DETACHED channel', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1094,6 +1095,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -1159,6 +1161,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },

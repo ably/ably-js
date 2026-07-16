@@ -11,12 +11,6 @@
  * calculation.
  *
  * Deviations:
- * - RTLM15d4 (unsupported action): ably-js throws ErrorInfo (92000) rather than
- *   silently returning false. Test expects the throw.
- * - RTLM9b (both serials empty): the spec expects applyOperation to return false
- *   via the object-level empty-serial gate (RTLO4a3/RTLM15b); ably-js throws
- *   ErrorInfo 92000 at that same gate instead of returning false — the same
- *   throw-instead-of-false family as RTLM15d4 below. The test asserts the throw.
  * - RTLM7g (objectId creates zero-value): Tested via pool from channel, since
  *   standalone LiveMap needs a pool reference.
  * - RTLM14c (tombstoned ref check): Tested via protocol messages + pool, since
@@ -263,11 +257,7 @@ describe('uts/objects/unit/live_map', function () {
   // =====================================================================
 
   // UTS: objects/unit/RTLM9b/both-empty-reject-0
-  // Deviation: the spec expects applyOperation to return false — the empty
-  // ObjectMessage.serial is rejected by the object-level gate (RTLO4a3/RTLM15b)
-  // before the entry-level RTLM9b comparison. ably-js throws ErrorInfo 92000 at
-  // that same gate instead of returning false (same family as RTLM15d4).
-  it('RTLM9b - both serials empty rejects operation (deviation: throws on empty serial)', async function () {
+  it('RTLM9b - both serials empty rejects operation', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM9b');
 
     const map = createZeroMap(channel, 'map:test@1000');
@@ -278,7 +268,6 @@ describe('uts/objects/unit/live_map', function () {
       tombstonedAt: undefined,
     });
 
-    // ably-js throws ErrorInfo for empty serial at _canApplyOperation level
     const msg = makeObjectMessage(client, {
       serial: '',
       siteCode: 'site1',
@@ -289,11 +278,12 @@ describe('uts/objects/unit/live_map', function () {
       },
     });
 
-    expect(() => map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel))
-      .to.throw()
-      .with.property('code', 92000);
+    // The empty ObjectMessage.serial is rejected by the object-level gate (RTLO4a3, via
+    // canApplyOperation) before the entry-level RTLM9b comparison; applyOperation returns
+    // false (RTLM15b) and the data is unchanged.
+    const result = map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
-    // Data unchanged
+    expect(result).to.equal(false);
     expect(getDataMap(map).get('name')!.data).to.deep.equal({ string: 'Alice' });
   });
 
@@ -1018,9 +1008,7 @@ describe('uts/objects/unit/live_map', function () {
   // =====================================================================
 
   // UTS: objects/unit/RTLM15d4/unsupported-action-0
-  // Deviation: ably-js throws ErrorInfo (92000) for unsupported actions
-  // instead of returning false as the spec requires.
-  it('RTLM15d4 - unsupported action throws (deviation: spec expects false)', async function () {
+  it('RTLM15d4 - unsupported action is discarded without applying', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLM15d4');
 
     const map = createZeroMap(channel, 'map:test@1000');
@@ -1035,10 +1023,10 @@ describe('uts/objects/unit/live_map', function () {
       },
     });
 
-    expect(() => map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel))
-      .to.throw()
-      .with.property('code', 92000);
+    const result = map.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
+    // RTLM15d4 - log a warning and discard the message; no data update
+    expect(result).to.equal(false);
     expect(getDataMap(map).size).to.equal(0);
   });
 

@@ -188,7 +188,7 @@ export class RestObject implements PublicRestObject {
       throw new client.ErrorInfo('generateObjectId requires a mapCreate or counterCreate property', 40003, 400);
     }
 
-    const nonce = client.Utils.cheapRandStr();
+    const nonce = await ObjectId.generateNonce(client);
     const msTimestamp = await client.getTimestamp(true);
 
     const objectId = ObjectId.fromInitialValue(

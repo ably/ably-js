@@ -216,16 +216,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### objects/live_map_api: RTLM24 - clear() not implemented
-
-**Spec (RTLM24)**: `LiveMap#clear()` sends a MAP_CLEAR operation.
-
-**ably-js behavior**: `LiveMap#clear()` does not exist yet; the incoming MAP*CLEAR \_apply* path (RTLM24a-c) is implemented and tested.
-
-**Test**: `RTLM24 - clear() sends MAP_CLEAR message (not yet implemented)` — an `it.skip` placeholder in `objects/unit/live_map_api.test.ts`.
-
----
-
 ## Adapted Deviations (tests modified to match ably-js behavior)
 
 These tests have been adapted from the UTS spec to account for ably-js API differences. The test still validates the underlying behavior but uses ably-js's actual API surface.
@@ -234,125 +224,33 @@ These tests have been adapted from the UTS spec to account for ably-js API diffe
 
 **Spec (RTLMV4b)**: `objects/unit/RTLMV4b/evaluate-validates-keys-0` — LiveMap value type consumption validates that entry keys are strings.
 
-**ably-js behavior**: JavaScript object keys are always coerced to strings, so a non-string key cannot reach the validation. The test is omitted (the only spec Test ID without a derived test); the sibling RTLMV4a/RTLMV4c validation tests cover the reachable cases.
+**ably-js behavior**: JavaScript object keys are always coerced to strings, so a non-string key cannot reach the validation (the check itself exists at `livemap.ts` `validateKeyValue`). The test is omitted (the only spec Test ID without a derived test); the sibling RTLMV4a/RTLMV4c validation tests cover the reachable cases. The spec test now carries a language-applicability note sanctioning this omission (see the pseudocode conventions in the spec's `uts/README.md`).
 
 ---
 
-### objects (all files): spec `null` absent values asserted as `undefined`
+### objects/internal_live_counter_api: RTLC12e1 - null increment amount not applicable to JS
 
-**Spec**: UTS spec assertions use `== null` for absent values (nonexistent keys, tombstoned entries, failed value()/instance()/size()/compact() lookups). The features spec (`objects-features.md` RTLM5d1/RTLM5d2h/RTLM5e etc.) defines these as "undefined/null", deliberately language-mapped.
+**Spec (RTLC12e1)**: `increment(null)` is one of the invalid-amount table rows and must fail with 40003 — in languages where `null` is passable and distinguishable from an omitted argument.
 
-**ably-js behavior**: Returns `undefined`, the idiomatic JavaScript mapping.
+**ably-js behavior**: the API signature is `increment(amount?: number)` and a nullish amount takes the default of 1, so the null row is unreachable by API design. The spec table now carries a language-applicability note sanctioning the exclusion.
 
-**Tests**: Systematic across `objects/unit/path_object.test.ts`, `instance.test.ts`, `live_map_api.test.ts`, `path_object_mutations.test.ts` and the `objects/integration` suites — assertions use `to.be.undefined` wherever the spec says `== null`.
-
----
-
-### objects/live_object_subscribe: RTLC9h - missing-number COUNTER_INC not treated as noop
-
-**Spec (RTLC9h, via RTLO4b4c1)**: A COUNTER_INC whose `counterInc` carries no `number` is a noop — it must not fire subscription listeners.
-
-**ably-js behavior**: `_applyCounterInc` (`src/plugins/liveobjects/livecounter.ts`) applies `op.number` unconditionally, so a missing number becomes `NaN` and an update event fires. Related to the RTLC9 NaN deviation documented in `live_counter.test.ts`.
-
-**Test**: `objects/unit/RTLO4b4c1/noop-no-trigger-0` — adapted to use a COUNTER_CREATE for an object whose create op is already merged (RTLC8), a genuine noop in ably-js, so the RTLO4b4c1 suppression path is still exercised; the spec's follow-up control increment and `updates.length == 2` assertion are kept.
+**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`objects/unit/internal_live_counter_api.test.ts`) — the null row is excluded; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
 
 ---
 
-### objects/live_counter: RTLC9 / RTLC16 - missing-field counter ops applied instead of noop
+### objects: user-facing ObjectData carries a deprecated `value` field
 
-**Spec (RTLC9, RTLC16)**: A COUNTER_INC whose `counterInc.number` is absent is a noop (RTLC9), and a COUNTER_CREATE whose `count` is absent is a noop (RTLC16).
+**Spec**: `PublicAPI::ObjectData` exposes the typed value fields (`boolean`/`bytes`/`number`/`string`/`json`).
 
-**ably-js behavior**: `_applyCounterInc` applies the missing number as `undefined`, so the counter's data becomes `NaN` (RTLC9); a missing `count` is treated as `0` and produces a normal update (`amount: 0`) with `createOperationIsMerged = true` (RTLC16). The listener-facing side of the RTLC9 gap is the RTLC9h entry above.
+**ably-js behavior**: `toUserFacingObjectData` (`src/plugins/liveobjects/objectmessage.ts`) additionally populates a legacy `value` convenience field on the public ObjectData. Harmless extra field; removal is a breaking change reserved for a future major.
 
-**Tests** (`objects/unit/live_counter.test.ts`): `RTLC9 - COUNTER_INC with missing number results in NaN (deviation: spec expects noop)`, `RTLC16 - COUNTER_CREATE with missing count defaults to 0 (deviation: spec expects noop)` — adapted to assert the applied result.
-
----
-
-### objects/live_counter & live_map: RTLO4a / RTLC7d3 / RTLM9b / RTLM15d4 - applyOperation throws instead of returning false
-
-**Spec**: `canApplyOperation`/`applyOperation` return `false` (with a logged warning) for an empty `serial`/`siteCode` (RTLO4a), an unsupported counter action (RTLC7d3), both serials empty (RTLM9b, via the RTLO4a3/RTLM15b gate), and an unsupported map action (RTLM15d4).
-
-**ably-js behavior**: all four paths throw `ErrorInfo` 92000 at the same gate instead of returning `false` — one throw-instead-of-false family.
-
-**Tests**: `RTLO4a - canApplyOperation throws on empty serial or siteCode (deviation: spec expects false)` and `RTLC7d3 - Unsupported action throws (deviation: spec expects false)` (`live_counter.test.ts`); `RTLM9b - both serials empty rejects operation (deviation: throws on empty serial)` and `RTLM15d4 - unsupported action throws (deviation: spec expects false)` (`live_map.test.ts`) — all adapted to assert the throw.
+**Tests**: `objects/unit/public_object_message.test.ts` exercises the public mapping.
 
 ---
 
-### objects/live_counter_api: RTLC12e1 - null increment amount defaults to 1 instead of failing
+### objects: harness and wire-format conventions (not behavioral deviations)
 
-**Spec (RTLC12e1)**: `increment(null)` is one of the invalid-amount table rows and must fail with 40003.
-
-**ably-js behavior**: the API signature is `increment(amount?: number)` and the implementation treats null as "no argument" (`amount ?? 1`), so `increment(null)` succeeds as `increment(1)` — the null row is unreachable as an error.
-
-**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`objects/unit/live_counter_api.test.ts`) — the null row is excluded; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
-
----
-
-### objects/live_object_subscribe: RTLO4b4d - objectMessage exposed as `.message`
-
-**Spec (RTLO4b4d)**: `LiveObjectUpdate.objectMessage` carries the source ObjectMessage.
-
-**ably-js behavior**: `InstanceSubscriptionEvent` exposes the public ObjectMessage as `.message` (not `.objectMessage`). The operation action is a string (`'counter.inc'`) instead of the internal numeric constant.
-
-**Test**: Adapted to use `updates[0].message` and string action names.
-
----
-
-### objects/live_object_subscribe: RTLO4b4e - tombstone flag not on InstanceSubscriptionEvent
-
-**Spec (RTLO4b4e)**: `LiveObjectUpdate.tombstone` indicates whether the update was a tombstone.
-
-**ably-js behavior**: `InstanceSubscriptionEvent` does not expose a `tombstone` field. The tombstone behavior (deregistering listeners) works internally, but is not surfaced to the user-facing event.
-
-**Test**: Adapted to verify the event is delivered and check the operation action (`'object.delete'` for tombstone, `'counter.inc'` for normal) instead of asserting `.tombstone`.
-
----
-
-### objects/live_object_subscribe: RTLO4b4c3c - tombstone flag not checkable
-
-**Spec (RTLO4b4c3c)**: Tombstone update deregisters all listeners, and `update.tombstone == true`.
-
-**ably-js behavior**: Tombstone deregistration works correctly (subsequent events do not fire), but `InstanceSubscriptionEvent` does not expose `.tombstone`. Test adapted to skip the `.tombstone` assertion.
-
----
-
-### objects/realtime_object: RTO15 - publish result serials not exposed
-
-**Spec (RTO15)**: `publish()` returns `PublishResult` with `.serials`.
-
-**ably-js behavior**: PathObject mutation methods (`increment`, `set`, etc.) return `void` via `publishAndApply`. The `PublishResult.serials` are consumed internally for apply-on-ACK and not returned to the caller.
-
-**Test**: Removed `result.serials` assertion.
-
----
-
-### objects/realtime_object: RTO25b - DETACHED reached via client-side detach
-
-**Spec (RTO25b)**: The access-precondition test reaches DETACHED via a server-initiated DETACHED protocol message.
-
-**ably-js behavior**: An unsolicited DETACHED while ATTACHED triggers an automatic re-attach (RTL13a), so the channel never stays DETACHED. The test detaches client-side (`channel.detach()`) instead; the precondition assertion (`root.keys()` throws 90001) is unchanged.
-
-Note: the former, broader entry here ("channel.object.get() re-attaches on DETACHED") retired with [specification#499](https://github.com/ably/specification/pull/499) — the re-attach behavior is now spec-mandated (RTO23e/RTL33), and RTO25b tests exercise `root.keys()`.
-
----
-
-### objects: PathObject.subscribe argument order
-
-**Spec**: pseudocode passes options first — `subscribe({ depth: n }, listener)`.
-
-**ably-js behavior**: `PathObject.subscribe(listener, options?)` takes the listener first.
-
-**Tests**: All subscribe-with-options tests use the ably-js argument order. (The former depth-_semantics_ entry retired with [specification#499](https://github.com/ably/specification/pull/499), which adopted ably-js's self-counts-as-depth-1 model.)
-
----
-
-### objects/realtime_object: RTO20e1 - channel forced to FAILED via ERROR instead of DETACHED
-
-**Spec (RTO20e1)**: If the channel enters DETACHED/SUSPENDED/FAILED while publishAndApply waits for SYNCED, the pending operation fails with 92008. The unit spec injects a DETACHED protocol message to trigger this.
-
-**ably-js behavior**: Receiving DETACHED while ATTACHED triggers an automatic re-attach (RTL13a) rather than leaving the channel in DETACHED, so the sync wait never observes the state change. The 92008 path is exercised instead by injecting a channel ERROR, which puts the channel into FAILED.
-
-**Test**: `objects/unit/RTO20e1/fails-on-channel-detached-0` (`RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait`) — adapted to inject ERROR (FAILED) instead of DETACHED. The proxy integration test `objects/proxy/RTO20e/publish-fails-on-channel-failed-0` uses the same ERROR-based sequence, which the spec itself adopted in [specification#501](https://github.com/ably/specification/pull/501).
+The wire protocol uses numeric operation actions and JSON-stringified `json`/`initialValue` payloads (OM/OD/TM definitions) — the UTS pseudo-code's string action names and parsed objects are readable renderings, and derived tests assert the real wire shapes. Internal-state tests (`objects_pool.test.ts`) observe private fields via `(channel as any)._object._state` etc., since internal-state observation is inherently SDK-specific.
 
 ---
 

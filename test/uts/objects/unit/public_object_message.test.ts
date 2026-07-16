@@ -11,11 +11,12 @@
  * the message that triggered an object change.
  *
  * Deviations from UTS spec:
- * - ably-js's toUserFacingObjectOperation converts numeric semantics to
- *   string ('lww') and adds a deprecated 'value' field to ObjectData.
- *   Assertions adjusted accordingly.
- * - ably-js omits undefined fields rather than setting null. Assertions
- *   use .to.be.undefined instead of == null where appropriate.
+ * - toUserFacingObjectData adds a deprecated 'value' convenience field to the
+ *   public ObjectData (see deviations.md). The numeric-to-'lww' semantics
+ *   mapping is the spec's public rendering, not a deviation.
+ * - ably-js omits undefined fields rather than setting null — the sanctioned
+ *   null/undefined convention (spec uts/README.md). Assertions use
+ *   .to.be.undefined instead of == null where appropriate.
  */
 
 import { expect } from 'chai';

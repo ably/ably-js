@@ -8,7 +8,9 @@
  * size, compact, set, remove, increment, decrement, subscribe,
  * InstanceSubscriptionEvent message fields, Subscription model.
  *
- * Deviation: Instance `id` is a getter property, not a method.
+ * Instance `id` is a getter property; the spec pseudo-code's `id()` call syntax maps
+ * to property access per the pseudocode conventions (spec uts/README.md) — the features
+ * spec defines `Instance#id` as a property (RTINS3).
  */
 
 import { expect } from 'chai';

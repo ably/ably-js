@@ -6,18 +6,6 @@
  *
  * Tests the LiveCounter CRDT data structure: increment, create merge,
  * replaceData, tombstoning, serial-based newness checks, and diff calculation.
- *
- * Deviations from UTS spec:
- * - RTLO4a/warn-invalid-serial-0: ably-js throws ErrorInfo (92000) for empty
- *   serial/siteCode instead of returning false. Test adapted to expect throw.
- * - RTLC9/counter-inc-missing-number-0: ably-js does not check for missing
- *   counterInc.number; it adds undefined (NaN) rather than returning noop.
- *   Test adapted to expect NaN data (not noop).
- * - RTLC16/counter-create-no-count-0: ably-js treats missing count as 0 and
- *   returns a normal update (amount: 0, _type: 'LiveCounterUpdate') rather
- *   than noop. Test adapted to expect amount 0, not noop.
- * - RTLC7d3/unsupported-action-0: ably-js throws ErrorInfo (92000) for
- *   unsupported actions instead of returning false. Test adapted to expect throw.
  */
 
 import { expect } from 'chai';
@@ -167,13 +155,12 @@ describe('uts/objects/unit/live_counter', function () {
   });
 
   // UTS: objects/unit/RTLC9/counter-inc-missing-number-0
-  // Deviation: ably-js does not guard against missing counterInc.number;
-  // it adds undefined (resulting in NaN), rather than returning noop.
-  it('RTLC9 - COUNTER_INC with missing number results in NaN (deviation: spec expects noop)', async function () {
+  it('RTLC9 - COUNTER_INC with missing number is a noop', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC9-missing');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
     (counter as any)._dataRef.data = 10;
+    const capture = captureNotifyUpdated(counter);
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -185,11 +172,11 @@ describe('uts/objects/unit/live_counter', function () {
       },
     });
 
-    const result = counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+    counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
-    // ably-js adds undefined to 10, resulting in NaN
-    expect(result).to.equal(true);
-    expect(isNaN((counter as any)._dataRef.data)).to.equal(true);
+    // RTLC9h - the operation is a noop: data unchanged, noop update emitted
+    expect((counter as any)._dataRef.data).to.equal(10);
+    expect(capture.getUpdate().noop).to.equal(true);
   });
 
   // UTS: objects/unit/RTLC9/counter-inc-accumulate-0
@@ -281,12 +268,11 @@ describe('uts/objects/unit/live_counter', function () {
   });
 
   // UTS: objects/unit/RTLC16/counter-create-no-count-0
-  // Deviation: ably-js treats missing count as 0, sets createOperationIsMerged = true,
-  // and returns update with amount 0 (not noop).
-  it('RTLC16 - COUNTER_CREATE with missing count defaults to 0 (deviation: spec expects noop)', async function () {
+  it('RTLC16 - COUNTER_CREATE with missing count is a noop', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC16-no-count');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
+    const capture = captureNotifyUpdated(counter);
 
     const msg = makeObjectMessage(client, {
       serial: '01',
@@ -298,12 +284,12 @@ describe('uts/objects/unit/live_counter', function () {
       },
     });
 
-    const result = counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+    counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
+    // RTLC16d - data unchanged, create op still marked merged (RTLC16b), noop update emitted
     expect((counter as any)._dataRef.data).to.equal(0);
     expect((counter as any)._createOperationIsMerged).to.equal(true);
-    // ably-js returns true (applied) with amount 0, not noop
-    expect(result).to.equal(true);
+    expect(capture.getUpdate().noop).to.equal(true);
   });
 
   // =========================================================================
@@ -381,9 +367,7 @@ describe('uts/objects/unit/live_counter', function () {
   });
 
   // UTS: objects/unit/RTLO4a/warn-invalid-serial-0
-  // Deviation: ably-js throws ErrorInfo (92000) for empty serial/siteCode
-  // instead of returning false as the spec requires.
-  it('RTLO4a - canApplyOperation throws on empty serial or siteCode (deviation: spec expects false)', async function () {
+  it('RTLO4a - operations with empty serial or siteCode are not applied', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLO4a-invalid');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
@@ -399,9 +383,7 @@ describe('uts/objects/unit/live_counter', function () {
       },
     });
 
-    expect(() => counter.applyOperation(msg1.operation!, msg1, ObjectsOperationSource.channel))
-      .to.throw()
-      .with.property('code', 92000);
+    const result1 = counter.applyOperation(msg1.operation!, msg1, ObjectsOperationSource.channel);
 
     // Empty siteCode
     const msg2 = makeObjectMessage(client, {
@@ -414,10 +396,11 @@ describe('uts/objects/unit/live_counter', function () {
       },
     });
 
-    expect(() => counter.applyOperation(msg2.operation!, msg2, ObjectsOperationSource.channel))
-      .to.throw()
-      .with.property('code', 92000);
+    const result2 = counter.applyOperation(msg2.operation!, msg2, ObjectsOperationSource.channel);
 
+    // RTLO4a3 - invalid serial values: log a warning and do not apply
+    expect(result1).to.equal(false);
+    expect(result2).to.equal(false);
     expect((counter as any)._dataRef.data).to.equal(0);
   });
 
@@ -626,9 +609,7 @@ describe('uts/objects/unit/live_counter', function () {
   // =========================================================================
 
   // UTS: objects/unit/RTLC7d3/unsupported-action-0
-  // Deviation: ably-js throws ErrorInfo (92000) for unsupported actions
-  // instead of returning false as the spec requires.
-  it('RTLC7d3 - Unsupported action throws (deviation: spec expects false)', async function () {
+  it('RTLC7d3 - Unsupported action is discarded without applying', async function () {
     const { channel, client } = await setupSyncedChannel('test-RTLC7d3');
 
     const counter = createZeroCounter(channel, 'counter:abc@1000');
@@ -643,10 +624,10 @@ describe('uts/objects/unit/live_counter', function () {
       },
     });
 
-    expect(() => counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel))
-      .to.throw()
-      .with.property('code', 92000);
+    const result = counter.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
 
+    // RTLC7d3 - log a warning and discard the message; no data update
+    expect(result).to.equal(false);
     expect((counter as any)._dataRef.data).to.equal(0);
   });
 

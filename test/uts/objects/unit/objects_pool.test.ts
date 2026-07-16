@@ -534,7 +534,7 @@ describe('uts/objects/unit/objects_pool', function () {
     await flushAsync();
 
     // After sync, buffered increment of 10 should be applied on top of 100
-    // Deviation: ably-js counter value = counter.count + createOp.counterCreate.count
+    // Per RTLC6c/RTLC6d/RTLC16a the value is counter.count + createOp.counterCreate.count:
     // So counter.count=100, createOp.count=0 => value=100, then +10 = 110
     const counterObj = rto._objectsPool.get('counter:abc@1000');
     expect(counterObj).to.exist;
@@ -988,7 +988,7 @@ describe('uts/objects/unit/objects_pool', function () {
 
     expect(rto._state).to.equal('synced');
     // Buffer was applied: 100 + 5 = 105
-    // Deviation: ably-js counter value = counter.count + createOp.count = 100 + 0 = 100, then +5 = 105
+    // Per RTLC6c/RTLC6d/RTLC16a: counter.count + createOp.count = 100 + 0 = 100, then +5 = 105
     const counterObj = rto._objectsPool.get('counter:abc@1000');
     expect(counterObj).to.exist;
     expect(counterObj.value()).to.equal(105);
