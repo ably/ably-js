@@ -20,14 +20,17 @@ export type UseObjectOptions = ChannelNameAndOptions;
  * The surface common to every {@link PathObject} variant that {@link useObject}
  * relies on. Every node a selector can return satisfies this type.
  *
- * The hook's signatures constrain and infer over this structural type rather
- * than over `PathObject<T>` because `PathObject<T>` is a conditional type:
- * TypeScript cannot infer `T` from a value of the variant the conditional
- * resolves to, and the resolved variants are not assignable to a common
- * `PathObject<Value>` (two `LiveMapPathObject`s with different shapes have
- * incompatible `get` signatures). Constraining and inferring the concrete
- * variant directly is what lets the selector's navigation chain determine the
- * result type.
+ * The node a selector returns can be any `PathObject` variant, so the hook's
+ * result-side type parameter constrains and infers over this structural type
+ * rather than over `PathObject<V>`: `PathObject<V>` is a conditional type that
+ * TypeScript cannot infer `V` through for an arbitrary `V`, and the resolved
+ * variants are not assignable to a common `PathObject<Value>` (two
+ * `LiveMapPathObject`s with different shapes have incompatible `get`
+ * signatures). Constraining and inferring the concrete variant directly is
+ * what lets the selector's navigation chain determine the result type. The
+ * selector's parameter needs no such treatment: it is always a map, and
+ * `PathObject<LiveMap<T>>` reduces eagerly for every `T`, so TypeScript can
+ * infer `T` through it.
  */
 export interface ObjectNode {
   /** The fully-qualified path string for this node. */
@@ -148,14 +151,16 @@ export function useObject<N extends ObjectNode>(
  * Subscribe to a nested LiveObjects node, selected by navigating from the
  * channel's object with a typed shape, and re-render on change. Annotate the
  * selector's parameter with the shape of the channel's object
- * (`(obj: PathObject<LiveMap<MyShape>>) => ...`) and the whole navigation
- * chain — wrong keys included — is checked at compile time.
+ * (`(obj: PathObject<LiveMap<MyShape>>) => ...`) — `T` is inferred from the
+ * annotation, and is the same type parameter `RealtimeObject.get<T>()` takes —
+ * and the whole navigation chain, wrong keys included, is checked at compile
+ * time.
  *
  * Channel resolution, readiness, and plugin/modes requirements are as for the
  * no-selector overload.
  */
-export function useObject<Obj extends ObjectNode, N extends ObjectNode>(
-  selector: ObjectSelector<Obj, N>,
+export function useObject<T extends Record<string, Value>, N extends ObjectNode>(
+  selector: ObjectSelector<PathObject<LiveMap<T>>, N>,
   options?: UseObjectOptions,
 ): UseObjectResult<N>;
 
