@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.25.0](https://github.com/ably/ably-js/tree/2.25.0) (2026-07-17)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.24.0...2.25.0)
+
+### What's Changed
+
+- Add push notification support for React Native via the new `ably/react-native-push` plugin. Adds an asynchronous `client.getDevice()` and deprecates the synchronous `client.device()` [#2262](https://github.com/ably/ably-js/pull/2262)
+- Surface previously silent failures when channel modes are missing: `presence.get()` without the `presence_subscribe` mode and `channel.subscribe()` without the `subscribe` mode now log an error, or throw when the new `strictMode` client option is enabled [#2236](https://github.com/ably/ably-js/pull/2236)
+
 ## [2.24.0](https://github.com/ably/ably-js/tree/2.24.0) (2026-07-08)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.23.0...2.24.0)
