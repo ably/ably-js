@@ -30,7 +30,7 @@ The hooks provide a simplified syntax for interacting with Ably, and manage the 
 
 ### Compatible React Versions
 
-The hooks are compatible with all versions of React above 16.8.0
+The hooks are compatible with all versions of React above 16.8.0, with the exception of `useObject`, which requires React 18 or later.
 
 ## Usage
 
@@ -340,7 +340,7 @@ Using the hook requires:
 </ChannelProvider>
 ```
 
-Called with no arguments, `useObject` subscribes to the channel's root object. `value` is a plain-data snapshot of the object (the result of [`compact()`](https://ably.com/docs/liveobjects/concepts/objects#compact)), and `object` is the live `PathObject` for the subscribed node, which you can use to navigate and to write:
+Called with no arguments, `useObject` subscribes to the channel's object. `value` is a plain-data snapshot of the object (the result of [`compact()`](https://ably.com/docs/liveobjects/concepts/objects#compact)), and `object` is the live `PathObject` for the subscribed node, which you can use to navigate and to write:
 
 ```jsx
 const Scoreboard = () => {
@@ -352,37 +352,50 @@ const Scoreboard = () => {
 };
 ```
 
-Pass a selector to subscribe to a nested node instead. The selector receives the root `PathObject` and must navigate to a descendant using `get`/`at`; the hook subscribes to the node it returns, so the component only re-renders for changes within that node. Navigating to the narrowest node you actually render is the main performance lever:
+Pass a selector to subscribe to a nested node instead. The selector receives the channel's object as a `PathObject` and must navigate to a descendant using `get`/`at`; the hook subscribes to the node it returns, so the component only re-renders for changes within that node. Navigating to the narrowest node you actually render is the main performance lever:
 
 ```jsx
 const AliceScore = () => {
-  const { value, object } = useObject((root) => root.get('scores').get('alice'));
+  const { value, object } = useObject((obj) => obj.get('scores').get('alice'));
 
   return <button onClick={() => object?.increment(1)}>Alice: {value ?? 0}</button>;
 };
 ```
 
-If you're using TypeScript, annotate the selector's parameter with the shape of your channel's objects and the whole navigation chain is checked at compile time — `value` and `object` are then typed from the chain with no further annotation:
+If you're using TypeScript, annotate the selector's parameter with the shape of your channel's object and the whole navigation chain is checked at compile time — `value` and `object` are then typed from the chain with no further annotation:
 
 ```tsx
 import { LiveCounter, LiveMap, PathObject } from 'ably/liveobjects';
 
-type GameRoot = LiveMap<{
+type Game = {
   scores: LiveMap<{ alice: LiveCounter; bob: LiveCounter }>;
   title: string;
-}>;
+};
 
 const AliceScore = () => {
   // value: number | undefined, object: PathObject<LiveCounter> | undefined
-  const { value, object } = useObject((root: PathObject<GameRoot>) => root.get('scores').get('alice'));
+  const { value, object } = useObject((obj: PathObject<LiveMap<Game>>) => obj.get('scores').get('alice'));
 
   return <button onClick={() => object?.increment(1)}>Alice: {value ?? 0}</button>;
 };
 ```
 
-For the no-selector form, provide the root type as a type parameter instead: `useObject<GameRoot>()`.
+For the no-selector form, provide the shape of the channel's object as a type parameter instead — `useObject<Game>()` — the same type parameter that `channel.object.get<Game>()` takes.
 
-The root object resolves asynchronously (after the channel attaches and the initial sync completes), so the hook's readiness is derived from the result: `object === undefined && error === null` means loading, `error !== null` means the object could not be resolved (for example the `LiveObjects` plugin is missing, or the channel lacks the object modes — `error` carries ably-js's own `ErrorInfo`), and a defined `object` means ready, with `value` carrying the data once the node exists.
+If the object cannot be resolved — for example the `LiveObjects` plugin is missing from the client, or the channel lacks the object modes — the hook reports this through the `error` return value, which carries ably-js's own `ErrorInfo` describing the failure:
+
+```jsx
+const Scoreboard = () => {
+  const { value, object, error } = useObject();
+
+  if (error) return <p>Objects failed to load: {error.message}</p>;
+  if (!object) return <p>Loading…</p>;
+
+  return <p>Alice: {value.scores.alice}</p>;
+};
+```
+
+The channel's object resolves asynchronously (after the channel attaches and the initial sync completes), so the hook's readiness is derived from the result: `object === undefined && error === null` means loading, `error !== null` means the object could not be resolved, and a defined `object` means ready, with `value` carrying the data once the node exists.
 
 Two things to note about `value`:
 
@@ -392,7 +405,7 @@ Two things to note about `value`:
 Like the other channel hooks, `useObject` accepts the standard options (`channelName`, `ablyId`, `skip`, `onConnectionError`, `onChannelError`) and returns `connectionError` / `channelError`:
 
 ```javascript
-const { value, error, connectionError, channelError } = useObject((root) => root.get('scores'), {
+const { value, error, connectionError, channelError } = useObject((obj) => obj.get('scores'), {
   channelName: 'your-channel-name',
 });
 ```

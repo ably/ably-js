@@ -11,6 +11,8 @@ export class FakeRealtimeObject {
   public data: Record<string, unknown>;
   public getCalls = 0;
   public listeners = new Set<PathListener>();
+  /** Called at the start of every subscribe(), before the listener registers. */
+  public onSubscribe?: () => void;
 
   private releaseGate?: () => void;
   private getGate?: Promise<void>;
@@ -123,6 +125,7 @@ export class FakePathObject {
   }
 
   public subscribe(callback: () => void) {
+    this.owner.onSubscribe?.();
     const listener: PathListener = { path: this.segments, callback };
     this.owner.listeners.add(listener);
     return {

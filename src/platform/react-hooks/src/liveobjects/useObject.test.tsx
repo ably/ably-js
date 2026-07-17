@@ -147,6 +147,21 @@ describe('useObject', () => {
   });
 
   /** @nospec */
+  it('renders a change that lands between the render snapshot and the subscription', async () => {
+    fakeObject.onSubscribe = () => {
+      // mutate the data directly, without notifying: no listener is registered
+      // yet, so only the post-subscribe snapshot refresh can observe the change
+      (fakeObject.data.scores as Record<string, unknown>).alice = 42;
+    };
+
+    renderInCtxProvider(ablyClient, <SelectorComponent selector={(root) => root.get('scores').get('alice')} />);
+
+    await flushEffects();
+
+    expect(screen.getByRole('value').innerHTML).toBe('42');
+  });
+
+  /** @nospec */
   it('does not re-render for changes outside the selected node', async () => {
     const results: UseObjectResult<any>[] = [];
     renderInCtxProvider(ablyClient, <SelectorComponent selector={(root) => root.get('scores')} results={results} />);

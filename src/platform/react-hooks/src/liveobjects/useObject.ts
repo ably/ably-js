@@ -1,5 +1,6 @@
 import type * as Ably from 'ably';
 import type { LiveMap, PathObject, Value } from 'ably/liveobjects';
+import { dequal } from 'dequal';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ChannelNameAndOptions } from '../AblyReactHooks.js';
 import { INACTIVE_CONNECTION_STATES } from '../hooks/constants.js';
@@ -17,10 +18,16 @@ export type UseObjectOptions = ChannelNameAndOptions;
 
 /**
  * The surface common to every {@link PathObject} variant that {@link useObject}
- * relies on. Every node a selector can return satisfies this type; it exists so
- * the hook's signatures can constrain and infer concrete `PathObject` subtypes
- * (which is what makes the selector's navigation chain determine the result
- * type) without forcing them into a single `PathObject<V>` shape.
+ * relies on. Every node a selector can return satisfies this type.
+ *
+ * The hook's signatures constrain and infer over this structural type rather
+ * than over `PathObject<T>` because `PathObject<T>` is a conditional type:
+ * TypeScript cannot infer `T` from a value of the variant the conditional
+ * resolves to, and the resolved variants are not assignable to a common
+ * `PathObject<Value>` (two `LiveMapPathObject`s with different shapes have
+ * incompatible `get` signatures). Constraining and inferring the concrete
+ * variant directly is what lets the selector's navigation chain determine the
+ * result type.
  */
 export interface ObjectNode {
   /** The fully-qualified path string for this node. */
@@ -38,13 +45,14 @@ export interface ObjectNode {
 export type ObjectNodeValue<N extends ObjectNode> = N extends { compact(): infer C } ? Exclude<C, undefined> : never;
 
 /**
- * Navigates from the channel's root object to the node to subscribe to.
- * Receives the live root PathObject and returns a descendant via `get`/`at`;
- * the chain's types flow through, so the hook result is typed without manual
- * annotation. The function must only navigate — the node it returns is the one
- * the hook subscribes to. To subscribe to the whole object, omit the selector.
+ * Navigates from the channel's object to the node to subscribe to. Receives
+ * the channel's live object as a PathObject and returns a descendant via
+ * `get`/`at`; the chain's types flow through, so the hook result is typed
+ * without manual annotation. The function must only navigate — the node it
+ * returns is the one the hook subscribes to. To subscribe to the channel's
+ * whole object, omit the selector.
  */
-export type ObjectSelector<Root extends ObjectNode, N extends ObjectNode> = (root: Root) => N;
+export type ObjectSelector<Obj extends ObjectNode, N extends ObjectNode> = (object: Obj) => N;
 
 /**
  * Result of {@link useObject} for a subscribed node of type `N`.
@@ -59,7 +67,7 @@ export interface UseObjectResult<N extends ObjectNode> {
   /**
    * The live PathObject for the subscribed node. Use it to navigate (`get`/`at`)
    * and to write (`set`/`remove`/`increment`/`decrement`/`batch`). `undefined`
-   * until the channel's root object has resolved and synced — this is the
+   * until the channel's object has resolved and synced — this is the
    * readiness signal: `object === undefined && error === null` is loading,
    * `error !== null` is failed, and a defined `object` is ready (with `value`
    * carrying the data once the node exists).
@@ -109,44 +117,45 @@ const emptyStore: ObjectStore = {
 const getServerSnapshot = () => undefined;
 
 /**
- * Subscribe to the channel's root LiveObjects node and re-render on change.
+ * Subscribe to the channel's object and re-render on change.
  *
  * The channel is taken from the nearest `ChannelProvider` unless `channelName`
- * is given. `Root` describes the channel's root LiveMap and defaults to an
- * untyped map.
+ * is given. `T` describes the shape of the channel's object — the same type
+ * parameter `RealtimeObject.get<T>()` takes — and defaults to an untyped map.
  *
  * Requires the `LiveObjects` plugin on the Realtime client and the
  * `OBJECT_SUBSCRIBE` channel mode (plus `OBJECT_PUBLISH` to write); otherwise
  * `error` carries ably-js's reason. Readiness is derived from the result (see
  * {@link UseObjectResult.object}), not a status enum.
  */
-export function useObject<Root extends Value = LiveMap<Record<string, Value>>>(
+export function useObject<T extends Record<string, Value> = Record<string, Value>>(
   options?: UseObjectOptions,
-): UseObjectResult<PathObject<Root>>;
+): UseObjectResult<PathObject<LiveMap<T>>>;
 /**
  * Subscribe to a nested LiveObjects node, selected by navigating from the
- * channel's untyped root, and re-render on change. The node the selector
+ * channel's (untyped) object, and re-render on change. The node the selector
  * returns determines `N`, so `value` and `object` are typed from the
- * navigation chain, e.g. `useObject((root) => root.get('scores').get('alice'))`.
+ * navigation chain, e.g. `useObject((obj) => obj.get('scores').get('alice'))`.
  *
  * Channel resolution, readiness, and plugin/modes requirements are as for the
- * root overload.
+ * no-selector overload.
  */
 export function useObject<N extends ObjectNode>(
   selector: ObjectSelector<PathObject<LiveMap<Record<string, Value>>>, N>,
   options?: UseObjectOptions,
 ): UseObjectResult<N>;
 /**
- * Subscribe to a nested LiveObjects node, selected by navigating from a typed
- * root, and re-render on change. Annotate the selector's parameter with the
- * channel's root shape (`(root: PathObject<MyRoot>) => ...`) and the whole
- * navigation chain — wrong keys included — is checked at compile time.
+ * Subscribe to a nested LiveObjects node, selected by navigating from the
+ * channel's object with a typed shape, and re-render on change. Annotate the
+ * selector's parameter with the shape of the channel's object
+ * (`(obj: PathObject<LiveMap<MyShape>>) => ...`) and the whole navigation
+ * chain — wrong keys included — is checked at compile time.
  *
  * Channel resolution, readiness, and plugin/modes requirements are as for the
- * root overload.
+ * no-selector overload.
  */
-export function useObject<Root extends ObjectNode, N extends ObjectNode>(
-  selector: ObjectSelector<Root, N>,
+export function useObject<Obj extends ObjectNode, N extends ObjectNode>(
+  selector: ObjectSelector<Obj, N>,
   options?: UseObjectOptions,
 ): UseObjectResult<N>;
 
@@ -244,6 +253,16 @@ export function useObject(
           value = node.compact();
           onStoreChange();
         });
+        // The subscription is only established in an effect, after commit, so
+        // catch up on a change that landed since the render-time snapshot was
+        // taken — such a change fired no notification. compact() returns a
+        // fresh object on every call, so a deep-equality check is needed to
+        // keep the snapshot identity stable when nothing actually changed.
+        const latest = node.compact();
+        if (!dequal(latest, value)) {
+          value = latest;
+          onStoreChange();
+        }
         return () => subscription.unsubscribe();
       },
       getSnapshot: () => value,

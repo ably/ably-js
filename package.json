@@ -45,8 +45,14 @@
       }
     },
     "./liveobjects/react": {
-      "require": "./react/cjs/liveobjects/index.js",
-      "import": "./react/mjs/liveobjects/index.js"
+      "import": {
+        "types": "./react/mjs/liveobjects/index.d.ts",
+        "default": "./react/mjs/liveobjects/index.js"
+      },
+      "require": {
+        "types": "./react/cjs/liveobjects/index.d.ts",
+        "default": "./react/cjs/liveobjects/index.js"
+      }
     },
     "./promises": {
       "types": "./promises.d.ts",
