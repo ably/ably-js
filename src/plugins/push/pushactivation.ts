@@ -12,7 +12,7 @@ import type { PaginatedResult } from 'common/lib/client/paginatedresource';
 // Keep this byte-identical to the copy in src/common/lib/client/push.ts. This plugin only
 // type-imports from common client modules, so a value import from there is not viable for the build.
 const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
-  'Run push.activate() in a browser environment with service worker support. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
+  'Run push.activate() in a browser environment with service worker support, or in React Native using the ably/react-native-push plugin. From a server, use client.push.admin instead. Call client.push.admin.publish(recipient, payload) to send to a device or clientId. Call client.push.admin.deviceRegistrations.save(device) to register a device record.';
 
 const persistKeys = {
   deviceId: 'ably.push.deviceId',
@@ -36,6 +36,30 @@ export interface LocalDeviceAuthDetails {
 
 export type LocalDeviceFactory = ReturnType<typeof localDeviceFactory>;
 export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
+
+/**
+ * Push storage writes may be asynchronous (e.g. React Native's AsyncStorage). Several write sites
+ * sit inside synchronous state-machine code and cannot await the result, so a logging rejection
+ * handler is pre-attached: ignoring the returned promise never causes an unhandled rejection. The
+ * returned promise itself still rejects, so asynchronous callers that await persistence observe
+ * the failure.
+ */
+function loggedStorageWrites(client: BaseClient, op: string, writes: (void | Promise<void>)[]): void | Promise<void> {
+  const promises = writes.filter((result): result is Promise<void> => !!result && typeof result.then === 'function');
+  if (promises.length === 0) {
+    return;
+  }
+  const allWritten = Promise.all(promises).then(() => {});
+  allWritten.catch((err) => {
+    client.Logger.logAction(
+      client.logger,
+      client.Logger.LOG_ERROR,
+      'Push.' + op,
+      'failed to persist push state to storage: ' + client.Utils.inspectError(err),
+    );
+  });
+  return allWritten;
+}
 
 /**
  * LocalDevice extends DeviceDetails, but DeviceDetails is part of core ably-js and LocalDevice is part of the Push plugin
@@ -64,12 +88,17 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       return device;
     }
 
+    static async loadAsync(rest: BaseClient) {
+      const device = new LocalDevice(rest);
+      await device.loadPersistedAsync();
+      return device;
+    }
+
     async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>> {
-      const Platform = this.rest.Platform;
-      if (!Platform.Config.push) {
+      if (!this.rest.pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -109,62 +138,105 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       }).get({ deviceId: this.id });
     }
 
+    // keep in sync with loadPersistedAsync()
     loadPersisted() {
-      const Platform = this.rest.Platform;
-      if (!Platform.Config.push) {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
-      this.platform = Platform.Config.push.platform;
+      if (pushConfig.storageIsAsync) {
+        throw new this.rest.ErrorInfo({
+          message: 'The local device cannot be loaded synchronously: push storage on this platform is asynchronous',
+          code: 40000,
+          statusCode: 400,
+          remediation:
+            'Use await client.getDevice() instead of client.device(). device() reads storage synchronously and is deprecated.',
+        });
+      }
+      this.platform = pushConfig.platform;
       this.clientId = this.rest.auth.clientId ?? undefined;
-      this.formFactor = Platform.Config.push.formFactor;
-      this.id = Platform.Config.push.storage.get(persistKeys.deviceId);
+      this.formFactor = pushConfig.formFactor;
+      // this path is only reachable with synchronous storage (async storage implies storageIsAsync,
+      // which routes callers to getDevice() and the async load path), so the reads are cast to string
+      this.id = pushConfig.storage.get(persistKeys.deviceId) as string;
 
       if (this.id) {
-        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret);
+        this.deviceSecret = pushConfig.storage.get(persistKeys.deviceSecret) as string;
         this.deviceIdentityToken = JSON.parse(
-          Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) || 'null',
+          (pushConfig.storage.get(persistKeys.deviceIdentityToken) as string) || 'null',
         );
-        this.push.recipient = JSON.parse(Platform.Config.push.storage.get(persistKeys.pushRecipient) || 'null');
+        this.push.recipient = JSON.parse((pushConfig.storage.get(persistKeys.pushRecipient) as string) || 'null');
       } else {
         this.resetId();
       }
     }
 
-    persist() {
-      const config = this.rest.Platform.Config;
-      if (!config.push) {
+    // keep in sync with loadPersisted(); awaiting a non-promise is a no-op, so this single
+    // implementation serves both synchronous (web) and asynchronous (React Native) storage
+    async loadPersistedAsync() {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
         throw new this.rest.ErrorInfo({
           message:
-            'Push activation is not available on this platform: it requires a browser environment with service worker support',
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
           code: 40000,
           statusCode: 400,
           remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
         });
       }
+      this.platform = pushConfig.platform;
+      this.clientId = this.rest.auth.clientId ?? undefined;
+      this.formFactor = pushConfig.formFactor;
+      this.id = ((await pushConfig.storage.get(persistKeys.deviceId)) ?? undefined) as string;
+
       if (this.id) {
-        config.push.storage.set(persistKeys.deviceId, this.id);
-      }
-      if (this.deviceSecret) {
-        config.push.storage.set(persistKeys.deviceSecret, this.deviceSecret);
-      }
-      if (this.deviceIdentityToken) {
-        config.push.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken));
-      }
-      if (this.push.recipient) {
-        config.push.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient));
+        this.deviceSecret = ((await pushConfig.storage.get(persistKeys.deviceSecret)) ?? undefined) as string;
+        this.deviceIdentityToken = JSON.parse(
+          (await pushConfig.storage.get(persistKeys.deviceIdentityToken)) || 'null',
+        );
+        this.push.recipient = JSON.parse((await pushConfig.storage.get(persistKeys.pushRecipient)) || 'null');
+      } else {
+        await this.resetId();
       }
     }
 
-    resetId() {
+    persist(): void | Promise<void> {
+      const pushConfig = this.rest.pushConfig;
+      if (!pushConfig) {
+        throw new this.rest.ErrorInfo({
+          message:
+            'Push activation is not available on this platform: it requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
+          code: 40000,
+          statusCode: 400,
+          remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
+        });
+      }
+      const writes: (void | Promise<void>)[] = [];
+      if (this.id) {
+        writes.push(pushConfig.storage.set(persistKeys.deviceId, this.id));
+      }
+      if (this.deviceSecret) {
+        writes.push(pushConfig.storage.set(persistKeys.deviceSecret, this.deviceSecret));
+      }
+      if (this.deviceIdentityToken) {
+        writes.push(pushConfig.storage.set(persistKeys.deviceIdentityToken, JSON.stringify(this.deviceIdentityToken)));
+      }
+      if (this.push.recipient) {
+        writes.push(pushConfig.storage.set(persistKeys.pushRecipient, JSON.stringify(this.push.recipient)));
+      }
+      return loggedStorageWrites(this.rest, 'LocalDevice.persist()', writes);
+    }
+
+    resetId(): void | Promise<void> {
       this.id = ulid();
       this.deviceSecret = ulid();
-      this.persist();
+      return this.persist();
     }
 
     getAuthDetails(
@@ -192,7 +264,11 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
 
 export class ActivationStateMachine {
   client: BaseClient;
-  current: ActivationState;
+  // set in the constructor with synchronous storage, or by ensureInitialized() with asynchronous storage
+  current!: ActivationState;
+  private _initPromise?: Promise<void>;
+  // serializes asynchronous activation-state writes; see persist()
+  private _activationStateWrite: Promise<void> = Promise.resolve();
   pendingEvents: ActivationEvent[];
   handling: boolean;
   deactivatedCallback?: ErrCallback;
@@ -211,19 +287,45 @@ export class ActivationStateMachine {
 
   constructor(rest: BaseClient) {
     this.client = rest;
-    this._pushConfig = rest.Platform.Config.push;
-    this.current = new ActivationStates[
-      (this.pushConfig.storage.get(persistKeys.activationState) as ActivationStateName) || 'NotActivated'
-    ](null);
+    this._pushConfig = rest.pushConfig;
+    if (!this._pushConfig?.storageIsAsync) {
+      // synchronous storage: resolve the persisted activation state immediately. With
+      // asynchronous storage the state is resolved by ensureInitialized() instead.
+      this.current = new ActivationStates[
+        (this.pushConfig.storage.get(persistKeys.activationState) as string as ActivationStateName) || 'NotActivated'
+      ](null);
+    }
     this.pendingEvents = [];
     this.handling = false;
+  }
+
+  /**
+   * Resolves the persisted activation state when storage is asynchronous. Must be awaited
+   * before the first handleEvent() call; a no-op with synchronous storage, where the
+   * constructor has already resolved the state.
+   */
+  async ensureInitialized(): Promise<void> {
+    if (this.current) {
+      return;
+    }
+    this._initPromise ??= (async () => {
+      try {
+        const persistedName = (await this.pushConfig.storage.get(persistKeys.activationState)) as string | null;
+        this.current = new ActivationStates[(persistedName as ActivationStateName) || 'NotActivated'](null);
+      } catch (err) {
+        // drop the failed read so a later activation attempt can retry after a transient storage failure
+        this._initPromise = undefined;
+        throw err;
+      }
+    })();
+    return this._initPromise;
   }
 
   get pushConfig() {
     if (!this._pushConfig) {
       throw new this.client.ErrorInfo({
         message:
-          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support',
+          'This platform is not supported as a target of push notifications: push activation requires a browser environment with service worker support, or a React Native environment with the ably/react-native-push plugin',
         code: 40000,
         statusCode: 400,
         remediation: PUSH_ACTIVATION_NOT_AVAILABLE_HINT,
@@ -233,8 +335,25 @@ export class ActivationStateMachine {
   }
 
   persist() {
-    if (isPersistentState(this.current)) {
-      this.pushConfig.storage.set(persistKeys.activationState, this.current.name);
+    if (!(this.current && isPersistentState(this.current))) {
+      return;
+    }
+    const name = this.current.name;
+    if (this.pushConfig.storageIsAsync) {
+      // chain asynchronous writes so an earlier slow write cannot complete after a later
+      // transition and restore stale activation state. Failures are logged by
+      // loggedStorageWrites; the queue swallows them so subsequent writes still run.
+      this._activationStateWrite = this._activationStateWrite
+        .then(() =>
+          loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
+            this.pushConfig.storage.set(persistKeys.activationState, name),
+          ]),
+        )
+        .catch(() => {});
+    } else {
+      loggedStorageWrites(this.client, 'ActivationStateMachine.persist()', [
+        this.pushConfig.storage.set(persistKeys.activationState, name),
+      ]);
     }
   }
 
@@ -292,7 +411,7 @@ export class ActivationStateMachine {
   }
 
   async updateRegistration() {
-    const localDevice = this.client.device();
+    const localDevice = await this.client.getDevice();
     if (this.registerCallback) {
       this.callCustomRegisterer(localDevice, false);
     } else {
@@ -332,7 +451,7 @@ export class ActivationStateMachine {
   }
 
   async deregister() {
-    const device = this.client.device();
+    const device = await this.client.getDevice();
     if (this.deregisterCallback) {
       this.callCustomDeregisterer(device);
     } else {
@@ -343,7 +462,7 @@ export class ActivationStateMachine {
 
       if (rest.options.headers) this.client.Utils.mixin(headers, rest.options.headers);
 
-      const authDetails = this.client.device().getAuthDetails(this.client, headers, params);
+      const authDetails = device.getAuthDetails(this.client, headers, params);
 
       if (rest.options.pushFullWait) this.client.Utils.mixin(params, { fullWait: 'true' });
 
@@ -529,6 +648,11 @@ type ActivationEvent =
   | DeregistrationFailed;
 
 // States
+//
+// Invariant: processEvent() implementations are synchronous and read the local device via the
+// synchronous machine.client.device(). This relies on Push.activate()/deactivate() pre-hydrating
+// the device (await client.getDevice()) and the machine state (await ensureInitialized()) before
+// dispatching any event. Never add a device() call reachable before that hydration has happened.
 abstract class ActivationState {
   name: ActivationStateName;
 
@@ -735,8 +859,11 @@ class WaitingForDeregistration extends ActivationState {
       const device = machine.client.device();
       delete device.deviceIdentityToken;
       delete device.push.recipient;
+      loggedStorageWrites(machine.client, 'WaitingForDeregistration.processEvent()', [
+        machine.pushConfig.storage.remove(persistKeys.deviceIdentityToken),
+        machine.pushConfig.storage.remove(persistKeys.pushRecipient),
+      ]);
       device.resetId();
-      device.persist();
       machine.callDeactivatedCallback(null);
       return new NotActivated();
     } else if (event instanceof DeregistrationFailed) {

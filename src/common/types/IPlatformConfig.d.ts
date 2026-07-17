@@ -44,15 +44,21 @@ export interface ISpecificPlatformConfig {
 }
 
 export interface IPlatformPushStorage {
-  get(name: string): string;
-  set(name: string, value: string);
-  remove(name: string);
+  get(name: string): string | null | Promise<string | null>;
+  set(name: string, value: string): void | Promise<void>;
+  remove(name: string): void | Promise<void>;
 }
 
 export interface IPlatformPushConfig {
   platform: DevicePlatform;
   formFactor: DeviceFormFactor;
   storage: IPlatformPushStorage;
+  /**
+   * Must be set when `storage` methods return promises (e.g. React Native's AsyncStorage).
+   * Declarative rather than inferred: the synchronous device-load path has write side effects
+   * and must be refused before any storage call is made against an async implementation.
+   */
+  storageIsAsync?: boolean;
   getPushDeviceDetails?(machine: any);
 }
 

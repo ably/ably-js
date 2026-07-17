@@ -41,7 +41,17 @@ interface PushChannelRecipient {
   ablyUrl: string;
 }
 
-type PushRecipient = WebPushRecipient | PushChannelRecipient;
+export interface FcmPushRecipient {
+  transportType: 'fcm';
+  registrationToken: string;
+}
+
+export interface ApnsPushRecipient {
+  transportType: 'apns';
+  deviceToken: string;
+}
+
+type PushRecipient = WebPushRecipient | PushChannelRecipient | FcmPushRecipient | ApnsPushRecipient;
 
 export type DevicePushDetails = {
   error?: ErrorInfo;

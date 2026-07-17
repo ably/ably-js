@@ -18,6 +18,7 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
+import type { IPlatformPushConfig } from 'common/types/IPlatformConfig';
 import EventEmitter from '../util/eventemitter';
 import { MessageEncoding } from '../types/basemessage';
 import type * as LiveObjectsPlugin from 'plugins/liveobjects';
@@ -54,6 +55,7 @@ class BaseClient {
   readonly _liveObjectsPlugin: typeof LiveObjectsPlugin | null;
   readonly logger: Logger;
   _device?: LocalDevice;
+  private _devicePromise?: Promise<LocalDevice>;
 
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
@@ -145,13 +147,59 @@ class BaseClient {
     return this.rest.push;
   }
 
-  /** RSH8 */
+  /**
+   * The effective platform push config for this client. A config carried by the client's Push
+   * plugin (e.g. ReactNativePush, whose storage and token callbacks are supplied per client)
+   * takes precedence over the platform-level Platform.Config.push (set statically on web), so
+   * multiple clients never share plugin-supplied storage or callbacks.
+   */
+  get pushConfig(): IPlatformPushConfig | undefined {
+    return this.options.plugins?.Push?.pushConfig ?? Platform.Config.push;
+  }
+
+  /**
+   * RSH8
+   *
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage
+   * synchronously, which is not possible on platforms with asynchronous storage such as React
+   * Native. In the next major release `device()` will become asynchronous.
+   */
   device(): LocalDevice & API.LocalDevice {
     if (!this.options.plugins?.Push || !this.push.LocalDevice) {
       throwMissingPluginError('Push');
     }
     if (!this._device) {
+      if (this.pushConfig?.storageIsAsync) {
+        throw new ErrorInfo({
+          message:
+            'client.device() cannot load the local device synchronously: push storage on this platform is asynchronous',
+          code: 40000,
+          statusCode: 400,
+          remediation:
+            'Use await client.getDevice() instead. device() is deprecated and will become asynchronous in the next major release.',
+        });
+      }
       this._device = this.push.LocalDevice.load(this);
+    }
+    return this._device;
+  }
+
+  /** RSH8 */
+  async getDevice(): Promise<LocalDevice & API.LocalDevice> {
+    if (!this.options.plugins?.Push || !this.push.LocalDevice) {
+      throwMissingPluginError('Push');
+    }
+    if (!this._device) {
+      const devicePromise = (this._devicePromise ??= this.push.LocalDevice.loadAsync(this));
+      try {
+        this._device = await devicePromise;
+      } catch (err) {
+        // drop the failed load so a later call can retry after a transient storage failure
+        if (this._devicePromise === devicePromise) {
+          this._devicePromise = undefined;
+        }
+        throw err;
+      }
     }
     return this._device;
   }
