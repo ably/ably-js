@@ -1569,43 +1569,44 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
               // Subscription to check all messages were received as expected
               rtUnfilteredChannel.subscribe('end', function (msg) {
-                // Ensure all pending I/O operations complete and messages are processed
-                // before running assertions to avoid race conditions
-                //
-                // Using setTimeout with 0 timeout as setImmediate is not available
-                // in browsers.
-                setTimeout(() => {
-                  try {
-                    expect(msg.data).to.equal(testData[testData.length - 1].data, 'Unexpected msg data received');
+                // The 'end' sentinel only orders deliveries on the raw channel; the derived
+                // (filtered) channel is a separate attachment whose deliveries can lag it,
+                // so wait for the filtered deliveries instead of assuming one macrotask
+                // is enough.
+                helper
+                  .waitFor(() => filteredMessages.length === 2, 10000)
+                  .then(() => {
+                    try {
+                      expect(msg.data).to.equal(testData[testData.length - 1].data, 'Unexpected msg data received');
 
-                    // Check that we receive expected messages on filtered channel
-                    expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
-                    expect(filteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
-                    expect(filteredMessages[1].data).to.equal(testData[2].data, 'Unexpected data received');
-                    expect(filteredMessages[0].extras.headers.name).to.equal(
-                      testData[0].extras.headers.name,
-                      'Unexpected header value received',
-                    );
-                    expect(filteredMessages[1].extras.headers.name).to.equal(
-                      testData[2].extras.headers.name,
-                      'Unexpected header value received',
-                    );
-                    // Check that message with header that doesn't meet filtering condition is not received.
-                    for (const m of filteredMessages) {
-                      expect(m.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
-                    }
+                      // Check that we receive expected messages on filtered channel
+                      expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
+                      expect(filteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
+                      expect(filteredMessages[1].data).to.equal(testData[2].data, 'Unexpected data received');
+                      expect(filteredMessages[0].extras.headers.name).to.equal(
+                        testData[0].extras.headers.name,
+                        'Unexpected header value received',
+                      );
+                      expect(filteredMessages[1].extras.headers.name).to.equal(
+                        testData[2].extras.headers.name,
+                        'Unexpected header value received',
+                      );
+                      // Check that message with header that doesn't meet filtering condition is not received.
+                      for (const m of filteredMessages) {
+                        expect(m.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
+                      }
 
-                    // Check that we receive expected messages on unfiltered channel, including the `end` event message
-                    expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
-                    for (var i = 0; i < unFilteredMessages.length; i++) {
-                      expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
+                      // Check that we receive expected messages on unfiltered channel, including the `end` event message
+                      expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
+                      for (var i = 0; i < unFilteredMessages.length; i++) {
+                        expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
+                      }
+                    } catch (err) {
+                      helper.closeAndFinish(done, realtime, err);
+                      return;
                     }
-                  } catch (err) {
-                    helper.closeAndFinish(done, realtime, err);
-                    return;
-                  }
-                  helper.closeAndFinish(done, realtime);
-                }, 0);
+                    helper.closeAndFinish(done, realtime);
+                  });
               });
               var restChannel = rest.channels.get('chan');
               restChannel.publish(testData);
