@@ -13,7 +13,10 @@
  * Deviations from UTS spec:
  * - toUserFacingObjectData adds a deprecated 'value' convenience field to the
  *   public ObjectData (see deviations.md). The numeric-to-'lww' semantics
- *   mapping is the spec's public rendering, not a deviation.
+ *   mapping is the idiomatic JS rendering of the ObjectsMapSemantics.LWW enum
+ *   member (OMP2) per the UTS enum-value convention (spec uts/README.md) —
+ *   the spec pseudo-code's "LWW" is the symbolic enum name, not a string
+ *   contract.
  * - ably-js omits undefined fields rather than setting null — the sanctioned
  *   null/undefined convention (spec uts/README.md). Assertions use
  *   .to.be.undefined instead of == null where appropriate.
