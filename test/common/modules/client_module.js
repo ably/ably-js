@@ -12,6 +12,20 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
     helper = helper.addingHelperFunction('ablyClientOptions');
     helper.recordPrivateApi('call.Utils.copy');
     var clientOptions = utils.copy(ablyGlobals);
+
+    /* When the test app was provisioned against a local sandbox, that app runs on
+     * its own isolated server; route every client at it (host/port/scheme the
+     * sandbox reported), replacing the cloud defaults from globals. Applied before
+     * the per-test options are mixed in, so a test that sets its own
+     * endpoint/host/port still overrides this. */
+    var testApp = testAppHelper.getTestApp();
+    if (testApp && testApp.local) {
+      clientOptions.endpoint = testApp.endpoint;
+      clientOptions.port = testApp.port;
+      clientOptions.tlsPort = testApp.port;
+      clientOptions.tls = testApp.tls;
+    }
+
     helper.recordPrivateApi('call.Utils.mixin');
     utils.mixin(clientOptions, options);
     var authMethods = ['authUrl', 'authCallback', 'token', 'tokenDetails', 'key'];

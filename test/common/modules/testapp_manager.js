@@ -32,6 +32,16 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     return `${endpoint}.realtime.ably.net`;
   }
 
+  /* When the compatibility harness is provisioning against the local sandbox
+   * (ABLY_LOCAL_SANDBOX_URL) rather than the cloud sandbox, point a request's
+   * connection details there — only the host/port/scheme differ. */
+  function applyLocalSandboxOptions(options) {
+    var localSandboxUrl = new URL(ablyGlobals.localSandboxURL);
+    options.host = localSandboxUrl.hostname;
+    options.port = Number(localSandboxUrl.port);
+    options.scheme = localSandboxUrl.protocol.replace(':', '');
+  }
+
   function toBase64(helper, str) {
     helper = helper.addingHelperFunction('toBase64');
     var bufferUtils = ably.Realtime.Platform.BufferUtils;
@@ -144,6 +154,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
         headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'Content-Length': postData.length },
         body: postData,
       };
+      if (ablyGlobals.localSandboxURL) applyLocalSandboxOptions(postOptions);
 
       httpReq(postOptions, function (err, res) {
         if (err) {
@@ -161,6 +172,15 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
               keys: res.keys,
               cipherConfig: testData.cipher,
             };
+            if (ablyGlobals.localSandboxURL) {
+              /* The local sandbox boots an isolated server for this app and tells
+               * us how to reach it. Record it so client_module routes every client
+               * at that server, and so teardown targets the right provisioner. */
+              testApp.local = true;
+              testApp.endpoint = res.endpoint;
+              testApp.port = res.port;
+              testApp.tls = res.tls;
+            }
             callback(null, testApp);
           }
         }
@@ -190,6 +210,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
       body: postData,
       paramsIfNoHeaders: { key: authKey },
     };
+    if (app.local) applyLocalSandboxOptions(postOptions);
 
     httpReq(postOptions, function (err) {
       if (err) {
@@ -213,6 +234,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
       scheme,
       headers: { Authorization: 'Basic ' + authHeader },
     };
+    if (app.local) applyLocalSandboxOptions(delOptions);
 
     httpReq(delOptions, function (err) {
       callback(err);
