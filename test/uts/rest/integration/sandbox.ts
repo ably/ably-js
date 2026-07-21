@@ -19,6 +19,7 @@ export {
   uniqueChannelName,
   generateJWT,
   pollUntil,
+  pollUntilSuccess,
 } from '../../realtime/integration/sandbox';
 
 import { getSandboxApp } from '../../realtime/integration/sandbox';

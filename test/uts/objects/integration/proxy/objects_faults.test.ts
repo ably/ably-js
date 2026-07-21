@@ -24,6 +24,7 @@ import {
   generateJWT,
   uniqueChannelName,
   pollUntil,
+  pollUntilSuccess,
 } from '../../../realtime/integration/sandbox';
 import { createProxySession, waitForProxy, ProxySession } from '../../../realtime/integration/helpers/proxy';
 
@@ -213,16 +214,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
     await connectAndWait(clientB);
 
     const rootB = await channelB.object.get();
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('key1').value() === 'initial' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    await pollUntilSuccess(() => (rootB.get('key1').value() === 'initial' ? true : null));
 
     // Disconnect client B via proxy (use 'close' action type to close the WebSocket)
     await session.triggerAction({ type: 'close' });
@@ -235,16 +227,9 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
     await waitForState(clientB, 'connected', 30000);
 
     const rootB2 = await channelB.object.get();
-    await pollUntil(
-      () => {
-        try {
-          return rootB2.get('key1').value() === 'updated_during_disconnect' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 15000 },
-    );
+    await pollUntilSuccess(() => (rootB2.get('key1').value() === 'updated_during_disconnect' ? true : null), {
+      timeout: 15000,
+    });
 
     expect(rootB2.get('key1').value()).to.equal('updated_during_disconnect');
 
@@ -294,16 +279,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
     await root.set('before_detach', 'hello');
 
     // Verify the data is accessible via polling (echo from server)
-    await pollUntil(
-      () => {
-        try {
-          return root.get('before_detach').value() === 'hello' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    await pollUntilSuccess(() => (root.get('before_detach').value() === 'hello' ? true : null));
     expect(root.get('before_detach').value()).to.equal('hello');
 
     // Inject server-initiated DETACHED (action 13)
@@ -320,16 +296,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
 
     // Re-sync should restore data
     root = await channel.object.get();
-    await pollUntil(
-      () => {
-        try {
-          return root.get('before_detach').value() === 'hello' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 15000 },
-    );
+    await pollUntilSuccess(() => (root.get('before_detach').value() === 'hello' ? true : null), { timeout: 15000 });
 
     expect(root.get('before_detach').value()).to.equal('hello');
 
@@ -517,16 +484,7 @@ describe('uts/objects/integration/proxy/objects_faults', function () {
     const rootB = await channelB.object.get();
 
     // The mutation from A should be visible (either in sync data or buffered OBJECT)
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('existing').value() === 'after' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 15000 },
-    );
+    await pollUntilSuccess(() => (rootB.get('existing').value() === 'after' ? true : null), { timeout: 15000 });
 
     expect(rootB.get('existing').value()).to.equal('after');
 

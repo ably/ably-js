@@ -114,17 +114,7 @@ describeWithProtocols('uts/objects/integration/objects_sync', function (useBinar
 
     // Client B attaches and syncs -- should see the data
     const rootB = await channelB.object.get();
-    await pollUntil(
-      () => {
-        try {
-          const val = rootB.get('key1').value();
-          return val === 'value1' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('key1').value() === 'value1' ? true : null));
 
     expect(rootB.get('key1').value()).to.equal('value1');
 
@@ -163,17 +153,7 @@ describeWithProtocols('uts/objects/integration/objects_sync', function (useBinar
     await root.set('before_detach', 'hello');
 
     // Verify the data is accessible via polling (echo from server)
-    await pollUntil(
-      () => {
-        try {
-          const val = root.get('before_detach').value();
-          return val === 'hello' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    await pollUntil(() => (root.get('before_detach').value() === 'hello' ? true : null));
 
     expect(root.get('before_detach').value()).to.equal('hello');
 
@@ -183,17 +163,7 @@ describeWithProtocols('uts/objects/integration/objects_sync', function (useBinar
 
     // Re-sync should restore data
     root = await channel.object.get();
-    await pollUntil(
-      () => {
-        try {
-          const val = root.get('before_detach').value();
-          return val === 'hello' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    await pollUntil(() => (root.get('before_detach').value() === 'hello' ? true : null));
 
     expect(root.get('before_detach').value()).to.equal('hello');
 

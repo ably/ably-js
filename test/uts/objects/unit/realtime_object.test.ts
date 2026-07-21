@@ -10,8 +10,9 @@
  *
  * Deviations:
  * - RTO10/RTO10b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
- *   not Platform.Config.setTimeout. Tests stub Date.now and use a short
- *   gcInterval to trigger GC, then restore originals.
+ *   not Platform.Config.setTimeout. Instead of stubbing Date.now, the tests
+ *   backdate the tombstone's serialTimestamp (RTLO6a: it becomes tombstonedAt)
+ *   past the grace period and use a short gcInterval to trigger GC.
  * - RTO20f (siteTimeserials): verified observably — after a local increment, a later inbound
  *   COUNTER_INC from SITE_CODE with a non-ACK serial ("t:0:9", below the ACK serial) still applies
  *   to 120, proving the LOCAL apply-on-ACK left siteTimeserials untouched (RTLC7c). No private access.
@@ -867,46 +868,40 @@ describe('uts/objects/unit/realtime_object', function () {
 
   // UTS: objects/unit/RTO10/gc-tombstoned-objects-0
   it('RTO10 - GC removes tombstoned objects past grace period', async function () {
-    // Save original values
     const origGcInterval = DEFAULTS.gcInterval;
-    const origDateNow = Date.now;
-    let fakeNow = origDateNow.call(Date);
 
     try {
       // Use short GC interval so the timer fires quickly
       DEFAULTS.gcInterval = 50;
-      Date.now = () => fakeNow;
 
       const { root, mockWs } = await setupSyncedChannel('test-RTO10');
 
-      // Delete the counter object (tombstone it)
+      // Delete the counter object (tombstone it). The tombstone's serialTimestamp is
+      // backdated past the grace period (RTLO6a: it becomes tombstonedAt), so the object
+      // is GC-eligible under the real clock -- no Date.now stubbing needed.
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
+        buildObjectMessage('test-RTO10', [
+          buildObjectDelete('counter:score@1000', '99', 'site1', Date.now() - (86400000 + 300000)),
+        ]),
       );
       await flushAsync();
 
-      // Advance fake time past grace period (86400000ms = 24h) + buffer
-      fakeNow += 86400000 + 300000;
-
-      // Wait for GC interval to fire (real time passes for the setInterval)
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      // Wait for the (real) GC interval to fire by polling for its observable effect,
+      // rather than sleeping a fixed period that races the timer on slow machines
+      await pollUntil(() => root.get('score').value() === undefined);
 
       expect(root.get('score').value()).to.be.undefined;
     } finally {
       DEFAULTS.gcInterval = origGcInterval;
-      Date.now = origDateNow;
     }
   });
 
   // UTS: objects/unit/RTO10b1/gc-grace-period-source-0
   it('RTO10b1 - GC grace period from ConnectionDetails', async function () {
     const origGcInterval = DEFAULTS.gcInterval;
-    const origDateNow = Date.now;
-    let fakeNow = origDateNow.call(Date);
 
     try {
       DEFAULTS.gcInterval = 50;
-      Date.now = () => fakeNow;
 
       const mockWs = new MockWebSocket({
         onConnectionAttempt: (conn) => {
@@ -954,22 +949,22 @@ describe('uts/objects/unit/realtime_object', function () {
       const channel = client.channels.get('test-RTO10b1', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
       const root = await channel.object.get();
 
-      // Delete the counter (tombstone it)
+      // Delete the counter (tombstone it). The tombstone is backdated 6s: eligible under
+      // the server-provided 5000ms grace, but NOT under the 24h default -- so the test
+      // fails if the implementation ignores ConnectionDetails.objectsGCGracePeriod
+      // (RTO10b1). No Date.now stubbing needed.
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10b1', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
+        buildObjectMessage('test-RTO10b1', [buildObjectDelete('counter:score@1000', '99', 'site1', Date.now() - 6000)]),
       );
       await flushAsync();
 
-      // Advance past the short grace period (5000ms)
-      fakeNow += 5000 + 1000;
-
-      // Wait for GC interval to fire
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      // Wait for the (real) GC interval to fire by polling for its observable effect,
+      // rather than sleeping a fixed period that races the timer on slow machines
+      await pollUntil(() => root.get('score').value() === undefined);
 
       expect(root.get('score').value()).to.be.undefined;
     } finally {
       DEFAULTS.gcInterval = origGcInterval;
-      Date.now = origDateNow;
     }
   });
 

@@ -718,7 +718,7 @@ describe('uts/rest/unit/fallback', function () {
     expect(hosts[0]).to.equal(fallbackHost);
 
     // Advance time past fallbackRetryTimeout
-    clock.tick(200);
+    clock.tick(150);
 
     // Third request after cache expiry: should try primary again
     hosts.length = 0;

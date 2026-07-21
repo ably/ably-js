@@ -18,6 +18,10 @@
  * - parentReferences tests: ably-js uses Map<LiveObject, Set<string>> for
  *   _parentReferences. Tests access via (obj as any)._parentReferences and
  *   check entries using the LiveObject instance as map key.
+ * - RTLM19 (GC boundary): the spec calls a pure gcTombstonedEntries(grace_period, now);
+ *   ably-js's onGCInterval() reads Date.now internally, so the test stubs Date.now
+ *   synchronously around that single call (restored in finally, no awaits or polling
+ *   inside the stub window) to honour the spec's fixed `now` fixture.
  */
 
 import { expect } from 'chai';

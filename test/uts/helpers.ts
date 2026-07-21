@@ -275,7 +275,8 @@ function flushAsync(): Promise<void> {
  * on timeout -- matching the spec convention and the integration-tier `pollUntil` (sandbox.ts).
  * NOTE: `test:uts` runs mocha with `--no-config` (2s default timeout), so tests waiting close to
  * (or beyond) that must raise their timeout (e.g. `this.timeout(6000)`). Do not use in tests that
- * stub `Date.now` (the deadline arithmetic would freeze).
+ * stub `Date.now` (the deadline arithmetic would freeze) -- restructure the test to avoid the
+ * stub instead, e.g. by backdating fixture timestamps.
  */
 async function pollUntil(condition: () => boolean, timeoutMs = 5000): Promise<void> {
   const deadline = Date.now() + timeoutMs;

@@ -118,16 +118,7 @@ describeWithProtocols('uts/objects/integration/objects_lifecycle', function (use
     rootB.subscribe(() => {
       // subscription active
     });
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('greeting').value() === 'hello' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('greeting').value() === 'hello' ? true : null));
 
     expect(rootB.get('greeting').value()).to.equal('hello');
 
@@ -179,16 +170,7 @@ describeWithProtocols('uts/objects/integration/objects_lifecycle', function (use
     await rootA.set('my_counter', LiveObjectsPlugin.LiveCounter.create(42));
 
     rootB.subscribe(() => {});
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('my_counter').value() === 42 ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('my_counter').value() === 42 ? true : null));
 
     expect(rootB.get('my_counter').value()).to.equal(42);
     expect(rootB.get('my_counter').instance()).to.not.be.null;
@@ -242,30 +224,12 @@ describeWithProtocols('uts/objects/integration/objects_lifecycle', function (use
     await rootA.set('hits', LiveObjectsPlugin.LiveCounter.create(0));
 
     rootB.subscribe(() => {});
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('hits').value() === 0 ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('hits').value() === 0 ? true : null));
 
     // Increment it
     await rootA.get('hits').increment(10);
 
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('hits').value() === 10 ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('hits').value() === 10 ? true : null));
 
     expect(rootA.get('hits').value()).to.equal(10);
     expect(rootB.get('hits').value()).to.equal(10);
@@ -324,16 +288,7 @@ describeWithProtocols('uts/objects/integration/objects_lifecycle', function (use
     );
 
     rootB.subscribe(() => {});
-    await pollUntil(
-      () => {
-        try {
-          return rootB.get('settings').get('theme').value() === 'dark' ? true : null;
-        } catch {
-          return null;
-        }
-      },
-      { interval: 200, timeout: 10000 },
-    );
+    await pollUntil(() => (rootB.get('settings').get('theme').value() === 'dark' ? true : null));
 
     expect(rootB.get('settings').get('theme').value()).to.equal('dark');
     expect(rootB.get('settings').get('fontSize').value()).to.equal(14);
