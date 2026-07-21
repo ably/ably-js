@@ -64,6 +64,7 @@
     "callbacks.js",
     "liveobjects.d.ts",
     "liveobjects.d.mts",
+    "liveobjects/react.d.ts",
     "modular.d.ts",
     "promises.d.ts",
     "promises.js",
