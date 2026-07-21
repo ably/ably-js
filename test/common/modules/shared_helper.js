@@ -478,6 +478,10 @@ define([
       return clientModule.AblyRest(this, options);
     }
 
+    AblyRestEcho(options) {
+      return clientModule.AblyRestEcho(this, options);
+    }
+
     static activeClients = [];
 
     AblyRealtime(options) {
