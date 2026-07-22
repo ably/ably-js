@@ -419,7 +419,7 @@ export class ActivationStateMachine {
       const format = client.options.useBinaryProtocol
           ? this.client.Utils.Format.msgpack
           : this.client.Utils.Format.json,
-        body = client.rest.DeviceDetails.fromLocalDevice(localDevice),
+        body = { push: { recipient: localDevice.push.recipient } },
         headers = this.client.Defaults.defaultPostHeaders(this.client.options, { format }),
         params = {};
 
@@ -434,18 +434,18 @@ export class ActivationStateMachine {
       const requestBody = this.client.Utils.encodeBody(body, client._MsgPack, format);
       const authDetails = localDevice.getAuthDetails(client, headers, params);
       try {
-        const response = await this.client.rest.Resource.patch(
+        await this.client.rest.Resource.patch(
           client,
-          '/push/deviceRegistrations',
+          '/push/deviceRegistrations/' + encodeURIComponent(localDevice.id),
           requestBody,
           authDetails.headers,
           authDetails.params,
           format,
           true,
         );
-        this.handleEvent(new GotDeviceRegistration(response.body as DeviceRegistration));
+        this.handleEvent(new RegistrationSynced());
       } catch (err) {
-        this.handleEvent(new GettingDeviceRegistrationFailed(err as ErrorInfo));
+        this.handleEvent(new SyncRegistrationFailed(err as ErrorInfo));
       }
     }
   }
