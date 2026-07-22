@@ -169,7 +169,6 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'write.connectionManager.connectionDetails.maxMessageSize',
     'write.connectionManager.connectionId',
     'write.connectionManager.connectionKey',
-    'write.connectionManager.lastActivity',
     'write.connectionManager.msgSerial',
     'write.connectionManager.domains',
     'write.realtime.options.echoMessages',
