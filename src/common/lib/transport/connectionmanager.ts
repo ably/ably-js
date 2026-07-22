@@ -150,7 +150,6 @@ class ConnectionManager extends EventEmitter {
   proposedTransport?: Transport;
   host: string | null;
   lastAutoReconnectAttempt: number | null;
-  lastActivity: number | null;
   forceFallbackHost: boolean;
   transitionTimer?: number | NodeJS.Timeout | null;
   suspendTimer?: number | NodeJS.Timeout | null;
@@ -255,7 +254,6 @@ class ConnectionManager extends EventEmitter {
     this.activeProtocol = null;
     this.host = null;
     this.lastAutoReconnectAttempt = null;
-    this.lastActivity = null;
     this.forceFallbackHost = false;
     this.connectCounter = 0;
     this.wsCheckResult = null;
@@ -865,24 +863,6 @@ class ConnectionManager extends EventEmitter {
     });
   }
 
-  checkConnectionStateFreshness(): void {
-    if (!this.lastActivity || !this.connectionId) {
-      return;
-    }
-
-    const sinceLast = Platform.Config.now() - this.lastActivity;
-    if (sinceLast > this.connectionStateTtl + (this.maxIdleInterval as number)) {
-      Logger.logAction(
-        this.logger,
-        Logger.LOG_MINOR,
-        'ConnectionManager.checkConnectionStateFreshness()',
-        'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state',
-      );
-      this.clearConnection();
-      this.states.connecting.failState = 'suspended';
-    }
-  }
-
   /**
    * Called when the connectionmanager wants to persist transport
    * state for later recovery. Only applicable in the browser context.
@@ -960,10 +940,11 @@ class ConnectionManager extends EventEmitter {
       // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
       this.realtime.connection.errorReason = stateChange.reason as ErrorInfo;
     }
-    if (newState.terminal || newState.state === 'suspended') {
-      /* suspended is nonterminal, but once in the suspended state, realtime
-       * will have discarded our connection state, so futher connection
-       * attempts should start from scratch */
+    if (newState.terminal) {
+      // RTN8d, RTN9d: connectionId and connectionKey are only cleared in the
+      // terminal states. In particular, they are retained in the suspended
+      // state: since RTN14h/spec-6.1.0 the client always attempts to resume on
+      // reconnecting and lets the server decide whether continuity is possible.
       this.clearConnection();
     }
     this.emit('connectionstate', stateChange);
@@ -1333,7 +1314,6 @@ class ConnectionManager extends EventEmitter {
     const connectCount = ++this.connectCounter;
 
     const connect = () => {
-      this.checkConnectionStateFreshness();
       this.getTransportParams((transportParams: TransportParams) => {
         if (transportParams.mode === 'recover' && transportParams.options.recover) {
           const recoveryContext = decodeRecoveryKey(transportParams.options.recover);
