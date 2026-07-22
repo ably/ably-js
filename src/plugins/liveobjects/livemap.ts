@@ -445,13 +445,13 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    const previousDataRef = this._dataRef;
     let update: LiveMapUpdate<T>;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
       update = this.tombstone(objectMessage);
     } else {
       // otherwise override data for this object with data from the object state
+      const previousDataRef = this._dataRef;
       this._createOperationIsMerged = false; // RTLM6b
       this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
@@ -464,9 +464,6 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       update = this._updateFromDataDiff(previousDataRef, this._dataRef);
       update.objectMessage = objectMessage;
     }
-
-    // Update parent references based on the calculated diff
-    this._updateParentReferencesFromUpdate(update, previousDataRef);
 
     return update;
   }
@@ -1104,45 +1101,5 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     }
 
     return false;
-  }
-
-  /**
-   * Update parent references based on the calculated update diff.
-   */
-  private _updateParentReferencesFromUpdate(update: LiveMapUpdate<T>, previousDataRef: LiveMapData): void {
-    for (const [key, changeType] of Object.entries(update.update)) {
-      if (changeType === 'removed') {
-        // Key was removed - remove parent reference from the old object if it was referencing one
-        const previousEntry = previousDataRef.data.get(key);
-        if (previousEntry?.data && 'objectId' in previousEntry.data) {
-          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
-          if (oldReferencedObject) {
-            oldReferencedObject.removeParentReference(this, key);
-          }
-        }
-      }
-
-      if (changeType === 'updated') {
-        // Key was updated - need to handle both removal of old reference and addition of new reference
-        const previousEntry = previousDataRef.data.get(key);
-        const newEntry = this._dataRef.data.get(key);
-
-        // Remove old parent reference if there was one
-        if (previousEntry?.data && 'objectId' in previousEntry.data) {
-          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
-          if (oldReferencedObject) {
-            oldReferencedObject.removeParentReference(this, key);
-          }
-        }
-
-        // Add new parent reference if the new value references an object
-        if (newEntry?.data && 'objectId' in newEntry.data) {
-          const newReferencedObject = this._realtimeObject.getPool().get(newEntry.data.objectId);
-          if (newReferencedObject) {
-            newReferencedObject.addParentReference(this, key);
-          }
-        }
-      }
-    }
   }
 }
