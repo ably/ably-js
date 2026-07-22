@@ -1,0 +1,20 @@
+{
+  "name": "@ably/pubsub-device",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Ably Pub/Sub SDK for end-user devices (browsers): realtime connection, channels, presence and device push. Types-only spike for PDR-091.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ably/ably-js.git",
+    "directory": "packages/pubsub-device"
+  },
+  "dependencies": {
+    "@ably/pubsub-common": "3.0.0"
+  },
+  "ably": {
+    "agent": "pubsub-js-device"
+  }
+}

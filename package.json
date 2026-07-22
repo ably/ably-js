@@ -11,6 +11,9 @@
   "browser": "./build/ably.js",
   "react-native": "./build/ably-reactnative.js",
   "typings": "./ably.d.ts",
+  "workspaces": [
+    "packages/*"
+  ],
   "exports": {
     ".": {
       "types": "./ably.d.ts",
@@ -193,6 +196,7 @@
     "build:liveobjects": "grunt build:liveobjects",
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
+    "check:packages": "tsc --noEmit --strict --target es2020 --module commonjs --moduleResolution node --esModuleInterop --forceConsistentCasingInFileNames packages/pubsub-common/index.d.ts packages/pubsub-device/index.d.ts packages/pubsub-server/index.d.ts packages/pubsub-react/index.d.ts packages/pubsub-react-native/index.d.ts",
     "lint:fix": "eslint --fix .",
     "prepare": "npm run build",
     "format": "prettier --write .",
