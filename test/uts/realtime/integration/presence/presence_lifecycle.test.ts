@@ -61,10 +61,13 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
     const channelA = clientA.channels.get(channelName);
     const channelB = clientB.channels.get(channelName);
 
-    // Attach B and subscribe before A enters any members
-    const receivedEnters: any[] = [];
-    await channelB.presence.subscribe('enter', (msg: any) => {
-      receivedEnters.push(msg);
+    // Attach B and subscribe before A enters any members. Members are counted by
+    // clientId from both 'enter' and 'present' events: if B's connection blips
+    // mid-test, members it missed arrive via the presence re-sync as 'present'
+    // events rather than 'enter', and an enter-only count would undercount forever.
+    const enteredClientIds = new Set<string>();
+    await channelB.presence.subscribe(['enter', 'present'], (msg: any) => {
+      enteredClientIds.add(msg.clientId);
     });
 
     await channelA.attach();
@@ -74,12 +77,12 @@ describeEachProtocol('uts/realtime/integration/presence/presence_lifecycle', fun
       await channelA.presence.enterClient(`user-${i}`, `data-${i}`);
     }
 
-    await pollUntil(() => (receivedEnters.length >= memberCount ? true : null), {
+    await pollUntil(() => (enteredClientIds.size >= memberCount ? true : null), {
       interval: 200,
       timeout: 30000,
     });
 
-    expect(receivedEnters).to.have.length(memberCount);
+    expect(enteredClientIds.size).to.equal(memberCount);
 
     const members = await channelB.presence.get();
     expect(members).to.have.length(memberCount);

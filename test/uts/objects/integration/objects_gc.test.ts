@@ -74,10 +74,7 @@ describeWithProtocols('uts/objects/integration/objects_gc', function (useBinaryP
     // Create a counter
     await root.set('counter', LiveObjectsPlugin.LiveCounter.create(42));
 
-    await pollUntil(() => (root.get('counter').value() === 42 ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('counter').value() === 42 ? true : null));
 
     expect(root.get('counter').value()).to.equal(42);
     const counterId = root.get('counter').instance().id;
@@ -86,20 +83,14 @@ describeWithProtocols('uts/objects/integration/objects_gc', function (useBinaryP
     await root.remove('counter');
 
     // RTLM5d2h: tombstoned entries read back as undefined/null (undefined in ably-js)
-    await pollUntil(() => (root.get('counter').value() === undefined ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('counter').value() === undefined ? true : null));
 
     expect(root.get('counter').value()).to.be.undefined;
 
     // Create a new counter at the same key
     await root.set('counter', LiveObjectsPlugin.LiveCounter.create(99));
 
-    await pollUntil(() => (root.get('counter').value() === 99 ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('counter').value() === 99 ? true : null));
 
     expect(root.get('counter').value()).to.equal(99);
     const newCounterId = root.get('counter').instance().id;
@@ -136,30 +127,21 @@ describeWithProtocols('uts/objects/integration/objects_gc', function (useBinaryP
     // Set then remove a key
     await root.set('ephemeral', 'temporary');
 
-    await pollUntil(() => (root.get('ephemeral').value() === 'temporary' ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('ephemeral').value() === 'temporary' ? true : null));
 
     expect(root.get('ephemeral').value()).to.equal('temporary');
 
     await root.remove('ephemeral');
 
     // RTLM5d2h: tombstoned entries read back as undefined/null (undefined in ably-js)
-    await pollUntil(() => (root.get('ephemeral').value() === undefined ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('ephemeral').value() === undefined ? true : null));
 
     expect(root.get('ephemeral').value()).to.be.undefined;
 
     // Set the same key again
     await root.set('ephemeral', 'revived');
 
-    await pollUntil(() => (root.get('ephemeral').value() === 'revived' ? true : null), {
-      interval: 500,
-      timeout: 10000,
-    });
+    await pollUntil(() => (root.get('ephemeral').value() === 'revived' ? true : null));
 
     expect(root.get('ephemeral').value()).to.equal('revived');
 

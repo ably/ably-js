@@ -13,7 +13,7 @@ import {
   teardownSandbox,
   getApiKey,
   uniqueChannelName,
-  pollUntil,
+  pollUntilSuccess,
 } from './sandbox';
 import { describeEachProtocol } from '../../helpers/protocol_variants';
 
@@ -108,8 +108,9 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     const publishResult = await channel.publish('test-event', 'hello world');
     const serial = publishResult.serials[0] as string;
 
-    // Retrieve the message by serial
-    const msg = await channel.getMessage(serial);
+    // Retrieve the message by serial (polled: the store is eventually consistent and
+    // getMessage throws not-found until the just-published message is visible)
+    const msg = await pollUntilSuccess(() => channel.getMessage(serial));
 
     expect(msg).to.be.an('object');
     expect(msg.name).to.equal('test-event');
@@ -150,14 +151,11 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     expect((updateResult.versionSerial as string).length).to.be.greaterThan(0);
 
     // Verify via getMessage -- poll until the update is visible
-    const updatedMsg = await pollUntil(
-      async () => {
-        const msg = await channel.getMessage(serial);
-        if (msg.action === 'message.update') return msg;
-        return null;
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    const updatedMsg = await pollUntilSuccess(async () => {
+      const msg = await channel.getMessage(serial);
+      if (msg.action === 'message.update') return msg;
+      return null;
+    });
 
     expect(updatedMsg.name).to.equal('updated');
     expect(updatedMsg.data).to.equal('updated-data');
@@ -194,14 +192,11 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     expect((deleteResult.versionSerial as string).length).to.be.greaterThan(0);
 
     // Verify via getMessage -- poll until the delete is visible
-    const deletedMsg = await pollUntil(
-      async () => {
-        const msg = await channel.getMessage(serial);
-        if (msg.action === 'message.delete') return msg;
-        return null;
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    const deletedMsg = await pollUntilSuccess(async () => {
+      const msg = await channel.getMessage(serial);
+      if (msg.action === 'message.delete') return msg;
+      return null;
+    });
 
     expect(deletedMsg.action).to.equal('message.delete');
   });
@@ -231,14 +226,11 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     await channel.updateMessage({ serial, data: 'v3' } as any, { description: 'second edit' });
 
     // Poll version history until all versions appear
-    const versions = await pollUntil(
-      async () => {
-        const result = await channel.getMessageVersions(serial);
-        if (result.items.length >= 3) return result;
-        return null;
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    const versions = await pollUntilSuccess(async () => {
+      const result = await channel.getMessageVersions(serial);
+      if (result.items.length >= 3) return result;
+      return null;
+    });
 
     expect(versions.items.length).to.be.at.least(3);
 
@@ -306,14 +298,11 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     });
 
     // Verify annotation exists -- poll until it appears
-    const annotations = await pollUntil(
-      async () => {
-        const result = await channel.annotations.get(serial, null);
-        if (result.items.length >= 1) return result;
-        return null;
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    const annotations = await pollUntilSuccess(async () => {
+      const result = await channel.annotations.get(serial, null);
+      if (result.items.length >= 1) return result;
+      return null;
+    });
 
     expect(annotations.items.length).to.be.at.least(1);
 
@@ -365,14 +354,11 @@ describeEachProtocol('uts/rest/integration/mutable_messages', function (protocol
     });
 
     // Retrieve annotations -- poll until both appear
-    const result = await pollUntil(
-      async () => {
-        const r = await channel.annotations.get(serial, null);
-        if (r.items.length >= 2) return r;
-        return null;
-      },
-      { interval: 500, timeout: 10000 },
-    );
+    const result = await pollUntilSuccess(async () => {
+      const r = await channel.annotations.get(serial, null);
+      if (r.items.length >= 2) return r;
+      return null;
+    });
 
     expect(result.items.length).to.be.at.least(2);
 

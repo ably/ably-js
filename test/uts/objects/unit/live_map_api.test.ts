@@ -9,7 +9,6 @@
  * value type handling, and error cases.
  *
  * Deviations:
- * - RTLM24 (clear) skipped: LiveMap#clear() is not yet implemented in ably-js.
  * - RTLM20/set-invalid-values-table-0: 'symbol' test case uses Symbol('test').
  * - RTLM12 (keys): read via root.instance().keys() — RTLM12 is an internal LiveMap-level point.
  */
@@ -166,7 +165,7 @@ describe('uts/objects/unit/live_map_api', function () {
 
     expect(capturedMessages).to.have.length(1);
     const objMsg = capturedMessages[0].state[0];
-    // Deviation: wire format uses numeric action (OBJ_OP.MAP_SET = 1), not string 'MAP_SET'
+    // Wire format uses numeric actions (OBJ_OP.MAP_SET = 1); spec pseudo-code string names are renderings
     expect(objMsg.operation.action).to.equal(OBJ_OP.MAP_SET);
     expect(objMsg.operation.objectId).to.equal('root');
     expect(objMsg.operation.mapSet.key).to.equal('name');
@@ -237,7 +236,7 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(capturedMessages).to.have.length(3);
     expect(capturedMessages[0].state[0].operation.mapSet.value.number).to.equal(42);
     expect(capturedMessages[1].state[0].operation.mapSet.value.boolean).to.equal(false);
-    // Deviation: json value is serialized as a JSON string on the wire, not a parsed object
+    // Per OD2g the json value is serialized as a JSON string on the wire, not a parsed object
     expect(JSON.parse(capturedMessages[2].state[0].operation.mapSet.value.json)).to.deep.equal({ nested: true });
   });
 
@@ -303,7 +302,7 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(capturedMessages).to.have.length(1);
     const state = capturedMessages[0].state;
     expect(state).to.have.length(2);
-    // Deviation: wire format uses numeric action values
+    // Wire format uses numeric action values (spec pseudo-code string names are renderings)
     expect(state[0].operation.action).to.equal(OBJ_OP.COUNTER_CREATE);
     expect(state[0].operation.objectId).to.match(/^counter:/);
     expect(state[1].operation.action).to.equal(OBJ_OP.MAP_SET);
@@ -372,7 +371,7 @@ describe('uts/objects/unit/live_map_api', function () {
     expect(capturedMessages).to.have.length(1);
     const state = capturedMessages[0].state;
     expect(state).to.have.length(2);
-    // Deviation: wire format uses numeric action values
+    // Wire format uses numeric action values (spec pseudo-code string names are renderings)
     expect(state[0].operation.action).to.equal(OBJ_OP.MAP_CREATE);
     expect(state[0].operation.objectId).to.match(/^map:/);
     expect(state[1].operation.action).to.equal(OBJ_OP.MAP_SET);
@@ -449,7 +448,7 @@ describe('uts/objects/unit/live_map_api', function () {
     const state = capturedMessages[0].state;
     // Expect: COUNTER_CREATE, MAP_CREATE, MAP_SET (depth-first, then the MAP_SET at root)
     expect(state).to.have.length(3);
-    // Deviation: wire format uses numeric action values
+    // Wire format uses numeric action values (spec pseudo-code string names are renderings)
     expect(state[0].operation.action).to.equal(OBJ_OP.COUNTER_CREATE);
     expect(state[0].operation.objectId).to.match(/^counter:/);
     expect(state[1].operation.action).to.equal(OBJ_OP.MAP_CREATE);
@@ -520,7 +519,7 @@ describe('uts/objects/unit/live_map_api', function () {
 
     expect(capturedMessages).to.have.length(1);
     const objMsg = capturedMessages[0].state[0];
-    // Deviation: wire format uses numeric action values
+    // Wire format uses numeric action values (spec pseudo-code string names are renderings)
     expect(objMsg.operation.action).to.equal(OBJ_OP.MAP_REMOVE);
     expect(objMsg.operation.objectId).to.equal('root');
     expect(objMsg.operation.mapRemove.key).to.equal('name');
@@ -619,13 +618,5 @@ describe('uts/objects/unit/live_map_api', function () {
 
     expect(capturedMessages).to.have.length(1);
     expect(capturedMessages[0].state[0].operation.mapSet.value.bytes).to.equal('AQID');
-  });
-
-  // ---------- RTLM24: clear() sends MAP_CLEAR message ----------
-  // Skipped: LiveMap#clear() is not yet implemented in ably-js (see deviations.md).
-  // No UTS Test ID: the spec has no public clear() API test section; this is a
-  // placeholder to be tagged when clear() is implemented and specced.
-  it.skip('RTLM24 - clear() sends MAP_CLEAR message (not yet implemented)', function () {
-    // Placeholder: LiveMap#clear() does not exist yet.
   });
 });

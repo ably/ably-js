@@ -221,6 +221,34 @@ async function pollUntil<T>(
   }
 }
 
+/**
+ * Poll until `fn` succeeds (returns a truthy value without throwing): errors are logged and mean
+ * "keep polling"; on timeout the most recent error is thrown, so failures stay diagnosable.
+ * Falsy returns keep polling too (matching `pollUntil` and the spec's `poll_until_success`
+ * convention, where a bare boolean condition polls until true) -- so a falsy value like 0 or ""
+ * cannot be the success result; have `fn` return the containing object or `true` instead.
+ */
+async function pollUntilSuccess<T>(
+  fn: () => Promise<T | null | undefined> | T | null | undefined,
+  opts: { interval?: number; timeout?: number } = {},
+): Promise<T> {
+  let lastError: unknown;
+  try {
+    return await pollUntil(async () => {
+      try {
+        return await fn();
+      } catch (err) {
+        lastError = err;
+        // pass the error object itself so the stack is preserved in the output
+        console.warn('pollUntilSuccess: retrying after error:', err);
+        return null;
+      }
+    }, opts);
+  } catch (timeoutErr) {
+    throw lastError ?? timeoutErr;
+  }
+}
+
 export {
   Ably,
   SANDBOX_ENDPOINT,
@@ -235,4 +263,5 @@ export {
   uniqueChannelName,
   generateJWT,
   pollUntil,
+  pollUntilSuccess,
 };

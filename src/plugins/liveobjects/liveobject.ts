@@ -244,12 +244,17 @@ export abstract class LiveObject<
    * If `siteTimeserials` map does not contain a serial for the same site, the operation should be applied.
    */
   protected _canApplyOperation(opSerial: string | undefined, opSiteCode: string | undefined): boolean {
-    if (!opSerial) {
-      throw new this._client.ErrorInfo(`Invalid serial: ${opSerial}`, 92000, 500);
-    }
-
-    if (!opSiteCode) {
-      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500);
+    // RTLO4a3 - an operation with invalid serial values is not applied; log a warning and
+    // skip it instead of throwing, so one malformed operation cannot abort the processing
+    // of sibling operations in the same ProtocolMessage.
+    if (!opSerial || !opSiteCode) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'LiveObject._canApplyOperation()',
+        `object operation message has invalid serial values, skipping operation; serial=${opSerial}, siteCode=${opSiteCode}, objectId=${this.getObjectId()}`,
+      );
+      return false;
     }
 
     const siteSerial = this._siteTimeserials[opSiteCode];
@@ -379,5 +384,5 @@ export abstract class LiveObject<
   protected abstract _mergeInitialDataFromCreateOperation(
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
-  ): TUpdate;
+  ): TUpdate | LiveObjectUpdateNoop;
 }

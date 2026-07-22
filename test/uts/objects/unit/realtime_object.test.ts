@@ -10,8 +10,9 @@
  *
  * Deviations:
  * - RTO10/RTO10b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
- *   not Platform.Config.setTimeout. Tests stub Date.now and use a short
- *   gcInterval to trigger GC, then restore originals.
+ *   not Platform.Config.setTimeout. Instead of stubbing Date.now, the tests
+ *   backdate the tombstone's serialTimestamp (RTLO6a: it becomes tombstonedAt)
+ *   past the grace period and use a short gcInterval to trigger GC.
  * - RTO20f (siteTimeserials): verified observably — after a local increment, a later inbound
  *   COUNTER_INC from SITE_CODE with a non-ACK serial ("t:0:9", below the ACK serial) still applies
  *   to 120, proving the LOCAL apply-on-ACK left siteTimeserials untouched (RTLC7c). No private access.
@@ -79,6 +80,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -127,6 +129,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -282,16 +285,20 @@ describe('uts/objects/unit/realtime_object', function () {
     const channel = client.channels.get('test-RTO15', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
     await channel.object.get();
 
-    // Trigger a single OBJECT message via a PathObject mutation
+    // Drive the internal publish (RTO15) through a public mutation; the PublishResult
+    // is consumed internally by RTO20 (apply-on-ACK), so only the wire behaviour is asserted.
     const root = await channel.object.get();
-    const result = await root.get('score').increment(5);
+    await root.get('score').increment(5);
 
     expect(capturedMessages.length).to.equal(1);
     expect(capturedMessages[0].action).to.equal(PM_ACTION.OBJECT);
     expect(capturedMessages[0].channel).to.equal('test-RTO15');
     expect(capturedMessages[0].state.length).to.equal(1);
-    // Deviation: ably-js PathObject.increment() returns void (via publishAndApply),
-    // not a PublishResult with serials. The serials are consumed internally for apply-on-ACK.
+    // RTO15e3 - the state entry is the encoded ObjectMessage for the driven mutation
+    const stateEntry = capturedMessages[0].state[0];
+    expect(stateEntry.operation.action).to.equal(OBJ_OP.COUNTER_INC);
+    expect(stateEntry.operation.objectId).to.equal('counter:score@1000');
+    expect(stateEntry.operation.counterInc.number).to.equal(5);
   });
 
   // UTS: objects/unit/RTO20/publish-and-apply-local-0
@@ -445,8 +452,44 @@ describe('uts/objects/unit/realtime_object', function () {
   });
 
   // UTS: objects/unit/RTO20e1/fails-on-channel-detached-0
-  // Deviation: ably-js receiving DETACHED while ATTACHED triggers re-attach (not FAILED/SUSPENDED).
-  // We use a channel ERROR PM to put the channel into FAILED state, which triggers the 92008 error.
+  it('RTO20e1 - publishAndApply fails when channel enters DETACHED during sync wait', async function () {
+    const { channel, root, mockWs } = await setupSyncedChannel('test-RTO20e1-detached');
+
+    // Trigger re-sync (state becomes SYNCING)
+    mockWs.active_connection!.send_to_client({
+      action: PM_ACTION.ATTACHED,
+      channel: 'test-RTO20e1-detached',
+      channelSerial: 'sync2:cursor',
+      flags: HAS_OBJECTS,
+    });
+    await flushAsync();
+
+    // Start increment — publish() will succeed (auto-ACK from setupSyncedChannel),
+    // but publishAndApply waits for sync to complete.
+    const incPromise = root.get('score').increment(10);
+
+    // The operation must still be parked in the RTO20e wait for SYNCED
+    let settled = false;
+    incPromise.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await flushAsync();
+    expect(settled).to.equal(false);
+
+    // Detach the channel client-side (an unsolicited server DETACHED would trigger an
+    // RTL13a re-attach); the shared mock answers the outbound DETACH with DETACHED
+    await channel.detach();
+
+    try {
+      await incPromise;
+      expect.fail('should have thrown');
+    } catch (err: any) {
+      expect(err.code).to.equal(92008);
+    }
+  });
+
+  // UTS: objects/unit/RTO20e1/fails-on-channel-failed-0
   it('RTO20e1 - publishAndApply fails when channel enters FAILED during sync wait', async function () {
     const { root, mockWs } = await setupSyncedChannel('test-RTO20e1');
 
@@ -464,8 +507,14 @@ describe('uts/objects/unit/realtime_object', function () {
     // after the publish resolves and the sync wait begins.
     const incPromise = root.get('score').increment(10);
 
-    // Give the ACK time to be processed and publishAndApply to register its listener
+    // The operation must still be parked in the RTO20e wait for SYNCED
+    let settled = false;
+    incPromise.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
     await flushAsync();
+    expect(settled).to.equal(false);
 
     // Now send ERROR to put channel into FAILED state
     mockWs.active_connection!.send_to_client({
@@ -686,6 +735,10 @@ describe('uts/objects/unit/realtime_object', function () {
   it('RTO20 - ACK after echo does not double-apply', async function () {
     const { root, mockWs } = await setupSyncedChannelNoAck('test-RTO20-ack-after-echo');
 
+    // The spec's poll_until for the outbound OBJECT message before injecting the echo/ACK
+    // is omitted: ably-js is single-threaded and the publish reaches the transport
+    // synchronously before increment() returns, so the ACK can never arrive while no
+    // message is pending on the connection.
     const incFuture = root.get('score').increment(10);
 
     // Send the echo BEFORE the ACK. The serial and siteCode must match what
@@ -815,46 +868,40 @@ describe('uts/objects/unit/realtime_object', function () {
 
   // UTS: objects/unit/RTO10/gc-tombstoned-objects-0
   it('RTO10 - GC removes tombstoned objects past grace period', async function () {
-    // Save original values
     const origGcInterval = DEFAULTS.gcInterval;
-    const origDateNow = Date.now;
-    let fakeNow = origDateNow.call(Date);
 
     try {
       // Use short GC interval so the timer fires quickly
       DEFAULTS.gcInterval = 50;
-      Date.now = () => fakeNow;
 
       const { root, mockWs } = await setupSyncedChannel('test-RTO10');
 
-      // Delete the counter object (tombstone it)
+      // Delete the counter object (tombstone it). The tombstone's serialTimestamp is
+      // backdated past the grace period (RTLO6a: it becomes tombstonedAt), so the object
+      // is GC-eligible under the real clock -- no Date.now stubbing needed.
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
+        buildObjectMessage('test-RTO10', [
+          buildObjectDelete('counter:score@1000', '99', 'site1', Date.now() - (86400000 + 300000)),
+        ]),
       );
       await flushAsync();
 
-      // Advance fake time past grace period (86400000ms = 24h) + buffer
-      fakeNow += 86400000 + 300000;
-
-      // Wait for GC interval to fire (real time passes for the setInterval)
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      // Wait for the (real) GC interval to fire by polling for its observable effect,
+      // rather than sleeping a fixed period that races the timer on slow machines
+      await pollUntil(() => root.get('score').value() === undefined);
 
       expect(root.get('score').value()).to.be.undefined;
     } finally {
       DEFAULTS.gcInterval = origGcInterval;
-      Date.now = origDateNow;
     }
   });
 
   // UTS: objects/unit/RTO10b1/gc-grace-period-source-0
   it('RTO10b1 - GC grace period from ConnectionDetails', async function () {
     const origGcInterval = DEFAULTS.gcInterval;
-    const origDateNow = Date.now;
-    let fakeNow = origDateNow.call(Date);
 
     try {
       DEFAULTS.gcInterval = 50;
-      Date.now = () => fakeNow;
 
       const mockWs = new MockWebSocket({
         onConnectionAttempt: (conn) => {
@@ -902,22 +949,22 @@ describe('uts/objects/unit/realtime_object', function () {
       const channel = client.channels.get('test-RTO10b1', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
       const root = await channel.object.get();
 
-      // Delete the counter (tombstone it)
+      // Delete the counter (tombstone it). The tombstone is backdated 6s: eligible under
+      // the server-provided 5000ms grace, but NOT under the 24h default -- so the test
+      // fails if the implementation ignores ConnectionDetails.objectsGCGracePeriod
+      // (RTO10b1). No Date.now stubbing needed.
       mockWs.active_connection!.send_to_client(
-        buildObjectMessage('test-RTO10b1', [buildObjectDelete('counter:score@1000', '99', 'site1', 1000)]),
+        buildObjectMessage('test-RTO10b1', [buildObjectDelete('counter:score@1000', '99', 'site1', Date.now() - 6000)]),
       );
       await flushAsync();
 
-      // Advance past the short grace period (5000ms)
-      fakeNow += 5000 + 1000;
-
-      // Wait for GC interval to fire
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
+      // Wait for the (real) GC interval to fire by polling for its observable effect,
+      // rather than sleeping a fixed period that races the timer on slow machines
+      await pollUntil(() => root.get('score').value() === undefined);
 
       expect(root.get('score').value()).to.be.undefined;
     } finally {
       DEFAULTS.gcInterval = origGcInterval;
-      Date.now = origDateNow;
     }
   });
 
@@ -1082,8 +1129,6 @@ describe('uts/objects/unit/realtime_object', function () {
   });
 
   // UTS: objects/unit/RTO25b/access-throws-detached-0
-  // Deviation: the spec reaches DETACHED via a server-initiated DETACHED PM; ably-js
-  // re-attaches on an unsolicited DETACHED (RTL13a), so the test detaches client-side.
   it('RTO25b - Access API precondition throws on DETACHED channel', async function () {
     const mockWs = new MockWebSocket({
       onConnectionAttempt: (conn) => {
@@ -1094,6 +1139,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },
@@ -1159,6 +1205,7 @@ describe('uts/objects/unit/realtime_object', function () {
           connectionDetails: {
             connectionKey: 'key-1',
             siteCode: 'test-site',
+            objectsGCGracePeriod: 86400000,
           },
         });
       },

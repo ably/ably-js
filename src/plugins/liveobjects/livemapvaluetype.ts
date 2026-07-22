@@ -84,7 +84,7 @@ export class LiveMapValueType<T extends Record<string, Value> = Record<string, V
       client.Utils.Format.json,
     ); // RTO11f15a
     const initialValueJSONString = JSON.stringify(encodedMapCreate); // RTO11f15b
-    const nonce = client.Utils.cheapRandStr(); // RTO11f6
+    const nonce = await ObjectId.generateNonce(client); // RTO11f6
     const msTimestamp = await client.getTimestamp(true); // RTO11f7
 
     // RTO11f8

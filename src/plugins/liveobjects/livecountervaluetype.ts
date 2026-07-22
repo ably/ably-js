@@ -66,7 +66,7 @@ export class LiveCounterValueType implements LiveCounter {
       client.Utils.Format.json,
     );
     const initialValueJSONString = JSON.stringify(encodedCounterCreate); // RTO12f13
-    const nonce = client.Utils.cheapRandStr(); // RTO12f4
+    const nonce = await ObjectId.generateNonce(client); // RTO12f4
     const msTimestamp = await client.getTimestamp(true); // RTO12f5
 
     // RTO12f6

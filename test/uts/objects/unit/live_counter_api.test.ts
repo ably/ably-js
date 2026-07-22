@@ -121,8 +121,9 @@ describe('uts/objects/unit/live_counter_api', function () {
   });
 
   // UTS: objects/unit/RTLC12e1/increment-invalid-amounts-table-0
-  // Deviation: null is excluded because PathObject.increment(amount ?? 1) treats null
-  // as "no argument" and defaults to 1. The ably-js API signature is increment(amount?: number).
+  // The null row is excluded per the spec's language-applicability note on this table:
+  // the ably-js signature is increment(amount?: number) and a nullish amount takes the
+  // default of 1, so null is indistinguishable from "omitted" (see deviations.md).
   describe('RTLC12e1 - table-driven invalid increment amounts', function () {
     const invalidAmounts = [
       { value: NaN, label: 'NaN' },
