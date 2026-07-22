@@ -742,17 +742,14 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
   });
 
   /**
-   * RTL4j - ATTACH_RESUME flag set for reattach
+   * RTL4j - the library no longer sets the ATTACH_RESUME flag
    *
-   * First attach: ATTACH_RESUME not set.
-   * Reattach while attached: ATTACH_RESUME is set.
-   *
-   * Deviation: ably-js clears _attachResume on detaching/failed transitions,
-   * so detach+reattach does NOT set ATTACH_RESUME. Instead, we test via
-   * setOptions() reattach which preserves the flag.
+   * As of specification version 6.1.0 RTL4j has been deleted: the server now
+   * makes the resumability decision, so the client need not set ATTACH_RESUME
+   * on any ATTACH, including reattaches of a previously-attached channel.
    */
-  // UTS: realtime/unit/RTL4j/attach-resume-flag-0
-  it('RTL4j - ATTACH_RESUME flag on reattach', async function () {
+  // UTS: realtime/unit/RTL4j/attach-resume-flag-not-set-0
+  it('RTL4j - ATTACH_RESUME flag not set on reattach', async function () {
     const ATTACH_RESUME = 32; // 1 << 5
     const capturedAttachMsgs: any[] = [];
 
@@ -796,13 +793,9 @@ describe('uts/realtime/unit/channels/channel_attach', function () {
     client.close();
     expect(capturedAttachMsgs.length).to.equal(2);
 
-    // First ATTACH: ATTACH_RESUME should NOT be set
-    const firstFlags = capturedAttachMsgs[0].flags || 0;
-    expect(firstFlags & ATTACH_RESUME).to.equal(0);
-
-    // Second ATTACH (reattach): ATTACH_RESUME should be set
-    const secondFlags = capturedAttachMsgs[1].flags || 0;
-    expect(secondFlags & ATTACH_RESUME).to.not.equal(0);
+    // Neither ATTACH should have the ATTACH_RESUME flag set
+    expect((capturedAttachMsgs[0].flags || 0) & ATTACH_RESUME).to.equal(0);
+    expect((capturedAttachMsgs[1].flags || 0) & ATTACH_RESUME).to.equal(0);
   });
 
   /**
