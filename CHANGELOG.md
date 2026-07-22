@@ -2,6 +2,15 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.25.1](https://github.com/ably/ably-js/tree/2.25.1) (2026-07-22)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.25.0...2.25.1)
+
+### What's Changed
+
+- Add `push.updateToken()` to update the device's push token on React Native after the underlying push platform rotates it, keeping the device registration in sync with Ably [#2267](https://github.com/ably/ably-js/pull/2267)
+- Add a `useObject` React hook for subscribing to LiveObjects state from the `ably/react` entrypoint [#2259](https://github.com/ably/ably-js/pull/2259)
+
 ## [2.25.0](https://github.com/ably/ably-js/tree/2.25.0) (2026-07-17)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.24.0...2.25.0)
