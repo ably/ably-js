@@ -253,15 +253,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(appendMsg.name).to.equal('original-message');
         expect(appendMsg.data).to.equal(' World');
 
-        // now reattach with rewind to get the full concatenated message
+        // now reattach with rewind to get the full concatenated message. Set rewind before any attach is
+        // initiated (subscribe() auto-attaches), so the sole ATTACH carries it — rewind is an initial-attach
+        // directive, so a second ATTACH racing an already-established attachment does not reliably replay.
         await channel.detach();
+        await channel.setOptions({ params: { rewind: '1' } });
         const updatePromise = new Promise((resolve) => {
           channel.subscribe((msg) => {
             resolve(msg);
           });
         });
 
-        await channel.setOptions({ params: { rewind: '1' } });
         await channel.attach();
         const updatedMsg = await updatePromise;
         expect(updatedMsg.serial).to.equal(serial);
