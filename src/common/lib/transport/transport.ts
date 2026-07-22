@@ -270,7 +270,7 @@ abstract class Transport extends EventEmitter {
     if (!this.maxIdleInterval) {
       return;
     }
-    this.lastActivity = this.connectionManager.lastActivity = Platform.Config.now();
+    this.lastActivity = Platform.Config.now();
     this.setIdleTimer(this.maxIdleInterval + 100);
   }
 

@@ -36,7 +36,7 @@ declare namespace ChannelStates {
    */
   type DETACHED = 'detached';
   /**
-   * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
+   * The channel, having previously been `ATTACHED`, is waiting for the client to reconnect to Ably after an extended period of disconnection. It will automatically reattach once connectivity is restored. Message continuity may have been lost, but the authoritative source for this is the {@link ChannelStateChange.resumed | `resumed`} flag on the subsequent `attached` state change.
    */
   type SUSPENDED = 'suspended';
   /**
@@ -81,7 +81,7 @@ declare namespace ChannelEvents {
    */
   type DETACHED = 'detached';
   /**
-   * The channel, having previously been `ATTACHED`, has lost continuity, usually due to the client being disconnected from Ably for longer than two minutes. It will automatically attempt to reattach as soon as connectivity is restored.
+   * The channel, having previously been `ATTACHED`, is waiting for the client to reconnect to Ably after an extended period of disconnection. It will automatically reattach once connectivity is restored. Message continuity may have been lost, but the authoritative source for this is the {@link ChannelStateChange.resumed | `resumed`} flag on the subsequent `attached` state change.
    */
   type SUSPENDED = 'suspended';
   /**
@@ -123,11 +123,11 @@ declare namespace ConnectionStates {
    */
   type CONNECTED = 'connected';
   /**
-   * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
+   * A temporary failure condition. The client has been disconnected from Ably, usually due to network connectivity. It will periodically attempt to open a new connection (about every 15 seconds). In this state, you can continue to publish messages, which will be queued to be sent once a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection if the server is able to preserve continuity.
    */
   type DISCONNECTED = 'disconnected';
   /**
-   * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+   * A long term failure condition. A client moves to this state once it has been in the `disconnected` state for over two minutes. Developers are unable to publish messages in this state, and any queued messages are discarded. The library will attempt to reconnect every 30 seconds; an attempt can also be triggered by calling {@link Connection.connect | `connect()`}.
    */
   type SUSPENDED = 'suspended';
   /**
@@ -173,11 +173,11 @@ declare namespace ConnectionEvents {
    */
   type CONNECTED = 'connected';
   /**
-   * A temporary failure condition. No current connection exists because there is no network connectivity or no host is available. The disconnected state is entered if an established connection is dropped, or if a connection attempt was unsuccessful. In the disconnected state the library will periodically attempt to open a new connection (approximately every 15 seconds), anticipating that the connection will be re-established soon and thus connection and channel continuity will be possible. In this state, developers can continue to publish messages as they are automatically placed in a local queue, to be sent as soon as a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection, so long as the connection was resumed within 2 minutes. After 2 minutes have elapsed, recovery is no longer possible and the connection will move to the `SUSPENDED` state.
+   * A temporary failure condition. The client has been disconnected from Ably, usually due to network connectivity. It will periodically attempt to open a new connection (about every 15 seconds). In this state, you can continue to publish messages, which will be queued to be sent once a connection is reestablished. Messages published by other clients while this client is disconnected will be delivered to it upon reconnection if the server is able to preserve continuity.
    */
   type DISCONNECTED = 'disconnected';
   /**
-   * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+   * A long term failure condition. A client moves to this state once it has been in the `disconnected` state for over two minutes. Developers are unable to publish messages in this state, and any queued messages are discarded. The library will attempt to reconnect every 30 seconds; an attempt can also be triggered by calling {@link Connection.connect | `connect()`}.
    */
   type SUSPENDED = 'suspended';
   /**
