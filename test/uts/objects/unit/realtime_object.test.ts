@@ -9,7 +9,7 @@
  * sync state events, echo deduplication, and GC.
  *
  * Deviations:
- * - RTO10/RTO10b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
+ * - RTO10/RTO10b1/RTO10c1b1 (GC tests): ObjectsPool uses real setInterval + Date.now,
  *   not Platform.Config.setTimeout. Instead of stubbing Date.now, the tests
  *   backdate the tombstone's serialTimestamp (RTLO6a: it becomes tombstonedAt)
  *   past the grace period and use a short gcInterval to trigger GC.
@@ -891,6 +891,48 @@ describe('uts/objects/unit/realtime_object', function () {
       await pollUntil(() => root.get('score').value() === undefined);
 
       expect(root.get('score').value()).to.be.undefined;
+    } finally {
+      DEFAULTS.gcInterval = origGcInterval;
+    }
+  });
+
+  // UTS: objects/unit/RTO10c1b1/gc-root-never-removed-0
+  it('RTO10c1b1 - GC never removes the root object', async function () {
+    const origGcInterval = DEFAULTS.gcInterval;
+
+    try {
+      // Use short GC interval so the timer fires quickly
+      DEFAULTS.gcInterval = 50;
+
+      const { root, mockWs } = await setupSyncedChannel('test-RTO10c1b1');
+
+      // Rogue OBJECT_DELETE targeting the root object, backdated past the grace period so it
+      // would be GC-eligible if the tombstone were (incorrectly) applied; rejected per RTLO4e10.
+      // The score counter is deleted the same way as a control: its removal signals that a full
+      // GC sweep has completed (the derived rendering of the spec test's ADVANCE_TIME).
+      mockWs.active_connection!.send_to_client(
+        buildObjectMessage('test-RTO10c1b1', [
+          buildObjectDelete('root', remoteSerial(0), 'remote', Date.now() - (86400000 + 300000)),
+          buildObjectDelete('counter:score@1000', '99', 'site1', Date.now() - (86400000 + 300000)),
+        ]),
+      );
+      await flushAsync();
+
+      // RTLO4e10: root is not tombstoned, data untouched
+      expect(root.get('name').value()).to.equal('Alice');
+
+      // Wait for a GC sweep to complete, observable via the control counter's removal
+      await pollUntil(() => root.get('score').value() === undefined);
+
+      // RTO10c1b1/RTO3b: root survived the sweep and is still live -- a subsequent
+      // operation still applies to the same root object the client holds
+      mockWs.active_connection!.send_to_client(
+        buildObjectMessage('test-RTO10c1b1', [
+          buildMapSet('root', 'name', { string: 'Bob' }, remoteSerial(1), 'remote'),
+        ]),
+      );
+      await flushAsync();
+      expect(root.get('name').value()).to.equal('Bob');
     } finally {
       DEFAULTS.gcInterval = origGcInterval;
     }

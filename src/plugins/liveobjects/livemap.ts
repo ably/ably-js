@@ -445,25 +445,24 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    let update: LiveMapUpdate<T>;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      update = this.tombstone(objectMessage);
-    } else {
-      // otherwise override data for this object with data from the object state
-      const previousDataRef = this._dataRef;
-      this._createOperationIsMerged = false; // RTLM6b
-      this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
-      this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
-      // RTLM6d
-      if (!this._client.Utils.isNil(objectState.createOp)) {
-        this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
-      }
-
-      // update will contain the diff between previous value and new value from object state
-      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-      update.objectMessage = objectMessage;
+      return this.tombstone(objectMessage);
     }
+
+    // otherwise override data for this object with data from the object state
+    const previousDataRef = this._dataRef;
+    this._createOperationIsMerged = false; // RTLM6b
+    this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
+    this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
+    // RTLM6d
+    if (!this._client.Utils.isNil(objectState.createOp)) {
+      this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
+    }
+
+    // update will contain the diff between previous value and new value from object state
+    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+    update.objectMessage = objectMessage;
 
     return update;
   }

@@ -110,10 +110,24 @@ export abstract class LiveObject<
 
   /**
    * Clears the object's data, cancels any buffered operations and sets the tombstone flag to `true`.
+   * The root object can never be tombstoned (RTLO4e10); such attempts return a noop update.
    *
    * @internal
    */
-  tombstone(objectMessage: ObjectMessage): TUpdate {
+  tombstone(objectMessage: ObjectMessage): TUpdate | LiveObjectUpdateNoop {
+    // RTLO4e10 - the root object must always exist in the ObjectsPool (RTO3b); the realtime
+    // system never publishes an OBJECT_DELETE operation or a tombstoned object state for it,
+    // so an attempt to tombstone it indicates a faulty message. log a warning and skip it
+    if (this.getObjectId() === ROOT_OBJECT_ID) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'LiveObject.tombstone()',
+        `attempt to tombstone the root object was rejected; message id: ${objectMessage.id}`,
+      );
+      return { noop: true };
+    }
+
     this._tombstone = true; // RTLO4e2
     this._tombstonedAt = this._calculateTombstonedAt(
       objectMessage.serialTimestamp,
@@ -261,7 +275,7 @@ export abstract class LiveObject<
     return !siteSerial || opSerial > siteSerial;
   }
 
-  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
+  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate | LiveObjectUpdateNoop {
     return this.tombstone(objectMessage);
   }
 
