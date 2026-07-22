@@ -1,7 +1,7 @@
 /**
  * UTS: Connection Recovery Tests (RTN16)
  *
- * Spec points: RTN16d, RTN16f, RTN16f1, RTN16g, RTN16g1, RTN16g2, RTN16i, RTN16j, RTN16k, RTN16l
+ * Spec points: RTN16d, RTN16f, RTN16f1, RTN16g, RTN16g1, RTN16g2, RTN16g3, RTN16i, RTN16j, RTN16k, RTN16l
  * Source: specification/uts/realtime/unit/connection/connection_recovery_test.md
  */
 
@@ -221,15 +221,16 @@ describe('uts/realtime/unit/connection/connection_recovery', function () {
   });
 
   /**
-   * RTN16g2 - createRecoveryKey returns a recovery key in the SUSPENDED state
+   * RTN16g3 - createRecoveryKey returns a recovery key in the SUSPENDED state
    *
-   * As of specification version 6.1.0 the connectionKey is retained through the
-   * SUSPENDED state (RTN8d/RTN9d), since the client always attempts to resume on
-   * reconnecting. The connection therefore remains recoverable while suspended,
-   * so createRecoveryKey() returns a valid key rather than null.
+   * As of specification version 6.1.0 (RTN16g3, replacing RTN16g2) the
+   * connectionKey is retained through the SUSPENDED state (RTN8d/RTN9d), since
+   * the client always attempts to resume on reconnecting. The connection
+   * therefore remains recoverable while suspended, so createRecoveryKey()
+   * returns a valid key rather than null.
    */
-  // UTS: realtime/unit/RTN16g2/recovery-key-in-suspended-0
-  it('RTN16g2 - createRecoveryKey returns a key in SUSPENDED state', async function () {
+  // UTS: realtime/unit/RTN16g3/recovery-key-in-suspended-0
+  it('RTN16g3 - createRecoveryKey returns a key in SUSPENDED state', async function () {
     let connectionAttemptCount = 0;
 
     const mock = new MockWebSocket({
