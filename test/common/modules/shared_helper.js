@@ -146,9 +146,15 @@ define([
       this.recordPrivateApi('call.Utils.keysArray');
       this.recordPrivateApi('call.ConnectionManager.supportedTransports');
       this.recordPrivateApi('read.Realtime._transports');
-      return utils.keysArray(
+      const transports = utils.keysArray(
         clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
       );
+      /* The compatibility harness can restrict the suite to a transport subset
+       * (ABLY_TEST_TRANSPORTS) when the target server implements only some. */
+      if (globals.testTransports) {
+        return transports.filter((transport) => globals.testTransports.includes(transport));
+      }
+      return transports;
     }
 
     get bestTransport() {
@@ -476,6 +482,10 @@ define([
 
     AblyRest(options) {
       return clientModule.AblyRest(this, options);
+    }
+
+    AblyRestEcho(options) {
+      return clientModule.AblyRestEcho(this, options);
     }
 
     static activeClients = [];
