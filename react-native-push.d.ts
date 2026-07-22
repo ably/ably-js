@@ -26,6 +26,12 @@ import { RealtimeClient, RestClient } from './ably';
  *
  * const realtime = new Realtime({ ...options, plugins: { Push } });
  * await realtime.push.activate();
+ *
+ * // the push platform can rotate the token at any time; forward rotations to Ably so the
+ * // device registration stays deliverable
+ * messaging().onTokenRefresh(async (token) => {
+ *   await realtime.push.updateToken({ transportType: 'fcm', token });
+ * });
  * ```
  */
 declare namespace ReactNativePush {
@@ -65,6 +71,9 @@ declare namespace ReactNativePush {
    * `messaging().getToken()` from `@react-native-firebase/messaging` returns, on both Android and
    * iOS), or `transportType: 'apns'` for a raw APNs device token (e.g. from
    * `messaging().getAPNSToken()`).
+   *
+   * The same shape is accepted by `client.push.updateToken()` when the platform rotates the token
+   * after activation.
    */
   interface ReactNativePushToken {
     /**

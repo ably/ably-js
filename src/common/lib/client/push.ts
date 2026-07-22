@@ -22,6 +22,14 @@ const PUSH_ACTIVATION_NOT_AVAILABLE_HINT =
 const PUSH_DEACTIVATION_NOT_AVAILABLE_HINT =
   'Run push.deactivate() in a browser environment with service worker support, or in React Native using the ably/react-native-push plugin. From a server, call client.push.admin.deviceRegistrations.remove(deviceId) to remove a device registration.';
 
+const PUSH_TOKEN_UPDATE_NOT_AVAILABLE_HINT =
+  'Call push.updateToken() in React Native with the ably/react-native-push plugin configured, passing plugins: { Push: ReactNativePush.create({ storage, requestToken }) } in the client options. From a server, use client.push.admin.deviceRegistrations.save(device) to modify a device registration instead.';
+
+interface PushDeviceToken {
+  transportType: 'apns' | 'fcm';
+  token: string;
+}
+
 class Push {
   client: BaseClient;
   admin: Admin;
@@ -135,6 +143,61 @@ class Push {
     }
     machine.handleEvent(new pushPlugin.CalledDeactivate(machine, deregisterCallback));
     await deactivated;
+  }
+
+  async updateToken(token: PushDeviceToken): Promise<void> {
+    const pushPlugin = this.client.options.plugins?.Push;
+    if (!pushPlugin) {
+      throw Utils.createMissingPluginError('Push');
+    }
+    const machine = this.stateMachine;
+    if (!machine) {
+      throw new ErrorInfo({
+        message:
+          'This platform is not supported as a target of push notifications: push token updates require a React Native environment with the ably/react-native-push plugin',
+        code: 40000,
+        statusCode: 400,
+        remediation: PUSH_TOKEN_UPDATE_NOT_AVAILABLE_HINT,
+      });
+    }
+    if (
+      !token ||
+      (token.transportType !== 'fcm' && token.transportType !== 'apns') ||
+      typeof token.token !== 'string' ||
+      token.token.length === 0
+    ) {
+      throw new ErrorInfo({
+        message:
+          "push.updateToken() requires a { transportType, token } object with transportType 'fcm' or 'apns' and a non-empty token string",
+        code: 40000,
+        statusCode: 400,
+        remediation:
+          "Pass the refreshed token in the shape your requestToken callback returns, for example { transportType: 'fcm', token } with the token value delivered by messaging().onTokenRefresh.",
+      });
+    }
+
+    // the state machine's processEvent handlers read the local device synchronously, so the
+    // device and the persisted machine state must be hydrated before any event is dispatched
+    const device = await this.client.getDevice();
+    await machine.ensureInitialized();
+
+    if (!device.deviceIdentityToken) {
+      throw new ErrorInfo({
+        message: 'Push token cannot be updated because the device is not activated for push notifications',
+        code: 40000,
+        statusCode: 400,
+        remediation:
+          'Call client.push.activate() and await its completion before calling push.updateToken(). Wire updateToken() to your platform token refresh listener only after activation has completed.',
+      });
+    }
+
+    device.push.recipient =
+      token.transportType === 'apns'
+        ? { transportType: 'apns', deviceToken: token.token }
+        : { transportType: 'fcm', registrationToken: token.token };
+    await device.persist();
+
+    machine.handleEvent(new machine.GotPushDeviceDetails());
   }
 }
 

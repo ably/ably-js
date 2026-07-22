@@ -3655,6 +3655,20 @@ export declare interface HttpPaginatedResponse<T = any> extends PaginatedResult<
 }
 
 /**
+ * A push token obtained from the underlying push platform, along with the transport it belongs to. Has the same shape as the `ReactNativePushToken` accepted by the `ably/react-native-push` plugin's `requestToken` callback.
+ */
+export declare interface PushDeviceToken {
+  /**
+   * The push transport the token belongs to: `fcm` for a Firebase Cloud Messaging registration token, or `apns` for a raw APNs device token.
+   */
+  transportType: 'fcm' | 'apns';
+  /**
+   * The token itself: an FCM registration token or an APNs device token.
+   */
+  token: string;
+}
+
+/**
  * Enables a device to be registered and deregistered from receiving push notifications.
  */
 export declare interface Push {
@@ -3677,6 +3691,16 @@ export declare interface Push {
    * @param deregisterCallback - A function passed to override the default implementation to deregister the local device for push activation.
    */
   deactivate(deregisterCallback?: DeregisterCallback): Promise<void>;
+
+  /**
+   * Updates the device's push token after the underlying push platform has rotated it, and synchronizes the new token with Ably by updating the device registration. Call this from your platform's token refresh listener, for example `messaging().onTokenRefresh()` of `@react-native-firebase/messaging`, once {@link activate | `activate()`} has completed.
+   *
+   * The synchronization with Ably is fire-and-forget: it is serialized with any in-flight `activate()`, `deactivate()` or earlier `updateToken()` synchronization rather than racing it, it is routed through the `registerCallback` passed to `activate()` when one was provided, and a synchronization failure is reported to the `updateFailedCallback` passed to `activate()`.
+   *
+   * @param token - The refreshed push token, in the same shape as returned by the `requestToken` callback of the `ably/react-native-push` plugin.
+   * @returns A promise which resolves once the refreshed token has been persisted locally and its synchronization with Ably has been initiated, and rejects if the token is malformed or the device is not activated for push notifications.
+   */
+  updateToken(token: PushDeviceToken): Promise<void>;
 }
 
 /**
