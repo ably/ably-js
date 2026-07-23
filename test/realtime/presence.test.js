@@ -1677,7 +1677,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }),
       );
 
-      await helper.becomeSuspended(realtime);
+      /* Become suspended and discard the connection state, so the reconnect
+       * makes a fresh connection whose ATTACHED has no presence, forcing our own
+       * members (RTP17i) to be re-entered */
+      await helper.becomeSuspended(realtime, null, true);
 
       expect(channel.state).to.equal('suspended', 'sanity-check channel state');
 
@@ -1686,9 +1689,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       realtime.connection.connect();
       await pOnceAttached;
 
-      /* Since we haven't been gone for two minutes, we don't know for sure
-       * that realtime will feel it necessary to do a sync - if it doesn't,
-       * we request one */
+      /* The connection state was cleared, so this is a fresh connection; realtime
+       * may still not send a sync if the presence set is empty, in which case we
+       * request one */
       if (channel.presence.syncComplete) {
         helper.recordPrivateApi('call.channel.sync');
         channel.sync();
@@ -1746,10 +1749,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       await channel.presence.enterClient('one', 'onedata');
       const member1 = await pOnPresence;
 
-      await helper.becomeSuspended(realtime);
+      /* Become suspended and discard the connection state, so the reconnect
+       * cannot resume and gets a fresh connection with a different connectionId */
+      await helper.becomeSuspended(realtime, null, true);
       assert.equal(channel.state, 'suspended', 'sanity-check channel state');
 
-      /* Reconnect. Since we were suspended, we will get a different connection id */
+      /* Reconnect. Since the connection state was cleared, we will get a
+       * different connection id */
       const pOnceAttached = channel.once('attached');
       const pOnEnter = channel.presence.subscriptions.once('enter');
       const pOnLeave = channel.presence.subscriptions.once('leave');
@@ -2381,7 +2387,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           function (cb) {
             Helper.whenPromiseSettles(mainChannel.presence.get(), function (err, members) {
               try {
-                expect(members && members.length).to.equal(3, 'Check three expected members here');
+                /* Since spec version 6.1.0 the reconnect resumes the connection and
+                 * preserves presence continuity, so main and continuous remain and
+                 * the only change is the leave of 'leaves' (asserted above). Two
+                 * members remain. (Before 6.1.0 the reconnect was a fresh connection
+                 * that re-entered main, leaving a residual that showed three.) */
+                expect(members && members.length).to.equal(2, 'Check two expected members remain');
               } catch (err) {
                 cb(err);
                 return;
