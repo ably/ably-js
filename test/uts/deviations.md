@@ -228,13 +228,13 @@ These tests have been adapted from the UTS spec to account for ably-js API diffe
 
 ---
 
-### objects/internal_live_counter_api: RTLC12e1 - null increment amount not applicable to JS
+### objects/internal_live_counter_api: RTLC12e1 - null increment amount defaults to 1 in JS (failure row not applicable)
 
 **Spec (RTLC12e1)**: `increment(null)` is one of the invalid-amount table rows and must fail with 40003 — in languages where `null` is passable and distinguishable from an omitted argument.
 
-**ably-js behavior**: the API signature is `increment(amount?: number)` and a nullish amount takes the default of 1, so the null row is unreachable by API design. The spec table now carries a language-applicability note sanctioning the exclusion.
+**ably-js behavior**: `increment(null)` is runtime-reachable in JS, but the public API defines a nullish amount as equivalent to an omitted argument (`amount ?? 1` at the PathObject/Instance layer), so it increments by 1. What is unreachable is the 40003 failure path for the null row — not the input itself. The spec table carries a language-applicability note sanctioning this and directing such SDKs to assert the default-of-1 behavior instead.
 
-**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`objects/unit/internal_live_counter_api.test.ts`) — the null row is excluded; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
+**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`test/uts/objects/unit/live_counter_api.test.ts`) — the null row asserts the increment-by-1 default, pinning the null-means-omitted contract; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
 
 ---
 

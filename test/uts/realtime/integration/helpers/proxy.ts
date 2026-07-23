@@ -168,7 +168,13 @@ async function createProxySession(opts: CreateProxySessionOpts = {}): Promise<Pr
   }
 
   const data = await resp.json();
-  const proxyPort = data.proxy?.port || opts.port;
+  const proxyPort = data.proxy?.port ?? opts.port;
+  // fail fast with the actual response rather than letting tests connect to localhost:undefined
+  if (typeof proxyPort !== 'number') {
+    throw new Error(
+      `createProxySession: proxy control server did not return a numeric port; response: ${JSON.stringify(data)}`,
+    );
+  }
   return new ProxySession(data.sessionId, 'localhost', proxyPort, controlUrl);
 }
 

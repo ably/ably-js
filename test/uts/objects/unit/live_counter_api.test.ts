@@ -121,10 +121,19 @@ describe('uts/objects/unit/live_counter_api', function () {
   });
 
   // UTS: objects/unit/RTLC12e1/increment-invalid-amounts-table-0
-  // The null row is excluded per the spec's language-applicability note on this table:
-  // the ably-js signature is increment(amount?: number) and a nullish amount takes the
-  // default of 1, so null is indistinguishable from "omitted" (see deviations.md).
+  // The null row does not assert 40003 here, per the spec's language-applicability note on
+  // this table: the ably-js public API defines a nullish amount as equivalent to an omitted
+  // argument (amount ?? 1), so the failure path is unreachable for null. Instead the null
+  // case pins the null-means-omitted contract by asserting the default of 1 (see deviations.md).
   describe('RTLC12e1 - table-driven invalid increment amounts', function () {
+    it('null is treated as omitted and increments by the default of 1', async function () {
+      const { root } = await setupSyncedChannel('test-RTLC12e1-null');
+
+      await root.get('score').increment(null as any);
+
+      expect(root.get('score').value()).to.equal(101);
+    });
+
     const invalidAmounts = [
       { value: NaN, label: 'NaN' },
       { value: Infinity, label: 'Infinity' },
