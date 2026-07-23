@@ -17,6 +17,7 @@ import {
   closeAndWait,
   uniqueChannelName,
   pollUntil,
+  pollUntilSuccess,
 } from './sandbox';
 import { describeEachProtocol } from '../../helpers/protocol_variants';
 
@@ -376,17 +377,25 @@ describeEachProtocol('uts/realtime/integration/mutable_messages', function (prot
     await channel.updateMessage({ serial, data: 'v2' } as any, { description: 'first edit' });
     await channel.updateMessage({ serial, data: 'v3' } as any, { description: 'second edit' });
 
-    // Wait for propagation before HTTP-based reads
-    await new Promise((r) => setTimeout(r, 2000));
-
-    const msg = await channel.getMessage(serial);
+    // The message store is eventually consistent: poll until the second update is
+    // visible rather than sleeping a fixed interval before the HTTP-based reads
+    // (a found message may still be a stale version).
+    const msg = await pollUntilSuccess(async () => {
+      const m = await channel.getMessage(serial);
+      if (m.action === 'message.update' && m.data === 'v3') return m;
+      return null;
+    });
 
     expect(msg).to.be.an('object');
     expect(msg.serial).to.equal(serial);
     expect(msg.data).to.equal('v3');
     expect(msg.action).to.equal('message.update');
 
-    const versions = await channel.getMessageVersions(serial);
+    const versions = await pollUntilSuccess(async () => {
+      const result = await channel.getMessageVersions(serial);
+      if (result.items.length >= 3) return result;
+      return null;
+    });
 
     expect(versions).to.have.property('items');
     expect(versions.items.length).to.be.at.least(3);

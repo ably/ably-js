@@ -5194,10 +5194,11 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
             // next methods silently handle incorrect underlying type
             expect(mapPathObj.value(), 'Check PathObject.value() for wrong underlying object type returns undefined').to
               .be.undefined;
-            expect(
-              primitivePathObj.instance(),
-              'Check PathObject.instance() for wrong underlying object type returns undefined',
-            ).to.be.undefined;
+            // instance() is not type-constrained: it wraps primitives too (RTPO8f)
+            const primitiveInstance = primitivePathObj.instance();
+            expect(primitiveInstance, 'Check PathObject.instance() for primitive path returns an Instance').to.exist;
+            expect(primitiveInstance.id, 'Check primitive instance has no object id').to.be.undefined;
+            expect(primitiveInstance.value(), 'Check primitive instance wraps the primitive value').to.equal('value');
             expect([...primitivePathObj.entries()]).to.deep.equal(
               [],
               'Check PathObject.entries() for wrong underlying object type returns empty iterator',

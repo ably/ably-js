@@ -128,7 +128,7 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 **ably-js behavior**: `shouldFallback` only receives the error object, not response headers. The `Server` header is not inspected anywhere in the fallback decision path.
 
-**Test**: `RSC15l4 - CloudFront Server header triggers fallback`.
+**Tests**: `RSC15l4 - CloudFront Server header triggers fallback` (unit, `rest/unit/fallback.test.ts`; also skipped at integration tier in `rest/integration/proxy/rest_fallback.test.ts`).
 
 **Issue**: [#2197](https://github.com/ably/ably-js/issues/2197)
 
@@ -213,6 +213,56 @@ These tests assert spec behavior but are skipped by default because they are kno
 **Test**: `RSH1b2 - list supports pagination with limit` in `rest/integration/push_admin.test.ts`.
 
 **Issue**: [ably/realtime#8380](https://github.com/ably/realtime/issues/8380)
+
+---
+
+## Adapted Deviations (tests modified to match ably-js behavior)
+
+These tests have been adapted from the UTS spec to account for ably-js API differences. The test still validates the underlying behavior but uses ably-js's actual API surface.
+
+### objects/value_types: RTLMV4b - key-type validation untranslatable to JavaScript
+
+**Spec (RTLMV4b)**: `objects/unit/RTLMV4b/evaluate-validates-keys-0` — LiveMap value type consumption validates that entry keys are strings.
+
+**ably-js behavior**: JavaScript object keys are always coerced to strings, so a non-string key cannot reach the validation (the check itself exists at `livemap.ts` `validateKeyValue`). The test is omitted (the only spec Test ID without a derived test); the sibling RTLMV4a/RTLMV4c validation tests cover the reachable cases. The spec test now carries a language-applicability note sanctioning this omission (see the pseudocode conventions in the spec's `uts/README.md`).
+
+---
+
+### objects/internal_live_counter_api: RTLC12e1 - null increment amount defaults to 1 in JS (failure row not applicable)
+
+**Spec (RTLC12e1)**: `increment(null)` is one of the invalid-amount table rows and must fail with 40003 — in languages where `null` is passable and distinguishable from an omitted argument.
+
+**ably-js behavior**: `increment(null)` is runtime-reachable in JS, but the public API defines a nullish amount as equivalent to an omitted argument (`amount ?? 1` at the PathObject/Instance layer), so it increments by 1. What is unreachable is the 40003 failure path for the null row — not the input itself. The spec table carries a language-applicability note sanctioning this and directing such SDKs to assert the default-of-1 behavior instead.
+
+**Test**: `RTLC12e1 - table-driven invalid increment amounts` (`test/uts/objects/unit/live_counter_api.test.ts`) — the null row asserts the increment-by-1 default, pinning the null-means-omitted contract; the remaining rows (NaN, ±Infinity, string, boolean, array, object) assert 40003.
+
+---
+
+### objects: user-facing ObjectData carries a deprecated `value` field
+
+**Spec**: `PublicAPI::ObjectData` exposes the typed value fields (`boolean`/`bytes`/`number`/`string`/`json`).
+
+**ably-js behavior**: `toUserFacingObjectData` (`src/plugins/liveobjects/objectmessage.ts`) additionally populates a legacy `value` convenience field on the public ObjectData. Harmless extra field; removal is a breaking change reserved for a future major.
+
+**Tests**: `objects/unit/public_object_message.test.ts` exercises the public mapping.
+
+---
+
+### objects: harness and wire-format conventions (not behavioral deviations)
+
+The wire protocol uses numeric operation actions and JSON-stringified `json`/`initialValue` payloads (OM/OD/TM definitions) — the UTS pseudo-code's string action names and parsed objects are readable renderings, and derived tests assert the real wire shapes. Internal-state tests (`objects_pool.test.ts`) observe private fields via `(channel as any)._object._state` etc., since internal-state observation is inherently SDK-specific.
+
+---
+
+## Spec Points Under Review (compliant, but questioned)
+
+### objects/realtime_object: RTO18d - additive listener registration is a questioned spec point
+
+**Spec (RTO18d / RTE4)**: registering the same listener instance twice for a sync-state event makes it fire twice per emission (additive registration).
+
+**ably-js behavior**: **compliant** — ably-js's `EventEmitter` is list-backed, so the same listener registered twice fires twice; `RTO18d - Duplicate listener registered twice fires twice` passes.
+
+**Why it's here**: the spec point itself is considered questionable — a listener registered twice runs identical logic, so invoking it twice for one event has no practical purpose. ably-java intentionally deviates (its core `EventEmitter` deduplicates by listener instance, firing once) and documents this as a deliberate deviation. Recorded here as a flag for spec reconsideration; ably-js is **not** changed (its behavior currently follows the spec). If the spec point is removed/relaxed, or if alignment on de-duplication is agreed, this becomes a no-op.
 
 ---
 

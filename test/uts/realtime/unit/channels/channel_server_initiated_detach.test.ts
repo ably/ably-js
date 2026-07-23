@@ -14,7 +14,15 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
-import { Ably, installMockWebSocket, enableFakeTimers, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import {
+  Ably,
+  installMockWebSocket,
+  enableFakeTimers,
+  restoreAll,
+  trackClient,
+  flushAsync,
+  pollUntil,
+} from '../../../helpers';
 
 describe('uts/realtime/unit/channels/channel_server_initiated_detach', function () {
   afterEach(function () {
@@ -73,13 +81,7 @@ describe('uts/realtime/unit/channels/channel_server_initiated_detach', function 
     });
 
     // Wait for reattach to complete
-    await new Promise<void>((resolve) => {
-      const check = () => {
-        if (channel.state === 'attached' && attachCount >= 2) return resolve();
-        channel.once('attached', check);
-      };
-      check();
-    });
+    await pollUntil(() => channel.state === 'attached' && attachCount >= 2);
 
     expect(attachCount).to.equal(2);
     expect(channel.state).to.equal('attached');

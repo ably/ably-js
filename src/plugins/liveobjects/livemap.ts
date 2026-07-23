@@ -308,12 +308,16 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     const opSerial = msg.serial!;
     const opSiteCode = msg.siteCode!;
     if (!this._canApplyOperation(opSerial, opSiteCode)) {
-      this._client.Logger.logAction(
-        this._client.logger,
-        this._client.Logger.LOG_MICRO,
-        'LiveMap.applyOperation()',
-        `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
-      );
+      // _canApplyOperation already logs a warning for malformed serial values; only log
+      // the newness-check skip when the serials are well-formed
+      if (opSerial && opSiteCode) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'LiveMap.applyOperation()',
+          `skipping ${op.action} op: op serial ${opSerial} <= site serial ${this._siteTimeserials[opSiteCode]}; objectId=${this.getObjectId()}`,
+        );
+      }
       return false; // RTLM15b
     }
 
@@ -338,20 +342,20 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
 
       case ObjectOperationAction.MAP_SET:
         if (this._client.Utils.isNil(op.mapSet)) {
-          this._throwNoPayloadError(op);
-        } else {
-          // RTLM15d6
-          update = this._applyMapSet(op.mapSet, opSerial, msg);
+          this._logNoPayloadWarning(op);
+          return false;
         }
+        // RTLM15d6
+        update = this._applyMapSet(op.mapSet, opSerial, msg);
         break;
 
       case ObjectOperationAction.MAP_REMOVE:
         if (this._client.Utils.isNil(op.mapRemove)) {
-          this._throwNoPayloadError(op);
-        } else {
-          // RTLM15d7
-          update = this._applyMapRemove(op.mapRemove, opSerial, msg.serialTimestamp, msg);
+          this._logNoPayloadWarning(op);
+          return false;
         }
+        // RTLM15d7
+        update = this._applyMapRemove(op.mapRemove, opSerial, msg.serialTimestamp, msg);
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
@@ -365,11 +369,14 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
         break;
 
       default:
-        throw new this._client.ErrorInfo(
-          `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-          92000,
-          500,
+        // RTLM15d4 - log a warning and discard the message without taking any further action
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'LiveMap.applyOperation()',
+          `object operation message received with unsupported action, skipping message; action=${op.action}, objectId=${this.getObjectId()}`,
         );
+        return false;
     }
 
     this.notifyUpdated(update); // RTLM15d1a, RTLM15d6a, RTLM15d7a, RTLM15d5a, RTLM15d8a
@@ -438,28 +445,24 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
       return { noop: true };
     }
 
-    const previousDataRef = this._dataRef;
-    let update: LiveMapUpdate<T>;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      update = this.tombstone(objectMessage);
-    } else {
-      // otherwise override data for this object with data from the object state
-      this._createOperationIsMerged = false; // RTLM6b
-      this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
-      this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
-      // RTLM6d
-      if (!this._client.Utils.isNil(objectState.createOp)) {
-        this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
-      }
-
-      // update will contain the diff between previous value and new value from object state
-      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-      update.objectMessage = objectMessage;
+      return this.tombstone(objectMessage);
     }
 
-    // Update parent references based on the calculated diff
-    this._updateParentReferencesFromUpdate(update, previousDataRef);
+    // otherwise override data for this object with data from the object state
+    const previousDataRef = this._dataRef;
+    this._createOperationIsMerged = false; // RTLM6b
+    this._clearTimeserial = objectState.map?.clearTimeserial; // RTLM6i
+    this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
+    // RTLM6d
+    if (!this._client.Utils.isNil(objectState.createOp)) {
+      this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
+    }
+
+    // update will contain the diff between previous value and new value from object state
+    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+    update.objectMessage = objectMessage;
 
     return update;
   }
@@ -700,11 +703,14 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     return aggregatedUpdate; // RTLM23c
   }
 
-  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): never {
-    throw new this._client.ErrorInfo(
-      `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-      92000,
-      500,
+  private _logNoPayloadWarning(op: ObjectOperation<ObjectData>): void {
+    // a message with a missing operation payload is malformed; log a warning and discard
+    // it without aborting the processing of sibling operations in the same ProtocolMessage
+    this._client.Logger.logAction(
+      this._client.logger,
+      this._client.Logger.LOG_MAJOR,
+      'LiveMap.applyOperation()',
+      `no payload found for ${op.action} op, skipping message; objectId=${this.getObjectId()}`,
     );
   }
 
@@ -1094,45 +1100,5 @@ export class LiveMap<T extends Record<string, Value> = Record<string, Value>>
     }
 
     return false;
-  }
-
-  /**
-   * Update parent references based on the calculated update diff.
-   */
-  private _updateParentReferencesFromUpdate(update: LiveMapUpdate<T>, previousDataRef: LiveMapData): void {
-    for (const [key, changeType] of Object.entries(update.update)) {
-      if (changeType === 'removed') {
-        // Key was removed - remove parent reference from the old object if it was referencing one
-        const previousEntry = previousDataRef.data.get(key);
-        if (previousEntry?.data && 'objectId' in previousEntry.data) {
-          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
-          if (oldReferencedObject) {
-            oldReferencedObject.removeParentReference(this, key);
-          }
-        }
-      }
-
-      if (changeType === 'updated') {
-        // Key was updated - need to handle both removal of old reference and addition of new reference
-        const previousEntry = previousDataRef.data.get(key);
-        const newEntry = this._dataRef.data.get(key);
-
-        // Remove old parent reference if there was one
-        if (previousEntry?.data && 'objectId' in previousEntry.data) {
-          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
-          if (oldReferencedObject) {
-            oldReferencedObject.removeParentReference(this, key);
-          }
-        }
-
-        // Add new parent reference if the new value references an object
-        if (newEntry?.data && 'objectId' in newEntry.data) {
-          const newReferencedObject = this._realtimeObject.getPool().get(newEntry.data.objectId);
-          if (newReferencedObject) {
-            newReferencedObject.addParentReference(this, key);
-          }
-        }
-      }
-    }
   }
 }

@@ -3,6 +3,9 @@ import type Platform from 'common/platform';
 
 export type LiveObjectType = 'map' | 'counter';
 
+// 12 bytes of entropy base64-encode to a 16-character string, the RTLCV4d/RTLMV4g minimum
+const NONCE_ENTROPY_BYTES = 12;
+
 /**
  * Represents a parsed object id.
  *
@@ -14,6 +17,15 @@ export class ObjectId {
     readonly hash: string,
     readonly msTimestamp: number,
   ) {}
+
+  /**
+   * Generates a unique random string nonce with 16+ characters, as required for
+   * object id creation (RTLCV4d, RTLMV4g). 12 bytes of entropy base64-encode to
+   * exactly 16 characters.
+   */
+  static async generateNonce(client: BaseClient): Promise<string> {
+    return client.Utils.randomString(NONCE_ENTROPY_BYTES);
+  }
 
   static fromInitialValue(
     platform: typeof Platform,

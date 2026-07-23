@@ -555,7 +555,11 @@ function registerAblyModularTests(Helper) {
               ? (op, realtime) => helper.monitorConnectionThenCloseAndFinishAsync(op, realtime)
               : async (op) => await op()
           )(async () => {
-            const channelName = 'encrypted_history',
+            // The channel name must be unique per client-class variant: both variants run
+            // against the same app with different random cipher keys, and a shared channel
+            // would let the history wait below be satisfied by the other variant's message,
+            // which then fails to decrypt with this variant's key.
+            const channelName = 'encrypted_history_' + clientClassConfig.clientClass.name,
               messageText = 'Test message';
 
             const key = await generateRandomKey();

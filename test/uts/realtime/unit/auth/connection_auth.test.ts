@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync, pollUntil } from '../../../helpers';
 
 describe('uts/realtime/unit/auth/connection_auth', function () {
   afterEach(function () {
@@ -336,10 +336,7 @@ describe('uts/realtime/unit/auth/connection_auth', function () {
     mock.active_connection!.send_to_client({ action: 17 }); // AUTH
 
     // Wait for the auth callback to be called a second time (the failure)
-    for (let i = 0; i < 10; i++) {
-      await flushAsync();
-      if (authCallbackCount >= 2) break;
-    }
+    await pollUntil(() => authCallbackCount >= 2, 1000);
 
     // RSA4c3: connection should remain CONNECTED
     expect(client.connection.state).to.equal('connected');

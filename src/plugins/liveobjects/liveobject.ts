@@ -110,10 +110,24 @@ export abstract class LiveObject<
 
   /**
    * Clears the object's data, cancels any buffered operations and sets the tombstone flag to `true`.
+   * The root object can never be tombstoned (RTLO4e10); such attempts return a noop update.
    *
    * @internal
    */
-  tombstone(objectMessage: ObjectMessage): TUpdate {
+  tombstone(objectMessage: ObjectMessage): TUpdate | LiveObjectUpdateNoop {
+    // RTLO4e10 - the root object must always exist in the ObjectsPool (RTO3b); the realtime
+    // system never publishes an OBJECT_DELETE operation or a tombstoned object state for it,
+    // so an attempt to tombstone it indicates a faulty message. log a warning and skip it
+    if (this.getObjectId() === ROOT_OBJECT_ID) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'LiveObject.tombstone()',
+        `attempt to tombstone the root object was rejected; serial=${objectMessage.serial}, siteCode=${objectMessage.siteCode}, message id: ${objectMessage.id}`,
+      );
+      return { noop: true };
+    }
+
     this._tombstone = true; // RTLO4e2
     this._tombstonedAt = this._calculateTombstonedAt(
       objectMessage.serialTimestamp,
@@ -244,19 +258,24 @@ export abstract class LiveObject<
    * If `siteTimeserials` map does not contain a serial for the same site, the operation should be applied.
    */
   protected _canApplyOperation(opSerial: string | undefined, opSiteCode: string | undefined): boolean {
-    if (!opSerial) {
-      throw new this._client.ErrorInfo(`Invalid serial: ${opSerial}`, 92000, 500);
-    }
-
-    if (!opSiteCode) {
-      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500);
+    // RTLO4a3 - an operation with invalid serial values is not applied; log a warning and
+    // skip it instead of throwing, so one malformed operation cannot abort the processing
+    // of sibling operations in the same ProtocolMessage.
+    if (!opSerial || !opSiteCode) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'LiveObject._canApplyOperation()',
+        `object operation message has invalid serial values, skipping operation; serial=${opSerial}, siteCode=${opSiteCode}, objectId=${this.getObjectId()}`,
+      );
+      return false;
     }
 
     const siteSerial = this._siteTimeserials[opSiteCode];
     return !siteSerial || opSerial > siteSerial;
   }
 
-  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
+  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate | LiveObjectUpdateNoop {
     return this.tombstone(objectMessage);
   }
 
@@ -379,5 +398,5 @@ export abstract class LiveObject<
   protected abstract _mergeInitialDataFromCreateOperation(
     objectOperation: ObjectOperation<ObjectData>,
     msg: ObjectMessage,
-  ): TUpdate;
+  ): TUpdate | LiveObjectUpdateNoop;
 }

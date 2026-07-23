@@ -7,7 +7,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
-import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync } from '../../../helpers';
+import { Ably, trackClient, installMockWebSocket, restoreAll, flushAsync, pollUntil } from '../../../helpers';
 
 describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
   afterEach(function () {
@@ -601,9 +601,7 @@ describe('uts/realtime/unit/presence/realtime_presence_reentry', function () {
     });
 
     // Wait for the re-entry NACK to be processed
-    for (let i = 0; i < 10 && channelEvents.length < 1; i++) {
-      await flushAsync();
-    }
+    await pollUntil(() => channelEvents.length >= 1, 1000);
 
     expect(channelEvents.length).to.be.at.least(1);
 
