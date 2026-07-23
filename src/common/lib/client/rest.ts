@@ -144,7 +144,12 @@ export class Rest {
     );
 
     if (!Platform.Http.methods.includes(_method)) {
-      throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
+      throw new ErrorInfo({
+        message: 'Unsupported method ' + _method,
+        code: 40500,
+        statusCode: 405,
+        remediation: `Use one of: ${Platform.Http.methods.join(', ')}.`,
+      });
     }
 
     if (Platform.Http.methodsWithBody.includes(_method)) {
@@ -212,7 +217,13 @@ export class Rest {
     options?: TokenRevocationOptions,
   ): Promise<TokenRevocationResult> {
     if (useTokenAuth(this.client.options)) {
-      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+      throw new ErrorInfo({
+        message: 'Cannot revoke tokens when using token auth',
+        code: 40162,
+        statusCode: 401,
+        remediation:
+          'Token revocation must use basic auth, so construct a separate Ably.Rest client with ClientOptions.key (the API key that issued the tokens) just for this call. Revocable tokens must have been enabled on the key in the Ably dashboard before the tokens were issued, otherwise there is nothing to revoke.',
+      });
     }
 
     const keyName = this.client.options.keyName!;

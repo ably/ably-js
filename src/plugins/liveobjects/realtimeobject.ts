@@ -256,7 +256,7 @@ export class RealtimeObject {
     const size = encodedMsgs.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
       throw new this._client.ErrorInfo(
-        `Maximum size of object messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        `Maximum size of object messages that can be published at once exceeded (was ${size} bytes, against a limit of ${maxMessageSize} bytes)`,
         40009,
         400,
       );
@@ -568,11 +568,21 @@ export class RealtimeObject {
   private _throwIfMissingChannelMode(expectedMode: 'object_subscribe' | 'object_publish'): void {
     // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2a2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        remediation: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+      });
     }
     // RTO2b - otherwise as a best effort use user provided channel options
     if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2b2
+      throw new this._client.ErrorInfo({
+        message: `"${expectedMode}" channel mode must be set for this operation`,
+        code: 40024,
+        statusCode: 400,
+        remediation: `Include "${expectedMode}" in the channel modes: realtime.channels.get(name, { modes: ["${expectedMode}", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. If the mode is still missing after the reattach, your API key lacks the capability corresponding to the mode ("object-subscribe" or "object-publish") on this channel and the server silently dropped it. If you have the Ably CLI installed, \`ably auth keys list\` shows your key's capabilities.`,
+      });
     }
   }
 

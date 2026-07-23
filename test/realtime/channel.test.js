@@ -719,7 +719,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               try {
                 expect(err.code).to.equal(40000, 'Check error code');
                 expect(err.statusCode).to.equal(400, 'Check error status code');
-                expect(err.message.includes('setOptions'), 'Check error message').to.be.ok;
+                expect(err.remediation.includes('setOptions'), 'Check error remediation points at setOptions').to.be.ok;
                 helper.closeAndFinish(done, realtime);
               } catch (err) {
                 helper.closeAndFinish(done, realtime, err);
@@ -1454,7 +1454,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * v1-style trailing-callback shape on RealtimeChannel.{publish, subscribe,
      * history} throws synchronously with a steering ErrorInfo whose message
-     * diagnoses *what* went wrong and whose hint prescribes the v2 replacement
+     * diagnoses *what* went wrong and whose remediation prescribes the v2 replacement
      * call.
      */
     [
@@ -1495,9 +1495,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             expect(err.code).to.equal(40025);
             expect(err.message).to.contain('v1 callback signature');
             expect(err.message).to.contain('no longer supported');
-            expect(err.hint).to.be.a('string');
-            expect(err.hint).to.contain('v2 uses Promises');
-            expect(err.hint).to.contain('https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md');
+            expect(err.remediation).to.be.a('string');
+            expect(err.remediation).to.contain('Drop the trailing callback');
+            expect(err.remediation).to.contain(
+              'https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md',
+            );
             helper.closeAndFinish(done, realtime);
           } catch (assertionErr) {
             helper.closeAndFinish(done, realtime, assertionErr);
@@ -2115,6 +2117,85 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
         await detachPromise;
       }, realtime);
+    });
+
+    describe('subscribe() without subscribe mode', function () {
+      /**
+       * Subscribe on a channel attached without the subscribe mode, with strictMode enabled.
+       * The listener must remain registered despite the failure, so once the mode is granted
+       * via setOptions it receives messages without a further subscribe call.
+       *
+       * @spec RTL7i1
+       */
+      it('with strictMode:true, attach resolves but subscribe rejects with 90009 and a subscribe-mode remediation', async function () {
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime({ strictMode: true });
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = realtime.channels.get('subscribe-without-mode-strict-' + String(Math.random()).slice(2), {
+            modes: ['publish'],
+          });
+          let resolveReceived;
+          const received = new Promise(function (resolve) {
+            resolveReceived = resolve;
+          });
+          let caught;
+          try {
+            await channel.subscribe(function (msg) {
+              resolveReceived(msg);
+            });
+          } catch (err) {
+            caught = err;
+          }
+          expect(caught, 'expected channel.subscribe() to reject').to.exist;
+          expect(caught.code).to.equal(90009);
+          expect(caught.statusCode).to.equal(400);
+          expect(caught.message).to.contain('subscribe mode');
+          expect(caught.remediation).to.be.a('string');
+          expect(caught.remediation).to.contain('subscribe');
+          expect(caught.remediation).to.contain('ably auth keys list');
+          // the listener registered by the failed subscribe must survive: grant the mode and
+          // the message should arrive without a further subscribe call
+          await channel.setOptions({ modes: ['subscribe', 'publish'] });
+          await channel.publish('event', 'data');
+          const msg = await received;
+          expect(msg.data).to.equal('data');
+        }, realtime);
+      });
+
+      /**
+       * Subscribe on a channel attached without the subscribe mode, with strictMode off (default).
+       * The call succeeds, a warning naming strictMode is logged, and the warning is not
+       * repeated on a subsequent subscribe on the same attachment.
+       *
+       * @spec RTL7i2
+       */
+      it('with strictMode disabled (default), subscribe resolves and logs a warning once per attachment', async function () {
+        const helper = this.test.helper;
+        const warnings = [];
+        const realtime = helper.AblyRealtime({
+          logLevel: 1,
+          logHandler: function (msg) {
+            if (msg.indexOf('RealtimeChannel.subscribe()') !== -1) {
+              warnings.push(msg);
+            }
+          },
+        });
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = realtime.channels.get('subscribe-without-mode-silent-' + String(Math.random()).slice(2), {
+            modes: ['publish'],
+          });
+          const result = await channel.subscribe(function () {});
+          // attach resolves (ChannelStateChange or null) without throwing; the listener is harmless because the server will never deliver
+          expect(result === null || (result && typeof result === 'object')).to.equal(true);
+          expect(channel.state).to.equal('attached');
+          expect(warnings.length).to.equal(1);
+          expect(warnings[0]).to.contain('subscribe mode');
+          expect(warnings[0]).to.contain('strictMode');
+          // a second subscribe on the same attachment must not log again
+          await channel.subscribe(function () {});
+          expect(warnings.length).to.equal(1);
+        }, realtime);
+      });
     });
   });
 });

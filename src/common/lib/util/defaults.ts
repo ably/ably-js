@@ -175,10 +175,21 @@ export function getHosts(options: NormalisedClientOptions): string[] {
 
 function checkHost(host: string): void {
   if (typeof host !== 'string') {
-    throw new ErrorInfo('host must be a string; was a ' + typeof host, 40000, 400);
+    throw new ErrorInfo({
+      message: 'host must be a string: was of type ' + typeof host,
+      code: 40000,
+      statusCode: 400,
+      remediation:
+        'Make every entry of `fallbackHosts` a string. If you set `restHost` or `realtimeHost`, pass each as a single string, not an array or object.',
+    });
   }
   if (!host.length) {
-    throw new ErrorInfo('host must not be zero-length', 40000, 400);
+    throw new ErrorInfo({
+      message: 'host must not be zero-length: an entry of `fallbackHosts` is an empty string',
+      code: 40000,
+      statusCode: 400,
+      remediation: 'Remove any empty-string entry from the `fallbackHosts` array.',
+    });
   }
 }
 
@@ -251,21 +262,26 @@ function checkIfClientOptionsAreValid(options: ClientOptions) {
   // REC1b
   if (options.endpoint && (options.environment || options.restHost || options.realtimeHost)) {
     // RSC1b
-    throw new ErrorInfo(
-      'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
-      40106,
-      400,
-    );
+    throw new ErrorInfo({
+      message:
+        'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
+      code: 40106,
+      statusCode: 400,
+      remediation:
+        'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
+    });
   }
 
   // REC1c
   if (options.environment && (options.restHost || options.realtimeHost)) {
     // RSC1b
-    throw new ErrorInfo(
-      'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
-      40106,
-      400,
-    );
+    throw new ErrorInfo({
+      message: 'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
+      code: 40106,
+      statusCode: 400,
+      remediation:
+        'Remove `environment`, `restHost`, and `realtimeHost` from `ClientOptions` and use only `endpoint`, which replaces them.',
+    });
   }
 }
 

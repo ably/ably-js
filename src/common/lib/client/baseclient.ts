@@ -18,6 +18,7 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
+import type { IPlatformPushConfig } from 'common/types/IPlatformConfig';
 import EventEmitter from '../util/eventemitter';
 import { MessageEncoding } from '../types/basemessage';
 import type * as LiveObjectsPlugin from 'plugins/liveobjects';
@@ -54,6 +55,7 @@ class BaseClient {
   readonly _liveObjectsPlugin: typeof LiveObjectsPlugin | null;
   readonly logger: Logger;
   _device?: LocalDevice;
+  private _devicePromise?: Promise<LocalDevice>;
 
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
@@ -76,21 +78,36 @@ class BaseClient {
       if (!keyMatch) {
         const msg = 'invalid key parameter';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
-        throw new ErrorInfo(msg, 40400, 404);
+        throw new ErrorInfo({
+          message: msg,
+          code: 40400,
+          statusCode: 404,
+          remediation:
+            'ClientOptions.key must be the full "appId.keyId:secret" string copied from the Ably dashboard. If you have the Ably CLI installed, `ably auth keys list` shows the keys configured on the current app.',
+        });
       }
       normalOptions.keyName = keyMatch[1];
       normalOptions.keySecret = keyMatch[2];
     }
 
     if ('clientId' in normalOptions) {
-      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null))
-        throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      else if (normalOptions.clientId === '*')
-        throw new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400,
-        );
+      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null)) {
+        throw new ErrorInfo({
+          message: 'clientId must be either a string or null',
+          code: 40012,
+          statusCode: 400,
+          remediation:
+            'Pass a stable string such as a user id to identify the client, or null (or omit it) for an anonymous client. Values like numbers or objects are not accepted.',
+        });
+      } else if (normalOptions.clientId === '*') {
+        throw new ErrorInfo({
+          message: 'Can’t use "*" as a clientId as that string is reserved',
+          code: 40012,
+          statusCode: 400,
+          remediation:
+            'ClientOptions.clientId sets one fixed identity and cannot be "*". To let this client act as any clientId, request a wildcard token instead: set defaultTokenParams: { clientId: "*" } on the client. The "*" belongs in the token request, not in ClientOptions.clientId.',
+        });
+      }
     }
 
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);
@@ -130,13 +147,59 @@ class BaseClient {
     return this.rest.push;
   }
 
-  /** RSH8 */
+  /**
+   * The effective platform push config for this client. A config carried by the client's Push
+   * plugin (e.g. ReactNativePush, whose storage and token callbacks are supplied per client)
+   * takes precedence over the platform-level Platform.Config.push (set statically on web), so
+   * multiple clients never share plugin-supplied storage or callbacks.
+   */
+  get pushConfig(): IPlatformPushConfig | undefined {
+    return this.options.plugins?.Push?.pushConfig ?? Platform.Config.push;
+  }
+
+  /**
+   * RSH8
+   *
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage
+   * synchronously, which is not possible on platforms with asynchronous storage such as React
+   * Native. In the next major release `device()` will become asynchronous.
+   */
   device(): LocalDevice & API.LocalDevice {
     if (!this.options.plugins?.Push || !this.push.LocalDevice) {
       throwMissingPluginError('Push');
     }
     if (!this._device) {
+      if (this.pushConfig?.storageIsAsync) {
+        throw new ErrorInfo({
+          message:
+            'client.device() cannot load the local device synchronously: push storage on this platform is asynchronous',
+          code: 40000,
+          statusCode: 400,
+          remediation:
+            'Use await client.getDevice() instead. device() is deprecated and will become asynchronous in the next major release.',
+        });
+      }
       this._device = this.push.LocalDevice.load(this);
+    }
+    return this._device;
+  }
+
+  /** RSH8 */
+  async getDevice(): Promise<LocalDevice & API.LocalDevice> {
+    if (!this.options.plugins?.Push || !this.push.LocalDevice) {
+      throwMissingPluginError('Push');
+    }
+    if (!this._device) {
+      const devicePromise = (this._devicePromise ??= this.push.LocalDevice.loadAsync(this));
+      try {
+        this._device = await devicePromise;
+      } catch (err) {
+        // drop the failed load so a later call can retry after a transient storage failure
+        if (this._devicePromise === devicePromise) {
+          this._devicePromise = undefined;
+        }
+        throw err;
+      }
     }
     return this._device;
   }

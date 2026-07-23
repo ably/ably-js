@@ -1,4 +1,6 @@
 import * as Ably from 'ably';
+import type { LiveCounter, LiveMap, PathObject } from 'ably/liveobjects';
+import { useObject } from 'ably/liveobjects/react';
 import { useChannel } from 'ably/react';
 import { useEffect, useState } from 'react';
 
@@ -37,7 +39,38 @@ export function App() {
         <h2>Messages</h2>
         <ul>{messagePreviews}</ul>
       </div>
+      <LiveObjectsTypeChecks />
     </div>
+  );
+}
+
+type Game = {
+  scores: LiveMap<{ alice: LiveCounter; bob: LiveCounter }>;
+  title: string;
+};
+
+// check that useObject result types flow through the typed navigation selector.
+// skip is set so the hook makes no use of the LiveObjects plugin at runtime;
+// these checks only need to compile.
+function LiveObjectsTypeChecks() {
+  // no-selector form: the type parameter is the shape of the channel's object,
+  // as for channel.object.get<Game>()
+  const whole = useObject<Game>({ skip: true });
+  const wholeValue: { scores: { alice: number; bob: number }; title: string } | undefined = whole.value;
+  const wholeObject: PathObject<LiveMap<Game>> | undefined = whole.object;
+
+  // selector form: annotating the selector's parameter types the whole navigation chain
+  const counter = useObject((obj: PathObject<LiveMap<Game>>) => obj.get('scores').get('alice'), { skip: true });
+  const counterValue: number | undefined = counter.value;
+  const counterObject: PathObject<LiveCounter> | undefined = counter.object;
+
+  return (
+    <ul hidden>
+      <li>{wholeValue?.title}</li>
+      <li>{wholeObject?.path()}</li>
+      <li>{counterValue}</li>
+      <li>{counterObject?.path()}</li>
+    </ul>
   );
 }
 

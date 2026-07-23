@@ -16,7 +16,8 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["vitest/globals"],
     "paths": {
-      "ably": ["../../../"]
+      "ably": ["../../../"],
+      "ably/liveobjects": ["../../../liveobjects.d.ts"]
     }
   }
 }

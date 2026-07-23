@@ -69,13 +69,25 @@ class RealtimeAnnotations {
       await channel.attach();
     }
 
-    // explicit check for attach state in caes attachOnSubscribe=false
-    if ((this.channel.state === 'attached' && this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
-      throw new ErrorInfo(
-        "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
-        93001,
-        400,
+    // explicit check for attach state in case attachOnSubscribe=false
+    if (this.channel.state === 'attached' && (this.channel._mode & flags.ANNOTATION_SUBSCRIBE) === 0) {
+      const err = new ErrorInfo({
+        message:
+          "You are trying to add an annotation listener, but you haven't requested the annotation_subscribe channel mode in ChannelOptions, so this won't do anything (we only deliver annotations to clients who have explicitly requested them)",
+        code: 93001,
+        statusCode: 400,
+        remediation:
+          'Include "annotation_subscribe" in the channel modes: realtime.channels.get(name, { modes: ["annotation_subscribe", ...] }), or call channel.setOptions({ modes: [...] }) on an existing channel to trigger a reattach. Calling channels.get(name, { modes }) on an existing channel throws. The server only grants the mode if your key or token has the annotation-subscribe capability. Without it the attach succeeds but the server silently drops the mode and annotations are never delivered. `ably auth keys list` shows your key\'s capabilities.',
+      });
+      Logger.logActionNoStrip(
+        this.logger,
+        Logger.LOG_MAJOR,
+        'RealtimeAnnotations.subscribe()',
+        err.message + '; remediation=' + err.remediation,
       );
+      // The listener stays registered despite the throw, matching subscribe()'s existing
+      // semantics: the listener is always added regardless of attach outcome.
+      throw err;
     }
   }
 

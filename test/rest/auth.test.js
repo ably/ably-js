@@ -1,6 +1,6 @@
 'use strict';
 
-define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, async, globals) {
+define(['chai', 'shared_helper', 'async'], function (chai, Helper, async) {
   var currentTime;
   var rest;
   var expect = chai.expect;
@@ -366,8 +366,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * Creates a test fixture which checks that the rest client can succesfully make a stats request with the given authParams.
      * @param {string} description Mocha test description
      * @param {object} params The authParams to be tested
+     * @param {object} [opts] Fixture options.
+     * @param {boolean} [opts.embedInnerToken] Mint an Ably token here and pass it to the echo server via innerToken.
      */
-    function testJWTAuthParams(description, params) {
+    function testJWTAuthParams(description, params, opts) {
       /**
        * Related to RSC1
        *
@@ -385,6 +387,13 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
         helper.recordPrivateApi('call.Utils.mixin');
         var authParams = helper.Utils.mixin(keys, params);
+
+        /* Mint the embedded token with a client pointed at the platform under test, then hand it to the echo server. */
+        if (opts && opts.embedInnerToken) {
+          var innerTokenDetails = await helper.AblyRest().auth.requestToken();
+          authParams.innerToken = innerTokenDetails.token;
+        }
+
         helper.recordPrivateApi('call.Utils.toQueryString');
         var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(authParams);
         var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
@@ -399,18 +408,9 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     testJWTAuthParams('Basic rest JWT', {});
     testJWTAuthParams('Rest JWT with return type ', { returnType: 'jwt' });
-    /* The embedded tests rely on the echoserver getting a token from realtime, so won't work against a local realtime */
-    if (globals.endpoint !== 'local') {
-      testJWTAuthParams('Rest embedded JWT', {
-        jwtType: 'embedded',
-        environment: globals.endpoint.replace('nonprod:', ''),
-      });
-      testJWTAuthParams('Rest embedded JWT with encryption', {
-        jwtType: 'embedded',
-        environment: globals.endpoint.replace('nonprod:', ''),
-        encrypted: 1,
-      });
-    }
+    /* Mint the embedded token here (via innerToken) so this works uniformly against cloud and local sandboxes. */
+    testJWTAuthParams('Rest embedded JWT', {}, { embedInnerToken: true });
+    testJWTAuthParams('Rest embedded JWT with encryption', { encrypted: 1 }, { embedInnerToken: true });
 
     /**
      * Related to RSA8g, RSA4f

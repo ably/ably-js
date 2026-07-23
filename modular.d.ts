@@ -329,6 +329,7 @@ export declare class BaseRest implements RestClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -383,6 +384,7 @@ export declare class BaseRealtime implements RealtimeClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 export { ErrorInfo };

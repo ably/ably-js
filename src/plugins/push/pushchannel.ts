@@ -13,14 +13,14 @@ class PushChannel {
 
   async subscribeDevice() {
     const client = this.client;
-    const device = client.device();
+    const device = await client.getDevice();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { deviceId: device.id, channel: this.channel.name },
       headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 
-    client.Utils.mixin(headers, this._getPushAuthHeaders());
+    client.Utils.mixin(headers, this._getPushAuthHeaders(device));
 
     const requestBody = client.Utils.encodeBody(body, client._MsgPack, format);
     await client.rest.Resource.post(client, '/push/channelSubscriptions', requestBody, headers, {}, format, true);
@@ -28,13 +28,13 @@ class PushChannel {
 
   async unsubscribeDevice() {
     const client = this.client;
-    const device = client.device();
+    const device = await client.getDevice();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 
-    client.Utils.mixin(headers, this._getPushAuthHeaders());
+    client.Utils.mixin(headers, this._getPushAuthHeaders(device));
 
     await client.rest.Resource.delete(
       client,
@@ -50,7 +50,13 @@ class PushChannel {
     const client = this.client;
     const clientId = this.client.auth.clientId;
     if (!clientId) {
-      throw new this.client.ErrorInfo('Cannot subscribe from client without client ID', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot subscribe from client without client ID',
+        code: 50000,
+        statusCode: 500,
+        remediation:
+          'Set ClientOptions.clientId before calling pushChannel.subscribeClient(). On a realtime client, a clientId carried in the token also satisfies this once the connection has connected. On a REST client, only ClientOptions.clientId works.',
+      });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { clientId: clientId, channel: this.channel.name },
@@ -67,7 +73,13 @@ class PushChannel {
 
     const clientId = this.client.auth.clientId;
     if (!clientId) {
-      throw new this.client.ErrorInfo('Cannot unsubscribe from client without client ID', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot unsubscribe from client without client ID',
+        code: 50000,
+        statusCode: 500,
+        remediation:
+          'Set ClientOptions.clientId before calling pushChannel.unsubscribeClient(). On a realtime client, a clientId carried in the token also satisfies this once the connection has connected. On a REST client, only ClientOptions.clientId works.',
+      });
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       headers = client.Defaults.defaultPostHeaders(client.options);
@@ -99,18 +111,22 @@ class PushChannel {
     });
   }
 
-  private _getDeviceIdentityToken() {
-    const device = this.client.device();
+  private _getDeviceIdentityToken(device: Awaited<ReturnType<BaseClient['getDevice']>>) {
     const deviceIdentityToken = device.deviceIdentityToken;
     if (deviceIdentityToken) {
       return deviceIdentityToken;
     } else {
-      throw new this.client.ErrorInfo('Cannot subscribe from client without deviceIdentityToken', 50000, 500);
+      throw new this.client.ErrorInfo({
+        message: 'Cannot subscribe or unsubscribe this device without a deviceIdentityToken',
+        code: 50000,
+        statusCode: 500,
+        remediation: 'Activate this device first by awaiting client.push.activate().',
+      });
     }
   }
 
-  private _getPushAuthHeaders() {
-    const deviceIdentityToken = this._getDeviceIdentityToken();
+  private _getPushAuthHeaders(device: Awaited<ReturnType<BaseClient['getDevice']>>) {
+    const deviceIdentityToken = this._getDeviceIdentityToken(device);
     return { 'X-Ably-DeviceToken': deviceIdentityToken };
   }
 }

@@ -686,6 +686,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var entererChannel = enterer.channels.get(channelName);
       var syncerChannel = syncer.channels.get(channelName);
 
+      /* Resolved once the injected presence enter is processed, so presence.get() below waits for
+       * it rather than racing it (a single-frame sync completes before the injection, so the map
+       * could otherwise be read before dark_horse is added). */
+      var injectionDone;
+      var injectionComplete = new Promise(function (resolve) {
+        injectionDone = resolve;
+      });
+
       function waitForBothConnect(cb) {
         async.parallel(
           [
@@ -742,12 +750,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                     ],
                   }),
                 );
+                injectionDone();
               }
             };
             Helper.whenPromiseSettles(syncerChannel.attach(), cb);
           },
           function (cb) {
-            Helper.whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
+            var getAfterInjection = injectionComplete.then(function () {
+              return syncerChannel.presence.get();
+            });
+            Helper.whenPromiseSettles(getAfterInjection, function (err, presenceSet) {
               try {
                 expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
               } catch (err) {

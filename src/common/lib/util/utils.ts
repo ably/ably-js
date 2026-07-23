@@ -288,11 +288,14 @@ export function detectV1Callback(args: ArrayLike<unknown>, v2TrailingFnArity: nu
   const n = args.length;
   if (typeof args[n - 1] !== 'function') return;
   if (n <= v2TrailingFnArity && typeof args[n - 2] !== 'function') return;
-  const err = new ErrorInfo('v1 callback signature is no longer supported.', 40025, 400);
-  err.hint =
-    'v2 uses Promises — drop the trailing callback and `await` the returned promise. ' +
-    'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md';
-  throw err;
+  throw new ErrorInfo({
+    message: 'v1 callback signature is no longer supported: v2 methods return a promise.',
+    code: 40025,
+    statusCode: 400,
+    remediation:
+      'Drop the trailing callback and `await` the returned promise. ' +
+      'See https://github.com/ably/ably-js/blob/main/docs/migration-guides/v2/lib.md.',
+  });
 }
 
 export function inspectError(err: unknown): string {
@@ -470,11 +473,23 @@ export function matchDerivedChannel(name: string) {
   const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
-    throw new ErrorInfo('regex match failed', 400, 40010);
+    throw new ErrorInfo({
+      message: 'Channel name is empty or could not be parsed',
+      code: 40010,
+      statusCode: 400,
+      remediation:
+        'Pass a non-empty channel name to channels.getDerived(name, { filter: ... }) and put the filter expression in the filter option, not in the name. ' +
+        'A channel-params prefix such as "[?rewind=1]foo" is allowed. See https://ably.com/docs/channels#derived.',
+    });
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
   if (match![2]) {
-    throw new ErrorInfo(`cannot use a derived option with a ${match[2]} channel`, 400, 40010);
+    throw new ErrorInfo({
+      message: `cannot use a derived option with a ${match[2]} channel`,
+      code: 40010,
+      statusCode: 400,
+      remediation: `Use a base channel name instead, without the "${match[2]}" qualifier.`,
+    });
   }
   // Return match values to be added to derive channel quantifier.
   return {
@@ -499,7 +514,27 @@ export function arrEquals(a: any[], b: any[]) {
 }
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
-  return new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
+  // Push and LiveObjects are not exported by the modular variant; each has its own entry point.
+  let remediation: string;
+  switch (pluginName) {
+    case 'Push':
+      remediation = 'Import Push from "ably/push" and pass it in ClientOptions.plugins: { Push }.';
+      break;
+    case 'LiveObjects':
+      remediation =
+        'Import { LiveObjects } from "ably/liveobjects" and pass it in ClientOptions.plugins: { LiveObjects }.';
+      break;
+    default:
+      remediation = `Import ${pluginName} from "ably/modular" and pass it in ClientOptions.plugins: { ${pluginName} }. See the modular variant reference at https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html.`;
+      break;
+  }
+  const err = new ErrorInfo({
+    message: `${pluginName} plugin not provided`,
+    code: 40019,
+    statusCode: 400,
+    remediation,
+  });
+  return err;
 }
 
 export function throwMissingPluginError(pluginName: keyof ModularPlugins): never {
@@ -554,7 +589,12 @@ export async function* listenerToAsyncIterator<T>(
         yield eventQueue.shift()!;
       } else {
         if (resolveNext) {
-          throw new ErrorInfo('Concurrent next() calls are not supported', 40000, 400);
+          throw new ErrorInfo({
+            message: 'Concurrent next() calls are not supported',
+            code: 40000,
+            statusCode: 400,
+            remediation: 'Drive the async iterator from a single for-await-of loop.',
+          });
         }
 
         // Otherwise wait for the next event to arrive

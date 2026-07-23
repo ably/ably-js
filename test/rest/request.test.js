@@ -3,7 +3,6 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var rest;
   var expect = chai.expect;
-  var echoServerHost = 'echo.ably.io';
   var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('rest/request', function () {
@@ -228,7 +227,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
         const helper = this.test.helper.withParameterisedTestTitle('check');
-        var restEcho = helper.AblyRest({ useBinaryProtocol: false, endpoint: echoServerHost, tls: true });
+        var restEcho = helper.AblyRestEcho({ useBinaryProtocol: false });
         var res = await restEcho.request(method, '/methods', 3, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });

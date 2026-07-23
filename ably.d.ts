@@ -389,6 +389,13 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   autoConnect?: boolean;
 
   /**
+   * When `true`, operations that would otherwise fail silently, such as those gated on a channel mode, reject with an {@link ErrorInfo} whose {@link ErrorInfo.remediation | `remediation`} describes the cause and how to fix it. When `false`, the same paths emit a warning log and return their legacy silent value. The default is `false`. A future major version will make the strict behaviour unconditional.
+   *
+   * @defaultValue `false`
+   */
+  strictMode?: boolean;
+
+  /**
    * When a {@link TokenParams} object is provided, it overrides the client library defaults when issuing new Ably Tokens or Ably {@link TokenRequest | `TokenRequest`s}.
    */
   defaultTokenParams?: TokenParams;
@@ -1873,8 +1880,15 @@ export declare interface RestClient {
    * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
    *
    * @returns A {@link LocalDevice} object.
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage synchronously, which is not possible on platforms with asynchronous storage such as React Native. In the next major release `device()` will become asynchronous.
    */
   device(): LocalDevice;
+  /**
+   * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications, loading it from persistent storage if necessary.
+   *
+   * @returns A promise which resolves to a {@link LocalDevice} object.
+   */
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -1969,8 +1983,15 @@ export declare interface RealtimeClient {
    * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
    *
    * @returns A {@link LocalDevice} object.
+   * @deprecated Use {@link getDevice} instead. `device()` reads the device state from storage synchronously, which is not possible on platforms with asynchronous storage such as React Native. In the next major release `device()` will become asynchronous.
    */
   device(): LocalDevice;
+  /**
+   * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications, loading it from persistent storage if necessary.
+   *
+   * @returns A promise which resolves to a {@link LocalDevice} object.
+   */
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -3634,6 +3655,20 @@ export declare interface HttpPaginatedResponse<T = any> extends PaginatedResult<
 }
 
 /**
+ * A push token obtained from the underlying push platform, along with the transport it belongs to. Has the same shape as the `ReactNativePushToken` accepted by the `ably/react-native-push` plugin's `requestToken` callback.
+ */
+export declare interface PushDeviceToken {
+  /**
+   * The push transport the token belongs to: `fcm` for a Firebase Cloud Messaging registration token, or `apns` for a raw APNs device token.
+   */
+  transportType: 'fcm' | 'apns';
+  /**
+   * The token itself: an FCM registration token or an APNs device token.
+   */
+  token: string;
+}
+
+/**
  * Enables a device to be registered and deregistered from receiving push notifications.
  */
 export declare interface Push {
@@ -3656,6 +3691,16 @@ export declare interface Push {
    * @param deregisterCallback - A function passed to override the default implementation to deregister the local device for push activation.
    */
   deactivate(deregisterCallback?: DeregisterCallback): Promise<void>;
+
+  /**
+   * Updates the device's push token after the underlying push platform has rotated it, and synchronizes the new token with Ably by updating the device registration. Call this from your platform's token refresh listener, for example `messaging().onTokenRefresh()` of `@react-native-firebase/messaging`, once {@link activate | `activate()`} has completed.
+   *
+   * The synchronization with Ably is fire-and-forget: it is serialized with any in-flight `activate()`, `deactivate()` or earlier `updateToken()` synchronization rather than racing it, it is routed through the `registerCallback` passed to `activate()` when one was provided, and a synchronization failure is reported to the `updateFailedCallback` passed to `activate()`.
+   *
+   * @param token - The refreshed push token, in the same shape as returned by the `requestToken` callback of the `ably/react-native-push` plugin.
+   * @returns A promise which resolves once the refreshed token has been persisted locally and its synchronization with Ably has been initiated, and rejects if the token is malformed or the device is not activated for push notifications.
+   */
+  updateToken(token: PushDeviceToken): Promise<void>;
 }
 
 /**
@@ -3703,6 +3748,152 @@ export declare interface PushAdmin {
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
   publish(recipient: any, payload: any): Promise<void>;
+  /**
+   * Creates an APNs broadcast channel for use with an iOS Live Activity. Call once before starting the Live Activity and persist the returned ids for the session.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param options - Options for the broadcast, including the `messageStoragePolicy`.
+   * @returns A promise resolving to the broadcast `{ id, apnsChannelId }`.
+   */
+  createApnsBroadcast(options: PushApnsBroadcastOptions): Promise<PushApnsBroadcast>;
+  /**
+   * Controls the lifecycle of iOS Live Activities over an APNs broadcast channel created with {@link PushAdmin.createApnsBroadcast}.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   */
+  liveActivity: PushLiveActivity;
+}
+
+/**
+ * Controls the lifecycle of an iOS Live Activity over an APNs broadcast channel.
+ *
+ * @experimental This is a preview feature and may change in a future non-major release.
+ */
+export declare interface PushLiveActivity {
+  /**
+   * Sends a push-to-start notification to all devices subscribed to the given Ably channels. Each targeted device starts a new Live Activity using its registered push-to-start token.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The recipient channels, the broadcast `id`, and a valid APNs Live Activity start payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  start(params: PushLiveActivityStartParams): Promise<void>;
+  /**
+   * Sends a `content-state` update to all devices with an active Live Activity on the broadcast channel. A single push is sent to the channel; APNs handles fan-out to all subscribed devices.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The broadcast `id` and a valid APNs Live Activity update payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  update(params: PushLiveActivityUpdateParams): Promise<void>;
+  /**
+   * Ends the Live Activity on all subscribed devices and cleans up the APNs channel. After this call, the broadcast `id` is no longer valid.
+   *
+   * @experimental This is a preview feature and may change in a future non-major release.
+   *
+   * @param params - The broadcast `id` and a valid APNs Live Activity end payload.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  end(params: PushLiveActivityEndParams): Promise<void>;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.start}.
+ */
+export declare interface PushLiveActivityStartParams {
+  /**
+   * The targeted recipients of the push-to-start notification.
+   */
+  recipient:
+    | {
+        /**
+         * One or more Ably channel names. Devices subscribed to any of these channels will receive the push-to-start notification. Provide either `channels` or `deviceId`.
+         */
+        channels: string[];
+      }
+    | {
+        /**
+         * Restrict the push-to-start notification to a single device. Provide either `channels` or `deviceId`.
+         */
+        deviceId: string;
+      };
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity start payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: Record<string, string>;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.update}.
+ */
+export declare interface PushLiveActivityUpdateParams {
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity update payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: Record<string, string>;
+}
+
+/**
+ * Parameters for {@link PushLiveActivity.end}.
+ */
+export declare interface PushLiveActivityEndParams {
+  /**
+   * The `id` returned from {@link PushAdmin.createApnsBroadcast}.
+   */
+  apnsBroadcast: string;
+  /**
+   * A valid APNs Live Activity end payload. The payload is passed through to APNs as-is.
+   */
+  apns: any;
+  /**
+   * Optional APNs delivery headers, such as `apns-priority` and `apns-expiration`. When supplied, these are included in the request body under a `headers` key.
+   */
+  headers?: Record<string, string>;
+}
+
+/**
+ * Options for creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcastOptions {
+  /**
+   * Set to `1` to cache the last update payload so late-joining devices receive the current content state immediately on subscription. Set to `0` to disable caching.
+   *
+   * @see https://developer.apple.com/documentation/usernotifications/sending-channel-management-requests-to-apns
+   */
+  messageStoragePolicy: 0 | 1;
+}
+
+/**
+ * The result of creating an APNs broadcast channel via {@link PushAdmin.createApnsBroadcast}.
+ */
+export declare interface PushApnsBroadcast {
+  /**
+   * The opaque Ably broadcast id.
+   */
+  id: string;
+  /**
+   * The Apple-assigned channel id.
+   */
+  apnsChannelId: string;
 }
 
 /**
@@ -3855,6 +4046,7 @@ export declare class Rest implements RestClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -3915,6 +4107,7 @@ export declare class Realtime implements RealtimeClient {
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
   device(): LocalDevice;
+  getDevice(): Promise<LocalDevice>;
 }
 
 /**
@@ -3942,13 +4135,13 @@ export declare class ErrorInfo extends Error {
    */
   detail?: Record<string, string>;
   /**
-   * Actionable remediation guidance describing *how* to fix the error — distinct from
+   * Actionable guidance describing *how* to fix the error — distinct from
    * `message`, which summarises *what* went wrong. Written as prose suitable for an
    * agent or human to act on without further lookup (typically including the
    * canonical replacement call and a doc link where applicable). Present only on
    * SDK-originating errors that have meaningful remediation steps.
    */
-  hint?: string;
+  remediation?: string;
 
   /**
    * Construct an ErrorInfo object.
