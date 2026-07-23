@@ -123,7 +123,7 @@ export abstract class LiveObject<
         this._client.logger,
         this._client.Logger.LOG_MAJOR,
         'LiveObject.tombstone()',
-        `attempt to tombstone the root object was rejected; message id: ${objectMessage.id}`,
+        `attempt to tombstone the root object was rejected; serial=${objectMessage.serial}, siteCode=${objectMessage.siteCode}, message id: ${objectMessage.id}`,
       );
       return { noop: true };
     }
