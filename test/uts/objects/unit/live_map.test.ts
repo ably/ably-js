@@ -754,6 +754,35 @@ describe('uts/objects/unit/live_map', function () {
   });
 
   // =====================================================================
+  // RTLO4e10 - OBJECT_DELETE targeting root is rejected
+  // =====================================================================
+
+  // UTS: objects/unit/RTLO4e10/object-delete-root-noop-0
+  it('RTLO4e10 - OBJECT_DELETE targeting root is rejected', async function () {
+    const { root, channel, client } = await setupSyncedChannel('test-RTLO4e10');
+
+    const rootMap = getRealtimeObject(channel).getPool().getRoot();
+    const capture = captureNotifyUpdated(rootMap);
+
+    const msg = makeObjectMessage(client, {
+      serial: 't:1',
+      siteCode: 'bbb',
+      serialTimestamp: 1700000000000,
+      operation: {
+        action: OBJ_OP.OBJECT_DELETE,
+        objectId: 'root',
+        objectDelete: {},
+      },
+    });
+
+    rootMap.applyOperation(msg.operation!, msg, ObjectsOperationSource.channel);
+
+    expect(rootMap.isTombstoned()).to.equal(false);
+    expect(root.get('name').value()).to.equal('Alice'); // data untouched
+    expect(capture.getUpdate()).to.deep.equal({ noop: true });
+  });
+
+  // =====================================================================
   // RTLM14, RTLM14c - Tombstoned entry check includes objectId reference
   // =====================================================================
 
@@ -1210,6 +1239,35 @@ describe('uts/objects/unit/live_map', function () {
     expect((update as any).update).to.deep.equal({ name: 'removed' });
     expect((update as any).tombstone).to.equal(true);
     expect((update as any).objectMessage).to.equal(stateMsg);
+  });
+
+  // =====================================================================
+  // RTLO4e10 - replaceData with tombstone flag targeting root is rejected
+  // =====================================================================
+
+  // UTS: objects/unit/RTLO4e10/replace-data-tombstone-root-noop-0
+  it('RTLO4e10 - replaceData with tombstone flag targeting root is rejected', async function () {
+    const { root, channel, client } = await setupSyncedChannel('test-RTLO4e10-sync');
+
+    const rootMap = getRealtimeObject(channel).getPool().getRoot();
+
+    const stateMsg = makeObjectMessage(client, {
+      object: {
+        objectId: 'root',
+        siteTimeserials: { site1: '01' },
+        tombstone: true,
+        map: {
+          semantics: MAP_SEMANTICS_LWW,
+          entries: {},
+        },
+      },
+    });
+
+    const update = rootMap.overrideWithObjectState(stateMsg);
+
+    expect(rootMap.isTombstoned()).to.equal(false);
+    expect(root.get('name').value()).to.equal('Alice'); // data untouched
+    expect((update as any).noop).to.equal(true);
   });
 
   // =====================================================================
