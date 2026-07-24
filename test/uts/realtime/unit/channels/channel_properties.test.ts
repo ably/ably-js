@@ -1,7 +1,7 @@
 /**
  * UTS: Channel Properties Tests
  *
- * Spec points: RTL15a, RTL15b, RTL15b1
+ * Spec points: RTL15, RTL15b, RTL15b1, RTL15c
  * Source: uts/test/realtime/unit/channels/channel_properties_test.md
  *
  * Tests channel properties: attachSerial and channelSerial tracking,
@@ -26,10 +26,10 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   });
 
   /**
-   * RTL15a - attachSerial updated from ATTACHED message
+   * RTL15c - attachSerial is updated from non-resumed ATTACHED message
    */
-  // UTS: realtime/unit/RTL15a/attach-serial-server-reattach-1
-  it('RTL15a - attachSerial from ATTACHED', async function () {
+  // UTS: realtime/unit/RTL15c/attach-serial-from-attached-0
+  it('RTL15c - attachSerial from ATTACHED', async function () {
     let attachCount = 0;
 
     const mock = new MockWebSocket({
@@ -41,6 +41,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
         if (msg.action === 10) {
           // ATTACH
           attachCount++;
+          // No RESUMED flag, so resumed is false
           mock.active_connection!.send_to_client({
             action: 11, // ATTACHED
             channel: msg.channel,
@@ -66,7 +67,7 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
     });
     trackClient(client);
 
-    const channel = client.channels.get('test-RTL15a');
+    const channel = client.channels.get('test-RTL15c');
     // Before connect — attachSerial should be null
     expect(channel.properties.attachSerial).to.satisfy((v: any) => !v);
 
@@ -83,10 +84,10 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   });
 
   /**
-   * RTL15a - attachSerial updated on server-initiated reattach
+   * RTL15c - attachSerial updated on server-initiated non-resumed reattach
    */
-  // UTS: realtime/unit/RTL15a/attach-serial-from-attached-0
-  it('RTL15a - attachSerial updated on additional ATTACHED', async function () {
+  // UTS: realtime/unit/RTL15c/attach-serial-server-reattach-1
+  it('RTL15c - attachSerial updated on additional non-resumed ATTACHED', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -116,20 +117,76 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTL15a-update');
+    const channel = client.channels.get('test-RTL15c-update');
     await channel.attach();
     expect(channel.properties.attachSerial).to.equal('initial-serial');
 
-    // Server sends unsolicited ATTACHED with new serial
+    // Server sends unsolicited ATTACHED without the RESUMED flag (e.g. RTL12 update)
     mock.active_connection!.send_to_client({
       action: 11, // ATTACHED
-      channel: 'test-RTL15a-update',
+      channel: 'test-RTL15c-update',
       channelSerial: 'updated-serial',
       flags: 0,
     });
     await flushAsync();
 
     expect(channel.properties.attachSerial).to.equal('updated-serial');
+    client.close();
+  });
+
+  /**
+   * RTL15c - attachSerial not updated from resumed ATTACHED message
+   */
+  // UTS: realtime/unit/RTL15c/attach-serial-not-updated-resumed-2
+  it('RTL15c - attachSerial not updated from resumed ATTACHED', async function () {
+    const mock = new MockWebSocket({
+      onConnectionAttempt: (conn) => {
+        mock.active_connection = conn;
+        conn.respond_with_connected();
+      },
+      onMessageFromClient: (msg) => {
+        if (msg.action === 10) {
+          // ATTACH
+          mock.active_connection!.send_to_client({
+            action: 11, // ATTACHED
+            channel: msg.channel,
+            channelSerial: 'initial-serial',
+            flags: 0,
+          });
+        }
+      },
+    });
+    installMockWebSocket(mock.constructorFn);
+
+    const client = new Ably.Realtime({
+      key: 'appId.keyId:keySecret',
+      autoConnect: false,
+      useBinaryProtocol: false,
+    });
+    trackClient(client);
+
+    client.connect();
+    await new Promise<void>((resolve) => client.connection.once('connected', resolve));
+
+    const channel = client.channels.get('test-RTL15c-resumed');
+    await channel.attach();
+    expect(channel.properties.attachSerial).to.equal('initial-serial');
+
+    // Server sends unsolicited ATTACHED WITH the RESUMED flag
+    // (successful resume, no loss of continuity)
+    mock.active_connection!.send_to_client({
+      action: 11, // ATTACHED
+      channel: 'test-RTL15c-resumed',
+      channelSerial: 'resumed-serial',
+      flags: 4, // RESUMED (1 << 2)
+    });
+    await flushAsync();
+
+    // channelSerial is updated per RTL15b regardless of the RESUMED flag,
+    // confirming the message has been processed
+    expect(channel.properties.channelSerial).to.equal('resumed-serial');
+    // attachSerial must be unchanged, since the ATTACHED message had resumed=true
+    expect(channel.properties.attachSerial).to.equal('initial-serial');
     client.close();
   });
 
