@@ -324,8 +324,10 @@ class RealtimePresence extends EventEmitter {
         syncId = match[1];
         syncCursor = match[2];
       }
-      if (!this.members.syncInProgress || syncId !== this._syncId) {
+      if (!this.members.syncInProgress || (this._syncId !== undefined && syncId !== this._syncId)) {
         this.members.startSync();
+      }
+      if (syncId !== undefined) {
         this._syncId = syncId;
       }
     }
