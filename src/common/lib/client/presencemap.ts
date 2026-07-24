@@ -137,11 +137,15 @@ export class PresenceMap extends EventEmitter {
       'PresenceMap.startSync()',
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
     );
-    /* we might be called multiple times while a sync is in progress */
-    if (!this.syncInProgress) {
-      this.residualMembers = Utils.copy(map);
-      this.setInProgress(true);
+    /* RTP18a: a new sync replaces any sync already in progress. Exclude
+     * tombstones that have already emitted their leave event. */
+    this.residualMembers = Object.create(null) as Record<string, PresenceMessage>;
+    for (const memberKey in map) {
+      if (map[memberKey].action !== 'absent') {
+        this.residualMembers[memberKey] = map[memberKey];
+      }
     }
+    this.setInProgress(true);
   }
 
   endSync() {

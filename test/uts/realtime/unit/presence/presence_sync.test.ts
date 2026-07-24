@@ -10,8 +10,6 @@
  *
  * NOTE: In ably-js, endSync() returns void and calls _synthesizeLeaves() with
  * the residual members. Tests capture leaves via a mock _synthesizeLeaves.
- * Also, ably-js's startSync() during an active sync is a no-op (doesn't reset
- * residualMembers), which differs from the UTS spec's expectation.
  */
 
 import { expect } from 'chai';
@@ -165,14 +163,9 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
 
   /**
    * RTP18a - New sync discards previous in-flight sync
-   *
-   * DEVIATION: In ably-js, startSync() during an active sync is a no-op
-   * (does not reset residualMembers). This test verifies ably-js behavior.
    */
   // UTS: realtime/unit/RTP18a/new-sync-discards-previous-1
   it('RTP18a - new sync discards previous in-flight sync', function () {
-    if (!process.env.RUN_DEVIATIONS) this.skip();
-
     const { map, mock } = createPresenceMap();
 
     map.put(msg({ action: 'enter', clientId: 'alice', connectionId: 'c1', id: 'c1:0:0', timestamp: 100 }));
@@ -181,7 +174,7 @@ describe('uts/realtime/unit/presence/presence_sync', function () {
     map.startSync();
     map.put(msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:1:0', timestamp: 200 }));
 
-    // Second startSync — UTS expects residual reset, ably-js ignores
+    // The second sync starts from the current membership map.
     map.startSync();
     map.put(msg({ action: 'present', clientId: 'alice', connectionId: 'c1', id: 'c1:2:0', timestamp: 300 }));
     map.put(msg({ action: 'present', clientId: 'bob', connectionId: 'c2', id: 'c2:1:0', timestamp: 300 }));
