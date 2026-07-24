@@ -1,7 +1,7 @@
 /**
  * UTS: Connection Failures When Connected Tests
  *
- * Spec points: RTN15a, RTN15b, RTN15c4, RTN15c5, RTN15c6, RTN15c7, RTN15e, RTN15g, RTN15h1, RTN15h2, RTN15h3, RTN15j
+ * Spec points: RTN14h, RTN15a, RTN15b, RTN15c4, RTN15c5, RTN15c6, RTN15c7, RTN15e, RTN15h1, RTN15h2, RTN15h3, RTN15j
  * Source: uts/test/realtime/unit/connection/connection_failures_test.md
  */
 
@@ -318,10 +318,16 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
   });
 
   /**
-   * RTN15g - Connection state cleared after connectionStateTtl (no resume)
+   * RTN14h - reconnection attempts continue to attempt a resume even after the
+   * connectionStateTtl has expired and the connection has become SUSPENDED
+   *
+   * This replaces RTN15g (deleted in specification version 6.1.0): the client
+   * no longer discards its connection state based on how long it has been
+   * disconnected. It always attempts to resume and lets the server decide
+   * whether continuity can be preserved.
    */
-  // UTS: realtime/unit/RTN15g/state-cleared-after-ttl-0
-  it('RTN15g - no resume after connectionStateTtl expires', async function () {
+  // UTS: realtime/unit/RTN14h/resume-after-ttl-0
+  it('RTN14h - reconnection still attempts resume after connectionStateTtl expires', async function () {
     let connectionAttemptCount = 0;
 
     const mock = new MockWebSocket({
@@ -338,19 +344,9 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
               connectionStateTtl: 5000, // Short TTL for testing
             } as any,
           });
-        } else if (connectionAttemptCount < 6) {
-          // Reconnection attempts fail
-          conn.respond_with_refused();
         } else {
-          // Fresh connection succeeds
-          conn.respond_with_connected({
-            connectionId: 'connection-2',
-            connectionDetails: {
-              connectionKey: 'key-2',
-              maxIdleInterval: 15000,
-              connectionStateTtl: 120000,
-            } as any,
-          });
+          // All reconnection attempts fail, so the connection stays suspended
+          conn.respond_with_refused();
         }
       },
     });
@@ -387,23 +383,24 @@ describe('uts/realtime/unit/connection/connection_failures', function () {
     // Force disconnect
     mock.active_connection!.simulate_disconnect();
 
-    // Advance time in increments to allow retries and TTL expiry
+    // Advance time well past the connectionStateTtl so the connection becomes
+    // suspended and then keeps attempting to reconnect.
     for (let i = 0; i < 15; i++) {
       await clock.tickAsync(2500);
       await pumpTimers(clock);
-      if (client.connection.state === 'connected') break;
     }
 
-    expect(client.connection.state).to.equal('connected');
-    expect(client.connection.id).to.equal('connection-2');
-    expect(client.connection.key).to.equal('key-2');
-
-    // Verify state changes included suspended
+    // Verify the connection became suspended
     expect(stateChanges).to.include('suspended');
 
-    // Final connection attempt did NOT include resume param
-    const lastConn = mock.connect_attempts[mock.connect_attempts.length - 1];
-    expect(lastConn.url.searchParams.has('resume')).to.be.false;
+    // Every reconnection attempt after the first should still attempt a resume,
+    // carrying the original connectionKey, even those made after the TTL expired
+    // and the connection became suspended.
+    const reconnectAttempts = mock.connect_attempts.slice(1);
+    expect(reconnectAttempts.length).to.be.greaterThan(0);
+    for (const attempt of reconnectAttempts) {
+      expect(attempt.url.searchParams.get('resume')).to.equal('key-1');
+    }
     client.close();
   });
 

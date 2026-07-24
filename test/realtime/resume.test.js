@@ -535,16 +535,18 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     /**
-     * Check the library doesn't try to resume once the connectionStateTtl has expired.
-     * Related to RTN14f.
+     * As of spec version 6.1.0 (RTN14h, replacing RTN15g) the library always
+     * attempts to resume on reconnection, regardless of how long it has been
+     * disconnected, and lets the server decide whether continuity is possible.
+     * Check that a reconnection out of the SUSPENDED state still attempts a
+     * resume rather than starting a fresh (clean) connection.
      *
-     * @nospec
+     * @spec RTN14h
      */
-    it('no_resume_once_suspended', function (done) {
+    it('resume_after_suspended', function (done) {
       var helper = this.test.helper,
         realtime = helper.AblyRealtime(),
-        connection = realtime.connection,
-        channelName = 'no_resume_once_suspended';
+        connection = realtime.connection;
 
       async.series(
         [
@@ -560,7 +562,10 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
             helper.recordPrivateApi('replace.connectionManager.tryATransport');
             realtime.connection.connectionManager.tryATransport = function (transportParams) {
               try {
-                expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
+                expect(transportParams.mode).to.equal(
+                  'resume',
+                  'Check library still attempts to resume after being suspended',
+                );
               } catch (err) {
                 cb(err);
                 return;
@@ -574,41 +579,6 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
           helper.closeAndFinish(done, realtime, err);
         },
       );
-    });
-
-    /**
-     * Check the library doesn't try to resume if the last known activity on the
-     * connection was > connectionStateTtl ago
-     *
-     * @spec RTN15g
-     */
-    it('no_resume_last_activity', function (done) {
-      var helper = this.test.helper,
-        realtime = helper.AblyRealtime(),
-        connection = realtime.connection,
-        connectionManager = connection.connectionManager;
-
-      connection.once('connected', function () {
-        helper.recordPrivateApi('write.connectionManager.lastActivity');
-        connectionManager.lastActivity = Date.now() - 10000000;
-        /* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
-         * reset the last activity timer */
-        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-        helper.recordPrivateApi('replace.transport.onProtocolMessage');
-        connectionManager.activeProtocol.getTransport().onProtocolMessage = function () {};
-        helper.recordPrivateApi('replace.connectionManager.tryATransport');
-        connectionManager.tryATransport = function (transportParams) {
-          try {
-            expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
-          } catch (err) {
-            helper.closeAndFinish(done, realtime, err);
-            return;
-          }
-          helper.closeAndFinish(done, realtime);
-        };
-        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
-        connectionManager.disconnectAllTransports();
-      });
     });
 
     /** @spec RTL4j2 */

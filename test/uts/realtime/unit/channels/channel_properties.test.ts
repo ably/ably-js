@@ -1,7 +1,7 @@
 /**
  * UTS: Channel Properties Tests
  *
- * Spec points: RTL15a, RTL15b, RTL15b1
+ * Spec points: RTL15a, RTL15b, RTL15b1, RTL15b2
  * Source: uts/test/realtime/unit/channels/channel_properties_test.md
  *
  * Tests channel properties: attachSerial and channelSerial tracking,
@@ -226,10 +226,10 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   });
 
   /**
-   * RTL15b1 - channelSerial cleared on DETACHED state
+   * RTL15b2 - channelSerial cleared on DETACHED state
    */
-  // UTS: realtime/unit/RTL15b1/serial-cleared-detached-0
-  it('RTL15b1 - channelSerial cleared on detach', async function () {
+  // UTS: realtime/unit/RTL15b2/serial-cleared-detached-0
+  it('RTL15b2 - channelSerial cleared on detach', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -277,10 +277,10 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   });
 
   /**
-   * RTL15b1 - channelSerial cleared on FAILED state
+   * RTL15b2 - channelSerial cleared on FAILED state
    */
-  // UTS: realtime/unit/RTL15b1/serial-cleared-failed-2
-  it('RTL15b1 - channelSerial cleared on failed', async function () {
+  // UTS: realtime/unit/RTL15b2/serial-cleared-failed-2
+  it('RTL15b2 - channelSerial cleared on failed', async function () {
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -328,10 +328,15 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
   });
 
   /**
-   * RTL15b1 - channelSerial cleared on SUSPENDED state
+   * RTL15b2 - channelSerial retained in SUSPENDED state
+   *
+   * As of specification version 6.1.0 (RTL15b2, replacing RTL15b1) the
+   * channelSerial is cleared only when entering DETACHED or FAILED. It is
+   * retained through SUSPENDED, so that it can be included on the subsequent
+   * ATTACH (RTL4c1) for the server's continuity decision.
    */
-  // UTS: realtime/unit/RTL15b1/serial-cleared-suspended-1
-  it('RTL15b1 - channelSerial cleared on suspended', async function () {
+  // UTS: realtime/unit/RTL15b2/serial-retained-suspended-0
+  it('RTL15b2 - channelSerial retained in suspended', async function () {
     let attachCount = 0;
 
     const mock = new MockWebSocket({
@@ -392,7 +397,8 @@ describe('uts/realtime/unit/channels/channel_properties', function () {
     await clock.tickAsync(150);
 
     expect(channel.state).to.equal('suspended');
-    expect(channel.properties.channelSerial).to.satisfy((v: any) => !v);
+    // RTL15b2: channelSerial is retained through SUSPENDED, not cleared
+    expect(channel.properties.channelSerial).to.equal('serial-001');
     client.close();
   });
 

@@ -100,7 +100,6 @@ class RealtimeChannel extends EventEmitter {
   errorReason: ErrorInfo | null;
   _mode = 0;
   _silentSubscribeWarned = false;
-  _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
   _lastPayload: {
     messageId?: string | null;
@@ -149,7 +148,6 @@ class RealtimeChannel extends EventEmitter {
     };
     this.setOptions(options);
     this.errorReason = null;
-    this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
       plugins: client.options.plugins || {},
@@ -425,9 +423,6 @@ class RealtimeChannel extends EventEmitter {
     });
     if (this.channelOptions.modes) {
       attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.ChannelMode[]);
-    }
-    if (this._attachResume) {
-      attachMsg.setFlag('ATTACH_RESUME');
     }
     if (this._lastPayload.decodeFailureRecoveryInProgress) {
       attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
@@ -914,8 +909,11 @@ class RealtimeChannel extends EventEmitter {
     );
     this.clearStateTimer();
 
-    // RTP5a1
-    if (['detached', 'suspended', 'failed'].includes(state)) {
+    // RTL15b2: clear channelSerial only when entering DETACHED or FAILED.
+    // Unlike previous spec versions it is retained through SUSPENDED, so that
+    // the channelSerial is available on the subsequent ATTACH (RTL4c1) for the
+    // server to decide whether continuity can be preserved.
+    if (['detached', 'failed'].includes(state)) {
       this.properties.channelSerial = null;
     }
 
@@ -952,12 +950,6 @@ class RealtimeChannel extends EventEmitter {
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
     if (state === 'attached') {
       this.onAttached();
-    }
-
-    if (state === 'attached') {
-      this._attachResume = true;
-    } else if (state === 'detaching' || state === 'failed') {
-      this._attachResume = false;
     }
 
     this.state = state;

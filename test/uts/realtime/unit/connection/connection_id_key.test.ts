@@ -1,7 +1,7 @@
 /**
  * UTS: Connection ID and Key Tests
  *
- * Spec points: RTN8, RTN8a, RTN8b, RTN8c, RTN9, RTN9a, RTN9b, RTN9c
+ * Spec points: RTN8, RTN8a, RTN8b, RTN8c, RTN8d, RTN9, RTN9a, RTN9b, RTN9c, RTN9d
  * Source: uts/test/realtime/unit/connection/connection_id_key_test.md
  */
 
@@ -326,13 +326,34 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
   });
 
   /**
-   * RTN8c, RTN9c - ID and key null in SUSPENDED state
+   * RTN8d, RTN9d - ID and key are retained in the SUSPENDED state
+   *
+   * As of specification version 6.1.0 (RTN8d/RTN9d, replacing RTN8c/RTN9c) the
+   * connection id and key are cleared only in the terminal states (CLOSED,
+   * CLOSING, FAILED). They are retained through SUSPENDED, since the client
+   * always attempts to resume on reconnecting and lets the server decide
+   * whether continuity can be preserved.
    */
-  // UTS: realtime/unit/RTN8c/id-key-null-after-suspended-2
-  it('RTN8c, RTN9c - id and key null in SUSPENDED state', async function () {
+  // UTS: realtime/unit/RTN8d/id-key-retained-in-suspended-0
+  it('RTN8d, RTN9d - id and key retained in SUSPENDED state', async function () {
+    // Connect successfully on the first attempt, then refuse all reconnection
+    // attempts so the connection ends up suspended.
+    let attempt = 0;
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
-        conn.respond_with_refused();
+        if (attempt++ === 0) {
+          mock.active_connection = conn;
+          conn.respond_with_connected({
+            connectionId: 'conn-id-1',
+            connectionDetails: {
+              connectionKey: 'conn-key-1',
+              maxIdleInterval: 15000,
+              connectionStateTtl: 120000,
+            } as any,
+          });
+        } else {
+          conn.respond_with_refused();
+        }
       },
     });
     installMockWebSocket(mock.constructorFn);
@@ -358,7 +379,17 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
 
     client.connect();
 
-    // Pump to let initial connection attempt + failure happen
+    // Pump to let the initial connection succeed
+    for (let i = 0; i < 30; i++) {
+      clock.tick(0);
+      await flushAsync();
+    }
+    expect(client.connection.state).to.equal('connected');
+    expect(client.connection.id).to.equal('conn-id-1');
+    expect(client.connection.key).to.equal('conn-key-1');
+
+    // Drop the transport; subsequent attempts are refused, moving to DISCONNECTED
+    mock.active_connection!.simulate_disconnect();
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
       await flushAsync();
@@ -366,16 +397,15 @@ describe('uts/realtime/unit/connection/connection_id_key', function () {
 
     // Advance past connectionStateTtl to reach SUSPENDED
     await clock.tickAsync(121000);
-
-    // Pump again
     for (let i = 0; i < 30; i++) {
       clock.tick(0);
       await flushAsync();
     }
 
     expect(client.connection.state).to.equal('suspended');
-    expect(client.connection.id).to.not.be.ok;
-    expect(client.connection.key).to.not.be.ok;
+    // RTN8d, RTN9d: id and key are retained, not cleared
+    expect(client.connection.id).to.equal('conn-id-1');
+    expect(client.connection.key).to.equal('conn-key-1');
     client.close();
   });
 });
