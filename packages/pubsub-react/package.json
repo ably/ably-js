@@ -1,0 +1,18 @@
+{
+  "name": "@ably/pubsub-react",
+  "version": "3.0.0",
+  "private": true,
+  "description": "React hooks for the Ably Pub/Sub device SDK. Types-only spike for PDR-091.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ably/ably-js.git",
+    "directory": "packages/pubsub-react"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "@ably/pubsub-device": "3.0.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@ably/pubsub-react-native",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Ably Pub/Sub SDK for React Native devices, with app-supplied push storage and token acquisition. Types-only spike for PDR-091. Deliberately uses top-level main/types with no exports map, for Metro compatibility.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ably/ably-js.git",
+    "directory": "packages/pubsub-react-native"
+  },
+  "dependencies": {
+    "@ably/pubsub-common": "3.0.0",
+    "@ably/pubsub-device": "3.0.0"
+  },
+  "ably": {
+    "agent": "pubsub-js-react-native"
+  }
+}
