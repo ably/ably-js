@@ -1,7 +1,7 @@
 /**
  * UTS Proxy Integration: Connection Resume and Recovery Tests
  *
- * Spec points: RTN15a, RTN15b, RTN15c6, RTN15c7, RTN15h1, RTN15h3, RTN15j, RTN15g, RTN15g2, RTN19a, RTN19a2, RTN16d, RTN16k, RTN16l
+ * Spec points: RTN14h, RTN15a, RTN15b, RTN15c6, RTN15c7, RTN15h1, RTN15h3, RTN15j, RTN19a, RTN19a2, RTN16d, RTN16k, RTN16l
  * Source: specification/uts/realtime/integration/proxy/connection_resume.md
  */
 
@@ -645,21 +645,25 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
   });
 
   /**
-   * RTN15g/g2 — connectionStateTtl expiry clears resume state
+   * RTN14h — reconnection still attempts resume after connectionStateTtl expiry
    *
-   * Proxy replaces the first CONNECTED with one that has very short
-   * connectionStateTtl and maxIdleInterval, then suppresses traffic after
-   * 2s to trigger idle timeout. After the TTL expires, the SDK should
-   * connect fresh (no resume) and get a new connectionId.
+   * As of specification version 6.1.0 this replaces RTN15g (deleted). The
+   * client no longer clears its connection state based on how long it has been
+   * disconnected: it always attempts to resume and lets the server decide
+   * whether continuity can be preserved. The reconnection made after the TTL
+   * has expired and the connection has become SUSPENDED still carries the
+   * resume param. (The real server will have discarded the connection state by
+   * then, so the resume fails server-side and the client gets a new
+   * connectionId — but the client still attempts the resume.)
    */
-  // UTS: realtime/proxy/RTN15g/ttl-expiry-clears-resume-0
-  it('RTN15g/g2 - connectionStateTtl expiry prevents resume', async function () {
+  // UTS: realtime/proxy/RTN14h/resume-after-ttl-expiry-0
+  it('RTN14h - reconnection still attempts resume after connectionStateTtl expiry', async function () {
     // Strategy: replace the first CONNECTED with connectionStateTtl=2000ms,
     // then close the WebSocket after 1s. The SDK immediately retries (since it
     // was connected), but we refuse the 2nd ws_connect so the SDK stays in
     // disconnected. After the connectionStateTtl (2s) expires, the SDK enters
-    // SUSPENDED and clears resume state. The 3rd ws_connect (after suspended
-    // retry) should have no resume param.
+    // SUSPENDED. The 3rd ws_connect (after suspended retry) still attempts a
+    // resume, so it carries the resume param.
     session = await createProxySession({
       rules: [
         {
@@ -684,19 +688,19 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
             },
           },
           times: 1,
-          comment: 'RTN15g: Replace 1st CONNECTED with short connectionStateTtl (2s)',
+          comment: 'RTN14h: Replace 1st CONNECTED with short connectionStateTtl (2s)',
         },
         {
           match: { type: 'delay_after_ws_connect', delayMs: 1000 },
           action: { type: 'close' },
           times: 1,
-          comment: 'RTN15g: Close WebSocket after 1s to trigger disconnect',
+          comment: 'RTN14h: Close WebSocket after 1s to trigger disconnect',
         },
         {
           match: { type: 'ws_connect', count: 2 },
           action: { type: 'refuse_connection' },
           times: 1,
-          comment: 'RTN15g: Refuse 2nd connection so SDK stays in disconnected until TTL expires',
+          comment: 'RTN14h: Refuse 2nd connection so SDK stays in disconnected until TTL expires',
         },
       ],
     });
@@ -725,28 +729,31 @@ describe('uts/realtime/integration/proxy/connection_resume', function () {
 
     // T=1: proxy closes WebSocket → SDK enters DISCONNECTED, retries immediately
     // T=1: 2nd ws_connect is refused → SDK stays in DISCONNECTED
-    // T=3: connectionStateTtl (2s) expires → SDK enters SUSPENDED, clears resume state
-    // T=4: suspendedRetryTimeout (1s) fires → SDK connects fresh (no resume)
+    // T=3: connectionStateTtl (2s) expires → SDK enters SUSPENDED
+    // T=4: suspendedRetryTimeout (1s) fires → SDK reconnects, still attempting a
+    //      resume; the server has discarded the state so it responds with a new
+    //      connectionId
     await waitForState(client, 'suspended', 15000);
 
-    // Wait for fresh connection (no resume)
+    // Wait for the reconnection
     await waitForState(client, 'connected', 15000);
 
-    // RTN15g: Connection ID changed — this is a fresh connection, not a resume
+    // The server discarded the connection state, so the resume failed
+    // server-side and the connectionId changed
     expect(client.connection.id).to.not.equal(originalConnectionId);
 
-    // Verify via proxy log: the final ws_connect does NOT have resume param
     const log = await session.getLog();
     const wsConnects = log.filter((e) => e.type === 'ws_connect');
-    // At least 3: initial, refused retry (with resume), fresh from suspended (no resume)
+    // At least 3: initial, refused retry (with resume), reconnect from suspended (with resume)
     expect(wsConnects.length).to.be.at.least(3);
 
     // 1st ws_connect: initial connection, no resume
     expect(wsConnects[0].queryParams == null || wsConnects[0].queryParams!['resume'] == null).to.be.true;
 
-    // Last ws_connect: fresh connection from suspended (TTL expired), no resume
+    // RTN14h: the reconnection made after the TTL expired and the connection
+    // became suspended still attempts a resume, so it carries the resume param
     const lastConnect = wsConnects[wsConnects.length - 1];
-    expect(lastConnect.queryParams == null || lastConnect.queryParams!['resume'] == null).to.be.true;
+    expect(lastConnect.queryParams?.['resume']).to.equal('proxy-ttl-test-key');
 
     await closeAndWait(client);
   });

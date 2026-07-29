@@ -261,18 +261,31 @@ define([
       realtime.connection.connectionManager.requestState({ state: 'disconnected' });
     }
 
-    becomeSuspended(realtime, cb) {
+    /**
+     * Force the connection into the suspended state. Since spec version 6.1.0
+     * the client retains its connection state through suspended and will attempt
+     * to resume on the next connect (RTN14h); pass clearConnectionState: true to
+     * additionally discard the connection state, modelling the case where the
+     * connection can no longer be resumed (e.g. the device was asleep for longer
+     * than the server preserves state), so the next connect makes a fresh
+     * connection with a new connectionId.
+     */
+    becomeSuspended(realtime, cb, clearConnectionState) {
       const helper = this.addingHelperFunction('becomeSuspended');
-      return helper._becomeSuspended(realtime, cb);
+      return helper._becomeSuspended(realtime, cb, clearConnectionState);
     }
 
-    _becomeSuspended(realtime, cb) {
+    _becomeSuspended(realtime, cb, clearConnectionState) {
       this.recordPrivateApi('call.connectionManager.disconnectAllTransports');
       realtime.connection.connectionManager.disconnectAllTransports();
       const self = this;
       realtime.connection.once('disconnected', function () {
         self.recordPrivateApi('call.connectionManager.notifyState');
         realtime.connection.connectionManager.notifyState({ state: 'suspended' });
+        if (clearConnectionState) {
+          self.recordPrivateApi('call.connectionManager.clearConnection');
+          realtime.connection.connectionManager.clearConnection();
+        }
       });
       if (cb) {
         realtime.connection.once('suspended', function () {
