@@ -41,10 +41,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       const message = await onMessage;
       onMessage = channel.subscriptions.once();
 
-      // Temporary anti-flake measure; can be removed after summary loop implements
-      // annotation resume (CHA-887)
-      await helper.setTimeoutAsync(1000);
-
       await channel.annotations.publish(message, { type: 'reaction:distinct.v1', name: '👍' });
       let annotation = await onAnnotation;
       assert.equal(annotation.action, 'annotation.create');
@@ -85,10 +81,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       await channel.publish('message', 'foobar');
       const message = await onMessage;
       assert.equal(message.data, 'foobar', 'check message data decrypted');
-
-      // Temporary anti-flake measure; can be removed after summary loop implements
-      // annotation resume (CHA-887)
-      await helper.setTimeoutAsync(1000);
 
       await channel.annotations.publish(message, {
         type: 'reaction:distinct.v1',
