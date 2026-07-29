@@ -655,13 +655,18 @@ class RealtimeChannel extends EventEmitter {
       isSync = false;
     switch (message.action) {
       case actions.ATTACHED: {
-        this.properties.attachSerial = message.channelSerial;
+        const resumed = message.hasFlag('RESUMED');
+        // RTL15c: only update attachSerial for non-resumed attaches. A resumed
+        // attach hasn't reset the period of message continuity, so it must not
+        // move the point up to which untilAttach history is contiguous.
+        if (!resumed) {
+          this.properties.attachSerial = message.channelSerial;
+        }
         this._mode = message.getMode();
         this._silentSubscribeWarned = false;
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
         this.modes = (modesFromFlags && (Utils.allToLowerCase(modesFromFlags) as API.ChannelMode[])) || undefined;
-        const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
         const hasObjects = message.hasFlag('HAS_OBJECTS');
