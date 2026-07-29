@@ -9,6 +9,7 @@ import RestAnnotations, { RestGetAnnotationsParams, constructValidateAnnotation 
 import type { PaginatedResult } from './paginatedresource';
 import type Message from '../types/message';
 import type { Properties } from '../util/utils';
+import type { CipherOptions } from '../types/basemessage';
 
 class RealtimeAnnotations {
   private channel: RealtimeChannel;
@@ -24,7 +25,7 @@ class RealtimeAnnotations {
   async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
     const channelName = this.channel.name;
     const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
-    const wireAnnotation = await annotation.encode();
+    const wireAnnotation = await annotation.encode(this.channel.channelOptions as CipherOptions);
 
     this.channel.throwIfUnpublishableState();
 
