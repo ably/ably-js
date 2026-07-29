@@ -19,8 +19,12 @@ export type EncryptedChannelOptions = ChannelOptions & {
   channelCipher: NonNullable<ChannelOptions['channelCipher']>;
 };
 
+/**
+ * Both fields are set together by normaliseChannelOptions and normalizeCipherOptions, but options
+ * that have bypassed those are not necessarily consistent, so check both.
+ */
 export function isEncrypted(options: ChannelOptions | null | undefined): options is EncryptedChannelOptions {
-  return !!options && !!options.cipher;
+  return !!options && !!options.cipher && !!options.channelCipher;
 }
 
 export type EncodingDecodingContext = {
