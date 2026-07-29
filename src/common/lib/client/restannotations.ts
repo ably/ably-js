@@ -7,7 +7,6 @@ import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
 import type { Properties } from '../util/utils';
-import type { CipherOptions } from '../types/basemessage';
 import ErrorInfo from '../types/errorinfo';
 
 export interface RestGetAnnotationsParams {
@@ -88,7 +87,7 @@ class RestAnnotations {
     methodName: string,
   ): Promise<void> {
     const annotation = constructValidateAnnotation(msgOrSerial, annotationValues, methodName);
-    const wireAnnotation = await annotation.encode(this.channel.channelOptions as CipherOptions);
+    const wireAnnotation = await annotation.encode(this.channel.channelOptions);
 
     const client = this.channel.client,
       options = client.options,
