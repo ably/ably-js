@@ -1,5 +1,5 @@
 import Logger from '../util/logger';
-import { BaseMessage, encode, decode, wireToJSON, strMsg } from './basemessage';
+import { BaseMessage, encode, decode, wireToJSON, strMsg, CipherOptions } from './basemessage';
 import * as API from '../../../../ably';
 import * as Utils from '../util/utils';
 
@@ -62,13 +62,11 @@ class Annotation extends BaseMessage {
   name?: string;
   count?: number;
 
-  async encode(): Promise<WireAnnotation> {
+  async encode(options: CipherOptions): Promise<WireAnnotation> {
     const res = Object.assign(new WireAnnotation(), this, {
       action: actions.indexOf(this.action || 'annotation.create'),
     });
-    // note: we do not pass cipheroptions/channeloptions here as annotations are not
-    // encrypted (as the data needs to be parsed by the server for summarisation)
-    return encode(res, {});
+    return encode(res, options);
   }
 
   static fromValues(values: Properties<Annotation>): Annotation {
