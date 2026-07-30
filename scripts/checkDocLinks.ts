@@ -33,39 +33,14 @@ const MAX_REDIRECTS = 5;
 const DELAY_BETWEEN_PAGES_MS = 1200;
 
 /**
- * URLs that already fail, recorded so this check can gate new breakage without first
- * requiring the backlog to be cleared. Each entry is debt to pay down, not a precedent to
- * copy: every one is a legacy `/docs` path that now redirects to a restructured page where
- * the original fragment does not exist, so the reader lands at the top of a page that may
- * not even cover the referenced concept.
+ * An escape hatch for a URL that is known to be broken and cannot be fixed immediately, so
+ * that the check gates new breakage rather than blocking on a backlog. Map the URL to the
+ * reason it is listed.
  *
- * Removing an entry is the goal. Nothing here rots silently: a listed URL that starts
+ * Prefer fixing the link. Nothing listed here rots silently: a listed URL that starts
  * working is itself reported as a failure telling you to delete the line.
  */
-const KNOWN_BROKEN: Record<string, string> = {
-  'https://ably.com/docs/core-features/authentication/#capabilities-explained': 'redirects to /docs/auth',
-  'https://ably.com/docs/core-features/authentication#ably-jwt': 'redirects to /docs/auth',
-  'https://ably.com/docs/core-features/authentication#ably-tokens': 'redirects to /docs/auth',
-  'https://ably.com/docs/core-features/authentication#basic-authentication': 'redirects to /docs/auth',
-  'https://ably.com/docs/core-features/authentication#identified-clients':
-    'redirects to /docs/auth; use /docs/auth/identified-clients',
-  'https://ably.com/docs/core-features/authentication#token-authentication':
-    'redirects to /docs/auth; use /docs/auth/token',
-  'https://ably.com/docs/realtime/channels#nonfatal-errors': 'redirects to /docs/channels',
-  'https://ably.com/docs/realtime/channels#transient-publish':
-    'redirects to /docs/channels; use /docs/pub-sub/advanced#transient-publish',
-  'https://ably.com/docs/realtime/connection/#connection-state-recovery': 'redirects to /docs/connect',
-  'https://ably.com/docs/realtime/encryption#getting-started': 'redirects to /docs/channels/options/encryption',
-  'https://ably.com/docs/rest/channels#publish-on-behalf':
-    'redirects to /docs/channels; use /docs/pub-sub/advanced#publish-on-behalf',
-  'https://ably.com/docs/realtime/usage': 'page has been removed',
-  'https://ably.com/docs/rest/usage': 'page has been removed',
-  // Found by this check: /docs/channels does not mention derived channels at all. The fix
-  // belongs with the error-string work rather than here, since a remediation is not supposed
-  // to carry a URL in the first place (see CLAUDE.md); the concept is now documented at
-  // /docs/pub-sub/advanced#subscription-filters.
-  'https://ably.com/docs/channels#derived': 'page does not document derived channels',
-};
+const KNOWN_BROKEN: Record<string, string> = {};
 
 interface Occurrence {
   file: string;

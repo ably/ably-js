@@ -37,6 +37,7 @@ browser given an unknown fragment silently leaves the reader at the top of the p
 Run with `npm run check-doc-links`. It takes about a minute: the docs site rate-limits
 bursts, so pages are fetched one at a time.
 
-URLs that are already broken are listed in the script's `KNOWN_BROKEN` map so the check
-gates new breakage rather than the existing backlog. Fixing one means deleting its entry —
-a listed URL that starts working is reported as a failure telling you to remove it.
+A URL that is known to be broken and cannot be fixed immediately can be listed in the
+script's `KNOWN_BROKEN` map, so that the check gates new breakage rather than blocking on a
+backlog. Fixing one means deleting its entry — a listed URL that starts working is reported
+as a failure telling you to remove it. The map is currently empty.
