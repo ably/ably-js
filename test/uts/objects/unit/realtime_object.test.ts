@@ -1093,7 +1093,7 @@ describe('uts/objects/unit/realtime_object', function () {
       expect(events).to.deep.equal(['SYNCING', 'SYNCED']);
     });
 
-    it('ATTACHED without HAS_OBJECTS emits SYNCED only', async function () {
+    it('ATTACHED without HAS_OBJECTS emits SYNCING then SYNCED', async function () {
       const { channel, mockWs } = await setupSyncedChannel('test-RTO17-no-objects');
 
       const events: string[] = [];
@@ -1578,5 +1578,61 @@ describe('uts/objects/unit/realtime_object', function () {
 
     // Deep subscription (no depth limit) sees both updates
     expect(deepEvents.length).to.be.greaterThanOrEqual(2);
+  });
+
+  // UTS: objects/unit/RTO27 - objects data lifecycle on channel state transitions
+  describe('RTO27 - objects data lifecycle on channel state transitions', function () {
+    // DETACHED/FAILED: every pooled object has its data cleared to the zero value
+    // (map -> empty, counter -> 0) WITHOUT emitting update events; the objects
+    // themselves remain in the pool (only their data is cleared).
+    for (const state of ['detached', 'failed'] as const) {
+      it(`RTO27 - clears objects data (no events) on channel ${state}`, async function () {
+        const { channel, root } = await setupSyncedChannel(`test-RTO27-${state}`);
+        const rto = (channel as any)._object;
+
+        // Sanity: pool is populated from STANDARD_POOL_OBJECTS
+        expect(root.get('name').value()).to.equal('Alice');
+        const counter = rto._objectsPool.get('counter:score@1000');
+        expect(counter).to.exist;
+        expect(counter.value()).to.equal(100);
+
+        // Subscribe to root and collect any emitted updates
+        const updates: any[] = [];
+        root.subscribe((event: any) => updates.push(event));
+
+        // Drive the internal channel-state transition directly
+        rto.actOnChannelState(state);
+        await flushAsync();
+
+        // Root map data cleared to zero value (empty)
+        expect(root.size()).to.equal(0);
+        expect(root.get('name').value()).to.be.undefined;
+
+        // Counter object is STILL in the pool, with its data reset to 0
+        const counterAfter = rto._objectsPool.get('counter:score@1000');
+        expect(counterAfter).to.exist;
+        expect(counterAfter.value()).to.equal(0);
+
+        // No update events were emitted for the data clearing
+        expect(updates.length).to.equal(0);
+      });
+    }
+
+    // SUSPENDED: objects data is retained unchanged (state not handled by the switch).
+    it('RTO27 - retains objects data on channel suspended', async function () {
+      const { channel, root } = await setupSyncedChannel('test-RTO27-suspended');
+      const rto = (channel as any)._object;
+
+      // Sanity: pool is populated
+      expect(root.get('name').value()).to.equal('Alice');
+      expect(rto._objectsPool.get('counter:score@1000').value()).to.equal(100);
+
+      rto.actOnChannelState('suspended');
+      await flushAsync();
+
+      // Data retained unchanged
+      expect(root.get('name').value()).to.equal('Alice');
+      expect(rto._objectsPool.get('counter:score@1000').value()).to.equal(100);
+    });
   });
 });
