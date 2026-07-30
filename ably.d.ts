@@ -2384,11 +2384,11 @@ export declare interface RealtimePresence {
    */
   update(data: any, callback: ErrorCallback): void;
   /**
-   * Leaves the presence set for the channel. A client must have entered the presence set before it can leave.
+   * Leaves the presence set for the channel.
    *
    * Requires an identified client. If the `clientId` is unset, or is the wildcard `*`, the call rejects with an {@link ErrorInfo}. Use {@link RealtimePresence.leaveClient | `leaveClient()`} to leave on behalf of another identity, which requires a wildcard `clientId` on the API key or token.
    *
-   * Leaving does not implicitly attach the channel. The call proceeds only on a channel in the `attached` or `attaching` state, and rejects with an {@link ErrorInfo} in any other channel state or when the connection is unusable.
+   * Leaving does not implicitly attach the channel. It requires a channel in the `attached` state. On an `attaching` channel the call is queued until the channel attaches, unless {@link ClientOptions.queueMessages} is disabled. In any other channel state, or when the connection is unusable, it rejects with an {@link ErrorInfo}.
    *
    * @param data - The payload associated with the presence member.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2450,7 +2450,7 @@ export declare interface RealtimePresence {
    *
    * Requires an API key or token bound to a wildcard `clientId`. The server enforces this, so without it the call rejects with an {@link ErrorInfo} returned by the server.
    *
-   * Leaving does not implicitly attach the channel. On a channel in neither the `attached` nor the `attaching` state the call rejects with an {@link ErrorInfo}.
+   * Leaving does not implicitly attach the channel. It requires a channel in the `attached` state. On an `attaching` channel the call is queued until the channel attaches, unless {@link ClientOptions.queueMessages} is disabled. In any other channel state, or when the connection is unusable, it rejects with an {@link ErrorInfo}.
    *
    * @param clientId - The ID of the client to leave the presence set for.
    * @param data - The payload associated with the presence member.
