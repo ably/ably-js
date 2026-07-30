@@ -2178,7 +2178,7 @@ export declare interface RealtimePresence {
    */
   syncComplete: boolean;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @param presence - A specific {@link PresenceAction} to deregister the listener for.
    * @param listener - An event listener function.
@@ -2190,7 +2190,7 @@ export declare interface RealtimePresence {
    */
   unsubscribe(presence: PresenceAction, listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @param presence - An array of {@link PresenceAction} objects to deregister the listener for.
    * @param listener - An event listener function.
@@ -2198,28 +2198,28 @@ export declare interface RealtimePresence {
    */
   unsubscribe(presence: Array<PresenceAction>, listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for a specific {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for a specific {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @param presence - A specific {@link PresenceAction} to deregister the listeners for.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(presence: PresenceAction): void;
   /**
-   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for an array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for an array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @param presence - An array of {@link PresenceAction} objects to deregister the listeners for.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(presence: Array<PresenceAction>): void;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @param listener - An event listener function.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set.
+   * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set. The server keeps streaming presence events to an attached channel, subject to the client's capabilities.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
@@ -2384,7 +2384,7 @@ export declare interface RealtimePresence {
   /**
    * Leaves the presence set for the channel.
    *
-   * Requires an identified client. If the `clientId` is unset, or is the wildcard `*`, the call rejects with an {@link ErrorInfo}. Use {@link RealtimePresence.leaveClient | `leaveClient()`} to leave on behalf of another identity, which requires a wildcard `clientId` on the API key or token.
+   * Requires an identified client. If the `clientId` is unset, or is the wildcard `*`, the call rejects with an {@link ErrorInfo}. Use {@link RealtimePresence.leaveClient | `leaveClient()`} to leave on behalf of another identity.
    *
    * Leaving does not implicitly attach the channel. It requires a channel in the `attached` state. On an `attaching` channel the call is queued until the channel attaches, unless {@link ClientOptions.queueMessages} is disabled. In any other channel state, or when the connection is unusable, it rejects with an {@link ErrorInfo}.
    *
