@@ -2170,7 +2170,7 @@ export declare interface RealtimePresence {
   /**
    * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete, and back to `false` whenever a new sync starts, typically after a re-attach. The value is initially `false`, before any sync has started. It is also `true` after the local presence set is cleared, which happens when the channel becomes detached or failed, or attaches without the server reporting any presence members. It therefore indicates only that no sync is in progress, not that the channel is attached or that a sync ever ran. To wait for an in-progress sync, call {@link RealtimePresence.get | `get()`}, which by default resolves only once the sync completes.
    *
-   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#sync-complete
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#properties
    */
   syncComplete: boolean;
   /**
