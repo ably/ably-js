@@ -1595,6 +1595,8 @@ describe('uts/objects/unit/realtime_object', function () {
         const counter = rto._objectsPool.get('counter:score@1000');
         expect(counter).to.exist;
         expect(counter.value()).to.equal(100);
+        const profileMap = rto._objectsPool.get('map:profile@1000'); // nested map (email, nested_counter, prefs)
+        expect(profileMap.size()).to.equal(3);
 
         // Subscribe to root and collect any emitted updates
         const updates: any[] = [];
@@ -1613,6 +1615,11 @@ describe('uts/objects/unit/realtime_object', function () {
         expect(counterAfter).to.exist;
         expect(counterAfter.value()).to.equal(0);
 
+        // Nested map is STILL in the pool, with its OWN data cleared — checked independently via the
+        // pool so a nested-object regression can't be hidden by the root clear
+        expect(rto._objectsPool.get('map:profile@1000')).to.exist;
+        expect(profileMap.size()).to.equal(0);
+
         // No update events were emitted for the data clearing
         expect(updates.length).to.equal(0);
       });
@@ -1626,13 +1633,15 @@ describe('uts/objects/unit/realtime_object', function () {
       // Sanity: pool is populated
       expect(root.get('name').value()).to.equal('Alice');
       expect(rto._objectsPool.get('counter:score@1000').value()).to.equal(100);
+      expect(rto._objectsPool.get('map:profile@1000').size()).to.equal(3); // nested map
 
       rto.actOnChannelState('suspended');
       await flushAsync();
 
-      // Data retained unchanged
+      // Data retained unchanged — root, the counter, and the nested map
       expect(root.get('name').value()).to.equal('Alice');
       expect(rto._objectsPool.get('counter:score@1000').value()).to.equal(100);
+      expect(rto._objectsPool.get('map:profile@1000').size()).to.equal(3);
     });
   });
 });

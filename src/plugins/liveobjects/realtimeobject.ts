@@ -228,6 +228,7 @@ export class RealtimeObject {
 
   /**
    * @internal
+   * @spec RTO27 - manage the stored objects data across channel state transitions
    */
   actOnChannelState(state: ChannelState, hasObjects?: boolean): void {
     switch (state) {
@@ -237,10 +238,14 @@ export class RealtimeObject {
 
       case 'detached':
       case 'failed':
-        // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
-        this._objectsPool.clearObjectsData(false);
-        this._syncObjectsPool.clear();
+        // RTO27a - the actual current state of Objects data is unknown in these states, so clear it
+        // without emitting update events (RTO27a1); the objects themselves remain in the pool.
+        this._objectsPool.clearObjectsData(false); // RTO27a1
+        this._syncObjectsPool.clear(); // RTO27a2
         break;
+
+      // RTO27b - SUSPENDED is intentionally not handled here: the objects data is retained unchanged,
+      // since the connection may still recover.
     }
   }
 
