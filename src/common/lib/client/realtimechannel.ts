@@ -696,7 +696,7 @@ class RealtimeChannel extends EventEmitter {
 
       case actions.DETACHED: {
         const detachErr = message.error
-          ? ErrorInfo.fromValues(message.error)
+          ? ErrorInfo.fromWireValues(message.error)
           : new ErrorInfo('Channel detached', 90001, 404);
         if (this.state === 'detaching') {
           this.notifyState('detached', detachErr);
@@ -857,7 +857,7 @@ class RealtimeChannel extends EventEmitter {
           /* attach/detach operation attempted on superseded transport handle */
           this.checkPendingState();
         } else {
-          this.notifyState('failed', ErrorInfo.fromValues(err));
+          this.notifyState('failed', ErrorInfo.fromWireValues(err));
         }
         break;
       }
