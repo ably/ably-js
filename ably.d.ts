@@ -2382,9 +2382,7 @@ export declare interface RealtimePresence {
    */
   update(data: any, callback: ErrorCallback): void;
   /**
-   * Leaves the presence set for the channel.
-   *
-   * Requires an identified client. If the `clientId` is unset, or is the wildcard `*`, the call rejects with an {@link ErrorInfo}. Use {@link RealtimePresence.leaveClient | `leaveClient()`} to leave on behalf of another identity.
+   * Leaves the presence set for the channel. Use {@link RealtimePresence.leaveClient | `leaveClient()`} to leave on behalf of another identity.
    *
    * Leaving does not implicitly attach the channel. It requires a channel in the `attached` state. On an `attaching` channel the call is queued until the channel attaches, unless {@link ClientOptions.queueMessages} is disabled. In any other channel state, or when the connection is unusable, it rejects with an {@link ErrorInfo}.
    *
