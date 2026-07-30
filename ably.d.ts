@@ -2178,7 +2178,7 @@ export declare interface RealtimePresence {
    */
   syncComplete: boolean;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @param presence - A specific {@link PresenceAction} to deregister the listener for.
    * @param listener - An event listener function.
@@ -2190,7 +2190,7 @@ export declare interface RealtimePresence {
    */
   unsubscribe(presence: PresenceAction, listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @param presence - An array of {@link PresenceAction} objects to deregister the listener for.
    * @param listener - An event listener function.
@@ -2198,39 +2198,37 @@ export declare interface RealtimePresence {
    */
   unsubscribe(presence: Array<PresenceAction>, listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for a specific {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for a specific {@link PresenceAction}. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @param presence - A specific {@link PresenceAction} to deregister the listeners for.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(presence: PresenceAction): void;
   /**
-   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for an array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for an array of {@link PresenceAction} objects. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @param presence - An array of {@link PresenceAction} objects to deregister the listeners for.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(presence: Array<PresenceAction>): void;
   /**
-   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @param listener - An event listener function.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(listener: messageCallback<PresenceMessage>): void;
   /**
-   * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set. To leave the presence set, call {@link RealtimePresence.leave | `leave()`}.
+   * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel. This removes local listeners only and does not detach the channel or remove this client from the presence set.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-presence#unsubscribe
    */
   unsubscribe(): void;
 
   /**
-   * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Implicitly attaches the channel if it is not already attached.
+   * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Implicitly attaches the channel if it is not already attached. Without the `presence_subscribe` mode the call resolves with an empty array.
    *
-   * Requires the `presence_subscribe` mode. Without it the call resolves with an empty array.
-   *
-   * On a channel in the `suspended` state the call rejects with an {@link ErrorInfo}, unless `waitForSync` is `false` in {@link RealtimePresenceParams}, which resolves with the last known members.
+   * On a channel in the `suspended` state the call rejects with an {@link ErrorInfo}. Pass `waitForSync: false` to resolve with the last known members instead.
    *
    * @param params - A set of parameters which are used to specify which presence members should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
@@ -2330,7 +2328,7 @@ export declare interface RealtimePresence {
    *
    * Requires an identified client. If the `clientId` is unset, or is the wildcard `*`, the call rejects with an {@link ErrorInfo}. Set a `clientId` in {@link ClientOptions} or in the token, or use {@link RealtimePresence.enterClient | `enterClient()`} to enter on behalf of another identity.
    *
-   * Once entered, the member is automatically re-entered whenever the channel re-attaches after a disconnection. If that re-enter fails, the failure surfaces as a channel `update` event carrying the {@link ErrorInfo} rather than as a rejection.
+   * The member is automatically re-entered when the channel re-attaches after a disconnection. If that fails, the {@link ErrorInfo} arrives as a channel `update` event rather than as a rejection.
    *
    * @param data - The payload associated with the presence member.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2416,9 +2414,9 @@ export declare interface RealtimePresence {
   /**
    * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. Implicitly attaches the channel if it is not already attached.
    *
-   * Requires an API key or token bound to a wildcard `clientId`. The server enforces this, so without it the call rejects with an {@link ErrorInfo} returned by the server.
+   * Requires an API key or token bound to a wildcard `clientId`. Without one the call rejects with an {@link ErrorInfo} from the server.
    *
-   * After a transient disconnection the library automatically re-enters the member on re-attach. If that re-enter fails, the failure surfaces as a channel `update` event carrying the {@link ErrorInfo} rather than as a rejection.
+   * The member is automatically re-entered when the channel re-attaches after a disconnection. If that fails, the {@link ErrorInfo} arrives as a channel `update` event rather than as a rejection.
    *
    * @param clientId - The ID of the client to enter into the presence set.
    * @param data - The payload associated with the presence member.
@@ -2433,7 +2431,7 @@ export declare interface RealtimePresence {
   /**
    * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. Implicitly attaches the channel if it is not already attached.
    *
-   * Requires an API key or token bound to a wildcard `clientId`. The server enforces this, so without it the call rejects with an {@link ErrorInfo} returned by the server.
+   * Requires an API key or token bound to a wildcard `clientId`. Without one the call rejects with an {@link ErrorInfo} from the server.
    *
    * @param clientId - The ID of the client to update in the presence set.
    * @param data - The payload to update for the presence member.
@@ -2448,7 +2446,7 @@ export declare interface RealtimePresence {
   /**
    * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection.
    *
-   * Requires an API key or token bound to a wildcard `clientId`. The server enforces this, so without it the call rejects with an {@link ErrorInfo} returned by the server.
+   * Requires an API key or token bound to a wildcard `clientId`. Without one the call rejects with an {@link ErrorInfo} from the server.
    *
    * Leaving does not implicitly attach the channel. It requires a channel in the `attached` state. On an `attaching` channel the call is queued until the channel attaches, unless {@link ClientOptions.queueMessages} is disabled. In any other channel state, or when the connection is unusable, it rejects with an {@link ErrorInfo}.
    *
