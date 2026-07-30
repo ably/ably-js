@@ -2230,6 +2230,8 @@ export declare interface RealtimePresence {
    *
    * Requires the `presence_subscribe` mode. Without it the call resolves with an empty array.
    *
+   * On a channel in the `suspended` state the call rejects with an {@link ErrorInfo}, unless `waitForSync` is `false` in {@link RealtimePresenceParams}, which resolves with the last known members.
+   *
    * @param params - A set of parameters which are used to specify which presence members should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @example
