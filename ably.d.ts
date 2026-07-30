@@ -2725,7 +2725,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any. This is `null` until an error occurs, for example a transition in channel state to `failed` or `suspended`. Guard against `null` despite the declared type.
    *
-   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#error-reason
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#properties
    */
   errorReason: ErrorInfo;
   /**
@@ -2737,7 +2737,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    *
    * It is `undefined` before the channel attaches for the first time, so guard against `undefined` despite the declared type.
    *
-   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#params
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#properties
    */
   params: ChannelParams;
   /**
@@ -2745,11 +2745,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    *
    * It is `undefined` before the channel attaches for the first time. When the server grants no modes, it is also `undefined`, not an empty array. Guard against `undefined` despite the declared type.
    *
-   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#modes
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#properties
    */
   modes: ResolvedChannelMode[];
   /**
-   * Deregisters the given listener for the specified event name. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters the given listener for the specified event name. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
@@ -2757,7 +2757,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(event: string, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener from all event names in the array. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters the given listener from all event names in the array. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
@@ -2765,21 +2765,21 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(events: Array<string>, listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners for the given event name. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters all listeners for the given event name. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param event - The event name.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(event: string): void;
   /**
-   * Deregisters all listeners for all event names in the array. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters all listeners for all event names in the array. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param events - An array of event names.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(events: Array<string>): void;
   /**
-   * Deregisters listeners registered with the supplied {@link MessageFilter}. The filter is compared by object identity, so it must be the same object previously passed to {@link RealtimeChannel.subscribe | `subscribe()`}. A filter object not previously passed to `subscribe()` removes nothing and no error is raised. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters listeners registered with the supplied {@link MessageFilter}. The filter is matched by object identity, so pass the same object given to {@link RealtimeChannel.subscribe | `subscribe()`}. Any other filter object removes nothing and no error is raised. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
@@ -2787,14 +2787,14 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   unsubscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters the given listener from all event names. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters the given listener from all event names. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @param listener - An event listener function.
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
   unsubscribe(listener: messageCallback<InboundMessage>): void;
   /**
-   * Deregisters all listeners to messages on this channel. This only removes the local listeners and does not detach the channel. The channel stays attached, so the server keeps streaming its messages to the client while the client's capability permits.
+   * Deregisters all listeners to messages on this channel. This removes local listeners only and does not detach the channel. The server keeps streaming messages to an attached channel, subject to the client's capabilities.
    *
    * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#unsubscribe
    */
@@ -2822,7 +2822,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * A {@link PushChannel} object that manages device push notification subscriptions for this channel. Accessing this property requires the `Push` plugin to be registered via {@link ClientOptions.plugins}. The default and modular builds do not bundle the `Push` plugin. If the plugin is absent, the getter throws an {@link ErrorInfo} rather than returning a {@link PushChannel}.
    *
-   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#push
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-channel#properties
    */
   push: PushChannel;
   /**
@@ -2906,7 +2906,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   setOptions(options: ChannelOptions): Promise<void>;
   /**
-   * Registers a listener for messages with a given event name on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
+   * Registers a listener for messages with a given event name on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the server delivers no messages and the listener never fires.
    *
    * @param event - The event name.
    * @param listener - An event listener function.
@@ -2919,7 +2919,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(event: string, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel for multiple event name values. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
+   * Registers a listener for messages on this channel for multiple event name values. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the server delivers no messages and the listener never fires.
    *
    * @param events - An array of event names.
    * @param listener - An event listener function.
@@ -2934,7 +2934,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * {@label WITH_MESSAGE_FILTER}
    *
-   * Registers a listener for messages on this channel that match the supplied filter. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
+   * Registers a listener for messages on this channel that match the supplied filter. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the server delivers no messages and the listener never fires.
    *
    * @param filter - A {@link MessageFilter}.
    * @param listener - An event listener function.
@@ -2947,7 +2947,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   subscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
   /**
-   * Registers a listener for messages on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the listener never fires and no error is raised.
+   * Registers a listener for messages on this channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`. Without the `subscribe` mode the server delivers no messages and the listener never fires.
    *
    * @param callback - An event listener function.
    * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. The promise also resolves with `null` when {@link ChannelOptions.attachOnSubscribe} is `false`, in which case no attach is attempted. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
