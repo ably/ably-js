@@ -81,11 +81,6 @@ class RestAnnotations {
     return this._publish(msgOrSerial, annotationValues, 'publish');
   }
 
-  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
-    annotationValues.action = 'annotation.delete';
-    return this._publish(msgOrSerial, annotationValues, 'delete');
-  }
-
   private async _publish(
     msgOrSerial: string | Message,
     annotationValues: Partial<Properties<Annotation>>,
@@ -113,6 +108,11 @@ class RestAnnotations {
       null,
       true,
     );
+  }
+
+  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    annotationValues.action = 'annotation.delete';
+    return this._publish(msgOrSerial, annotationValues, 'delete');
   }
 
   async get(
