@@ -228,19 +228,30 @@ export class RealtimeObject {
 
   /**
    * @internal
+   * Dispatches channel state changes to the objects data lifecycle handlers: the `ATTACHED`
+   * transition is handled per RTO4 (via `onAttached`, which drives the sync lifecycle), and
+   * every other state per RTO27.
+   * @spec RTO4 - handling of the `ATTACHED` transition
+   * @spec RTO27 - manage the stored objects data across non-`ATTACHED` transitions
    */
   actOnChannelState(state: ChannelState, hasObjects?: boolean): void {
     switch (state) {
       case 'attached':
+        // RTO4 - ATTACHED is handled by onAttached (the sync lifecycle); it is outside RTO27's scope
         this.onAttached(hasObjects);
         break;
 
       case 'detached':
       case 'failed':
-        // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
-        this._objectsPool.clearObjectsData(false);
-        this._syncObjectsPool.clear();
+        // RTO27a - the actual current state of Objects data is unknown in these states, so clear it
+        // without emitting update events (RTO27a1); the objects themselves remain in the pool.
+        this._objectsPool.clearObjectsData(false); // RTO27a1
+        this._syncObjectsPool.clear(); // RTO27a2
         break;
+
+      // RTO27b - every other state (SUSPENDED, INITIALIZED, ATTACHING, DETACHING) is intentionally
+      // not handled here: the objects data is retained unchanged. For SUSPENDED in particular, the
+      // connection may still recover, so the retained data remains a valid best-effort local copy.
     }
   }
 

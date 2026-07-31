@@ -9,7 +9,7 @@
  */
 
 import { expect } from 'chai';
-import { restoreAll, flushAsync } from '../../helpers';
+import { restoreAll, pollUntil } from '../../helpers';
 import { setupSyncedChannel, buildObjectMessage, buildMapSet } from '../helpers/standard_test_pool';
 
 describe('uts/objects/unit/path_object', function () {
@@ -252,7 +252,9 @@ describe('uts/objects/unit/path_object', function () {
         buildMapSet('map:prefs@1000', 'back_ref', { objectId: 'map:profile@1000' }, 't:1', 'remote'),
       ]),
     );
-    await flushAsync();
+    // Quiescence barrier (UTS RTPO13c5/RTPO14): the MAP_SET arrives as an inbound OBJECT message,
+    // applied asynchronously — poll until it lands before the positive read.
+    await pollUntil(() => [...root.get('profile').get('prefs').keys()].includes('back_ref'));
 
     const result = root.get('profile').compact() as any;
     expect(result['prefs']['back_ref']).to.equal(result);
@@ -274,7 +276,9 @@ describe('uts/objects/unit/path_object', function () {
         buildMapSet('map:prefs@1000', 'back_ref', { objectId: 'map:profile@1000' }, 't:1', 'remote'),
       ]),
     );
-    await flushAsync();
+    // Quiescence barrier (UTS RTPO13c5/RTPO14): the MAP_SET arrives as an inbound OBJECT message,
+    // applied asynchronously — poll until it lands before the positive read.
+    await pollUntil(() => [...root.get('profile').get('prefs').keys()].includes('back_ref'));
 
     const result = root.get('profile').compactJson() as any;
     expect(result['prefs']['back_ref']).to.deep.equal({ objectId: 'map:profile@1000' });
