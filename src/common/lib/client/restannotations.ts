@@ -75,7 +75,7 @@ class RestAnnotations {
 
   async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
     const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
-    const wireAnnotation = await annotation.encode();
+    const wireAnnotation = await annotation.encode(this.channel.channelOptions);
 
     const client = this.channel.client,
       options = client.options,

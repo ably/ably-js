@@ -3,7 +3,7 @@ import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../typ
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
-import { EncodingDecodingContext, CipherOptions, populateFieldsFromParent } from '../types/basemessage';
+import { EncodingDecodingContext, populateFieldsFromParent } from '../types/basemessage';
 import Message, { getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
@@ -302,8 +302,7 @@ class RealtimeChannel extends EventEmitter {
       });
     }
     const maxMessageSize = this.client.options.maxMessageSize;
-    // TODO get rid of CipherOptions type assertion, indicates channeloptions types are broken
-    const wireMessages = await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
+    const wireMessages = await encodeMessagesArray(messages, this.channelOptions);
     /* RSL1i */
     const size = getMessagesSize(wireMessages);
     if (size > maxMessageSize) {
@@ -1225,7 +1224,7 @@ class RealtimeChannel extends EventEmitter {
       version: operation,
     });
 
-    const wireMessage = await updateDeleteMsg.encode(this.channelOptions as CipherOptions);
+    const wireMessage = await updateDeleteMsg.encode(this.channelOptions);
     const pm = protocolMessageFromValues({
       action: actions.MESSAGE,
       channel: this.name,
