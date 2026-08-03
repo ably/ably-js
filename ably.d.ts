@@ -2466,96 +2466,195 @@ export declare interface RealtimePresence {
  */
 export declare interface RealtimeAnnotations {
   /**
-   * Registers a listener that is called each time an {@link Annotation} matching a given type is received on the channel.
-   * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
+   * Registers a listener that is called each time an {@link Annotation} matching a given type is received on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`.
+   *
+   * Individual annotations are delivered only to clients that request the `annotation_subscribe` mode via {@link ChannelOptions.modes}, since most clients can rely on the rolled-up summary updates instead. The server grants the mode only if the key or token has the `annotation-subscribe` capability, and silently drops it otherwise.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the attach rejects with an {@link ErrorInfo}.
+   *
+   * On a channel in the `failed` state the call rejects before the listener is registered. If the channel attaches without the mode it also rejects, but the listener stays registered and will fire if the mode is granted later. Remove it with {@link RealtimeAnnotations.unsubscribe | `unsubscribe()`} if that is not what you want. When {@link ChannelOptions.attachOnSubscribe} is `false` and the channel is not yet attached, the call resolves and a listener that lacks the mode never fires.
    *
    * @param type - A specific type string or an array of them to register the listener for.
    * @param listener - An event listener function.
-   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure. When {@link ChannelOptions.attachOnSubscribe} is `false`, no attach is performed.
+   * @example
+   * ```ts
+   * await channel.annotations.subscribe('emoji:distinct.v1', (annotation) => console.log(annotation.name));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-subscribe
    */
   subscribe(type: string | Array<string>, listener?: messageCallback<Annotation>): Promise<void>;
   /**
-   * Registers a listener that is called each time an {@link Annotation} is received on the channel.
-   * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
+   * Registers a listener that is called each time an {@link Annotation} is received on the channel. Implicitly attaches the channel unless {@link ChannelOptions.attachOnSubscribe} is `false`.
+   *
+   * Individual annotations are delivered only to clients that request the `annotation_subscribe` mode via {@link ChannelOptions.modes}, since most clients can rely on the rolled-up summary updates instead. The server grants the mode only if the key or token has the `annotation-subscribe` capability, and silently drops it otherwise.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the attach rejects with an {@link ErrorInfo}.
+   *
+   * On a channel in the `failed` state the call rejects before the listener is registered. If the channel attaches without the mode it also rejects, but the listener stays registered and will fire if the mode is granted later. Remove it with {@link RealtimeAnnotations.unsubscribe | `unsubscribe()`} if that is not what you want. When {@link ChannelOptions.attachOnSubscribe} is `false` and the channel is not yet attached, the call resolves and a listener that lacks the mode never fires.
    *
    * @param listener - An event listener function.
-   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure. When {@link ChannelOptions.attachOnSubscribe} is `false`, no attach is performed.
+   * @example
+   * ```ts
+   * await channel.annotations.subscribe((annotation) => console.log(annotation.name));
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-subscribe
    */
   subscribe(listener?: messageCallback<Annotation>): Promise<void>;
   /**
-   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel for a given type.
+   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel for a given type. This removes local listeners only and does not detach the channel. The server keeps streaming annotations to an attached channel, subject to the client's capabilities.
    *
    * @param type - A specific annotation type (or array of types) to deregister the listener for.
    * @param listener - An event listener function.
+   * @example
+   * ```ts
+   * channel.annotations.unsubscribe('emoji:distinct.v1', listener);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-unsubscribe
    */
   unsubscribe(type: string | Array<string>, listener: messageCallback<Annotation>): void;
   /**
-   * Deregisters any listener that is registered to receive {@link Annotation} on the channel for a specific type.
+   * Deregisters any listener that is registered to receive {@link Annotation} on the channel for a specific type. This removes local listeners only and does not detach the channel. The server keeps streaming annotations to an attached channel, subject to the client's capabilities.
    *
    * @param type - A specific annotation type (or array of types) to deregister the listeners for.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-unsubscribe
    */
   unsubscribe(type: string | Array<string>): void;
   /**
-   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel.
+   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel. This removes local listeners only and does not detach the channel. The server keeps streaming annotations to an attached channel, subject to the client's capabilities.
    *
    * @param listener - An event listener function.
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-unsubscribe
    */
   unsubscribe(listener: messageCallback<Annotation>): void;
   /**
-   * Deregisters all listeners currently receiving {@link Annotation} for the channel.
+   * Deregisters all listeners currently receiving {@link Annotation} for the channel. This removes local listeners only and does not detach the channel. The server keeps streaming annotations to an attached channel, subject to the client's capabilities.
+   *
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-unsubscribe
    */
   unsubscribe(): void;
   /**
-   * Publish a new annotation for a message.
+   * Publish a new annotation for a message. If the annotation specifies no `action`, it defaults to `annotation.create`.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Does not implicitly attach the channel. It rejects with an {@link ErrorInfo} on a channel in the `failed` or `suspended` state, or when the connection is unusable.
+   *
+   * Annotation data is never encrypted, even when {@link ChannelOptions.cipher} is set, because the server must be able to read it to build summaries.
    *
    * @param message - The message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`;
-   * other required fields depend on the annotation type).
+   * @param annotation - The annotation to publish. It must include at least the `type`. Other required fields depend on the annotation type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.publish(message, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-publish
    */
   publish(message: Message, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish a new annotation for a message (alternative form where you only have the
-   * serial of the message, not a complete Message object)
+   * Publish a new annotation for a message. If the annotation specifies no `action`, it defaults to `annotation.create`.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Does not implicitly attach the channel. It rejects with an {@link ErrorInfo} on a channel in the `failed` or `suspended` state, or when the connection is unusable.
+   *
+   * Annotation data is never encrypted, even when {@link ChannelOptions.cipher} is set, because the server must be able to read it to build summaries.
    *
    * @param messageSerial - The serial field of the message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`;
-   * other required fields depend on the annotation type).
+   * @param annotation - The annotation to publish. It must include at least the `type`. Other required fields depend on the annotation type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.publish(message.serial, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-publish
    */
   publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish an annotation removal request for a message, to remove it from the summary
-   * summaries. The semantics of the delete (and what fields are required) are different
-   * for each annotation type; see annotation types documentation for more details.
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary. The semantics of a delete, and the fields it requires, differ by annotation type.
+   *
+   * It sets `action` to `annotation.delete` on the annotation object you pass, overwriting any `action` you set.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Does not implicitly attach the channel. It rejects with an {@link ErrorInfo} on a channel in the `failed` or `suspended` state, or when the connection is unusable.
    *
    * @param message - The message which has an annotation that you want to delete.
-   * @param annotation - The annotation deletion request. (Must include at least the
-   * `type`, other required fields depend on the type).
+   * @param annotation - The annotation deletion request. It must include at least the `type`. Other required fields depend on the type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(message, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-delete
    */
   delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish an annotation removal request for a message, to remove it from the summary
-   * summaries. The semantics of the delete (and what fields are required) are different
-   * for each annotation type; see annotation types documentation for more details.
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary. The semantics of a delete, and the fields it requires, differ by annotation type.
+   *
+   * It sets `action` to `annotation.delete` on the annotation object you pass, overwriting any `action` you set.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Does not implicitly attach the channel. It rejects with an {@link ErrorInfo} on a channel in the `failed` or `suspended` state, or when the connection is unusable.
    *
    * @param messageSerial - The serial field of the message which has an annotation that
    * you want to delete.
-   * @param annotation - The annotation deletion request. (Must include at least the
-   * `type`, other required fields depend on the type).
+   * @param annotation - The annotation deletion request. It must include at least the `type`. Other required fields depend on the type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(message.serial, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-delete
    */
   delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Get all annotations for a given message (as a paginated result)
+   * Get all annotations for a given message.
+   *
+   * Does not implicitly attach the channel, and can be called in any channel or connection state. It does not require the `annotation_subscribe` mode.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the call rejects with an {@link ErrorInfo}.
    *
    * @param message - The message to get annotations for.
-   * @param params - Restrictions on which annotations to get (in particular a limit)
+   * @param params - Restrictions on which annotations to get, in particular a limit.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Annotation} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.annotations.get(message, null);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-get
    */
   get(message: Message, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
   /**
-   * Get all annotations for a given message (as a paginated result) (alternative form
-   * where you only have the serial of the message, not a complete Message object)
+   * Get all annotations for a given message.
+   *
+   * Does not implicitly attach the channel, and can be called in any channel or connection state. It does not require the `annotation_subscribe` mode.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the call rejects with an {@link ErrorInfo}.
    *
    * @param messageSerial - The `serial` of the message to get annotations for.
-   * @param params - Restrictions on which annotations to get (in particular a limit)
+   * @param params - Restrictions on which annotations to get, in particular a limit.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Annotation} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.annotations.get(message.serial, null);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/realtime/realtime-annotations#annotations-get
    */
   get(messageSerial: string, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
 }
@@ -2747,56 +2846,114 @@ export declare interface Channel {
  */
 export declare interface RestAnnotations {
   /**
-   * Publish a new annotation for a message.
+   * Publish a new annotation for a message. If the annotation specifies no `action`, it defaults to `annotation.create`.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Annotation data is never encrypted, even when {@link ChannelOptions.cipher} is set, because the server must be able to read it to build summaries.
    *
    * @param message - The message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`.
-   * Assumed to be an annotation.create if no action is specified)
+   * @param annotation - The annotation to publish. It must include at least the `type`. Other required fields depend on the annotation type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.publish(message, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-publish
    */
   publish(message: Message, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish a new annotation for a message (alternative form where you only have the
-   * serial of the message, not a complete Message object)
+   * Publish a new annotation for a message. If the annotation specifies no `action`, it defaults to `annotation.create`.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Annotation data is never encrypted, even when {@link ChannelOptions.cipher} is set, because the server must be able to read it to build summaries.
    *
    * @param messageSerial - The serial field of the message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`.
-   * Assumed to be an annotation.create if no action is specified)
+   * @param annotation - The annotation to publish. It must include at least the `type`. Other required fields depend on the annotation type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.publish(messageSerial, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-publish
    */
   publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish an annotation removal request for a message, to remove it from the summary
-   * summaries. The semantics of the delete (and what fields are required) are different
-   * for each annotation type; see annotation types documentation for more details.
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary. The semantics of a delete, and the fields it requires, differ by annotation type.
+   *
+   * It sets `action` to `annotation.delete` on the annotation object you pass, overwriting any `action` you set.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
    *
    * @param message - The message which has an annotation that you want to delete.
-   * @param annotation - The annotation deletion request. (Must include at least the
-   * `type`, other required fields depend on the type).
+   * @param annotation - The annotation deletion request. It must include at least the `type`. Other required fields depend on the type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(message, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-delete
    */
   delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Publish an annotation removal request for a message, to remove it from the summary
-   * summaries. The semantics of the delete (and what fields are required) are different
-   * for each annotation type; see annotation types documentation for more details.
+   * Publish an annotation removal request for a message, to remove it from the message's annotation summary. The semantics of a delete, and the fields it requires, differ by annotation type.
+   *
+   * It sets `action` to `annotation.delete` on the annotation object you pass, overwriting any `action` you set.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations), and the key or token must have the `annotation-publish` capability. Without either the server rejects the operation, so the call rejects with an {@link ErrorInfo}.
    *
    * @param messageSerial - The serial field of the message which has an annotation that
    * you want to delete.
-   * @param annotation - The annotation deletion request. (Must include at least the
-   * `type`, other required fields depend on the type).
+   * @param annotation - The annotation deletion request. It must include at least the `type`. Other required fields depend on the type.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @example
+   * ```ts
+   * await channel.annotations.delete(messageSerial, { type: 'emoji:distinct.v1', name: '👍' });
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-delete
    */
   delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
-   * Get all annotations for a given message (as a paginated result)
+   * Get all annotations for a given message.
+   *
+   * The supplied {@link Message} must carry a populated `serial`. A newly constructed {@link Message} has none, so the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the call rejects with an {@link ErrorInfo}.
    *
    * @param message - The message to get annotations for.
-   * @param params - Restrictions on which annotations to get (in particular a limit)
+   * @param params - Restrictions on which annotations to get, in particular a limit.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Annotation} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.annotations.get(message, null);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-get
    */
   get(message: Message, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
   /**
-   * Get all annotations for a given message (as a paginated result) (alternative form
-   * where you only have the serial of the message, not a complete Message object)
+   * Get all annotations for a given message.
+   *
+   * The supplied serial must be a non-empty string, otherwise the call rejects with an {@link ErrorInfo}.
+   *
+   * Message annotations must be enabled for the channel's namespace by a [rule](https://ably.com/docs/messages/annotations). Without it the call rejects with an {@link ErrorInfo}.
    *
    * @param messageSerial - The `serial` of the message to get annotations for.
-   * @param params - Restrictions on which annotations to get (in particular a limit)
+   * @param params - Restrictions on which annotations to get, in particular a limit.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Annotation} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @example
+   * ```ts
+   * const result = await channel.annotations.get(messageSerial, null);
+   * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/rest-annotations#annotations-get
    */
   get(messageSerial: string, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
 }
