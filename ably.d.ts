@@ -2152,6 +2152,7 @@ export declare interface Presence {
    *
    * @param params - A set of parameters which are used to specify which presence members should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/presence#get
    */
   get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
   /**
@@ -2159,6 +2160,7 @@ export declare interface Presence {
    *
    * @param params - A set of parameters which are used to specify which messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/presence#history
    */
   history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
 }
@@ -2718,6 +2720,7 @@ export declare interface Channel {
    *
    * @param params - A set of parameters which are used to specify which messages should be retrieved.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#history
    */
   history(params?: RestHistoryParams): Promise<PaginatedResult<InboundMessage>>;
   /**
@@ -2726,6 +2729,7 @@ export declare interface Channel {
    * @param messages - An array of {@link Message} objects.
    * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serials of the published messages. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#publish
    */
   publish(messages: Message[], options?: PublishOptions): Promise<PublishResult>;
   /**
@@ -2734,6 +2738,7 @@ export declare interface Channel {
    * @param message - A {@link Message} object.
    * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#publish
    */
   publish(message: Message, options?: PublishOptions): Promise<PublishResult>;
   /**
@@ -2743,12 +2748,14 @@ export declare interface Channel {
    * @param data - The payload of the message.
    * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
    * @returns A promise which, upon success, will be fulfilled with a {@link PublishResult} object containing the serial of the published message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#publish
    */
   publish(name: string, data: any, options?: PublishOptions): Promise<PublishResult>;
   /**
    * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
    *
    * @returns A promise which, upon success, will be fulfilled a {@link ChannelDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#status
    */
   status(): Promise<ChannelDetails>;
   /**
@@ -2764,6 +2771,7 @@ export declare interface Channel {
    * ```ts
    * const message = await channel.getMessage(serial);
    * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#get-message
    */
   getMessage(serialOrMessage: string | Message): Promise<Message>;
   /**
@@ -2781,6 +2789,7 @@ export declare interface Channel {
    * ```ts
    * await channel.updateMessage({ ...message, data: 'edited text' });
    * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#update-message
    */
   updateMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
@@ -2800,6 +2809,7 @@ export declare interface Channel {
    * ```ts
    * const result = await channel.deleteMessage(message);
    * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#delete-message
    */
   deleteMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
@@ -2817,6 +2827,7 @@ export declare interface Channel {
    * ```ts
    * const result = await channel.appendMessage({ ...message, data: ' more text' });
    * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#append-message
    */
   appendMessage(message: Message, operation?: MessageOperation, options?: PublishOptions): Promise<UpdateDeleteResult>;
   /**
@@ -2833,6 +2844,7 @@ export declare interface Channel {
    * ```ts
    * const versions = await channel.getMessageVersions(message);
    * ```
+   * @see https://ably.com/docs/pub-sub/api/javascript/rest/channel#get-message-versions
    */
   getMessageVersions(
     serialOrMessage: string | Message,
