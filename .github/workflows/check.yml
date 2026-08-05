@@ -28,6 +28,13 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npx tsc --noEmit ably.d.ts modular.d.ts
+      # src/ is compiled by esbuild, which strips types without checking them, so this is
+      # the only step that typechecks the library itself.
+      - run: npx tsc --noEmit -p tsconfig.json
+      # The error-code union is generated from the ably-common submodule at its pinned
+      # commit; fail if the committed copy has drifted from the registry.
+      - run: npm run generate:errorcodes-ts
+      - run: git diff --exit-code -- src/common/lib/types/errorcodes.ts
       # for some reason, this doesn't work in CI using `npx attw --pack .`
       - run: npm pack
       - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary --exclude-entrypoints 'ably/modular'
