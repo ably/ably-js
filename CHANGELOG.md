@@ -2,6 +2,17 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.26.1](https://github.com/ably/ably-js/tree/2.26.1) (2026-08-10)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.26.0...2.26.1)
+
+### What's Changed
+
+- Fall back to the base transport when a proxy rejects the WebSocket handshake outright, rather than reporting `disconnected` after exhausting every host [#2285](https://github.com/ably/ably-js/pull/2285)
+- Resumption is now decided by the server: `Connection#id`, `Connection#key` and a channel's `channelSerial` are retained through `SUSPENDED`, reconnection always attempts a resume, and the deprecated `ATTACH_RESUME` flag is no longer sent. Whether continuity was preserved is reported by the `resumed` flag on the subsequent `attached` state change [#2273](https://github.com/ably/ably-js/pull/2273)
+- Fix a resumed attach advancing the channel's attach serial, which broke the contiguity of `untilAttach` history with the realtime message stream [#2276](https://github.com/ably/ably-js/pull/2276)
+- Fix stale presence members surviving when a new presence sync replaces one still in progress [#2261](https://github.com/ably/ably-js/pull/2261)
+
 ## [2.26.0](https://github.com/ably/ably-js/tree/2.26.0) (2026-07-22)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.25.0...2.26.0)
