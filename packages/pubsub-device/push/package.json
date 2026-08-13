@@ -1,0 +1,4 @@
+{
+  "module": "../dist/push.mjs",
+  "types": "./index.d.mts"
+}

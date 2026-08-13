@@ -120,6 +120,52 @@ const minifiedLiveObjectsPluginCdnConfig = {
   minify: true,
 };
 
+// The per-side Pub/Sub wrapper packages (PDR-091). Each is a thin wrapper over the core, so it is
+// built as a plain CJS/ESM pair rather than UMD.
+//
+// Each entry is one of the package's public entry points: `.` plus one per re-exported core
+// subpath. `formats` mirrors the conditions the core offers for that subpath, so a wrapper entry
+// never claims to support a module system the core cannot serve behind it, in particular
+// `ably/push` is import-only, having no `require` condition in the core's exports map.
+function createPackageConfigs(packageName, entries) {
+  const packageDir = `packages/${packageName}`;
+
+  return entries.flatMap(({ name, formats }) => {
+    const baseConfig = {
+      bundle: true,
+      sourcemap: true,
+      banner: { js: '/*' + banner + '*/' },
+      target: 'es2017',
+      entryPoints: [`${packageDir}/src/${name}.ts`],
+      // `react` and `react-dom` join the externals for the same reason `ably` does: the hooks must
+      // use the app's copy of React, and bundling one here would break the hooks' rules entirely.
+      external: ['ably', 'ably/*', 'react', 'react-dom'],
+    };
+
+    return formats.map((format) => ({
+      ...baseConfig,
+      format,
+      outfile: `${packageDir}/dist/${name}.${format === 'esm' ? 'mjs' : 'js'}`,
+    }));
+  });
+}
+
+const bothFormats = ['cjs', 'esm'];
+
+const pubsubPackageConfigs = [
+  ...createPackageConfigs('pubsub-device', [
+    { name: 'index', formats: bothFormats },
+    { name: 'liveobjects', formats: bothFormats },
+    { name: 'react', formats: bothFormats },
+    { name: 'push', formats: bothFormats },
+    { name: 'react-native-push', formats: bothFormats },
+  ]),
+  ...createPackageConfigs('pubsub-server', [
+    { name: 'index', formats: bothFormats },
+    { name: 'liveobjects', formats: bothFormats },
+  ]),
+];
+
 module.exports = {
   webConfig,
   minifiedWebConfig,
@@ -133,4 +179,5 @@ module.exports = {
   liveObjectsPluginEsmConfig,
   liveObjectsPluginCdnConfig,
   minifiedLiveObjectsPluginCdnConfig,
+  pubsubPackageConfigs,
 };

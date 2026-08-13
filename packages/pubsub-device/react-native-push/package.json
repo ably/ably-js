@@ -1,0 +1,4 @@
+{
+  "main": "../dist/react-native-push.js",
+  "types": "./index.d.ts"
+}
