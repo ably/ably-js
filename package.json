@@ -206,6 +206,7 @@
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
     "speccoveragereport": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/specCoverageReport.ts && esr scripts/specCoverageReport.ts",
     "process-private-api-data": "tsc --noEmit --esModuleInterop --strictNullChecks scripts/processPrivateApiData/run.ts && esr scripts/processPrivateApiData/run.ts",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "generate:errorcodes-ts": "node test/common/ably-common/errors/scripts/generate-errorcodes-ts.js --format=type --out src/common/lib/types/errorcodes.ts"
   }
 }
