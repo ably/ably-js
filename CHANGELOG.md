@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.28.0](https://github.com/ably/ably-js/tree/2.28.0) (2026-08-21)
+
+[Full Changelog](https://github.com/ably/ably-js/compare/2.27.0...2.28.0)
+
+### What's Changed
+
+- Roll out e2e encryption of `data` payloads on annotations. They were previously a message type whose publish path deliberately did not apply the channel's encryption (and were documented accordingly), but the reasons for this no longer apply, so there is no reason now not to enable e2e encryption on annotation payloads. [#2277](https://github.com/ably/ably-js/pull/2277)
+
 ## [2.27.0](https://github.com/ably/ably-js/tree/2.27.0) (2026-08-10)
 
 [Full Changelog](https://github.com/ably/ably-js/compare/2.26.0...2.27.0)
