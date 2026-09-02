@@ -1,0 +1,20 @@
+{
+  "name": "@ably/pubsub-server",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Ably Pub/Sub SDK for servers: HTTP client, server realtime client, push admin, stats and token revocation. Types-only spike for PDR-091.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ably/ably-js.git",
+    "directory": "packages/pubsub-server"
+  },
+  "dependencies": {
+    "@ably/pubsub-common": "3.0.0"
+  },
+  "ably": {
+    "agent": "pubsub-js-server"
+  }
+}
