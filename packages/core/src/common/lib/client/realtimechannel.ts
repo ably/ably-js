@@ -1106,7 +1106,7 @@ class RealtimeChannel extends EventEmitter {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 
     // We fetch this first so that any plugin-not-provided error takes priority over other errors
-    const restMixin = this.client.rest.channelMixin;
+    const httpMixin = this.client.http.channelMixin;
 
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
@@ -1130,7 +1130,7 @@ class RealtimeChannel extends EventEmitter {
       params.from_serial = this.properties.attachSerial;
     }
 
-    return restMixin.history(this, params);
+    return httpMixin.history(this, params);
   } as any;
 
   whenState = ((state: string) => {
@@ -1171,13 +1171,13 @@ class RealtimeChannel extends EventEmitter {
   }
 
   async status(): Promise<API.ChannelDetails> {
-    return this.client.rest.channelMixin.status(this);
+    return this.client.http.channelMixin.status(this);
   }
 
   async getMessage(serialOrMessage: string | Message): Promise<Message> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.getMessage()', 'channel = ' + this.name);
-    const restMixin = this.client.rest.channelMixin;
-    return restMixin.getMessage(this, serialOrMessage);
+    const httpMixin = this.client.http.channelMixin;
+    return httpMixin.getMessage(this, serialOrMessage);
   }
 
   async updateMessage(
@@ -1247,8 +1247,8 @@ class RealtimeChannel extends EventEmitter {
     params?: Record<string, any>,
   ): Promise<PaginatedResult<Message>> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.getMessageVersions()', 'channel = ' + this.name);
-    const restMixin = this.client.rest.channelMixin;
-    return restMixin.getMessageVersions(this, serialOrMessage, params);
+    const httpMixin = this.client.http.channelMixin;
+    return httpMixin.getMessageVersions(this, serialOrMessage, params);
   }
 
   /**

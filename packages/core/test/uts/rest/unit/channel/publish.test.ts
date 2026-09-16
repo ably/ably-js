@@ -9,7 +9,7 @@ import { expect } from 'chai';
 import { MockHttpClient } from '../../../mock_http';
 import { Ably, installMockHttp, restoreAll } from '../../../helpers';
 
-const Message = Ably.Rest.Message;
+const Message = Ably.Http.Message;
 
 describe('uts/rest/unit/channel/publish', function () {
   afterEach(function () {
@@ -34,7 +34,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish('event', 'data');
 
@@ -60,7 +60,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish('event', 'data');
 
@@ -91,7 +91,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish([
       { name: 'a', data: 'one' },
@@ -125,7 +125,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish(null, 'data');
 
@@ -154,7 +154,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish('event', null);
 
@@ -184,7 +184,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.publish('my-event', 'my-data');
 
@@ -216,7 +216,7 @@ describe('uts/rest/unit/channel/publish', function () {
     installMockHttp(mock);
 
     // Use explicit maxMessageSize for deterministic testing
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       maxMessageSize: 1024,
@@ -254,7 +254,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       maxMessageSize: 65536,
@@ -285,7 +285,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
 
     const msg = Message.fromValues({
@@ -328,7 +328,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       clientId: 'lib-client',
@@ -361,7 +361,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       clientId: 'lib-client',
@@ -396,7 +396,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
 
     const msg = Message.fromValues({ name: 'event', data: 'data', clientId: 'msg-client' });
@@ -428,7 +428,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     await client.channels.get('test').publish(null, null);
 
     expect(captured).to.have.length(1);
@@ -455,7 +455,7 @@ describe('uts/rest/unit/channel/publish', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
 
     const msg = Message.fromValues({ name: 'event', data: 'data' });
@@ -463,7 +463,7 @@ describe('uts/rest/unit/channel/publish', function () {
 
     expect(captured).to.have.length(1);
     // Spec (RSL1l): additional params MUST appear as query parameters.
-    // DEVIATION: ably-js RestChannel.publish() may not support additional params. See deviations.md.
+    // DEVIATION: ably-js HttpChannel.publish() may not support additional params. See deviations.md.
     expect(captured[0].url.searchParams.get('customParam')).to.equal('customValue');
     expect(captured[0].url.searchParams.get('anotherParam')).to.equal('123');
   });

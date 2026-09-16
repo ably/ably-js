@@ -18,7 +18,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * RSL10 - channel.annotations is accessible
    *
    * The channel must expose an annotations attribute that is an object
-   * (specifically a RestAnnotations instance).
+   * (specifically a HttpAnnotations instance).
    */
   // UTS: rest/unit/RSL10/annotations-attribute-type-0
   it('RSL10 - channel.annotations is accessible', function () {
@@ -28,7 +28,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test-RSL10');
 
     expect(ch.annotations).to.be.an('object');
@@ -55,7 +55,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.annotations.publish('msg-serial-1', { type: 'com.example.reaction', name: 'like' });
 
@@ -86,7 +86,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
 
     try {
@@ -116,7 +116,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.annotations.publish('msg-serial-1', { type: 'com.example.data', data: { key: 'value' } });
 
@@ -137,7 +137,7 @@ describe('uts/rest/unit/channel/annotations', function () {
    * be auto-generated in the format <base64>:0.
    *
    * NOTE: ably-js does not currently generate idempotent IDs for
-   * annotations (only for messages via RestChannel.publish). This test
+   * annotations (only for messages via HttpChannel.publish). This test
    * documents the spec requirement as a known deviation.
    */
   // UTS: rest/unit/RSAN1c4/idempotent-id-not-generated-1
@@ -154,7 +154,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       idempotentRestPublishing: true,
@@ -195,7 +195,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'appId.keyId:keySecret',
       useBinaryProtocol: false,
       idempotentRestPublishing: false,
@@ -227,7 +227,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.annotations.delete('msg-serial-1', { type: 'com.example.reaction', name: 'like' });
 
@@ -273,7 +273,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     const result = await ch.annotations.get('msg-serial-1', {});
 
@@ -324,7 +324,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     const result = await ch.annotations.get('msg-serial-1', {});
 
@@ -371,7 +371,7 @@ describe('uts/rest/unit/channel/annotations', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret', useBinaryProtocol: false });
     const ch = client.channels.get('test');
     await ch.annotations.get('msg-serial-1', { limit: '50' } as any);
 

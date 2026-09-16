@@ -44,7 +44,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -81,7 +81,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -110,7 +110,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
 
     try {
       await client.time();
@@ -141,7 +141,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, fallbackHosts: [] });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, fallbackHosts: [] });
 
     try {
       await client.time();
@@ -173,7 +173,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -198,7 +198,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -222,7 +222,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       endpoint: 'custom.ably.example.com',
@@ -250,7 +250,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       restHost: 'custom.rest.example.com',
@@ -278,7 +278,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       environment: 'sandbox',
@@ -315,7 +315,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       fallbackHosts: customFallbacks,
@@ -347,7 +347,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       restHost: 'custom.example.com',
@@ -392,7 +392,7 @@ describe('uts/rest/unit/fallback', function () {
       });
       installMockHttp(mock);
 
-      const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+      const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
       await client.time();
 
       restoreAll();
@@ -427,7 +427,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -461,7 +461,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -495,7 +495,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -531,7 +531,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
 
     // First request: primary fails, fallback succeeds
     await client.time();
@@ -567,7 +567,7 @@ describe('uts/rest/unit/fallback', function () {
       });
       installMockHttp(mock);
 
-      const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+      const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
       const result = await client.time();
 
       expect(result).to.equal(1234567890000);
@@ -590,7 +590,7 @@ describe('uts/rest/unit/fallback', function () {
       });
       installMockHttp(mock);
 
-      const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+      const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
 
       try {
         await client.time();
@@ -628,7 +628,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
     expect(result).to.equal(1234567890000);
     expect(connCount).to.be.at.least(2);
@@ -663,7 +663,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     try {
       const result = await client.time();
       expect(result).to.equal(1234567890000);
@@ -699,7 +699,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       fallbackRetryTimeout: 100,
@@ -756,7 +756,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       fallbackRetryTimeout: 100,
@@ -807,7 +807,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'localhost' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'localhost' });
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -826,7 +826,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: '::1' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: '::1' });
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -846,7 +846,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'nonprod:staging' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'nonprod:staging' });
     await client.time();
 
     expect(captured).to.have.length(1);
@@ -865,7 +865,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       realtimeHost: 'custom.realtime.example.com',
@@ -881,7 +881,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1b1/endpoint-conflicts-environment-0
   it('REC1b1 - endpoint conflicts with environment', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', endpoint: 'test', environment: 'production' } as any);
+      new Ably.Http({ key: 'app.key:secret', endpoint: 'test', environment: 'production' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -891,7 +891,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1b1/endpoint-conflicts-resthost-1
   it('REC1b1 - endpoint conflicts with restHost', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', endpoint: 'test', restHost: 'custom.host.com' } as any);
+      new Ably.Http({ key: 'app.key:secret', endpoint: 'test', restHost: 'custom.host.com' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -901,7 +901,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1b1/endpoint-conflicts-realtimehost-2
   it('REC1b1 - endpoint conflicts with realtimeHost', function () {
     try {
-      new Ably.Rest({
+      new Ably.Http({
         key: 'app.key:secret',
         endpoint: 'custom.example.com',
         realtimeHost: 'rt.example.com',
@@ -917,7 +917,7 @@ describe('uts/rest/unit/fallback', function () {
     // SKIP: ably-js does not implement the fallbackHostsUseDefault option.
     // The option is not recognized, so no conflict validation occurs.
     try {
-      new Ably.Rest({
+      new Ably.Http({
         key: 'app.key:secret',
         endpoint: 'custom.example.com',
         fallbackHostsUseDefault: true,
@@ -933,7 +933,7 @@ describe('uts/rest/unit/fallback', function () {
     // SKIP: ably-js does not implement the fallbackHostsUseDefault option.
     // The option is not recognized, so no conflict validation occurs.
     try {
-      new Ably.Rest({
+      new Ably.Http({
         key: 'app.key:secret',
         fallbackHosts: ['a.example.com'],
         fallbackHostsUseDefault: true,
@@ -947,7 +947,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1c1/environment-conflicts-resthost-0
   it('REC1c1 - environment conflicts with restHost', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', restHost: 'custom.host.com' } as any);
+      new Ably.Http({ key: 'app.key:secret', environment: 'sandbox', restHost: 'custom.host.com' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -957,7 +957,7 @@ describe('uts/rest/unit/fallback', function () {
   // UTS: rest/unit/REC1c1/environment-conflicts-realtimehost-1
   it('REC1c1 - environment conflicts with realtimeHost', function () {
     try {
-      new Ably.Rest({ key: 'app.key:secret', environment: 'sandbox', realtimeHost: 'custom.rt.com' } as any);
+      new Ably.Http({ key: 'app.key:secret', environment: 'sandbox', realtimeHost: 'custom.rt.com' } as any);
       expect.fail('Expected constructor to throw');
     } catch (error: any) {
       expect(error.code).to.equal(40106);
@@ -976,7 +976,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       restHost: 'rest.example.com',
@@ -1003,7 +1003,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       endpoint: 'custom.ably.example.com',
@@ -1038,7 +1038,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'nonprod:staging' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'nonprod:staging' });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -1068,7 +1068,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       restHost: 'custom.host.com',
@@ -1101,7 +1101,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -1129,7 +1129,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       environment: 'sandbox',
@@ -1155,7 +1155,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({
+    const client = new Ably.Http({
       key: 'app.key:secret',
       useBinaryProtocol: false,
       realtimeHost: 'custom.realtime.example.com',
@@ -1190,7 +1190,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
+    const client = new Ably.Http({ key: 'app.key:secret', useBinaryProtocol: false, endpoint: 'test' });
     const result = await client.time();
 
     expect(result).to.equal(1234567890000);
@@ -1205,7 +1205,7 @@ describe('uts/rest/unit/fallback', function () {
   it.skip('REC3 - connectivity check response validation', function () {
     // SKIP: The connectivity check (checkConnectivity) is an internal method
     // on the Http class, used by the Realtime ConnectionManager. It is not
-    // exposed on the public Rest or Realtime client API. Testing it requires
+    // exposed on the public Http or Realtime client API. Testing it requires
     // either Realtime connection state machine integration or direct access
     // to the Http instance internals. Additionally, the mock's
     // checkConnectivity method is hardcoded and does not go through the
@@ -1216,7 +1216,7 @@ describe('uts/rest/unit/fallback', function () {
   it.skip('REC3a - default connectivity check URL', function () {
     // SKIP: The connectivity check URL is used internally by the Realtime
     // ConnectionManager's checkConnectivity method. It is not accessible
-    // from the Rest client. The mock HTTP checkConnectivity is hardcoded
+    // from the Http client. The mock HTTP checkConnectivity is hardcoded
     // to use the default URL and does not capture request details in a way
     // that allows URL verification. Testing requires Realtime client
     // integration with mock WebSocket + mock HTTP, which is beyond the
@@ -1252,7 +1252,7 @@ describe('uts/rest/unit/fallback', function () {
     });
     installMockHttp(mock);
 
-    const client = new Ably.Rest({ key: 'appId.keyId:keySecret' });
+    const client = new Ably.Http({ key: 'appId.keyId:keySecret' });
     await client.time();
 
     expect(captured).to.have.length(2);
