@@ -8,13 +8,13 @@
 import * as crypto from 'crypto';
 import testAppSetup from '../../../common/ably-common/test-resources/test-app-setup.json';
 import '../../../../src/platform/nodejs';
-import { DefaultRealtime } from '../../../../src/common/lib/client/defaultrealtime';
-import { DefaultHttp } from '../../../../src/common/lib/client/defaulthttp';
+import { DefaultPubSubRealtimeClient } from '../../../../src/common/lib/client/defaultpubsubrealtimeclient';
+import { DefaultPubSubHttpClient } from '../../../../src/common/lib/client/defaultpubsubhttpclient';
 import ErrorInfo from '../../../../src/common/lib/types/errorinfo';
 
 const Ably = {
-  Http: DefaultHttp,
-  Realtime: DefaultRealtime,
+  Http: DefaultPubSubHttpClient,
+  Realtime: DefaultPubSubRealtimeClient,
   ErrorInfo,
 };
 

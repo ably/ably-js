@@ -2,7 +2,7 @@
 
 The Ably Pub/Sub client for **servers**: backend services and other trusted runtimes you operate.
 
-This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's entire public API and adds factories that additionally declare which side of the connection you are on, so that your own backend services are not billed as your users. Use [`@ably/pubsub-device`](https://www.npmjs.com/package/@ably/pubsub-device) for code running on an end user's device instead.
+This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's entire public API and creates clients through factories that declare which side of the connection you are on, so that your own backend services are not billed as your users. Use [`@ably/pubsub-device`](https://www.npmjs.com/package/@ably/pubsub-device) for code running on an end user's device instead.
 
 ## Installation
 
@@ -31,7 +31,7 @@ await realtime.channels.get('test-channel').subscribe((message) => {
 });
 ```
 
-Both return exactly what the `Http` and `Realtime` constructors return, so everything in the [Ably Pub/Sub JavaScript documentation](https://ably.com/docs/getting-started/javascript) applies unchanged. The only difference is that these clients declare themselves servers.
+They return a `PubSubHttpClient` and a `PubSubRealtimeClient`, the clients that everything in the [Ably Pub/Sub JavaScript documentation](https://ably.com/docs/getting-started/javascript) describes. The factories are the only way to create them: this package exports no client class to construct, because a client constructed directly would declare no side.
 
 ## Entry points
 
@@ -45,6 +45,14 @@ Everything the core SDK exposes is re-exported here, so you never need to add `@
 ```javascript
 import { createRealtimeClient } from '@ably/pubsub-server';
 import { LiveObjects } from '@ably/pubsub-server/liveobjects';
+```
+
+The root entry point also exports the `Message`, `PresenceMessage`, `Annotation` and `Crypto` classes, whose static methods need no client: for example, `Message.fromEncoded()` decodes a message received from a source other than a channel, such as a webhook or a queue.
+
+```javascript
+import { Message } from '@ably/pubsub-server';
+
+const message = await Message.fromEncoded(webhookPayload, { cipher: { key } });
 ```
 
 The LiveObjects plugin is the same object the core exports, not a copy, so a client built here accepts it as the plugin it expects. It carries no side of its own and is available from both packages.
@@ -65,20 +73,20 @@ The agent entry these factories send is what Ably classifies on, so no further c
 
 A client that declares itself a server without that claim is **rejected**, not quietly treated as a device. So if you authenticate with `authUrl` or `authCallback`, add the claim to the tokens your auth service issues **before** you deploy this package. Rolling this package out ahead of that change will break the connection rather than degrade it.
 
-## Migrating from `@ably/pubsub-core`
+## Migrating from `ably`
 
 Replace the constructors with the matching factory, and change the import:
 
 ```diff
-- import * as Ably from '@ably/pubsub-core';
-- const http = new Ably.Http({ key });
+- import * as Ably from 'ably';
+- const http = new Ably.Rest({ key });
 - const realtime = new Ably.Realtime({ key });
 + import { createHttpClient, createRealtimeClient } from '@ably/pubsub-server';
 + const http = createHttpClient({ key });
 + const realtime = createRealtimeClient({ key });
 ```
 
-Nothing else changes, other than the token-auth requirement above. The `Http` and `Realtime` constructors still work and are not going away; they simply declare no side, which means Ably has to fall back to its default classification.
+Replace the `Message`, `PresenceMessage`, `Annotation` and `Crypto` statics on the client classes with the classes of the same names, imported from this package. Replace the `Ably.RestClient` and `Ably.RealtimeClient` types with `PubSubHttpClient` and `PubSubRealtimeClient`. Nothing else changes, other than the token-auth requirement above.
 
 Only use this package for code you operate. Installing it in an application that ships to end users would declare those users servers and stop them being counted, which is not something to rely on.
 

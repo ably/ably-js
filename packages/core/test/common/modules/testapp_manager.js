@@ -3,7 +3,7 @@
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'ably'], function (ablyGlobals, ably) {
-  const Defaults = ably.Realtime.Platform.Defaults;
+  const Defaults = ably.DefaultPubSubRealtimeClient.Platform.Defaults;
   var restHost = Defaults.getPrimaryDomainFromEndpoint(ablyGlobals.endpoint),
     port = ablyGlobals.tls ? ablyGlobals.tlsPort : ablyGlobals.port,
     scheme = ablyGlobals.tls ? 'https' : 'http';
@@ -44,7 +44,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
 
   function toBase64(helper, str) {
     helper = helper.addingHelperFunction('toBase64');
-    var bufferUtils = ably.Realtime.Platform.BufferUtils;
+    var bufferUtils = ably.DefaultPubSubRealtimeClient.Platform.BufferUtils;
     helper.recordPrivateApi('call.BufferUtils.utf8Encode');
     var buffer = bufferUtils.utf8Encode(str);
     helper.recordPrivateApi('call.BufferUtils.base64Encode');

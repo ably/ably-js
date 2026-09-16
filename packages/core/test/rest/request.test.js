@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var http;
   var expect = chai.expect;
-  var Defaults = Ably.Http.Platform.Defaults;
+  var Defaults = Ably.DefaultPubSubHttpClient.Platform.Defaults;
 
   describe('http/request', function () {
     this.timeout(60 * 1000);

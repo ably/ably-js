@@ -9,8 +9,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     let initialXhrSupported;
     before(function (done) {
       const helper = Helper.forHook(this);
-      initialXhrSupported = Ably.Http.Platform.Config.xhrSupported;
-      Ably.Http.Platform.Config.xhrSupported = false;
+      initialXhrSupported = Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported;
+      Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported = false;
       helper.setupApp(function () {
         http = helper.AblyHttp();
         done();
@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     after((done) => {
-      Ably.Http.Platform.Config.xhrSupported = initialXhrSupported;
+      Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported = initialXhrSupported;
       done();
     });
 

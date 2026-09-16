@@ -2,7 +2,7 @@
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   const { assert } = chai;
-  const Crypto = Ably.Realtime.Platform.Crypto;
+  const Crypto = Ably.DefaultPubSubRealtimeClient.Platform.Crypto;
   describe('realtime/annotations', function () {
     this.timeout(10 * 1000);
     let http, helper, realtime;

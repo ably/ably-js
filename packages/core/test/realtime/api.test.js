@@ -10,7 +10,7 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @nospec
      */
     it('Client constructors', function () {
-      expect(typeof Ably.Realtime).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient).to.equal('function');
     });
 
     /**
@@ -19,7 +19,7 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @specpartial RTC12
      */
     it('constructor without any arguments', function () {
-      expect(() => new Ably.Realtime()).to.throw(
+      expect(() => new Ably.DefaultPubSubRealtimeClient()).to.throw(
         'must be initialized with either a client options object, an Ably API key, or an Ably Token',
       );
     });
@@ -29,23 +29,23 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec RSE2
      */
     it('Crypto', function () {
-      expect(typeof Ably.Realtime.Crypto).to.equal('function');
-      expect(typeof Ably.Realtime.Crypto.getDefaultParams).to.equal('function');
-      expect(typeof Ably.Realtime.Crypto.generateRandomKey).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Crypto).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Crypto.getDefaultParams).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Crypto.generateRandomKey).to.equal('function');
     });
 
     /** @specpartial TM3 - tests only functions exist */
     it('Message', function () {
-      expect(typeof Ably.Realtime.Message).to.equal('function');
-      expect(typeof Ably.Realtime.Message.fromEncoded).to.equal('function');
-      expect(typeof Ably.Realtime.Message.fromEncodedArray).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Message).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Message.fromEncoded).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.Message.fromEncodedArray).to.equal('function');
     });
 
     /** @specpartial TP4 - tests only functions exist */
     it('PresenceMessage', function () {
-      expect(typeof Ably.Realtime.PresenceMessage).to.equal('function');
-      expect(typeof Ably.Realtime.PresenceMessage.fromEncoded).to.equal('function');
-      expect(typeof Ably.Realtime.PresenceMessage.fromEncodedArray).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.PresenceMessage).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.PresenceMessage.fromEncoded).to.equal('function');
+      expect(typeof Ably.DefaultPubSubRealtimeClient.PresenceMessage.fromEncodedArray).to.equal('function');
     });
   });
 });

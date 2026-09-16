@@ -17,7 +17,7 @@ function generateRandomId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-const client = new Ably.Realtime({
+const client = new Ably.DefaultPubSubRealtimeClient({
   key: import.meta.env.VITE_ABLY_API_KEY,
   clientId: generateRandomId(),
 });

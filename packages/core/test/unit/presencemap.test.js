@@ -2,7 +2,7 @@
 
 define(['chai', 'ably'], function (chai, Ably) {
   const { assert } = chai;
-  const PresenceMap = Ably.Realtime._PresenceMap;
+  const PresenceMap = Ably.DefaultPubSubRealtimeClient._PresenceMap;
 
   class MockRealtimePresence {}
 

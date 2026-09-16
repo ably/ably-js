@@ -10,7 +10,7 @@ import { ChannelProvider } from '../ChannelProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
   return render(
-    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+    <AblyProvider client={client as unknown as Ably.PubSubRealtimeClient}>
       <ChannelProvider channelName="blah">{children}</ChannelProvider>
     </AblyProvider>,
   );
@@ -66,7 +66,7 @@ describe('useChannel', () => {
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider client={otherClient as unknown as Ably.RealtimeClient} ablyId="otherClient">
+      <AblyProvider client={otherClient as unknown as Ably.PubSubRealtimeClient} ablyId="otherClient">
         <ChannelProvider channelName="bleh" ablyId="otherClient">
           <UseChannelComponentMultipleClients />
         </ChannelProvider>
@@ -137,7 +137,7 @@ describe('useChannel', () => {
   it('history function is returned and callable', async () => {
     const { result } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="blah">{children}</ChannelProvider>
         </AblyProvider>
       ),
@@ -156,7 +156,7 @@ describe('useChannel', () => {
   it('history returns previously published messages', async () => {
     const { result } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="blah">{children}</ChannelProvider>
         </AblyProvider>
       ),
@@ -175,7 +175,7 @@ describe('useChannel', () => {
   it('history with params delegates to channel.history', async () => {
     const { result } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="blah">{children}</ChannelProvider>
         </AblyProvider>
       ),
@@ -194,7 +194,7 @@ describe('useChannel', () => {
   it('history has referential stability across re-renders', async () => {
     const { result, rerender } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="blah">{children}</ChannelProvider>
         </AblyProvider>
       ),
@@ -293,7 +293,7 @@ describe('useChannel with deriveOptions', () => {
   it('component can use "publish" for channel with "deriveOptions"', async () => {
     const { result } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="blah" deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}>
             {children}
           </ChannelProvider>
@@ -580,7 +580,7 @@ describe('useChannel with deriveOptions', () => {
   it('history function works with derived channels', async () => {
     const { result } = renderHook(() => useChannel(Channels.tasks), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider
             channelName={Channels.tasks}
             deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}

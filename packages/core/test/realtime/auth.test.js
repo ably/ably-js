@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var exports = {};
   var expect = chai.expect;
   var _exports = {};
-  var http = new Ably.Realtime._HttpRequester();
+  var http = new Ably.DefaultPubSubRealtimeClient._HttpRequester();
   var jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1);
   var echoServer = 'https://echo.ably.io';
 

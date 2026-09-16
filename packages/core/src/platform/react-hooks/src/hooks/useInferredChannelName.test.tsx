@@ -26,7 +26,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
 
   const wrapInProviders = (channelName: string, children: React.ReactNode) =>
     render(
-      <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+      <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
         <ChannelProvider channelName={channelName}>{children}</ChannelProvider>
       </AblyProvider>,
     );
@@ -60,7 +60,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
   it('useChannel() returns a publish bound to the surrounding channel', async () => {
     const { result } = renderHook(() => useChannel(), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="inner">{children}</ChannelProvider>
         </AblyProvider>
       ),
@@ -74,7 +74,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
   it('useChannel() publish works for a derived surrounding channel', async () => {
     const { result } = renderHook(() => useChannel(), {
       wrapper: ({ children }) => (
-        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+        <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
           <ChannelProvider channelName="inner" deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}>
             {children}
           </ChannelProvider>
@@ -105,7 +105,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
     };
 
     render(
-      <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+      <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
         <ChannelProvider channelName="outer">
           <ChannelProvider channelName="inner">
             <Component />
@@ -139,7 +139,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
     };
 
     render(
-      <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+      <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
         <ChannelProvider channelName="outer">
           <ChannelProvider channelName="inner">
             <Component />
@@ -169,7 +169,7 @@ describe('inferring the channel name from the nearest ChannelProvider', () => {
     try {
       expect(() =>
         render(
-          <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <AblyProvider client={ablyClient as unknown as Ably.PubSubRealtimeClient}>
             <Component />
           </AblyProvider>,
         ),

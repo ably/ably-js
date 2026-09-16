@@ -3,7 +3,7 @@
 /* Shared test helper used for creating Http and Real-time clients */
 
 define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably, ablyGlobals, testAppHelper) {
-  var utils = Ably.Realtime.Utils;
+  var utils = Ably.DefaultPubSubRealtimeClient.Utils;
 
   /* Ably's public test-support echo server, unrelated to the app under test. */
   var echoServerHost = 'echo.ably.io';
@@ -44,7 +44,7 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
 
   function ablyHttp(helper, options) {
     helper = helper.addingHelperFunction('ablyHttp');
-    return new Ably.Http(ablyClientOptions(helper, options));
+    return new Ably.DefaultPubSubHttpClient(ablyClientOptions(helper, options));
   }
 
   /* A Http client pointed at the echo server rather than the app's endpoint. Drops the app's
@@ -57,12 +57,12 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
     delete clientOptions.tlsPort;
     clientOptions.endpoint = echoServerHost;
     clientOptions.tls = true;
-    return new Ably.Http(clientOptions);
+    return new Ably.DefaultPubSubHttpClient(clientOptions);
   }
 
   function ablyRealtime(helper, options) {
     helper = helper.addingHelperFunction('ablyRealtime');
-    return new Ably.Realtime(ablyClientOptions(helper, options));
+    return new Ably.DefaultPubSubRealtimeClient(ablyClientOptions(helper, options));
   }
 
   return (module.exports = {

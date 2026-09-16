@@ -2,7 +2,7 @@
 
 define(['ably', 'chai'], function (Ably, chai) {
   var expect = chai.expect;
-  var Defaults = Ably.Realtime.Platform.Defaults;
+  var Defaults = Ably.DefaultPubSubRealtimeClient.Platform.Defaults;
 
   describe('http/defaults', function () {
     /**
@@ -259,7 +259,7 @@ define(['ably', 'chai'], function (Ably, chai) {
 
     // TODO once https://github.com/ably/ably-js/issues/1424 is fixed, this should also test the case where the useBinaryProtocol option is not specified
     describe('normaliseOptions with useBinaryProtocol == true', () => {
-      if (Ably.Realtime.Platform.Config.supportsBinary) {
+      if (Ably.DefaultPubSubRealtimeClient.Platform.Config.supportsBinary) {
         describe('given MsgPack implementation', () => {
           /** @spec TO3f */
           it('maintains useBinaryProtocol as true', function () {

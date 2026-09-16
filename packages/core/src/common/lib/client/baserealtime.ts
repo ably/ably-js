@@ -15,7 +15,7 @@ import { TransportImplementations } from 'common/platform';
 import Defaults from '../util/defaults';
 
 /**
- `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
+ `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultPubSubRealtimeClient` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: RealtimePresencePlugin | null;

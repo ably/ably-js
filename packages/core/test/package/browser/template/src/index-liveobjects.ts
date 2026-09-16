@@ -1,4 +1,4 @@
-import { Realtime, Http } from '@ably/pubsub-core';
+import { createHttpClient, createRealtimeClient } from '@ably/pubsub-server';
 import {
   AnyPathObject,
   CompactedJsonValue,
@@ -14,7 +14,7 @@ import {
   HttpObjectGetFullResult,
   HttpObject,
   HttpObjectPublishResult,
-} from '@ably/pubsub-core/liveobjects';
+} from '@ably/pubsub-server/liveobjects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -42,7 +42,7 @@ type MyCustomObject = {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
+  const realtime = createRealtimeClient({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   await channel.attach();
@@ -125,7 +125,7 @@ globalThis.testAblyPackage = async function () {
     | undefined = compactJson;
 
   // REST client LiveObjects type checks
-  const http = new Http({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
+  const http = createHttpClient({ key, endpoint: 'nonprod:sandbox', plugins: { LiveObjects } });
   const httpChannel = http.channels.get('channel');
 
   // check HttpObject is accessible on a REST channel

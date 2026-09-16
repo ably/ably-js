@@ -1,5 +1,5 @@
 define(['ably'], function (Ably) {
-  var Defaults = Ably.Realtime.Platform.Defaults;
+  var Defaults = Ably.DefaultPubSubRealtimeClient.Platform.Defaults;
   var ErrorInfo = Ably.ErrorInfo;
   return (module.exports = {
     getPushDeviceDetails: function (machine) {

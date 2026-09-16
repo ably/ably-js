@@ -525,7 +525,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 }
               });
               helper.recordPrivateApi('call.Platform.nextTick');
-              Ably.Realtime.Platform.Config.nextTick(function () {
+              Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
                 failureFn(realtime, helper.withParameterisedTestTitle(null));
               });
             },
@@ -624,7 +624,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 helper.recordPrivateApi('call.Platform.nextTick');
                 helper.recordPrivateApi('read.connectionManager.queuedMessages');
                 while (true) {
-                  await new Promise((res) => Ably.Realtime.Platform.Config.nextTick(res));
+                  await new Promise((res) => Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(res));
                   if (realtime.connection.connectionManager.queuedMessages.count() > 0) {
                     failureFn(realtime, helper.withParameterisedTestTitle(null));
                     break;

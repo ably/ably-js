@@ -39,7 +39,7 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
 
       beforeEach(async function () {
         Object.values(persistKeys).forEach((key) => {
-          Ably.Realtime.Platform.Config.push.storage.remove(key);
+          Ably.DefaultPubSubRealtimeClient.Platform.Config.push.storage.remove(key);
         });
 
         const worker = await navigator.serviceWorker.getRegistration(swUrl);

@@ -24,19 +24,22 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     it('http_connectivity_check', function (done) {
       const helper = this.test.helper;
       helper.recordPrivateApi('call.httpRequester.checkConnectivity');
-      Helper.whenPromiseSettles(new Ably.Realtime._HttpRequester().checkConnectivity(), function (err, res) {
-        try {
-          expect(
-            res && !err,
-            'Connectivity check completed ' +
-              (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
-          ).to.be.ok;
-        } catch (err) {
-          done(err);
-          return;
-        }
-        done();
-      });
+      Helper.whenPromiseSettles(
+        new Ably.DefaultPubSubRealtimeClient._HttpRequester().checkConnectivity(),
+        function (err, res) {
+          try {
+            expect(
+              res && !err,
+              'Connectivity check completed ' +
+                (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+            ).to.be.ok;
+          } catch (err) {
+            done(err);
+            return;
+          }
+          done();
+        },
+      );
     });
 
     function options(helper, connectivityCheckUrl, disableConnectivityCheck) {

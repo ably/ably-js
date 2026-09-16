@@ -2,7 +2,7 @@
  * The tree-shakable variant of the core, plus a factory that declares the device side.
  *
  * Build a client from `BaseRealtime` and only the plugins you need, rather than the all-in-one
- * `Realtime` the root entry point exports. You must supply at least one HTTP request implementation
+ * client the root entry point's `createClient` returns. You must supply at least one HTTP request implementation
  * and, for a realtime client, at least one transport.
  *
  * ```javascript
@@ -21,7 +21,38 @@
 import type { BaseRealtime, ModularPlugins } from '@ably/pubsub-core/modular';
 import type { ClientOptions, CorePlugins } from '@ably/pubsub-core';
 
-export * from '@ably/pubsub-core/modular';
+// Enumerated rather than star-re-exported so that `BaseHttp`, the core's tree-shakable stateless HTTP
+// client, stays out: this package offers no HTTP client. The `Http` plugin stays in, because it is
+// not a client — it is what gives a `BaseRealtime` history, stats, `request()` and the other REST
+// features. A name the core's modular variant adds must be added here too, or it is not exported.
+export {
+  generateRandomKey,
+  getDefaultCryptoParams,
+  decodeMessage,
+  decodeEncryptedMessage,
+  decodeMessages,
+  decodeEncryptedMessages,
+  decodePresenceMessage,
+  decodePresenceMessages,
+  decodeEncryptedPresenceMessage,
+  decodeEncryptedPresenceMessages,
+  constructPresenceMessage,
+  decodeAnnotation,
+  decodeAnnotations,
+  Http,
+  Crypto,
+  MsgPack,
+  RealtimePresence,
+  Annotations,
+  WebSocketTransport,
+  XHRPolling,
+  XHRRequest,
+  FetchRequest,
+  MessageInteractions,
+  BaseRealtime,
+  ErrorInfo,
+} from '@ably/pubsub-core/modular';
+export type { ModularPlugins } from '@ably/pubsub-core/modular';
 
 /**
  * Creates a realtime client that declares the device side, so that Ably counts its traffic as an

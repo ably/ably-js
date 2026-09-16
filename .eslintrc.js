@@ -41,7 +41,7 @@ module.exports = {
       },
     },
     {
-      files: ['packages/core/ably.d.ts', 'packages/core/modular.d.ts'],
+      files: ['packages/core/types.d.ts', 'packages/core/http.d.ts', 'packages/core/modular.d.ts'],
       extends: ['plugin:jsdoc/recommended'],
       rules: {
         'jsdoc/check-tag-names': ['warn', { definedTags: ['experimental'] }],

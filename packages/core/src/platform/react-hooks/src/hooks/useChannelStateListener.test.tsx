@@ -11,7 +11,7 @@ import { ChannelProvider } from '../ChannelProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
   return render(
-    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+    <AblyProvider client={client as unknown as Ably.PubSubRealtimeClient}>
       <ChannelProvider channelName="blah">{children}</ChannelProvider>
     </AblyProvider>,
   );

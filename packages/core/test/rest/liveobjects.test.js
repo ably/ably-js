@@ -8,7 +8,7 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   LiveObjectsHelper,
 ) {
   const expect = chai.expect;
-  const Platform = Ably.Realtime.Platform;
+  const Platform = Ably.DefaultPubSubRealtimeClient.Platform;
   const BufferUtils = Platform.BufferUtils;
   const liveobjectsFixturesChannel = 'rest_liveobjects_fixtures';
   const waitFixtureChannelIsReady = LiveObjectsHelper.waitFixtureChannelIsReady;

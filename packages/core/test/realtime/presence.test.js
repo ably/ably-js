@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   const { expect, assert } = chai;
   var createPM = Ably.makeProtocolMessageFromDeserialized();
-  var PresenceMessage = Ably.Realtime.PresenceMessage;
+  var PresenceMessage = Ably.DefaultPubSubRealtimeClient.PresenceMessage;
 
   function extractClientIds(presenceSet) {
     return presenceSet
@@ -2017,7 +2017,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             channel.presence.subscribe('enter', function () {
               channel.presence.unsubscribe('enter');
               helper.recordPrivateApi('call.Platform.nextTick');
-              Ably.Realtime.Platform.Config.nextTick(cb);
+              Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(cb);
             });
           },
           function (cb) {

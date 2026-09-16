@@ -2,7 +2,7 @@
 
 The Ably Pub/Sub client for **devices**: browsers, React Native, Electron, mobile and desktop apps, and any other runtime where the code runs under an end user's control.
 
-This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's entire public API and adds a factory that additionally declares which side of the connection you are on, so Ably can tell your users apart from your own backend services. Use [`@ably/pubsub-server`](https://www.npmjs.com/package/@ably/pubsub-server) for a backend service instead.
+This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's public API, minus the stateless HTTP client a device has no use for, and creates clients through a factory that declares which side of the connection you are on, so Ably can tell your users apart from your own backend services. Use [`@ably/pubsub-server`](https://www.npmjs.com/package/@ably/pubsub-server) for a backend service instead.
 
 ## Installation
 
@@ -29,17 +29,19 @@ await channel.subscribe((message) => {
 await channel.publish('test-event', 'hello world');
 ```
 
-`createClient` returns exactly the client the `Realtime` constructor returns, so everything in the [Ably Pub/Sub JavaScript documentation](https://ably.com/docs/getting-started/javascript) applies unchanged. The only difference is that this client declares itself a device.
+`createClient` returns a `PubSubClient`, the realtime client that everything in the [Ably Pub/Sub JavaScript documentation](https://ably.com/docs/getting-started/javascript) describes. It is the only way to create one: this package exports no client class to construct, because a client constructed directly would declare no side.
+
+`PubSubClient` is the name this package gives the core's `PubSubRealtimeClient` interface, and either name works in a type annotation.
 
 In production, prefer [token authentication](https://ably.com/docs/auth/token) over embedding an API key in code that ships to a device.
 
 ## Entry points
 
-Everything the core SDK exposes is re-exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
+Everything a device needs from the core SDK is re-exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
 
 | Import from                             | What you get                                                          |
 | --------------------------------------- | --------------------------------------------------------------------- |
-| `@ably/pubsub-device`                   | `createClient`, plus the core's entire public API and type surface    |
+| `@ably/pubsub-device`                   | `createClient`, plus the core's public API and type surface           |
 | `@ably/pubsub-device/modular`           | `createClient` over the tree-shakable `BaseRealtime`, and its plugins |
 | `@ably/pubsub-device/react`             | The React hooks: `AblyProvider`, `useChannel`, `usePresence`, …       |
 | `@ably/pubsub-device/liveobjects`       | The LiveObjects plugin                                                |
@@ -52,6 +54,14 @@ import { createClient } from '@ably/pubsub-device';
 import { AblyProvider, useChannel } from '@ably/pubsub-device/react';
 import { LiveObjects } from '@ably/pubsub-device/liveobjects';
 import { Push } from '@ably/pubsub-device/push';
+```
+
+The root entry point also exports the `Message`, `PresenceMessage`, `Annotation` and `Crypto` classes, whose static methods need no client: for example, `Message.fromEncoded()` decodes a message received from a source other than a channel, such as a webhook or a queue, and `Crypto.generateRandomKey()` generates a key for an encrypted channel.
+
+```javascript
+import { Message, Crypto } from '@ably/pubsub-device';
+
+const message = await Message.fromEncoded(webhookPayload, { cipher: { key } });
 ```
 
 Every subpath exports under a name, so the import spelling is the same whichever one you reach for, and the same under both module systems. Each is the same object the core exports, not a copy, so a plugin registered from here is the one the client expects.
@@ -71,20 +81,20 @@ Traffic from `@ably/pubsub-server` is exempt from both.
 
 Choose between the two packages by who owns the runtime, not by which side is cheaper to declare. Code that runs on an end user's device (a browser tab, a mobile app, a desktop app) belongs on `@ably/pubsub-device`; code that runs on infrastructure you operate belongs on `@ably/pubsub-server`. Declaring the device side from a backend service inflates your monthly active user count and subjects that service to the per-client-ID concurrency limit; declaring the server side from a device claims an exemption it is not entitled to.
 
-## Migrating from `@ably/pubsub-core`
+## Migrating from `ably`
 
 Replace the `Realtime` constructor with `createClient`, and change the import:
 
 ```diff
-- import * as Ably from '@ably/pubsub-core';
+- import * as Ably from 'ably';
 - const client = new Ably.Realtime({ key, clientId: 'me' });
 + import { createClient } from '@ably/pubsub-device';
 + const client = createClient({ key, clientId: 'me' });
 ```
 
-Nothing else changes. The `Realtime` constructor still works and is not going away; it simply declares no side, which means Ably has to fall back to its default classification.
+Replace the `Realtime.Message`, `Realtime.PresenceMessage`, `Realtime.Annotation` and `Realtime.Crypto` statics with the classes of the same names, imported from this package. Replace the `Ably.RealtimeClient` type with `PubSubClient`. Nothing else changes.
 
-This package ships no HTTP-only factory. If you need a stateless REST client on a device, use the `Http` constructor this package re-exports — `import { Http } from '@ably/pubsub-device'` — which, like the `Realtime` constructor, declares no side. Do not reach for `@ably/pubsub-server`, which would declare your device a server and claim an exemption it is not entitled to.
+This package offers no stateless HTTP client. The realtime client covers what a device needs from Ably's REST API, including history, `request()`, `stats()` and `time()`. Do not reach for `@ably/pubsub-server` for an HTTP client, which would declare your device a server and claim an exemption it is not entitled to.
 
 ## Support, feedback, and troubleshooting
 

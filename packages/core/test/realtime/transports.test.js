@@ -2,18 +2,18 @@
 
 define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai, Ably) {
   const expect = chai.expect;
-  const Defaults = Ably.Http.Platform.Defaults;
+  const Defaults = Ably.DefaultPubSubHttpClient.Platform.Defaults;
   const originialWsCheckUrl = Defaults.wsConnectivityCheckUrl;
   const transportPreferenceName = 'ably-transport-preference';
   const localStorageSupported = globalThis.localStorage;
   const urlScheme = 'https://';
   const echoServer = 'echo.ably.io';
   const failUrl = urlScheme + echoServer + '/respondwith?status=500';
-  const defaultTransports = new Ably.Realtime({ key: 'xxx:yyy', autoConnect: false }).connection.connectionManager
-    .transports;
+  const defaultTransports = new Ably.DefaultPubSubRealtimeClient({ key: 'xxx:yyy', autoConnect: false }).connection
+    .connectionManager.transports;
 
   function baseTransport(helper) {
-    return new Ably.Realtime({
+    return new Ably.DefaultPubSubRealtimeClient({
       key: 'xxx:yyy',
       autoConnect: false,
       transports: helper.availableTransports,
@@ -25,7 +25,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
     Defaults.wsConnectivityCheckUrl = originialWsCheckUrl;
   }
 
-  const Config = Ably.Http.Platform.Config;
+  const Config = Ably.DefaultPubSubHttpClient.Platform.Config;
   const oldWs = Config.WebSocket;
 
   function restoreWebSocketConstructor() {

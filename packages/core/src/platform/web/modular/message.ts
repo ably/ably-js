@@ -7,16 +7,16 @@ import Logger from '../../../common/lib/util/logger';
 
 export const decodeMessage = ((obj, options) => {
   return fromEncoded(Logger.defaultLogger, null, obj, options);
-}) as API.MessageStatic['fromEncoded'];
+}) as typeof API.Message.fromEncoded;
 
 export const decodeEncryptedMessage = ((obj, options) => {
   return fromEncoded(Logger.defaultLogger, Crypto, obj, options);
-}) as API.MessageStatic['fromEncoded'];
+}) as typeof API.Message.fromEncoded;
 
 export const decodeMessages = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, null, obj, options);
-}) as API.MessageStatic['fromEncodedArray'];
+}) as typeof API.Message.fromEncodedArray;
 
 export const decodeEncryptedMessages = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, Crypto, obj, options);
-}) as API.MessageStatic['fromEncodedArray'];
+}) as typeof API.Message.fromEncodedArray;

@@ -2,9 +2,9 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  let config = Ably.Realtime.Platform.Config;
+  let config = Ably.DefaultPubSubRealtimeClient.Platform.Config;
   var createPM = Ably.makeProtocolMessageFromDeserialized();
-  var Message = Ably.Realtime.Message;
+  var Message = Ably.DefaultPubSubRealtimeClient.Message;
 
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function () {

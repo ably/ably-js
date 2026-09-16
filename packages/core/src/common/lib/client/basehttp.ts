@@ -5,7 +5,7 @@ import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 
 /**
- `BaseHttp` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultHttp` class exported by the non tree-shakable version.
+ `BaseHttp` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultPubSubHttpClient` class exported by the non tree-shakable version.
 
  It always includes the `Http` plugin.
  */

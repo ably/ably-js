@@ -69,7 +69,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = new helper.Ably.Realtime(keyStr);
+        realtime = new helper.Ably.DefaultPubSubRealtimeClient(keyStr);
 
         try {
           helper.recordPrivateApi('read.realtime.options.key');
@@ -107,7 +107,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
           }
 
           var tokenStr = tokenDetails.token,
-            realtime = new helper.Ably.Realtime(tokenStr);
+            realtime = new helper.Ably.DefaultPubSubRealtimeClient(tokenStr);
 
           try {
             helper.recordPrivateApi('read.realtime.options.token');
@@ -258,7 +258,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
         expect(function () {
-          realtime = new helper.Ably.Realtime({ key: keyStr, useTokenAuth: false, clientId: 'foo' });
+          realtime = new helper.Ably.DefaultPubSubRealtimeClient({ key: keyStr, useTokenAuth: false, clientId: 'foo' });
         }).to.throw;
         done();
       } catch (err) {
@@ -276,7 +276,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         /* want to check the default host when no custom environment or custom
          * host set, so not using helpers.realtime this time, which will use a
          * test env */
-        const realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
+        const realtime = new Ably.DefaultPubSubRealtimeClient({ key: 'not_a.real:key', autoConnect: false });
         helper.recordPrivateApi('read.connectionManager.domains');
         helper.recordPrivateApi('read.realtime.options.primaryDomain');
         expect(realtime.options.primaryDomain).to.equal(
@@ -494,7 +494,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       realtime.connection.once('connected', function () {
         try {
           helper.recordPrivateApi('call.httpRequester._getHosts');
-          var hosts = new Ably.Http._HttpRequester()._getHosts(realtime);
+          var hosts = new Ably.DefaultPubSubHttpClient._HttpRequester()._getHosts(realtime);
           /* the primary domain is the HTTP host, which is what connectionManager
            * knows about; the websocketTransport derives the realtime host from it */
           helper.recordPrivateApi('read.realtime.options.primaryDomain');
@@ -522,7 +522,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       });
       realtime.connection.once('connected', function () {
         helper.recordPrivateApi('call.httpRequester._getHosts');
-        var hosts = new Ably.Realtime._HttpRequester()._getHosts(realtime);
+        var hosts = new Ably.DefaultPubSubRealtimeClient._HttpRequester()._getHosts(realtime);
         /* the primary domain is the HTTP host, which is what connectionManager
          * knows about; the websocketTransport derives the realtime host from it */
         try {

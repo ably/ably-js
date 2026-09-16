@@ -70,6 +70,35 @@ globalThis.testAblyPackage = async function () {
   void withPlugins.channels.get('channel').push;
   withPlugins.close();
 
+  // Check the device's client type goes by both names, and the static helpers are classes both
+  // packages export by name.
+  const deviceClient: PubSubDevice.PubSubClient = device;
+  const sameClient: PubSubDevice.PubSubRealtimeClient = deviceClient;
+  void sameClient;
+  const presenceMessage: PubSubServer.PresenceMessage = PubSubServer.PresenceMessage.fromValues({ clientId: 'x' });
+  void presenceMessage;
+  void PubSubDevice.Message.fromEncoded;
+  void PubSubDevice.Annotation.fromEncodedArray;
+  void PubSubDevice.Crypto.generateRandomKey;
+
+  // A client constructed directly declares no side, so neither package exposes a client class.
+  // @ts-expect-error
+  void PubSubDevice.DefaultPubSubRealtimeClient;
+  // @ts-expect-error
+  void PubSubServer.DefaultPubSubHttpClient;
+
+  // The device has no HTTP client, so neither its factory nor the types only it reaches are exported.
+  // @ts-expect-error
+  void PubSubDevice.createHttpClient;
+  // @ts-expect-error
+  type DeviceHttpClient = PubSubDevice.PubSubHttpClient;
+  // @ts-expect-error
+  type DeviceRestChannel = PubSubDevice.Channel;
+  // @ts-expect-error
+  void PubSubDeviceModular.BaseHttp;
+  const serverRestChannel: PubSubServer.Channel = serverHttp.channels.get('channel');
+  void serverRestChannel;
+
   // Check the re-exported error type is the core's, so instanceof works across the boundary.
   const error: PubSubDevice.ErrorInfo = new PubSubDevice.ErrorInfo('message', 40000, 400);
   if (!(error instanceof PubSubServer.ErrorInfo)) {

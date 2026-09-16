@@ -12,7 +12,7 @@ export interface ChannelResult {
   channel: Ably.RealtimeChannel;
   publish: Ably.RealtimeChannel['publish'];
   history: Ably.RealtimeChannel['history'];
-  ably: Ably.RealtimeClient;
+  ably: Ably.PubSubRealtimeClient;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }

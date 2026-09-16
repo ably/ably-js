@@ -17,7 +17,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     function isTransportAvailable(transport) {
-      return transport in Ably.Realtime.ConnectionManager.supportedTransports(Ably.Realtime._transports);
+      return (
+        transport in
+        Ably.DefaultPubSubRealtimeClient.ConnectionManager.supportedTransports(
+          Ably.DefaultPubSubRealtimeClient._transports,
+        )
+      );
     }
 
     function realtimeConnection(helper, transports) {

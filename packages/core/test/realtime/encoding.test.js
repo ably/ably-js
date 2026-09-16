@@ -2,8 +2,8 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  var Defaults = Ably.Http.Platform.Defaults;
+  var BufferUtils = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils;
+  var Defaults = Ably.DefaultPubSubHttpClient.Platform.Defaults;
 
   function encodingFixturesPath(helper) {
     return helper.testResourcesPath + 'messages-encoding.json';

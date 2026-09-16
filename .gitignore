@@ -5,6 +5,8 @@ node_modules
 npm-debug.log
 .tool-versions
 packages/core/liveobjects.d.mts
+packages/core/liveobjects-types.d.mts
+packages/core/liveobjects-http.d.mts
 build/
 packages/*/dist/
 *.tgz

@@ -19,7 +19,7 @@ async function flushEffects() {
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
   const renderResult = render(
-    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+    <AblyProvider client={client as unknown as Ably.PubSubRealtimeClient}>
       <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
     </AblyProvider>,
   );
@@ -27,7 +27,7 @@ function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | Re
   const originalRerender = renderResult.rerender;
   renderResult.rerender = (children: React.ReactNode | React.ReactNode[]) => {
     return originalRerender(
-      <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+      <AblyProvider client={client as unknown as Ably.PubSubRealtimeClient}>
         <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
       </AblyProvider>,
     );

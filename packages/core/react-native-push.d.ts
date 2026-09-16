@@ -1,18 +1,18 @@
 // The ESLint warning is triggered because we only use these types in a documentation comment.
 /* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
-import { RealtimeClient, HttpClient } from './ably';
+import { PubSubRealtimeClient } from './ably';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 /**
- * Provides a {@link HttpClient} or {@link RealtimeClient} instance with the ability to be activated as a target for push notifications in a React Native application.
+ * Provides a {@link PubSubRealtimeClient} with the ability to be activated as a target for push notifications in a React Native application.
  *
- * Unlike the web `@ably/pubsub-core/push` plugin, the push environment is supplied by your application: pass an
+ * Unlike the web `@ably/pubsub-device/push` plugin, the push environment is supplied by your application: pass an
  * async storage implementation and a token callback to `create()`, then register the returned
  * object under the `Push` plugin key:
  *
  * ```javascript
- * import { Realtime } from '@ably/pubsub-core';
- * import ReactNativePush from '@ably/pubsub-core/react-native-push';
+ * import { createClient } from '@ably/pubsub-device';
+ * import { ReactNativePush } from '@ably/pubsub-device/react-native-push';
  * import AsyncStorage from '@react-native-async-storage/async-storage';
  * import messaging from '@react-native-firebase/messaging';
  *
@@ -24,7 +24,7 @@ import { RealtimeClient, HttpClient } from './ably';
  *   },
  * });
  *
- * const realtime = new Realtime({ ...options, plugins: { Push } });
+ * const realtime = createClient({ ...options, plugins: { Push } });
  * await realtime.push.activate();
  *
  * // the push platform can rotate the token at any time; forward rotations to Ably so the

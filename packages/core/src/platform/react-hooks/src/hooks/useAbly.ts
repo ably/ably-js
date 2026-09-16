@@ -2,7 +2,7 @@ import React from 'react';
 import { AblyContext } from '../AblyContext.js';
 import * as API from '@ably/pubsub-core';
 
-export function useAbly(ablyId = 'default'): API.RealtimeClient {
+export function useAbly(ablyId = 'default'): API.PubSubRealtimeClient {
   const client = React.useContext(AblyContext)[ablyId]?.client;
 
   if (!client) {

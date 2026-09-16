@@ -5,7 +5,7 @@ import Platform from 'common/platform';
 import type { Properties } from '../util/utils';
 
 /**
- `DefaultPresenceMessage` is the class returned by `DefaultHttp` and `DefaultRealtime`’s `PresenceMessage` static property. It introduces the static methods described in the `PresenceMessageStatic` interface of the public API of the non tree-shakable version of the library.
+ `DefaultPresenceMessage` is the class that the non tree-shakable version of the library exports as `PresenceMessage`, and that `DefaultPubSubHttpClient` and `DefaultPubSubRealtimeClient` also carry as their `PresenceMessage` static property. It introduces the static methods that the public API declares on the `PresenceMessage` class.
  */
 export class DefaultPresenceMessage extends PresenceMessage {
   static async fromEncoded(encoded: unknown, inputOptions?: API.ChannelOptions): Promise<PresenceMessage> {

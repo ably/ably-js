@@ -51,9 +51,9 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       const helper = Helper.forHook(this);
 
       helper.recordPrivateApi('read.Platform.Config.push');
-      originalPushConfig = Ably.Realtime.Platform.Config.push;
+      originalPushConfig = Ably.DefaultPubSubRealtimeClient.Platform.Config.push;
       helper.recordPrivateApi('write.Platform.Config.push');
-      Ably.Realtime.Platform.Config.push = pushChannelTransport;
+      Ably.DefaultPubSubRealtimeClient.Platform.Config.push = pushChannelTransport;
 
       helper.setupApp(function (err) {
         if (err) {
@@ -68,14 +68,14 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       const helper = Helper.forHook(this);
 
       helper.recordPrivateApi('call.Platform.Config.push.storage.clear');
-      Ably.Realtime.Platform.Config.push.storage.clear();
+      Ably.DefaultPubSubRealtimeClient.Platform.Config.push.storage.clear();
     });
 
     after(() => {
       const helper = Helper.forHook(this);
 
       helper.recordPrivateApi('write.Platform.Config.push');
-      Ably.Realtime.Platform.Config.push = originalPushConfig;
+      Ably.DefaultPubSubRealtimeClient.Platform.Config.push = originalPushConfig;
     });
 
     /**

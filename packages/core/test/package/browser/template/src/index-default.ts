@@ -1,4 +1,4 @@
-import * as Ably from '@ably/pubsub-core';
+import * as Ably from '@ably/pubsub-device';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -15,7 +15,7 @@ async function attachChannel(channel: Ably.RealtimeChannel) {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Ably.Realtime({ key, endpoint: 'nonprod:sandbox' });
+  const realtime: Ably.PubSubClient = Ably.createClient({ key, endpoint: 'nonprod:sandbox' });
 
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);

@@ -4,7 +4,7 @@ import { AblyContext, AblyContextValue } from './AblyContext.js';
 
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
-  client?: Ably.RealtimeClient;
+  client?: Ably.PubSubRealtimeClient;
   ablyId?: string;
 }
 

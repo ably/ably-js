@@ -1,8 +1,11 @@
 // Common
-import { DefaultHttp } from '../../common/lib/client/defaulthttp';
-import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
+import { DefaultPubSubHttpClient } from '../../common/lib/client/defaultpubsubhttpclient';
+import { DefaultPubSubRealtimeClient } from '../../common/lib/client/defaultpubsubrealtimeclient';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
+import { DefaultMessage as Message } from '../../common/lib/types/defaultmessage';
+import { DefaultPresenceMessage as PresenceMessage } from '../../common/lib/types/defaultpresencemessage';
+import { DefaultAnnotation as Annotation } from '../../common/lib/types/defaultannotation';
 import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
 
 // Platform Specific
@@ -27,7 +30,7 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
 
-for (const clientClass of [DefaultHttp, DefaultRealtime]) {
+for (const clientClass of [DefaultPubSubHttpClient, DefaultPubSubRealtimeClient]) {
   clientClass.Crypto = Crypto;
   clientClass._MsgPack = msgpack;
 }
@@ -43,8 +46,12 @@ if (Platform.Config.agent) {
 
 module.exports = {
   ErrorInfo,
-  Http: DefaultHttp,
-  Realtime: DefaultRealtime,
+  Crypto,
+  Message,
+  PresenceMessage,
+  Annotation,
+  DefaultPubSubHttpClient,
+  DefaultPubSubRealtimeClient,
   msgpack: null,
   makeProtocolMessageFromDeserialized,
 };

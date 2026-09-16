@@ -1,4 +1,10 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["src/platform/react-hooks", "test/package", "liveobjects.d.mts"]
+  "exclude": [
+    "src/platform/react-hooks",
+    "test/package",
+    "liveobjects.d.mts",
+    "liveobjects-types.d.mts",
+    "liveobjects-http.d.mts"
+  ]
 }

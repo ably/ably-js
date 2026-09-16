@@ -182,12 +182,23 @@ module.exports = function (grunt) {
 
   grunt.registerTask(
     'build:liveobjects:types',
-    'Generate liveobjects.d.mts from liveobjects.d.ts by adding .js extensions to relative imports',
+    'Generate the liveobjects .d.mts files from their .d.ts counterparts by adding .js extensions to relative imports',
     function () {
-      const dtsContent = fs.readFileSync(coreDir + '/liveobjects.d.ts', 'utf8');
-      const mtsContent = dtsContent.replace(/from '(\.\/[^']+)'/g, "from '$1.js'");
-      fs.writeFileSync(coreDir + '/liveobjects.d.mts', mtsContent);
-      grunt.log.ok('Generated liveobjects.d.mts from liveobjects.d.ts');
+      // The liveobjects declarations are split across these files, each with a .d.mts counterpart.
+      // An import between two of them must name the counterpart (`.mjs` resolves to the .d.mts), or
+      // the ESM types would pull in the CJS-flavoured copy of the other file alongside the ESM one,
+      // and their two module augmentations of RealtimeChannel would conflict. The rest of the core's
+      // declarations have no .d.mts, so their imports name `.js`, which resolves to the .d.ts.
+      const names = ['liveobjects', 'liveobjects-types', 'liveobjects-http'];
+      for (const name of names) {
+        const dtsContent = fs.readFileSync(`${coreDir}/${name}.d.ts`, 'utf8');
+        const mtsContent = dtsContent.replace(
+          /from '\.\/([^']+)'/g,
+          (_, target) => `from './${target}${names.includes(target) ? '.mjs' : '.js'}'`,
+        );
+        fs.writeFileSync(`${coreDir}/${name}.d.mts`, mtsContent);
+        grunt.log.ok(`Generated ${name}.d.mts from ${name}.d.ts`);
+      }
     },
   );
 

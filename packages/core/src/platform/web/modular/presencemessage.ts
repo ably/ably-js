@@ -7,18 +7,18 @@ import Logger from '../../../common/lib/util/logger';
 
 export const decodePresenceMessage = ((obj, options) => {
   return fromEncoded(Logger.defaultLogger, null, obj, options);
-}) as API.PresenceMessageStatic['fromEncoded'];
+}) as typeof API.PresenceMessage.fromEncoded;
 
 export const decodeEncryptedPresenceMessage = ((obj, options) => {
   return fromEncoded(Logger.defaultLogger, Crypto, obj, options);
-}) as API.PresenceMessageStatic['fromEncoded'];
+}) as typeof API.PresenceMessage.fromEncoded;
 
 export const decodePresenceMessages = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, null, obj, options);
-}) as API.PresenceMessageStatic['fromEncodedArray'];
+}) as typeof API.PresenceMessage.fromEncodedArray;
 
 export const decodeEncryptedPresenceMessages = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, Crypto, obj, options);
-}) as API.PresenceMessageStatic['fromEncodedArray'];
+}) as typeof API.PresenceMessage.fromEncodedArray;
 
-export const constructPresenceMessage = fromValues as API.PresenceMessageStatic['fromValues'];
+export const constructPresenceMessage = fromValues as typeof API.PresenceMessage.fromValues;

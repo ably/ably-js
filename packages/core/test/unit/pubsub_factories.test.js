@@ -42,5 +42,35 @@ define(['chai'], function (chai) {
         expect(PubSubServer.createHttpClient('tokenstring').request).to.be.a('function');
       });
     });
+
+    describe('exports', function () {
+      const PubSubCore = require('@ably/pubsub-core');
+
+      // A client constructed directly declares no side, so the factories must be the only way to
+      // build one: neither package may hand out the core's client classes, under any name.
+      for (const [packageName, exports] of [
+        ['@ably/pubsub-device', PubSubDevice],
+        ['@ably/pubsub-server', PubSubServer],
+      ]) {
+        for (const className of ['DefaultPubSubRealtimeClient', 'DefaultPubSubHttpClient', 'Realtime', 'Http']) {
+          it(`${packageName} does not export ${className}`, function () {
+            expect(exports).not.to.have.property(className);
+          });
+        }
+
+        // The statics need no client, so each package exports them by name. They must be the core's
+        // own classes, which its clients also carry as statics, so that both behave identically.
+        for (const className of ['Crypto', 'Message', 'PresenceMessage', 'Annotation']) {
+          it(`${packageName} exports the core's ${className}`, function () {
+            expect(exports[className]).to.equal(PubSubCore[className]);
+            expect(exports[className]).to.equal(PubSubCore.DefaultPubSubRealtimeClient[className]);
+          });
+        }
+      }
+
+      it('@ably/pubsub-device has no HTTP factory', function () {
+        expect(PubSubDevice).not.to.have.property('createHttpClient');
+      });
+    });
   });
 });

@@ -4,8 +4,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var http;
   var cipherConfig;
   var expect = chai.expect;
-  var Crypto = Ably.Realtime.Platform.Crypto;
-  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
+  var Crypto = Ably.DefaultPubSubRealtimeClient.Platform.Crypto;
+  var BufferUtils = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils;
 
   function cipherParamsFromConfig(cipherConfig, helper) {
     helper.recordPrivateApi('new.Crypto.CipherParams');

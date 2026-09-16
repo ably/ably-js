@@ -770,7 +770,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                       /* Wait a tick so we don' depend on whether the update event runs the
                        * channelUpdated listener or the setOptions listener first */
                       helper.recordPrivateApi('call.Platform.nextTick');
-                      Ably.Realtime.Platform.Config.nextTick(function () {
+                      Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
                         expect(channelUpdated, 'Check channel went to the server to update the channel params').to.be
                           .ok;
                         cb();
@@ -791,7 +791,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                     }),
                     function () {
                       helper.recordPrivateApi('call.Platform.nextTick');
-                      Ably.Realtime.Platform.Config.nextTick(function () {
+                      Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
                         expect(channelUpdated, 'Check channel went to the server to update the channel mode').to.be.ok;
                         cb();
                       });
@@ -1313,7 +1313,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             return;
           }
           helper.recordPrivateApi('call.Platform.nextTick');
-          Ably.Realtime.Platform.Config.nextTick(function () {
+          Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
             helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
@@ -1547,7 +1547,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           function (cb) {
             /* nexttick so that it doesn't pick up the suspended event */
             helper.recordPrivateApi('call.Platform.nextTick');
-            Ably.Realtime.Platform.Config.nextTick(function () {
+            Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
               channel.once(function (stateChange) {
                 expect(stateChange.current).to.equal('attaching', 'Check channel tries again after a bit');
                 cb();
@@ -1603,7 +1603,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             helper.becomeSuspended(realtime, function () {
               /* nextTick as connection event is emitted before channel state is changed */
               helper.recordPrivateApi('call.Platform.nextTick');
-              Ably.Realtime.Platform.Config.nextTick(function () {
+              Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick(function () {
                 expect(channel.state).to.equal('suspended', 'check channel state is suspended');
                 cb();
               });

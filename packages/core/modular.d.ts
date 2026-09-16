@@ -5,36 +5,36 @@
  *
  * ## No `static` class functionality
  *
- * In contrast to the default variant of the SDK, the modular variant does not expose any functionality via `static` class properties or methods, since they cannot be tree-shaken by module bundlers. Instead, it exports free-standing functions which provide the same functionality. These are:
+ * In contrast to the default variant of the SDK, the modular variant does not expose any functionality via the static methods of the `Crypto`, `Message`, `PresenceMessage` and `Annotation` classes, since they cannot be tree-shaken by module bundlers. Instead, it exports free-standing functions which provide the same functionality. These are:
  *
  * | `static` version                           | Replacement in modular variant                                                     |
  * | ------------------------------------------ | ---------------------------------------------------------------------------------- |
  * | `Crypto.generateRandomKey()`               | [`generateRandomKey()`](../functions/modular.generateRandomKey.html)               |
  * | `Crypto.getDefaultParams()`                | [`getDefaultCryptoParams()`](../functions/modular.getDefaultCryptoParams.html)     |
- * | `MessageStatic.fromEncoded()`              | [`decodeMessage()`](../functions/modular.decodeMessage.html)                       |
- * | `MessageStatic.fromEncoded()`              | [`decodeEncryptedMessage()`](../functions/modular.decodeEncryptedMessage.html)     |
- * | `MessageStatic.fromEncodedArray()`         | [`decodeMessages()`](../functions/modular.decodeMessages.html)                     |
- * | `MessageStatic.fromEncodedArray()`         | [`decodeEncryptedMessages()`](../functions/modular.decodeEncryptedMessages.html)   |
- * | `PresenceMessageStatic.fromEncoded()`      | [`decodePresenceMessage()`](../functions/modular.decodePresenceMessage.html)       |
- * | `PresenceMessageStatic.fromEncoded()`      | [`decodeEncryptedPresenceMessage()`](../functions/modular.decodeEncryptedPresenceMessage.html)       |
- * | `PresenceMessageStatic.fromEncodedArray()` | [`decodeEncryptedPresenceMessages()`](../functions/modular.decodeEncryptedPresenceMessages.html)     |
- * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
- * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
- * | `AnnotationStatic.fromEncoded()`           | [`decodeAnnotation()`](../functions/modular.decodeAnnotation.html)                 |
- * | `AnnotationStatic.fromEncodedArray()`      | [`decodeAnnotations()`](../functions/modular.decodeAnnotations.html)               |
+ * | `Message.fromEncoded()`                    | [`decodeMessage()`](../functions/modular.decodeMessage.html)                       |
+ * | `Message.fromEncoded()`                    | [`decodeEncryptedMessage()`](../functions/modular.decodeEncryptedMessage.html)     |
+ * | `Message.fromEncodedArray()`               | [`decodeMessages()`](../functions/modular.decodeMessages.html)                     |
+ * | `Message.fromEncodedArray()`               | [`decodeEncryptedMessages()`](../functions/modular.decodeEncryptedMessages.html)   |
+ * | `PresenceMessage.fromEncoded()`            | [`decodePresenceMessage()`](../functions/modular.decodePresenceMessage.html)       |
+ * | `PresenceMessage.fromEncoded()`            | [`decodeEncryptedPresenceMessage()`](../functions/modular.decodeEncryptedPresenceMessage.html)       |
+ * | `PresenceMessage.fromEncodedArray()`       | [`decodeEncryptedPresenceMessages()`](../functions/modular.decodeEncryptedPresenceMessages.html)     |
+ * | `PresenceMessage.fromEncodedArray()`       | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
+ * | `PresenceMessage.fromValues()`             | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
+ * | `Annotation.fromEncoded()`                 | [`decodeAnnotation()`](../functions/modular.decodeAnnotation.html)                 |
+ * | `Annotation.fromEncodedArray()`            | [`decodeAnnotations()`](../functions/modular.decodeAnnotations.html)               |
  *
  * @module
  */
 
 import {
   ErrorInfo,
-  HttpClient,
+  PubSubHttpClient,
   ClientOptions,
   Crypto as CryptoClass,
-  MessageStatic,
-  PresenceMessageStatic,
-  AnnotationStatic,
-  RealtimeClient,
+  Message as MessageClass,
+  PresenceMessage as PresenceMessageClass,
+  Annotation as AnnotationClass,
+  PubSubRealtimeClient,
   Auth,
   Channels,
   Channel,
@@ -58,19 +58,19 @@ import {
   LocalDevice,
 } from './ably';
 
-export declare const generateRandomKey: CryptoClass['generateRandomKey'];
-export declare const getDefaultCryptoParams: CryptoClass['getDefaultParams'];
-export declare const decodeMessage: MessageStatic['fromEncoded'];
-export declare const decodeEncryptedMessage: MessageStatic['fromEncoded'];
-export declare const decodeMessages: MessageStatic['fromEncodedArray'];
-export declare const decodeEncryptedMessages: MessageStatic['fromEncodedArray'];
-export declare const decodePresenceMessage: PresenceMessageStatic['fromEncoded'];
-export declare const decodePresenceMessages: PresenceMessageStatic['fromEncodedArray'];
-export declare const decodeEncryptedPresenceMessage: PresenceMessageStatic['fromEncoded'];
-export declare const decodeEncryptedPresenceMessages: PresenceMessageStatic['fromEncodedArray'];
-export declare const constructPresenceMessage: PresenceMessageStatic['fromValues'];
-export declare const decodeAnnotation: AnnotationStatic['fromEncoded'];
-export declare const decodeAnnotations: AnnotationStatic['fromEncodedArray'];
+export declare const generateRandomKey: typeof CryptoClass.generateRandomKey;
+export declare const getDefaultCryptoParams: typeof CryptoClass.getDefaultParams;
+export declare const decodeMessage: typeof MessageClass.fromEncoded;
+export declare const decodeEncryptedMessage: typeof MessageClass.fromEncoded;
+export declare const decodeMessages: typeof MessageClass.fromEncodedArray;
+export declare const decodeEncryptedMessages: typeof MessageClass.fromEncodedArray;
+export declare const decodePresenceMessage: typeof PresenceMessageClass.fromEncoded;
+export declare const decodePresenceMessages: typeof PresenceMessageClass.fromEncodedArray;
+export declare const decodeEncryptedPresenceMessage: typeof PresenceMessageClass.fromEncoded;
+export declare const decodeEncryptedPresenceMessages: typeof PresenceMessageClass.fromEncodedArray;
+export declare const constructPresenceMessage: typeof PresenceMessageClass.fromValues;
+export declare const decodeAnnotation: typeof AnnotationClass.fromEncoded;
+export declare const decodeAnnotations: typeof AnnotationClass.fromEncodedArray;
 
 /**
  * Provides REST-related functionality to a {@link BaseRealtime} client.
@@ -285,18 +285,18 @@ export interface ModularPlugins {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  *
- * `BaseHttp` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Http`](../../default/classes/Http.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
+ * `BaseHttp` is the equivalent, in the modular variant of the Ably Client Library SDK, of the {@link PubSubHttpClient} that `createHttpClient()` from `@ably/pubsub-server` returns. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  *
  * > **Note**
  * >
- * > In order to further reduce bundle size, `BaseHttp` performs less logging than the `Http` class exported by the default variant of the SDK. It only logs:
+ * > In order to further reduce bundle size, `BaseHttp` performs less logging than the HTTP client of the default variant of the SDK. It only logs:
  * >
  * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
  * > - a small number of other network events
  * >
  * > If you need more verbose logging, use the default variant of the SDK.
  */
-export declare class BaseHttp implements HttpClient {
+export declare class BaseHttp implements PubSubHttpClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -308,7 +308,7 @@ export declare class BaseHttp implements HttpClient {
    */
   constructor(options: ClientOptions<CorePlugins & ModularPlugins>);
 
-  // Requirements of HttpClient
+  // Requirements of PubSubHttpClient
 
   auth: Auth;
   channels: Channels<Channel>;
@@ -334,18 +334,18 @@ export declare class BaseHttp implements HttpClient {
 /**
  * A client that extends the functionality of {@link BaseHttp} and provides additional realtime-specific features.
  *
- * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
+ * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the {@link PubSubRealtimeClient} that the realtime factories of `@ably/pubsub-device` and `@ably/pubsub-server` return. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  *
  * > **Note**
  * >
- * > In order to further reduce bundle size, `BaseRealtime` performs less logging than the `Realtime` class exported by the default variant of the SDK. It only logs:
+ * > In order to further reduce bundle size, `BaseRealtime` performs less logging than the realtime client of the default variant of the SDK. It only logs:
  * >
  * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
  * > - a small number of other network events
  * >
  * > If you need more verbose logging, use the default variant of the SDK.
  */
-export declare class BaseRealtime implements RealtimeClient {
+export declare class BaseRealtime implements PubSubRealtimeClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -358,7 +358,7 @@ export declare class BaseRealtime implements RealtimeClient {
    */
   constructor(options: ClientOptions<CorePlugins & ModularPlugins>);
 
-  // Requirements of RealtimeClient
+  // Requirements of PubSubRealtimeClient
 
   clientId: string;
   close(): void;

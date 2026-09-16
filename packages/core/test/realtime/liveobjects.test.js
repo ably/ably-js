@@ -8,12 +8,12 @@ define(['ably', 'shared_helper', 'chai', 'liveobjects', 'liveobjects_helper'], f
   LiveObjectsHelper,
 ) {
   const expect = chai.expect;
-  const BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  const Utils = Ably.Realtime.Utils;
-  const MessageEncoding = Ably.Realtime._MessageEncoding;
+  const BufferUtils = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils;
+  const Utils = Ably.DefaultPubSubRealtimeClient.Utils;
+  const MessageEncoding = Ably.DefaultPubSubRealtimeClient._MessageEncoding;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveobjectsFixturesChannel = 'realtime_liveobjects_fixtures';
-  const nextTick = Ably.Realtime.Platform.Config.nextTick;
+  const nextTick = Ably.DefaultPubSubRealtimeClient.Platform.Config.nextTick;
   const gcIntervalOriginal = LiveObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval;
   const LiveMap = LiveObjectsPlugin.LiveMap;
   const LiveCounter = LiveObjectsPlugin.LiveCounter;

@@ -10,11 +10,11 @@
 
 import { expect } from 'chai';
 import '../../../../src/platform/nodejs';
-import { DefaultHttp } from '../../../../src/common/lib/client/defaulthttp';
+import { DefaultPubSubHttpClient } from '../../../../src/common/lib/client/defaultpubsubhttpclient';
 import { ObjectId } from '../../../../src/plugins/liveobjects/objectid';
 import { restoreAll } from '../../helpers';
 
-const Platform = DefaultHttp.Platform;
+const Platform = DefaultPubSubHttpClient.Platform;
 
 describe('uts/objects/unit/object_id', function () {
   afterEach(function () {

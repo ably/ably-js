@@ -184,7 +184,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         idOne,
         idTwo,
         originalPublish = channel._publish,
-        originalDoUri = Ably.Realtime._HttpRequester.doUri;
+        originalDoUri = Ably.DefaultPubSubRealtimeClient._HttpRequester.doUri;
 
       helper.recordPrivateApi('replace.httpChannel._publish');
       channel._publish = async function (requestBody) {
@@ -203,11 +203,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       helper.recordPrivateApi('replace.httpRequester.doUri');
-      Ably.Http._HttpRequester.doUri = async function (method, uri, headers, body, params) {
+      Ably.DefaultPubSubHttpClient._HttpRequester.doUri = async function (method, uri, headers, body, params) {
         helper.recordPrivateApi('call.httpRequester.doUri');
         const resultPromise = originalDoUri(method, uri, headers, body, params);
         helper.recordPrivateApi('replace.httpRequester.doUri');
-        Ably.Http._HttpRequester.doUri = originalDoUri;
+        Ably.DefaultPubSubHttpClient._HttpRequester.doUri = originalDoUri;
         const result = await resultPromise;
         if (result.error) {
           return { error: result.error };

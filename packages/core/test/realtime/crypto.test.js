@@ -2,9 +2,9 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  var Crypto = Ably.Realtime.Platform.Crypto;
-  var Message = Ably.Realtime.Message;
+  var BufferUtils = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils;
+  var Crypto = Ably.DefaultPubSubRealtimeClient.Platform.Crypto;
+  var Message = Ably.DefaultPubSubRealtimeClient.Message;
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
 
   function attachChannels(channels, callback) {
@@ -170,7 +170,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           done(err);
         }
         helper.recordPrivateApi('call.BufferUtils.toArrayBuffer');
-        var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
+        var arrayBufferKey = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils.toArrayBuffer(key);
         var params = Crypto.getDefaultParams({ key: arrayBufferKey });
         try {
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
@@ -191,7 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           return;
         }
         helper.recordPrivateApi('call.BufferUtils.base64Encode');
-        var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
+        var b64key = Ably.DefaultPubSubRealtimeClient.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');

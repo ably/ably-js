@@ -5,10 +5,10 @@ import * as API from '../../../../ably';
 
 export const Crypto = /* @__PURE__@ */ createCryptoClass(Config, BufferUtils);
 
-export const generateRandomKey: API.Crypto['generateRandomKey'] = (keyLength) => {
+export const generateRandomKey: typeof API.Crypto.generateRandomKey = (keyLength) => {
   return Crypto.generateRandomKey(keyLength);
 };
 
-export const getDefaultCryptoParams: API.Crypto['getDefaultParams'] = (params) => {
+export const getDefaultCryptoParams: typeof API.Crypto.getDefaultParams = (params) => {
   return Crypto.getDefaultParams(params);
 };

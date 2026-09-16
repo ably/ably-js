@@ -2,7 +2,7 @@
 // a minimal client without also depending on `@ably/pubsub-core` directly.
 //
 // ESM only, because the core's modular variant is: it is published behind an `import` condition
-// alone, so there is no CommonJS build here to re-export. The star re-export is left for the
+// alone, so there is no CommonJS build here to re-export. The re-export is left for the
 // consumer's bundler to resolve, which is what keeps the variant tree-shakable through this
 // package — bundling it here would defeat the entry point's whole purpose.
 
@@ -11,7 +11,37 @@ import type { ModularPlugins } from '@ably/pubsub-core/modular';
 import type { ClientOptions, CorePlugins } from '@ably/pubsub-core';
 import { deviceAgentIdentifier, optionsWithSideAgent } from '../../shared/side';
 
-export * from '@ably/pubsub-core/modular';
+// Enumerated rather than star-re-exported so that `BaseHttp`, the core's tree-shakable stateless HTTP
+// client, stays out: this package offers no HTTP client. The `Http` plugin stays in, because it is
+// not a client — it is what gives a `BaseRealtime` history, stats, `request()` and the other REST
+// features. A name the core's modular variant adds must be added here too, or it is not exported.
+export {
+  generateRandomKey,
+  getDefaultCryptoParams,
+  decodeMessage,
+  decodeEncryptedMessage,
+  decodeMessages,
+  decodeEncryptedMessages,
+  decodePresenceMessage,
+  decodePresenceMessages,
+  decodeEncryptedPresenceMessage,
+  decodeEncryptedPresenceMessages,
+  constructPresenceMessage,
+  decodeAnnotation,
+  decodeAnnotations,
+  Http,
+  Crypto,
+  MsgPack,
+  RealtimePresence,
+  Annotations,
+  WebSocketTransport,
+  XHRPolling,
+  XHRRequest,
+  FetchRequest,
+  MessageInteractions,
+  BaseRealtime,
+  ErrorInfo,
+} from '@ably/pubsub-core/modular';
 
 /**
  * Creates a modular realtime client that declares the device side.

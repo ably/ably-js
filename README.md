@@ -104,12 +104,12 @@ await channel.subscribe((message) => {
 await channel.publish('test-event', 'hello world');
 ```
 
-For a stateless REST client, construct `Http` directly — `createClient` is realtime-only, and there is no HTTP-only factory:
+For a stateless client that talks to Ably over HTTP, use `createHttpClient` from `@ably/pubsub-server`. That client is for infrastructure you operate: `@ably/pubsub-device` offers no HTTP client, because the realtime client covers what a device needs from Ably's REST API.
 
 ```javascript
-import { Http } from '@ably/pubsub-device';
+import { createHttpClient } from '@ably/pubsub-server';
 
-const httpClient = new Http({ key: 'your-ably-api-key', clientId: 'me' });
+const httpClient = createHttpClient({ key: 'your-ably-api-key' });
 ```
 
 ## Modular variant
@@ -149,7 +149,7 @@ You must provide:
 - At least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
 - At least one realtime transport implementation; that is, one of `WebSocketTransport` or `XHRPolling`.
 
-The client `createClient` returns here is a `BaseRealtime`, which offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
+The client `createClient` returns here is a `BaseRealtime`, which offers the same API as the client the root `createClient` returns, described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 
 In order to further reduce bundle size, the modular variant of the SDK performs less logging than the default variant. It only logs:
 

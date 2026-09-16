@@ -437,22 +437,22 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       for (const scenario of [
         {
           description: 'XHR request disable connectivity check',
-          ctx: { initialFetchSupported: Ably.Http.Platform.Config.fetchSupported },
+          ctx: { initialFetchSupported: Ably.DefaultPubSubHttpClient.Platform.Config.fetchSupported },
           before: (ctx) => {
-            Ably.Http.Platform.Config.fetchSupported = false;
+            Ably.DefaultPubSubHttpClient.Platform.Config.fetchSupported = false;
           },
           after: (ctx) => {
-            Ably.Http.Platform.Config.fetchSupported = ctx.initialFetchSupported;
+            Ably.DefaultPubSubHttpClient.Platform.Config.fetchSupported = ctx.initialFetchSupported;
           },
         },
         {
           description: 'Fetch request disable connectivity check',
-          ctx: { initialXhrSupported: Ably.Http.Platform.Config.xhrSupported },
+          ctx: { initialXhrSupported: Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported },
           before: (ctx) => {
-            Ably.Http.Platform.Config.xhrSupported = false;
+            Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported = false;
           },
           after: (ctx) => {
-            Ably.Http.Platform.Config.xhrSupported = ctx.initialXhrSupported;
+            Ably.DefaultPubSubHttpClient.Platform.Config.xhrSupported = ctx.initialXhrSupported;
           },
         },
       ]) {

@@ -12,8 +12,8 @@ define([
   'chai',
   'private_api_recorder',
 ], function (testAppModule, clientModule, testAppManager, globals, async, chai, privateApiRecorder) {
-  var utils = clientModule.Ably.Realtime.Utils;
-  var platform = clientModule.Ably.Realtime.Platform;
+  var utils = clientModule.Ably.DefaultPubSubRealtimeClient.Utils;
+  var platform = clientModule.Ably.DefaultPubSubRealtimeClient.Platform;
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
   /* IANA reserved; requests to it will hang forever */
@@ -147,7 +147,9 @@ define([
       this.recordPrivateApi('call.ConnectionManager.supportedTransports');
       this.recordPrivateApi('read.Realtime._transports');
       const transports = utils.keysArray(
-        clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
+        clientModule.Ably.DefaultPubSubRealtimeClient.ConnectionManager.supportedTransports(
+          clientModule.Ably.DefaultPubSubRealtimeClient._transports,
+        ),
       );
       /* The compatibility harness can restrict the suite to a transport subset
        * (ABLY_TEST_TRANSPORTS) when the target server implements only some. */

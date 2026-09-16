@@ -14,8 +14,8 @@ export const Annotations: AnnotationsPlugin = {
 
 export const decodeAnnotation = ((obj, options) => {
   return fromEncoded(Logger.defaultLogger, obj, options);
-}) as API.AnnotationStatic['fromEncoded'];
+}) as typeof API.Annotation.fromEncoded;
 
 export const decodeAnnotations = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, obj, options);
-}) as API.AnnotationStatic['fromEncodedArray'];
+}) as typeof API.Annotation.fromEncodedArray;

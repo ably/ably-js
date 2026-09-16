@@ -10,8 +10,8 @@
 // side-effect import wires up Platform with the Node-specific Http, Config,
 // Crypto, etc. — equivalent to loading build/ably-node.js.
 import '../../src/platform/nodejs';
-import { DefaultHttp } from '../../src/common/lib/client/defaulthttp';
-import { DefaultRealtime } from '../../src/common/lib/client/defaultrealtime';
+import { DefaultPubSubHttpClient } from '../../src/common/lib/client/defaultpubsubhttpclient';
+import { DefaultPubSubRealtimeClient } from '../../src/common/lib/client/defaultpubsubrealtimeclient';
 import ErrorInfo from '../../src/common/lib/types/errorinfo';
 import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../src/common/lib/types/protocolmessage';
 import { populateFieldsFromParent } from '../../src/common/lib/types/basemessage';
@@ -59,20 +59,20 @@ function sideConstructor<T extends { prototype: unknown }>(factory: (options: an
  */
 const utsSide = process.env.UTS_SIDE || 'core';
 
-let Http: typeof DefaultHttp;
-let Realtime: typeof DefaultRealtime;
+let Http: typeof DefaultPubSubHttpClient;
+let Realtime: typeof DefaultPubSubRealtimeClient;
 switch (utsSide) {
   case 'core':
-    Http = DefaultHttp;
-    Realtime = DefaultRealtime;
+    Http = DefaultPubSubHttpClient;
+    Realtime = DefaultPubSubRealtimeClient;
     break;
   case 'device':
-    Http = DefaultHttp;
-    Realtime = sideConstructor(createDeviceClient, DefaultRealtime);
+    Http = DefaultPubSubHttpClient;
+    Realtime = sideConstructor(createDeviceClient, DefaultPubSubRealtimeClient);
     break;
   case 'server':
-    Http = sideConstructor(createHttpClient, DefaultHttp);
-    Realtime = sideConstructor(createRealtimeClient, DefaultRealtime);
+    Http = sideConstructor(createHttpClient, DefaultPubSubHttpClient);
+    Realtime = sideConstructor(createRealtimeClient, DefaultPubSubRealtimeClient);
     break;
   default:
     throw new Error(`Unknown UTS_SIDE '${utsSide}': use 'core', 'device' or 'server'`);
@@ -85,7 +85,7 @@ const Ably = {
   makeProtocolMessageFromDeserialized,
 };
 
-const Platform = DefaultHttp.Platform;
+const Platform = DefaultPubSubHttpClient.Platform;
 
 // Saved originals for teardown
 let _savedHttp: any = null;

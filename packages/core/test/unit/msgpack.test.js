@@ -2,7 +2,7 @@
 
 define(['chai', 'ably'], function (chai, Ably) {
   const { expect } = chai;
-  const msgpack = Ably.Realtime._MsgPack;
+  const msgpack = Ably.DefaultPubSubRealtimeClient._MsgPack;
 
   describe('msgpack.encode()', function () {
     it('should handle emoji in strings', function () {

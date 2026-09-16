@@ -6,7 +6,7 @@ Guidance for coding agents (and humans) working in this repository.
 
 ably-js is a monorepo. The published packages live under `packages/`:
 
-- `packages/core` — the Ably realtime and REST client library for JavaScript/TypeScript, published as `@ably/pubsub-core`, targeting browsers, Node.js and React Native. Its public API surface is defined in [ably.d.ts](./packages/core/ably.d.ts), and its source lives in `packages/core/src/` (`common/` for shared client logic, `platform/` for platform-specific code and React hooks).
+- `packages/core` — the Ably realtime and REST client library for JavaScript/TypeScript, published as `@ably/pubsub-core`, targeting browsers, Node.js and React Native. Its public API surface is defined in [ably.d.ts](./packages/core/ably.d.ts), which re-exports [types.d.ts](./packages/core/types.d.ts) (the surface every client shares) and [http.d.ts](./packages/core/http.d.ts) (the declarations only the HTTP client reaches, which `@ably/pubsub-device` omits). Its source lives in `packages/core/src/` (`common/` for shared client logic, `platform/` for platform-specific code and React hooks).
 - `packages/device` and `packages/server` — thin per-side wrappers over the core, published as `@ably/pubsub-device` and `@ably/pubsub-server`. See [Per-side packages](./CONTRIBUTING.md#per-side-packages).
 - `packages/shared` — private helpers bundled into the two wrappers rather than published.
 
@@ -51,7 +51,7 @@ Errors decoded from the server are exempt: the server chose the code and may use
 
 ### Error messages and remediations
 
-Errors constructed by the SDK (`ErrorInfo` / `PartialErrorInfo`) carry a `message` and, in most cases, a `remediation` (see the `ErrorInfo.remediation` docstring in [ably.d.ts](./packages/core/ably.d.ts)). The two fields have distinct jobs:
+Errors constructed by the SDK (`ErrorInfo` / `PartialErrorInfo`) carry a `message` and, in most cases, a `remediation` (see the `ErrorInfo.remediation` docstring in [types.d.ts](./packages/core/types.d.ts)). The two fields have distinct jobs:
 
 - `message` says **what went wrong**: the failure and the condition that triggered it, written declaratively.
 - `remediation` says **how to fix it**: the first thing the developer (or coding agent) reading the error should do, written imperatively. It must be actionable without further lookup.

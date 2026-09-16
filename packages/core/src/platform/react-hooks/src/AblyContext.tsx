@@ -18,7 +18,7 @@ const globalObjectForContext: { [contextKey]?: React.Context<AblyContextValue> }
 export type AblyContextValue = Record<string, AblyContextProviderProps>;
 
 export interface AblyContextProviderProps {
-  client: Ably.RealtimeClient;
+  client: Ably.PubSubRealtimeClient;
   _channelNameToChannelContext: Record<string, ChannelContextProps>;
   // The channel named by the closest enclosing `ChannelProvider`. Channel hooks
   // called without an explicit channel name resolve to this, so the name does
