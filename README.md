@@ -123,9 +123,8 @@ Aimed at those who are concerned about their app's bundle size, the modular vari
 
 The modular variant of the library provides:
 
-- A `createClient` factory, which builds a `BaseRealtime` declaring the device side;
-- the `BaseRealtime` class itself, if you would rather construct it directly and declare no side;
-- various plugins that add functionality to a `BaseRealtime` instance, such as `Http`, `RealtimePresence`, etc.
+- A `createClient` factory, which builds a client declaring the device side;
+- various plugins that add functionality to that client, such as `Http`, `RealtimePresence`, etc.
 
 To use this variant of the library, import `createClient` from `@ably/pubsub-device/modular`, along with the plugins that you wish to use. Then, pass these plugins in the client options as shown in the example below:
 
@@ -149,7 +148,7 @@ You must provide:
 - At least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
 - At least one realtime transport implementation; that is, one of `WebSocketTransport` or `XHRPolling`.
 
-The client `createClient` returns here is a `BaseRealtime`, which offers the same API as the client the root `createClient` returns, described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
+The client `createClient` returns here is a `PubSubClient`, the same type the root `createClient` returns, with the API described in the rest of this `README`. Functionality whose plugin you did not pass fails at runtime when used. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 
 In order to further reduce bundle size, the modular variant of the SDK performs less logging than the default variant. It only logs:
 

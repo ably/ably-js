@@ -39,15 +39,15 @@ In production, prefer [token authentication](https://ably.com/docs/auth/token) o
 
 Everything a device needs is exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
 
-| Import from                             | What you get                                                          |
-| --------------------------------------- | --------------------------------------------------------------------- |
-| `@ably/pubsub-device`                   | `createClient`, plus the core's public API and type surface           |
-| `@ably/pubsub-device/modular`           | `createClient` over the tree-shakable `BaseRealtime`, and its plugins |
-| `@ably/pubsub-device/react`             | The React hooks: `AblyProvider`, `useChannel`, `usePresence`, …       |
-| `@ably/pubsub-device/liveobjects`       | The LiveObjects plugin                                                |
-| `@ably/pubsub-device/liveobjects/react` | The `useObject` React hook for LiveObjects                            |
-| `@ably/pubsub-device/push`              | The web push plugin                                                   |
-| `@ably/pubsub-device/react-native-push` | The React Native push plugin                                          |
+| Import from                             | What you get                                                    |
+| --------------------------------------- | --------------------------------------------------------------- |
+| `@ably/pubsub-device`                   | `createClient`, plus the core's public API and type surface     |
+| `@ably/pubsub-device/modular`           | `createClient` for a tree-shakable client, and its plugins      |
+| `@ably/pubsub-device/react`             | The React hooks: `AblyProvider`, `useChannel`, `usePresence`, … |
+| `@ably/pubsub-device/liveobjects`       | The LiveObjects plugin                                          |
+| `@ably/pubsub-device/liveobjects/react` | The `useObject` React hook for LiveObjects                      |
+| `@ably/pubsub-device/push`              | The web push plugin                                             |
+| `@ably/pubsub-device/react-native-push` | The React Native push plugin                                    |
 
 ```javascript
 import { createClient } from '@ably/pubsub-device';

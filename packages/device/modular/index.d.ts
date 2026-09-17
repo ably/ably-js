@@ -1,9 +1,9 @@
 /**
  * The tree-shakable variant of the core, plus a factory that declares the device side.
  *
- * Build a client from `BaseRealtime` and only the plugins you need, rather than the all-in-one
- * client the root entry point's `createClient` returns. You must supply at least one HTTP request implementation
- * and, for a realtime client, at least one transport.
+ * Build a client from only the plugins you need, rather than the all-in-one client the root entry
+ * point's `createClient` returns. Both return a `PubSubClient`. You must supply at least one HTTP
+ * request implementation and at least one transport.
  *
  * ```javascript
  * import { createClient, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular';
@@ -18,13 +18,15 @@
  * This entry point is ESM only, because the core's modular variant is: `require()` of this subpath
  * does not resolve. Use `@ably/pubsub-device` if you need CommonJS.
  */
-import type { BaseRealtime, ModularPlugins } from '@ably/pubsub-core/modular';
+import type { ModularPlugins } from '@ably/pubsub-core/modular';
 import type { ClientOptions, CorePlugins } from '@ably/pubsub-core/api';
+import type { PubSubClient } from '../index.js';
 
-// Enumerated rather than star-re-exported so that `BaseHttp`, the core's tree-shakable stateless HTTP
-// client, stays out: this package offers no HTTP client. The `Http` plugin stays in, because it is
-// not a client — it is what gives a `BaseRealtime` history, stats, `request()` and the other REST
-// features. A name the core's modular variant adds must be added here too, or it is not exported.
+// Enumerated rather than star-re-exported, so that only the chosen names are public. The client
+// classes stay out: a client is created with `createClient` and typed as `PubSubClient`, and this
+// package offers no HTTP client. The `Http` plugin stays in, because it is not a client — it is what
+// gives a modular client history, stats, `request()` and the other REST features. A name the core's
+// modular variant adds must be added here too, or it is not exported.
 export {
   generateRandomKey,
   getDefaultCryptoParams,
@@ -49,10 +51,10 @@ export {
   XHRRequest,
   FetchRequest,
   MessageInteractions,
-  BaseRealtime,
   ErrorInfo,
 } from '@ably/pubsub-core/modular';
 export type { ModularPlugins } from '@ably/pubsub-core/modular';
+export type { PubSubClient };
 
 /**
  * Creates a realtime client that declares the device side, so that Ably counts its traffic as an
@@ -68,4 +70,4 @@ export type { ModularPlugins } from '@ably/pubsub-core/modular';
  * include. At minimum this needs an HTTP request implementation (`FetchRequest` or `XHRRequest`)
  * and a transport (`WebSocketTransport` or `XHRPolling`).
  */
-export declare function createClient(options: ClientOptions<CorePlugins & ModularPlugins>): BaseRealtime;
+export declare function createClient(options: ClientOptions<CorePlugins & ModularPlugins>): PubSubClient;

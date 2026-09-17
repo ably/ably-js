@@ -18,7 +18,6 @@ import {
   Subscription,
   __livetype,
 } from './ably';
-import { BaseRealtime, BaseHttp, Http } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 /**
@@ -1759,19 +1758,18 @@ export class LiveCounter {
  * const realtime = createClient({ ...options, plugins: { LiveObjects } });
  * ```
  *
- * The LiveObjects plugin can also be used with a {@link BaseHttp} or {@link BaseRealtime} client.
+ * The LiveObjects plugin can also be used with a client from the `createClient()` of `@ably/pubsub-device/modular`.
  *
  * ```javascript
- * import { BaseRealtime, BaseHttp, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular';
- * import { LiveObjects } from '@ably/pubsub-core/liveobjects';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, LiveObjects } });
- * const http = new BaseHttp({ ...options, plugins: { FetchRequest, LiveObjects } });
+ * import { createClient, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular';
+ * import { LiveObjects } from '@ably/pubsub-device/liveobjects';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, LiveObjects } });
  * ```
  *
  * You can also import individual utilities alongside the plugin:
  *
  * ```javascript
- * import { LiveObjects, LiveCounter, LiveMap } from '@ably/pubsub-core/liveobjects';
+ * import { LiveObjects, LiveCounter, LiveMap } from '@ably/pubsub-device/liveobjects';
  * ```
  */
 export declare const LiveObjects: any;

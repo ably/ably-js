@@ -9,7 +9,7 @@ It contains three files, each of which import ably-js in different manners, and 
 
 - `src/index-default.ts` imports the default ably-js package (`import { Realtime } from '@ably/pubsub-core'`).
 - `src/index-liveobjects.ts` imports the LiveObjects ably-js plugin (`import { LiveObjects } from '@ably/pubsub-core/liveobjects'`).
-- `src/index-modular.ts` imports the tree-shakable ably-js package (`import { BaseRealtime, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular'`).
+- `src/index-modular.ts` imports the tree-shakable ably-js package (`import { createClient, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular'`).
 - `src/ReactApp.tsx` imports React hooks from the ably-js package (`import { useChannel } from '@ably/pubsub-core/react'`).
 
 ## Why is `@ably/pubsub-core` not in `package.json`?

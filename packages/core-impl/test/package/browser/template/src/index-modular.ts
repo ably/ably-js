@@ -1,5 +1,5 @@
-import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from '@ably/pubsub-device/modular';
-import { InboundMessage, RealtimeChannel } from '@ably/pubsub-device';
+import { createClient, WebSocketTransport, FetchRequest, generateRandomKey } from '@ably/pubsub-device/modular';
+import { InboundMessage, PubSubClient, RealtimeChannel } from '@ably/pubsub-device';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
@@ -24,7 +24,7 @@ async function checkStandaloneFunction() {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new BaseRealtime({
+  const realtime: PubSubClient = createClient({
     key,
     endpoint: 'nonprod:sandbox',
     plugins: { WebSocketTransport, FetchRequest },

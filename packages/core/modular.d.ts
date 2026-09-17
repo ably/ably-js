@@ -28,34 +28,15 @@
 
 import {
   ErrorInfo,
-  PubSubHttpClient,
-  ClientOptions,
   Crypto as CryptoClass,
   Message as MessageClass,
   PresenceMessage as PresenceMessageClass,
   Annotation as AnnotationClass,
-  PubSubRealtimeClient,
-  Auth,
-  Channels,
-  Channel,
-  HttpPaginatedResponse,
-  StatsParams,
-  PaginatedResult,
-  Stats,
-  BatchPublishSpec,
-  BatchResult,
-  BatchPublishSuccessResult,
-  BatchPresenceFailureResult,
-  BatchPresenceSuccessResult,
-  BatchPublishFailureResult,
-  Push,
-  RealtimeChannel,
-  Connection,
-  CorePlugins,
-  // The ESLint warning is triggered because we only use this type in a documentation comment.
+  // The ESLint warning is triggered because we only use these types in documentation comments.
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  ClientOptions,
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   AuthOptions,
-  LocalDevice,
 } from './ably';
 
 export declare const generateRandomKey: typeof CryptoClass.generateRandomKey;
@@ -73,24 +54,24 @@ export declare const decodeAnnotation: typeof AnnotationClass.fromEncoded;
 export declare const decodeAnnotations: typeof AnnotationClass.fromEncodedArray;
 
 /**
- * Provides REST-related functionality to a {@link BaseRealtime} client.
+ * Provides REST-related functionality to a modular client.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Http } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Http } });
+ * import { createClient, WebSocketTransport, FetchRequest, Http } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, Http } });
  * ```
  *
  * When provided, the following functionality becomes available:
  *
  * - { @link ably!Push | push admin }
- * - { @link BaseRealtime.time | retrieving Ably service time }
+ * - { @link ably!PubSubRealtimeClient.time | retrieving Ably service time }
  * - { @link ably!Auth.createTokenRequest | creating a token request } using the { @link ably!AuthOptions.queryTime } option
- * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
- * - { @link BaseRealtime.request | making arbitrary REST requests }
- * - { @link BaseRealtime.batchPublish | batch publishing of messages }
- * - { @link BaseRealtime.batchPresence | batch retrieval of channel presence state }
+ * - { @link ably!PubSubRealtimeClient.stats | retrieving your application’s usage statistics }
+ * - { @link ably!PubSubRealtimeClient.request | making arbitrary REST requests }
+ * - { @link ably!PubSubRealtimeClient.batchPublish | batch publishing of messages }
+ * - { @link ably!PubSubRealtimeClient.batchPresence | batch retrieval of channel presence state }
  * - { @link ably!Auth.revokeTokens | requesting the revocation of tokens }
  * - { @link ably!RealtimeChannel.history | retrieving the message history of a channel }
  * - { @link ably!RealtimePresence.history | retrieving the presence history of a channel }
@@ -100,13 +81,13 @@ export declare const decodeAnnotations: typeof AnnotationClass.fromEncodedArray;
 export declare const Http: unknown;
 
 /**
- * Provides a {@link BaseHttp} or {@link BaseRealtime} instance with the ability to encrypt and decrypt {@link ably!Message} payloads.
+ * Provides a modular client with the ability to encrypt and decrypt {@link ably!Message} payloads.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Crypto } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Crypto } });
+ * import { createClient, WebSocketTransport, FetchRequest, Crypto } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, Crypto } });
  * ```
  *
  * When provided, you can configure message encryption on a channel via the {@link ably!ChannelOptions.cipher} property of the `ChannelOptions` that you pass when {@link ably!Channels.get | fetching a channel}. If this plugin is not provided, then passing a `ChannelOptions` with a `cipher` property will cause a runtime error.
@@ -114,13 +95,13 @@ export declare const Http: unknown;
 export declare const Crypto: unknown;
 
 /**
- * Provides a {@link BaseHttp} or {@link BaseRealtime} instance with the ability to communicate with the Ably service using the more space-efficient [MessagePack](https://msgpack.org/index.html) format.
+ * Provides a modular client with the ability to communicate with the Ably service using the more space-efficient [MessagePack](https://msgpack.org/index.html) format.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, MsgPack } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, MsgPack } });
+ * import { createClient, WebSocketTransport, FetchRequest, MsgPack } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, MsgPack } });
  * ```
  *
  * When provided, you can control whether the client uses MessagePack via the {@link ClientOptions.useBinaryProtocol} client option. If you do not provide this plugin, then the library will always JSON format for encoding messages.
@@ -128,13 +109,13 @@ export declare const Crypto: unknown;
 export declare const MsgPack: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to interact with a channel’s presence set.
+ * Provides a modular client with the ability to interact with a channel’s presence set.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, RealtimePresence } });
+ * import { createClient, WebSocketTransport, FetchRequest, RealtimePresence } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, RealtimePresence } });
  * ```
  *
  * If you do not provide this plugin, then attempting to access a channel’s {@link ably!RealtimeChannel.presence} property will cause a runtime error.
@@ -142,14 +123,14 @@ export declare const MsgPack: unknown;
 export declare const RealtimePresence: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to interact with message
+ * Provides a modular client with the ability to interact with message
  * annotations.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Annotations } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Annotations } });
+ * import { createClient, WebSocketTransport, FetchRequest, Annotations } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, Annotations } });
  * ```
  *
  * If you do not provide this plugin, then attempting to access a channel’s {@link ably!RealtimeChannel.annotations} property will cause a runtime error.
@@ -157,32 +138,32 @@ export declare const RealtimePresence: unknown;
 export declare const Annotations: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) connection.
+ * Provides a modular client with the ability to establish a connection with the Ably realtime service using a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) connection.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
+ * import { createClient, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  *
- * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using long polling which is less susceptible to these external conditions. You do this by passing in the {@link XHRPolling} plugin, alongside `WebSocketTransport`:
+ * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the client with the ability to alternatively establish a connection using long polling which is less susceptible to these external conditions. You do this by passing in the {@link XHRPolling} plugin, alongside `WebSocketTransport`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRPolling, FetchRequest } });
+ * import { createClient, WebSocketTransport, XHRPolling, FetchRequest } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, XHRPolling, FetchRequest } });
  * ```
  */
 export declare const WebSocketTransport: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
+ * Provides a modular client with the ability to establish a connection with the Ably realtime service using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
  *
  * `XHRPolling` uses HTTP long polling; that is, it will make a new HTTP request each time a message is received from Ably.
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { XHRPolling, FetchRequest } });
+ * import { createClient, XHRPolling, FetchRequest } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { XHRPolling, FetchRequest } });
  * ```
  *
  * Provide this plugin if, for example, you wish the client to have an alternative mechanism for connecting to Ably if it’s unable to establish a WebSocket connection.
@@ -190,37 +171,37 @@ export declare const WebSocketTransport: unknown;
 export declare const XHRPolling: unknown;
 
 /**
- * Provides a {@link BaseHttp} or {@link BaseRealtime} instance with the ability to make HTTP requests using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
+ * Provides a modular client with the ability to make HTTP requests using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, XHRRequest } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRRequest } });
+ * import { createClient, WebSocketTransport, XHRRequest } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, XHRRequest } });
  * ```
  */
 export declare const XHRRequest: unknown;
 
 /**
- * Provides a {@link BaseHttp} or {@link BaseRealtime} instance with the ability to make HTTP requests using the browser’s [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
+ * Provides a modular client with the ability to make HTTP requests using the browser’s [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
+ * import { createClient, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  */
 export declare const FetchRequest: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to filter channel subscriptions at runtime using { @link ably!RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
+ * Provides a modular client with the ability to filter channel subscriptions at runtime using { @link ably!RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
  *
- * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ * To create a client that includes this plugin, include it in the `plugins` of the client options that you pass to `createClient()` from `@ably/pubsub-device/modular`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, MessageInteractions } from '@ably/pubsub-core/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, MessageInteractions } });
+ * import { createClient, WebSocketTransport, FetchRequest, MessageInteractions } from '@ably/pubsub-device/modular';
+ * const realtime = createClient({ ...options, plugins: { WebSocketTransport, FetchRequest, MessageInteractions } });
  * ```
  *
  * If you do not provide this plugin, then attempting to use this overload of `subscribe()` will cause a runtime error.
@@ -228,7 +209,7 @@ export declare const FetchRequest: unknown;
 export declare const MessageInteractions: unknown;
 
 /**
- * Pass a `ModularPlugins` in the {@link ClientOptions.plugins} property of the options that you pass to { @link BaseHttp.constructor | the constructor of BaseHttp } or {@link BaseRealtime.constructor | that of BaseRealtime} to specify which functionality should be made available to that client.
+ * Pass a `ModularPlugins` in the {@link ClientOptions.plugins} property of the options that you pass to `createClient()` from `@ably/pubsub-device/modular` to specify which functionality should be made available to that client.
  */
 export interface ModularPlugins {
   /**
@@ -280,109 +261,6 @@ export interface ModularPlugins {
    * See {@link MessageInteractions | documentation for the `MessageInteractions` plugin}.
    */
   MessageInteractions?: typeof MessageInteractions;
-}
-
-/**
- * A client that offers a simple stateless API to interact directly with Ably's REST API.
- *
- * `BaseHttp` is the equivalent, in the modular variant of the Ably Client Library SDK, of the {@link PubSubHttpClient} that `createHttpClient()` from `@ably/pubsub-server` returns. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
- *
- * > **Note**
- * >
- * > In order to further reduce bundle size, `BaseHttp` performs less logging than the HTTP client of the default variant of the SDK. It only logs:
- * >
- * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
- * > - a small number of other network events
- * >
- * > If you need more verbose logging, use the default variant of the SDK.
- */
-export declare class BaseHttp implements PubSubHttpClient {
-  /**
-   * Construct a client object using an Ably {@link ClientOptions} object.
-   *
-   * @param options - A {@link ClientOptions} object to configure the client connection to Ably. Its {@link ClientOptions.plugins} property should be an object describing which functionality the client should offer. See the documentation for {@link ModularPlugins}.
-   *
-   * You must provide at least one HTTP request implementation; that is, one of {@link FetchRequest} or {@link XHRRequest}. For minimum bundle size, favour `FetchRequest`.
-   *
-   * The {@link Http} plugin is always implicitly included.
-   */
-  constructor(options: ClientOptions<CorePlugins & ModularPlugins>);
-
-  // Requirements of PubSubHttpClient
-
-  auth: Auth;
-  channels: Channels<Channel>;
-  request<T = any>(
-    method: string,
-    path: string,
-    version: number,
-    params?: any,
-    body?: any[] | any,
-    headers?: any,
-  ): Promise<HttpPaginatedResponse<T>>;
-  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
-  time(): Promise<number>;
-  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
-  batchPublish(
-    specs: BatchPublishSpec[],
-  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
-  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
-  push: Push;
-  getDevice(): Promise<LocalDevice>;
-}
-
-/**
- * A client that extends the functionality of {@link BaseHttp} and provides additional realtime-specific features.
- *
- * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the {@link PubSubRealtimeClient} that the realtime factories of `@ably/pubsub-device` and `@ably/pubsub-server` return. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
- *
- * > **Note**
- * >
- * > In order to further reduce bundle size, `BaseRealtime` performs less logging than the realtime client of the default variant of the SDK. It only logs:
- * >
- * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
- * > - a small number of other network events
- * >
- * > If you need more verbose logging, use the default variant of the SDK.
- */
-export declare class BaseRealtime implements PubSubRealtimeClient {
-  /**
-   * Construct a client object using an Ably {@link ClientOptions} object.
-   *
-   * @param options - A {@link ClientOptions} object to configure the client connection to Ably. Its {@link ClientOptions.plugins} property should be an object describing which functionality the client should offer. See the documentation for {@link ModularPlugins}.
-   *
-   * You must provide:
-   *
-   * - at least one HTTP request implementation; that is, one of {@link FetchRequest} or {@link XHRRequest} — for minimum bundle size, favour `FetchRequest`;
-   * - at least one realtime transport implementation; that is, one of {@link WebSocketTransport} or {@link XHRPolling} — for minimum bundle size, favour `WebSocketTransport`.
-   */
-  constructor(options: ClientOptions<CorePlugins & ModularPlugins>);
-
-  // Requirements of PubSubRealtimeClient
-
-  clientId: string;
-  close(): void;
-  connect(): void;
-  auth: Auth;
-  channels: Channels<RealtimeChannel>;
-  connection: Connection;
-  request<T = any>(
-    method: string,
-    path: string,
-    version: number,
-    params?: any,
-    body?: any[] | any,
-    headers?: any,
-  ): Promise<HttpPaginatedResponse<T>>;
-  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
-  time(): Promise<number>;
-  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
-  batchPublish(
-    specs: BatchPublishSpec[],
-  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
-  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
-  push: Push;
-  getDevice(): Promise<LocalDevice>;
 }
 
 export { ErrorInfo };

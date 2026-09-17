@@ -1,7 +1,7 @@
 // The ESLint warning is triggered because we only use these types in a documentation comment.
 /* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
 import { PubSubRealtimeClient } from './ably';
-import { BaseRealtime, Http } from './modular';
+import { Http } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
 
 /**
@@ -15,7 +15,7 @@ import { BaseRealtime, Http } from './modular';
  * const realtime = createClient({ ...options, plugins: { Push } });
  * ```
  *
- * The Push plugin can also be used with a {@link BaseRealtime} client, with the additional requirement that you must also use the {@link Http} plugin
+ * The Push plugin can also be used with a client from the `createClient()` of `@ably/pubsub-device/modular`, with the additional requirement that you must also use the {@link Http} plugin:
  *
  * ```javascript
  * import { createClient, Http, WebSocketTransport, FetchRequest } from '@ably/pubsub-device/modular';

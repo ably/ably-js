@@ -7,13 +7,14 @@
 
 import { BaseRealtime } from '@ably/pubsub-core-impl/modular';
 import type { ModularPlugins } from '@ably/pubsub-core/modular';
-import type { ClientOptions, CorePlugins } from '@ably/pubsub-core/api';
+import type { ClientOptions, CorePlugins, PubSubRealtimeClient } from '@ably/pubsub-core/api';
 import { deviceAgentIdentifier, optionsWithSideAgent } from '../../core-impl/side/side';
 
-// Enumerated rather than star-re-exported so that `BaseHttp`, the tree-shakable stateless HTTP
-// client, stays out: this package offers no HTTP client. The `Http` plugin stays in, because it is
-// not a client — it is what gives a `BaseRealtime` history, stats, `request()` and the other REST
-// features. A name the implementation's modular variant adds must be added here too, or it is not exported.
+// Enumerated rather than star-re-exported so that the client classes, `BaseRealtime` and `BaseHttp`,
+// stay out: a client is created with `createClient`, which declares the device side, and this
+// package offers no HTTP client. The `Http` plugin stays in, because it is not a client — it is what
+// gives a modular client history, stats, `request()` and the other REST features. A name the
+// implementation's modular variant adds must be added here too, or it is not exported.
 export {
   generateRandomKey,
   getDefaultCryptoParams,
@@ -38,7 +39,6 @@ export {
   XHRRequest,
   FetchRequest,
   MessageInteractions,
-  BaseRealtime,
   ErrorInfo,
 } from '@ably/pubsub-core-impl/modular';
 
@@ -52,7 +52,7 @@ export {
  * The contract is documented on the declaration in ../modular/index.d.ts, which is what consumers
  * see.
  */
-export function createClient(options: ClientOptions<CorePlugins & ModularPlugins>): BaseRealtime {
+export function createClient(options: ClientOptions<CorePlugins & ModularPlugins>): PubSubRealtimeClient {
   // The signature already forbids bare key/token strings, but a JS caller can still pass one.
   // Hand it to the constructor unstamped rather than normalising it into an options object:
   // the implementation deliberately rejects strings for modular clients with an error telling the caller

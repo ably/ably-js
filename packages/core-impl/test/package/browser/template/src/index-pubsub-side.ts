@@ -45,7 +45,7 @@ globalThis.testAblyPackage = async function () {
 
   // The modular subpath re-exports the core's tree-shakable variant and adds its own side-stamping
   // factory. It is ESM-only, so this also checks the `import` condition resolves on its own.
-  const modularDevice = PubSubDeviceModular.createClient({
+  const modularDevice: PubSubDevice.PubSubClient = PubSubDeviceModular.createClient({
     key: 'app.key:secret',
     autoConnect: false,
     clientId: 'someone',
@@ -54,8 +54,10 @@ globalThis.testAblyPackage = async function () {
       FetchRequest: PubSubDeviceModular.FetchRequest,
     },
   });
-  if (!(modularDevice instanceof PubSubDeviceModular.BaseRealtime)) {
-    throw new Error('the modular factory did not return a BaseRealtime');
+  // The client classes behind the factory are internal: a modular client is created with
+  // `createClient` and typed as `PubSubClient`, as the root's is.
+  if ('BaseRealtime' in PubSubDeviceModular || 'BaseHttp' in PubSubDeviceModular) {
+    throw new Error('the modular subpath exports a client class');
   }
   modularDevice.close();
 
@@ -99,6 +101,8 @@ globalThis.testAblyPackage = async function () {
   type DeviceHttpClient = PubSubDevice.PubSubHttpClient;
   // @ts-expect-error
   type DeviceRestChannel = PubSubDevice.Channel;
+  // @ts-expect-error
+  void PubSubDeviceModular.BaseRealtime;
   // @ts-expect-error
   void PubSubDeviceModular.BaseHttp;
   const serverRestChannel: PubSubServer.Channel = serverHttp.channels.get('channel');

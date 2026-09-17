@@ -15,7 +15,6 @@ import {
   Subscription,
   __livetype,
 } from './ably';
-import { BaseRealtime, BaseHttp, Http } from './modular';
 import type {
   JsonArray,
   JsonObject,
