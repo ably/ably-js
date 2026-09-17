@@ -1,0 +1,23 @@
+{
+  // Used (via TSX_TSCONFIG_PATH in the test:uts scripts) when tsx runs the UTS, in place of the
+  // implementation's tsconfig it extends. The one addition is a paths mapping that resolves the
+  // `@ably/pubsub-core-impl/platform` specifier — which the per-side package sources import — onto
+  // the implementation's Node.js entry point, the same module helpers.ts already loads. Without it
+  // the specifier resolves through the workspace symlink to the same file under a different path:
+  // a second module instance whose Platform singleton the UTS mock installers never touch, so every
+  // client the per-side factories construct would bypass the mocks.
+  //
+  // `paths` replaces rather than merges with the inherited mapping, so the core's runtime is mapped
+  // again here.
+  //
+  // Only tsx consults this file; the type checking of the per-side packages against the core's
+  // published declarations stays with `npm run check:packages` (packages/tsconfig.json).
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // Relative to the inherited baseUrl (packages/core-impl/src).
+    "paths": {
+      "@ably/pubsub-core": ["../../core/src/index.ts"],
+      "@ably/pubsub-core-impl/platform": ["platform/nodejs/index.ts"]
+    }
+  }
+}

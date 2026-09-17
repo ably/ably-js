@@ -222,3 +222,9 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
     return withHelpHref(new PartialErrorInfo(values));
   }
 }
+
+// toString() prints the constructor's name, and a bundler that inlines these classes may rename
+// them to avoid a clash with another binding of the same name, so the names are pinned here
+// rather than left to each bundle's configuration.
+Object.defineProperty(ErrorInfo, 'name', { value: 'ErrorInfo' });
+Object.defineProperty(PartialErrorInfo, 'name', { value: 'PartialErrorInfo' });

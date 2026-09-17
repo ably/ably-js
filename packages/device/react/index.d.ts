@@ -1,5 +1,5 @@
 /**
- * The full public type surface of the core's React hooks.
+ * The full public type surface of the React hooks.
  *
  * Use these with a client from `createClient()`:
  *
@@ -11,4 +11,4 @@
  * // <AblyProvider client={client}> ... </AblyProvider>
  * ```
  */
-export * from '@ably/pubsub-core/react';
+export * from '../dist/react/cjs/index.js';

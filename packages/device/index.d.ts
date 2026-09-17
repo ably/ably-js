@@ -2,7 +2,7 @@ import type { ClientOptions, PubSubRealtimeClient } from '@ably/pubsub-core/type
 
 /**
  * The core's type surface, minus the stateless HTTP client and the types only it reaches. Safe as
- * a star re-export because it resolves at compile time only — see ../shared/core-exports.ts for
+ * a star re-export because it resolves at compile time only — see ../core-impl/side/core-exports.ts for
  * why the *runtime* re-export is enumerated instead.
  *
  * This is `@ably/pubsub-core/types` rather than the package root because this package offers no

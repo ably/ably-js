@@ -1,6 +1,6 @@
-// The core's test suite lives in packages/core, but mocha runs from this monorepo root so that
+// The test suite lives in packages/core-impl, but mocha runs from this monorepo root so that
 // one node_modules and one set of dev dependencies serve every package.
-const core = 'packages/core';
+const core = 'packages/core-impl';
 
 const config = {
   require: [

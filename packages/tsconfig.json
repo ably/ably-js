@@ -13,18 +13,17 @@
     "baseUrl": ".",
     "paths": {
       "@ably/pubsub-core": ["./core"],
+      "@ably/pubsub-core/api": ["./core/api.d.ts"],
       "@ably/pubsub-core/types": ["./core/types.d.ts"],
       "@ably/pubsub-core/modular": ["./core/modular.d.ts"],
       "@ably/pubsub-core/liveobjects": ["./core/liveobjects.d.ts"],
       "@ably/pubsub-core/liveobjects-types": ["./core/liveobjects-types.d.ts"],
-      "@ably/pubsub-core/liveobjects/react": ["./core/react/cjs/liveobjects/index.d.ts"],
-      "@ably/pubsub-core/react": ["./core/react/cjs/index.d.ts"],
       "@ably/pubsub-core/push": ["./core/push.d.ts"],
       "@ably/pubsub-core/react-native-push": ["./core/react-native-push.d.ts"]
     }
   },
   "include": [
-    "shared/**/*.ts",
+    "core-impl/side/**/*.ts",
     "device/src/**/*.ts",
     "device/**/*.d.ts",
     "device/**/*.d.mts",

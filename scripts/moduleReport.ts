@@ -5,11 +5,11 @@ import { promisify } from 'util';
 import { gzip } from 'zlib';
 import Table from 'cli-table';
 
-// Every bundle path and module name in this file is written relative to the core package, so every
-// esbuild call below is given that as its working directory. Changing this process's own cwd is not
-// enough: esbuild-runner has already started the esbuild service by the time this module is
-// evaluated, and the service keeps the working directory it was started with.
-const coreDir = path.join(__dirname, '..', 'packages', 'core');
+// Every bundle path and module name in this file is written relative to the private implementation
+// package, so every esbuild call below is given that as its working directory. Changing this
+// process's own cwd is not enough: esbuild-runner has already started the esbuild service by the
+// time this module is evaluated, and the service keeps the working directory it was started with.
+const implDir = path.join(__dirname, '..', 'packages', 'core-impl');
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
 const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 122, gzip: 37 };
@@ -56,8 +56,9 @@ const buildablePlugins: Record<'push' | 'reactNativePush' | 'liveobjects', Plugi
   push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
   reactNativePush: {
     description: 'ReactNativePush',
-    path: './build/react-native-push.js',
-    external: ['ulid', 'react-native'],
+    // Built only into @ably/pubsub-device, which leaves the core's runtime external.
+    path: '../device/dist/react-native-push.js',
+    external: ['ulid', 'react-native', '@ably/pubsub-core'],
   },
   liveobjects: { description: 'LiveObjects', path: './build/liveobjects.js', external: ['dequal'] },
 };
@@ -99,10 +100,10 @@ function getBundleInfo(modulePath: string, exports?: string[], external?: string
   const outfile = exports ? exports.join('') : 'all';
   const exportTarget = exports ? `{ ${exports.join(', ')} }` : '*';
   const result = esbuild.buildSync({
-    absWorkingDir: coreDir,
+    absWorkingDir: implDir,
     stdin: {
       contents: `export ${exportTarget} from '${modulePath}'`,
-      resolveDir: coreDir,
+      resolveDir: implDir,
     },
     metafile: true,
     minify: true,
@@ -298,7 +299,10 @@ async function checkBaseRealtimeFiles() {
     'src/common/lib/transport/messagequeue.ts',
     'src/common/lib/transport/protocol.ts',
     'src/common/lib/transport/transport.ts',
-    'src/common/lib/types/errorinfo.ts',
+    // The core's runtime, which this internal bundle inlines rather than leaving external.
+    '../core/src/errorinfo.ts',
+    '../core/src/eventemitter.ts',
+    '../core/src/inspect.ts',
     'src/common/lib/types/message.ts',
     'src/common/lib/types/basemessage.ts',
     'src/common/lib/types/protocolmessage.ts',

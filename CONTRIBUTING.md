@@ -18,7 +18,7 @@ The three packages (`@ably/pubsub-core`, `@ably/pubsub-device`, `@ably/pubsub-se
 1. Make sure the tests are passing in CI for the branch you're building
 2. Create a new branch for the release, for example `release/1.2.3`
 3. Update the CHANGELOG.md with any customer-affecting changes since the last release and add this to the git index
-4. Run `npm run release:bump <VERSION_NUMBER>` with the new version and add the changes to the git index (this moves every version site together: the root and workspace `package.json` files, the wrappers' exact `@ably/pubsub-core` peer pins, the react-hooks version constant, and the lockfile)
+4. Run `npm run release:bump <VERSION_NUMBER>` with the new version and add the changes to the git index (this moves every version site together: the root and workspace `package.json` files, the exact `@ably/pubsub-core` dependency pins, the react-hooks version constant, and the lockfile)
 5. Create a PR for the release branch
 6. Once the release PR is landed to the `main` branch, checkout the `main` branch locally (remember to pull the remote changes) and run `npm run build`
 7. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to GitHub with `git push <REMOTE> <VERSION_NUMBER>` (usually `git push origin <VERSION_NUMBER>`)
@@ -29,15 +29,17 @@ The three packages (`@ably/pubsub-core`, `@ably/pubsub-device`, `@ably/pubsub-se
 
 ### Per-side packages
 
-`packages/device` and `packages/server` are thin wrappers over the core in `packages/core`, published as `@ably/pubsub-device` and `@ably/pubsub-server` alongside the core's own `@ably/pubsub-core`. They exist so that a client can declare which side of the connection it is on, which is what determines whether its traffic counts toward an account's monthly active users.
+`packages/device` and `packages/server` are published as `@ably/pubsub-device` and `@ably/pubsub-server`. They exist so that a client can declare which side of the connection it is on, which is what determines whether its traffic counts toward an account's monthly active users.
 
-`npm run build:packages` builds them. All three packages are npm workspaces of this repo, so `node_modules/@ably/pubsub-core` is a symlink to `packages/core` and their bundles resolve the core in the working tree rather than a published one — tests exercise a single copy of it, and `instanceof` holds across the boundary exactly as it does for a consumer who installed both.
+Each bundles the private implementation in `packages/core-impl`, and depends on the exact version of `@ably/pubsub-core`, which holds the API declarations and the one runtime copy of `ErrorInfo` and `EventEmitter`. Every bundle leaves `@ably/pubsub-core` external, except the CDN bundles, so that `instanceof ErrorInfo` holds across both packages and the SDKs layered on Pub/Sub.
+
+`npm run build:packages` builds them. All four packages are npm workspaces of this repo, so `node_modules/@ably/pubsub-core` is a symlink to `packages/core` and the bundles resolve the core in the working tree rather than a published one.
 
 ## Building the library
 
 To build the library, simply run `npm run build`. Building the library currently requires NodeJS >= v16.
 
-Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands. Build output for the core lands in `packages/core/build`, and for the wrapper packages in `packages/device/dist` and `packages/server/dist`.
+Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands. Build output for the core's runtime lands in `packages/core/build`, and for the per-side packages in `packages/device/dist` and `packages/server/dist`, with the CDN bundles in `packages/device/dist/cdn`. The bundles the test suite loads are built from the implementation into `packages/core-impl/build`, and are never published.
 
 ## Coding conventions
 
@@ -57,7 +59,7 @@ Run the Mocha test suite
 
 You can pass any Mocha CLI arguments and flags to the test:node script after the `--` separator, for example running one test file:
 
-    npm run test:node -- packages/core/test/realtime/auth.test.js
+    npm run test:node -- packages/core-impl/test/realtime/auth.test.js
 
 Or run just one test
 
@@ -65,7 +67,7 @@ Or run just one test
 
 Or run test skipping the build
 
-    npm run test:node:skip-build -- packages/core/test/rest/status.test.js --grep=test_name_here
+    npm run test:node:skip-build -- packages/core-impl/test/rest/status.test.js --grep=test_name_here
 
 ### Tests alignment with the Ably features specification
 
@@ -126,7 +128,7 @@ Run the following command to launch tests with the debugger enabled. The tests w
 
 Alternatively you can also run the tests for single file
 
-    node --inspect-brk=9229 node_modules/.bin/mocha packages/core/test/realtime/auth.test.js
+    node --inspect-brk=9229 node_modules/.bin/mocha packages/core-impl/test/realtime/auth.test.js
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
@@ -180,17 +182,17 @@ helper.recordPrivateApi('replace.channel.send');
 channel.send = function () {};
 ```
 
-The current list of private API usage identifiers can be found in [`packages/core/test/common/modules/private_api_recorder.js`](packages/core/test/common/modules/private_api_recorder.js); add new ones there as necessary.
+The current list of private API usage identifiers can be found in [`packages/core-impl/test/common/modules/private_api_recorder.js`](packages/core-impl/test/common/modules/private_api_recorder.js); add new ones there as necessary.
 
 The following test files do not utilise private API annotations, and you don’t need to add them:
 
-- [`packages/core/test/realtime/transports.test.js`](packages/core/test/realtime/transports.test.js)
-- [`packages/core/test/browser/simple.test.js`](packages/core/test/browser/simple.test.js)
-- [`packages/core/test/browser/http.test.js`](packages/core/test/browser/http.test.js)
-- [`packages/core/test/browser/connection.test.js`](packages/core/test/browser/connection.test.js)
-- [`packages/core/test/browser/modular.test.js`](packages/core/test/browser/modular.test.js)
-- [`packages/core/test/browser/push.test.js`](packages/core/test/browser/push.test.js)
-- [`packages/core/test/rest/bufferutils.test.js`](packages/core/test/rest/bufferutils.test.js)
+- [`packages/core-impl/test/realtime/transports.test.js`](packages/core-impl/test/realtime/transports.test.js)
+- [`packages/core-impl/test/browser/simple.test.js`](packages/core-impl/test/browser/simple.test.js)
+- [`packages/core-impl/test/browser/http.test.js`](packages/core-impl/test/browser/http.test.js)
+- [`packages/core-impl/test/browser/connection.test.js`](packages/core-impl/test/browser/connection.test.js)
+- [`packages/core-impl/test/browser/modular.test.js`](packages/core-impl/test/browser/modular.test.js)
+- [`packages/core-impl/test/browser/push.test.js`](packages/core-impl/test/browser/push.test.js)
+- [`packages/core-impl/test/rest/bufferutils.test.js`](packages/core-impl/test/rest/bufferutils.test.js)
 
 ## React hooks
 
@@ -202,7 +204,7 @@ You can run the dev server from the terminal using:
 npm run start:react
 ```
 
-You'll need to provide an API key for the sample to work (or you'll just get a white page and some errors in the console). To do this, create the file `./packages/core/src/platform/react-hooks/sample-app/.env` and add the following line:
+You'll need to provide an API key for the sample to work (or you'll just get a white page and some errors in the console). To do this, create the file `./packages/core-impl/src/platform/react-hooks/sample-app/.env` and add the following line:
 
 ```.env
 VITE_ABLY_API_KEY=<your-api-key>

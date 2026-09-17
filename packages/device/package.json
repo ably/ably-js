@@ -6,11 +6,27 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/node.js",
   "module": "./dist/index.mjs",
+  "browser": "./dist/index.js",
+  "react-native": "./dist/react-native.js",
   "types": "./index.d.ts",
   "exports": {
     ".": {
+      "react-native": {
+        "types": "./index.d.ts",
+        "default": "./dist/react-native.js"
+      },
+      "node": {
+        "require": {
+          "types": "./index.d.ts",
+          "default": "./dist/node.js"
+        },
+        "import": {
+          "types": "./index.d.mts",
+          "default": "./dist/node.mjs"
+        }
+      },
       "require": {
         "types": "./index.d.ts",
         "default": "./dist/index.js"
@@ -38,22 +54,22 @@
     },
     "./liveobjects/react": {
       "require": {
-        "types": "./liveobjects/react/index.d.ts",
-        "default": "./dist/liveobjects-react.js"
+        "types": "./dist/react/cjs/liveobjects/index.d.ts",
+        "default": "./dist/react/cjs/liveobjects/index.js"
       },
       "import": {
-        "types": "./liveobjects/react/index.d.mts",
-        "default": "./dist/liveobjects-react.mjs"
+        "types": "./dist/react/mjs/liveobjects/index.d.ts",
+        "default": "./dist/react/mjs/liveobjects/index.js"
       }
     },
     "./react": {
       "require": {
-        "types": "./react/index.d.ts",
-        "default": "./dist/react.js"
+        "types": "./dist/react/cjs/index.d.ts",
+        "default": "./dist/react/cjs/index.js"
       },
       "import": {
-        "types": "./react/index.d.mts",
-        "default": "./dist/react.mjs"
+        "types": "./dist/react/mjs/index.d.ts",
+        "default": "./dist/react/mjs/index.js"
       }
     },
     "./push": {
@@ -88,10 +104,25 @@
     "react-native-push/**",
     "README.md"
   ],
-  "peerDependencies": {
+  "dependencies": {
     "@ably/pubsub-core": "2.30.0",
+    "dequal": "^2.0.3",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
+    "got": "^11.8.5",
+    "ulid": "^2.3.0",
+    "ws": "^8.17.1"
+  },
+  "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "repository": {
     "type": "git",
@@ -112,13 +143,5 @@
   ],
   "engines": {
     "node": ">=16"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
   }
 }

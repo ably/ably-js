@@ -17,7 +17,7 @@ async function run() {
     // Local path to start from
     path: '.',
     // Comma separated directories (relative to `path`) to upload
-    includeDirs: 'packages/core/build',
+    includeDirs: 'packages/device/dist/cdn',
     // Comma separated directories (relative to `path`) to exclude from upload
     excludeDirs: 'node_modules,.git',
     // Regex to match files against for upload

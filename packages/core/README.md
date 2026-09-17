@@ -13,7 +13,9 @@ Both re-export this package's public API, and both create clients through factor
 
 ## What this package is
 
-The shared implementation of the Ably Pub/Sub JavaScript SDK: the realtime and REST clients, the transports, the plugins (push, LiveObjects) and the React hooks. It targets browsers, Node.js and React Native, and it is the single copy of the SDK that both per-side packages resolve at runtime — which is why it is a peer dependency of each rather than bundled into them.
+The API of the Ably Pub/Sub JavaScript SDK, which `@ably/pubsub-device` and `@ably/pubsub-server` implement, and which the SDKs layered on Pub/Sub, such as Chat and Spaces, are written against. It carries no client implementation: each per-side package bundles its own.
+
+It also carries the few runtime classes that those packages share: `ErrorInfo`, `PartialErrorInfo` and `EventEmitter`. There is exactly one copy of each, here, so that an error raised by any of those packages passes `instanceof ErrorInfo` against the class imported from any other. That is why it is a dependency of each per-side package rather than bundled into them.
 
 Its public API surface is defined in [`ably.d.ts`](./ably.d.ts), which re-exports [`types.d.ts`](./types.d.ts) and [`http.d.ts`](./http.d.ts), and the [API reference](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/) is generated from it.
 

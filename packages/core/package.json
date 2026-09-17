@@ -1,6 +1,6 @@
 {
   "name": "@ably/pubsub-core",
-  "description": "Ably-internal shared core of the Ably Pub/Sub JavaScript SDK. Install @ably/pubsub-device or @ably/pubsub-server instead",
+  "description": "Ably-internal core of the Ably Pub/Sub JavaScript SDK: the Pub/Sub API types and the runtime classes shared with the SDKs layered on it. Install @ably/pubsub-device or @ably/pubsub-server instead",
   "version": "2.30.0",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -10,44 +10,41 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
-  "main": "./build/ably-node.js",
-  "browser": "./build/ably.js",
-  "react-native": "./build/ably-reactnative.js",
-  "typings": "./ably.d.ts",
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
-      "types": "./ably.d.ts",
-      "node": "./build/ably-node.js",
-      "react-native": "./build/ably-reactnative.js",
-      "default": "./build/ably.js"
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./build/index.js"
+      }
+    },
+    "./api": {
+      "types": "./api.d.ts"
     },
     "./types": {
       "types": "./types.d.ts"
     },
     "./modular": {
-      "types": "./modular.d.ts",
-      "import": "./build/modular/index.mjs"
-    },
-    "./react": {
-      "require": "./react/cjs/index.js",
-      "import": "./react/mjs/index.js"
+      "types": "./modular.d.ts"
     },
     "./push": {
-      "types": "./push.d.ts",
-      "default": "./build/push.js"
+      "types": "./push.d.ts"
     },
     "./react-native-push": {
-      "types": "./react-native-push.d.ts",
-      "default": "./build/react-native-push.js"
+      "types": "./react-native-push.d.ts"
     },
     "./liveobjects": {
       "import": {
-        "types": "./liveobjects.d.mts",
-        "default": "./build/liveobjects.mjs"
+        "types": "./liveobjects.d.mts"
       },
       "require": {
-        "types": "./liveobjects.d.ts",
-        "default": "./build/liveobjects.js"
+        "types": "./liveobjects.d.ts"
       }
     },
     "./liveobjects-types": {
@@ -57,14 +54,13 @@
       "require": {
         "types": "./liveobjects-types.d.ts"
       }
-    },
-    "./liveobjects/react": {
-      "require": "./react/cjs/liveobjects/index.js",
-      "import": "./react/mjs/liveobjects/index.js"
     }
   },
   "files": [
     "build/**",
+    "index.d.ts",
+    "index.d.mts",
+    "api.d.ts",
     "ably.d.ts",
     "types.d.ts",
     "http.d.ts",
@@ -74,36 +70,12 @@
     "liveobjects-types.d.mts",
     "liveobjects-http.d.ts",
     "liveobjects-http.d.mts",
-    "liveobjects/react.d.ts",
     "modular.d.ts",
     "push.d.ts",
     "react-native-push.d.ts",
-    "react-native-push.js",
     "resources/**",
-    "src/**",
-    "react/**",
     "README.md"
   ],
-  "dependencies": {
-    "@ably/msgpack-js": "^0.4.0",
-    "dequal": "^2.0.3",
-    "fastestsmallesttextencoderdecoder": "^1.0.22",
-    "got": "^11.8.5",
-    "ulid": "^2.3.0",
-    "ws": "^8.17.1"
-  },
-  "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
-  },
   "engines": {
     "node": ">=16"
   },
@@ -112,12 +84,5 @@
     "url": "git+https://github.com/ably/ably-pubsub-js.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/ably/ably-pubsub-js/tree/main/packages/core#readme",
-  "jspm": {
-    "registry": "npm",
-    "directories": {
-      "lib": "build"
-    },
-    "main": "ably"
-  }
+  "homepage": "https://github.com/ably/ably-pubsub-js/tree/main/packages/core#readme"
 }

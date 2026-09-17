@@ -2,7 +2,7 @@
 
 The Ably Pub/Sub client for **servers**: backend services and other trusted runtimes you operate.
 
-This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's entire public API and creates clients through factories that declare which side of the connection you are on, so that your own backend services are not billed as your users. Use [`@ably/pubsub-device`](https://www.npmjs.com/package/@ably/pubsub-device) for code running on an end user's device instead.
+This package is the Ably Pub/Sub client for servers. It implements the API declared by [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core) and creates clients through factories that declare which side of the connection you are on, so that your own backend services are not billed as your users. Use [`@ably/pubsub-device`](https://www.npmjs.com/package/@ably/pubsub-device) for code running on an end user's device instead.
 
 ## Installation
 
@@ -10,7 +10,7 @@ This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.co
 npm install @ably/pubsub-server
 ```
 
-`@ably/pubsub-core` is an exact peer dependency, and npm installs it for you. The two are released together on the same version, so keep them in step.
+`@ably/pubsub-core` is an exact dependency, and npm installs it for you. It carries the API declarations and the runtime `ErrorInfo` shared with the other Ably SDKs.
 
 ## Usage
 
@@ -35,7 +35,7 @@ They return a `PubSubHttpClient` and a `PubSubRealtimeClient`, the clients that 
 
 ## Entry points
 
-Everything the core SDK exposes is re-exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
+Everything the SDK exposes is exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
 
 | Import from                       | What you get                                                                            |
 | --------------------------------- | --------------------------------------------------------------------------------------- |

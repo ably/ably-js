@@ -16,7 +16,7 @@
  *     artifacts each package's `files` globs reference exist (npm pack silently omits missing
  *     files, so a stale checkout would otherwise publish a broken tarball), and a --dry-run
  *     pack of every not-yet-published package succeeds.
- *   - Packages publish in dependency order (core, then the wrappers that peer-depend on it),
+ *   - Packages publish in dependency order (core, then the per-side packages that depend on it),
  *     so no wrapper is ever visible on the registry before the core version it pins.
  *   - The registry is consulted first, and already-published packages are skipped: if a run
  *     fails partway, re-running the same command completes the remainder rather than erroring
@@ -29,19 +29,34 @@ const { execSync, execFileSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..');
 
-// Publish order is dependency order: the wrappers peer-depend on the exact core version, so
-// the core must be visible on the registry before either wrapper.
+// Publish order is dependency order: the per-side packages depend on the exact core version,
+// so the core must be visible on the registry before either of them.
 const packageDirs = ['packages/core', 'packages/device', 'packages/server'];
+
+// The private implementation workspace is never published, but bundled into both per-side
+// packages, so its version moves with theirs.
+const privatePackageDirs = ['packages/core-impl'];
+
+// The workspaces that pin the exact core version as a dependency.
+const coreDependentDirs = ['packages/core-impl', 'packages/device', 'packages/server'];
 
 // Files whose absence means `npm run build` has not been run for the working tree: each is
 // matched by its package's `files` globs, so npm pack would silently publish without it.
 const requiredArtifacts = {
-  'packages/core': ['build/ably.js', 'build/ably-node.js', 'build/liveobjects.js', 'react/cjs/index.js'],
-  'packages/device': ['dist/index.js', 'dist/index.mjs', 'index.d.mts'],
-  'packages/server': ['dist/index.js', 'dist/index.mjs', 'index.d.mts'],
+  'packages/core': ['build/index.js', 'build/index.mjs', 'build/index.d.ts'],
+  'packages/device': [
+    'dist/index.js',
+    'dist/index.mjs',
+    'dist/node.js',
+    'dist/react-native.js',
+    'dist/react/cjs/index.js',
+    'dist/cdn/ably.min.js',
+    'index.d.mts',
+  ],
+  'packages/server': ['dist/index.js', 'dist/index.mjs', 'dist/node.js', 'index.d.mts'],
 };
 
-const reactHooksFile = 'packages/core/src/platform/react-hooks/src/AblyReactHooks.ts';
+const reactHooksFile = 'packages/core-impl/src/platform/react-hooks/src/AblyReactHooks.ts';
 const reactHooksVersionRe = /^export const version = '([^']+)';$/m;
 
 function readJson(relPath) {
@@ -63,13 +78,13 @@ function fail(message) {
  */
 function versionSites() {
   const sites = [{ name: 'package.json (workspace root)', version: readJson('package.json').version }];
-  for (const dir of packageDirs) {
+  for (const dir of [...packageDirs, ...privatePackageDirs]) {
     sites.push({ name: `${dir}/package.json`, version: readJson(`${dir}/package.json`).version });
   }
-  for (const dir of ['packages/device', 'packages/server']) {
+  for (const dir of coreDependentDirs) {
     sites.push({
-      name: `${dir}/package.json peerDependencies['@ably/pubsub-core']`,
-      version: readJson(`${dir}/package.json`).peerDependencies['@ably/pubsub-core'],
+      name: `${dir}/package.json dependencies['@ably/pubsub-core']`,
+      version: readJson(`${dir}/package.json`).dependencies['@ably/pubsub-core'],
     });
   }
   const reactHooksSource = fs.readFileSync(path.join(repoRoot, reactHooksFile), 'utf8');
@@ -104,12 +119,15 @@ function bump(version) {
   // with npm 11: it rewrote every package.json and still exited non-zero, and re-running it
   // then fails with "Version not changed" because the files already moved). Direct writes are
   // deterministic and safely re-runnable at any version.
-  for (const relPath of ['package.json', ...packageDirs.map((dir) => `${dir}/package.json`)]) {
+  for (const relPath of [
+    'package.json',
+    ...[...packageDirs, ...privatePackageDirs].map((dir) => `${dir}/package.json`),
+  ]) {
     const pkg = readJson(relPath);
     pkg.version = version;
-    // The wrappers pin the core as an exact peer dependency, so it moves with the release.
-    if (pkg.peerDependencies && pkg.peerDependencies['@ably/pubsub-core']) {
-      pkg.peerDependencies['@ably/pubsub-core'] = version;
+    // The core is pinned as an exact dependency, so the pin moves with the release.
+    if (pkg.dependencies && pkg.dependencies['@ably/pubsub-core']) {
+      pkg.dependencies['@ably/pubsub-core'] = version;
     }
     writeJson(relPath, pkg);
   }

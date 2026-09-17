@@ -18,7 +18,7 @@ jobs:
         # tsx (used to run the TypeScript UTS suite) requires Node >= 18, so 16.x is excluded.
         node-version: [18.x, 20.x]
         # Which package's entry points the suite constructs clients through (see the UTS_SIDE
-        # handling in packages/core/test/uts/helpers.ts): the core constructors, or the
+        # handling in packages/core-impl/test/uts/helpers.ts): the implementation's constructors, or the
         # side-declaring factories of @ably/pubsub-device / @ably/pubsub-server. The factories
         # stamp an agent entry and pass everything else through, so conformance must be
         # identical on every leg; side_modes.test.ts fails a leg whose stamp does not match.

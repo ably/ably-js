@@ -1,11 +1,11 @@
-import type { ClientOptions, PubSubRealtimeClient, PubSubHttpClient } from '@ably/pubsub-core';
+import type { ClientOptions, PubSubRealtimeClient, PubSubHttpClient } from '@ably/pubsub-core/api';
 
 /**
  * The full public type surface of the core. Safe as a star re-export because it resolves
- * at compile time only — see ../shared/core-exports.ts for why the *runtime* re-export is
+ * at compile time only — see ../core-impl/side/core-exports.ts for why the *runtime* re-export is
  * enumerated instead.
  */
-export * from '@ably/pubsub-core';
+export * from '@ably/pubsub-core/api';
 
 /**
  * Creates a stateless Pub/Sub client for a server, talking to Ably over HTTP.

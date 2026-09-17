@@ -2,7 +2,7 @@
 
 The Ably Pub/Sub client for **devices**: browsers, React Native, Electron, mobile and desktop apps, and any other runtime where the code runs under an end user's control.
 
-This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core). It re-exports that package's public API, minus the stateless HTTP client a device has no use for, and creates clients through a factory that declares which side of the connection you are on, so Ably can tell your users apart from your own backend services. Use [`@ably/pubsub-server`](https://www.npmjs.com/package/@ably/pubsub-server) for a backend service instead.
+This package is the Ably Pub/Sub client for devices. It implements the API declared by [`@ably/pubsub-core`](https://www.npmjs.com/package/@ably/pubsub-core), minus the stateless HTTP client a device has no use for, and creates clients through a factory that declares which side of the connection you are on, so Ably can tell your users apart from your own backend services. Use [`@ably/pubsub-server`](https://www.npmjs.com/package/@ably/pubsub-server) for a backend service instead.
 
 ## Installation
 
@@ -10,7 +10,7 @@ This package is a thin wrapper around [`@ably/pubsub-core`](https://www.npmjs.co
 npm install @ably/pubsub-device
 ```
 
-`@ably/pubsub-core` is an exact peer dependency, and npm installs it for you. The two are released together on the same version, so keep them in step.
+`@ably/pubsub-core` is an exact dependency, and npm installs it for you. It carries the API declarations and the runtime `ErrorInfo` shared with the other Ably SDKs.
 
 ## Usage
 
@@ -37,7 +37,7 @@ In production, prefer [token authentication](https://ably.com/docs/auth/token) o
 
 ## Entry points
 
-Everything a device needs from the core SDK is re-exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
+Everything a device needs is exported here, so you never need to add `@ably/pubsub-core` as a dependency of your own alongside this package.
 
 | Import from                             | What you get                                                          |
 | --------------------------------------- | --------------------------------------------------------------------- |

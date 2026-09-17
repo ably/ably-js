@@ -90,7 +90,7 @@ npm install @ably/pubsub-device    # in an app that runs on your users' devices
 npm install @ably/pubsub-server    # in a backend service that you operate
 ```
 
-`@ably/pubsub-core` is an exact peer dependency of both, and npm installs it for you. You do not need to depend on it directly, and should not import from it: everything it exports is re-exported from the package you installed. The three packages release together on the same version, so keep them in step.
+`@ably/pubsub-core` is an exact dependency of both, and npm installs it for you. It holds the API declarations and the runtime `ErrorInfo` that the Ably SDKs share. You do not need to depend on it directly, and should not import from it: everything you need is exported from the package you installed.
 
 A repository with both a frontend and a backend installs both packages, one in each. They are independent, and nothing stops a single monorepo containing both.
 
@@ -120,7 +120,7 @@ Push receive and the React hooks are device-side concerns and are not re-exporte
 
 The stateless HTTP client is a server-side concern, and `@ably/pubsub-device` does not offer one: there is no HTTP factory on the device package, and neither its root, `modular` nor `liveobjects` subpath exports the HTTP client's types, `BaseHttp`, or the HTTP client's LiveObjects API. The realtime client covers what a device needs from Ably's REST API, including history, `request()`, `stats()` and `time()`. The modular `Http` plugin, which gives a `BaseRealtime` those features, remains.
 
-If you source the SDK from the CDN rather than npm, nothing changes in how you load it, but note that the CDN bundle is the shared core and so declares no side. Clients created from it are classified by Ably's default rules.
+If you source the SDK from the CDN rather than npm, the file names are unchanged, but the bundle is now `@ably/pubsub-device`: the global `Ably` object exposes `createClient` rather than the client classes, and the clients it creates declare the device side.
 
 <h2 id="use-the-factories">Create your clients through the factories</h2>
 

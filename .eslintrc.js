@@ -55,7 +55,6 @@ module.exports = {
     'tools',
     'scripts',
     'typedoc/generated',
-    '/packages/core/react',
     'Gruntfile.js',
     'grunt',
   ],

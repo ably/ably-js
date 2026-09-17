@@ -19,7 +19,7 @@
  * does not resolve. Use `@ably/pubsub-device` if you need CommonJS.
  */
 import type { BaseRealtime, ModularPlugins } from '@ably/pubsub-core/modular';
-import type { ClientOptions, CorePlugins } from '@ably/pubsub-core';
+import type { ClientOptions, CorePlugins } from '@ably/pubsub-core/api';
 
 // Enumerated rather than star-re-exported so that `BaseHttp`, the core's tree-shakable stateless HTTP
 // client, stays out: this package offers no HTTP client. The `Http` plugin stays in, because it is

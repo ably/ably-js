@@ -6,11 +6,21 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/node.js",
   "module": "./dist/index.mjs",
   "types": "./index.d.ts",
   "exports": {
     ".": {
+      "node": {
+        "require": {
+          "types": "./index.d.ts",
+          "default": "./dist/node.js"
+        },
+        "import": {
+          "types": "./index.d.mts",
+          "default": "./dist/node.mjs"
+        }
+      },
       "require": {
         "types": "./index.d.ts",
         "default": "./dist/index.js"
@@ -38,8 +48,11 @@
     "liveobjects/**",
     "README.md"
   ],
-  "peerDependencies": {
-    "@ably/pubsub-core": "2.30.0"
+  "dependencies": {
+    "@ably/pubsub-core": "2.30.0",
+    "dequal": "^2.0.3",
+    "got": "^11.8.5",
+    "ws": "^8.17.1"
   },
   "repository": {
     "type": "git",
