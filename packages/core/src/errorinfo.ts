@@ -21,8 +21,12 @@ function inspectError(err: unknown): string {
   return inspect(err);
 }
 
-function toString(err: ErrorInfo | PartialErrorInfo) {
-  let result = '[' + err.constructor.name;
+// The class name is passed in rather than read from `err.constructor.name`, because a bundler that
+// inlines these classes may rename them to avoid a clash with another binding of the same name.
+// Pinning the names with `Object.defineProperty` instead would be a module-level side effect, which
+// stops bundlers from tree-shaking the classes out of bundles that do not use them.
+function toString(err: ErrorInfo | PartialErrorInfo, className: string) {
+  let result = '[' + className;
   if (err.message) result += ': ' + err.message;
   if (err.statusCode) result += '; statusCode=' + err.statusCode;
   if (err.code) result += '; code=' + err.code;
@@ -136,7 +140,7 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.E
   }
 
   toString(): string {
-    return toString(this);
+    return toString(this, 'ErrorInfo');
   }
 
   /**
@@ -214,7 +218,7 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
   }
 
   toString(): string {
-    return toString(this);
+    return toString(this, 'PartialErrorInfo');
   }
 
   /** As {@link ErrorInfo.fromValues}, for the partial case. */
@@ -222,9 +226,3 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
     return withHelpHref(new PartialErrorInfo(values));
   }
 }
-
-// toString() prints the constructor's name, and a bundler that inlines these classes may rename
-// them to avoid a clash with another binding of the same name, so the names are pinned here
-// rather than left to each bundle's configuration.
-Object.defineProperty(ErrorInfo, 'name', { value: 'ErrorInfo' });
-Object.defineProperty(PartialErrorInfo, 'name', { value: 'PartialErrorInfo' });

@@ -80,6 +80,9 @@ const coreRuntimeConfigs = ['cjs', 'esm'].map((format) => ({
   bundle: true,
   sourcemap: true,
   banner: { js: '/*' + banner + '*/' },
+  // Keeps `ErrorInfo.name` and the other class names intact in the build consumers load. esbuild
+  // renames a class that refers to itself, so `ErrorInfo.name` would otherwise read `_ErrorInfo`.
+  keepNames: true,
   target: 'es2017',
   format,
   entryPoints: ['src/index.ts'],
