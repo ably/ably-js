@@ -31,7 +31,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full test-suite, debugging, and
 
 ### Error codes
 
-`ErrorInfo.code` is typed as `ErrorCode`, a union of every code registered in [ably-common](https://github.com/ably/ably-common/tree/main/errors/codes). It is generated into [errorcodes.ts](./packages/core/src/common/lib/types/errorcodes.ts) from the pinned `ably-common` submodule and committed. CI regenerates it at that pin and fails on a diff, so never hand-edit it.
+`ErrorInfo.code` is typed as `ErrorCode`, a union of every code registered in [ably-common](https://github.com/ably/ably-common/tree/main/errors/codes). It is generated into [errorcodes.ts](./packages/core/src/errorcodes.ts) from the pinned `ably-common` submodule and committed. CI regenerates it at that pin and fails on a diff, so never hand-edit it.
 
 Pick the registered code whose `identifier` matches the failure, and pair it with the HTTP status that code's registry entry documents. `statusCode` is a plain `number`, so a wrong status still compiles — check it against the registry rather than copying a neighbouring call.
 

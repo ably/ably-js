@@ -129,6 +129,22 @@ const minifiedLiveObjectsPluginCdnConfig = {
   minify: true,
 };
 
+// The core's own runtime: ErrorInfo, PartialErrorInfo and EventEmitter, shared with the SDKs layered on
+// Pub/Sub. It has no platform dependencies, so one CJS/ESM pair serves every runtime.
+const coreRuntimeConfigs = ['cjs', 'esm'].map((format) => ({
+  absWorkingDir: coreDir,
+  bundle: true,
+  sourcemap: true,
+  banner: { js: '/*' + banner + '*/' },
+  target: 'es2017',
+  // ErrorInfo's toString() prints its constructor's name, and esbuild would otherwise rename the
+  // class to avoid a clash with its own export binding.
+  keepNames: true,
+  format,
+  entryPoints: ['src/index.ts'],
+  outfile: `build/index.${format === 'esm' ? 'mjs' : 'js'}`,
+}));
+
 // The per-side Pub/Sub wrapper packages (PDR-091). Each is a thin wrapper over the core, so it is
 // built as a plain CJS/ESM pair rather than UMD.
 //
@@ -178,6 +194,7 @@ const pubsubPackageConfigs = [
 ];
 
 module.exports = {
+  coreRuntimeConfigs,
   webConfig,
   minifiedWebConfig,
   modularConfig,

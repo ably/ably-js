@@ -78,6 +78,7 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask('build', [
+    'build:core',
     'webpack:all',
     'build:browser',
     'build:node',
@@ -116,6 +117,26 @@ module.exports = function (grunt) {
         done(err);
       });
   });
+
+  grunt.registerTask('build:core:bundle', 'Bundle the core runtime (ErrorInfo, EventEmitter)', function () {
+    var done = this.async();
+
+    Promise.all(esbuildConfig.coreRuntimeConfigs.map((config) => esbuild.build(config)))
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
+  grunt.registerTask(
+    'build:core:types',
+    'Emit the declarations of the core runtime',
+    execExternal('tsc --project ' + coreDir + '/tsconfig.runtime.json'),
+  );
+
+  grunt.registerTask('build:core', ['build:core:bundle', 'build:core:types']);
 
   grunt.registerTask('build:browser', function () {
     var done = this.async();
