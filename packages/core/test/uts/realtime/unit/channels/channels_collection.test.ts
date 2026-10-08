@@ -1,7 +1,7 @@
 /**
  * UTS: Channels Collection Tests
  *
- * Spec points: RTS1, RTS2, RTS3a, RTS4b, RTS4c, RTS4d
+ * Spec points: RTS1, RTS2, RTS3a, RTS4c, RTS4d, RTS4e
  * Source: uts/test/realtime/unit/channels/channels_collection.md
  *
  * Tests the RealtimeChannels collection: get, release, existence checks,
@@ -13,7 +13,7 @@
 
 import { expect } from 'chai';
 import { MockWebSocket } from '../../../mock_websocket';
-import { Ably, installMockWebSocket, restoreAll, trackClient, flushAsync } from '../../../helpers';
+import { Ably, installMockWebSocket, restoreAll, trackClient } from '../../../helpers';
 
 describe('uts/realtime/unit/channels/channels_collection', function () {
   afterEach(function () {
@@ -172,6 +172,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   });
 
   function setupAttachDetachMock() {
+    const detachMessages: any[] = [];
     const mock = new MockWebSocket({
       onConnectionAttempt: (conn) => {
         mock.active_connection = conn;
@@ -187,6 +188,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
           });
         } else if (msg.action === 12) {
           // DETACH
+          detachMessages.push(msg);
           mock.active_connection!.send_to_client({
             action: 13,
             channel: msg.channel,
@@ -195,7 +197,7 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
       },
     });
     installMockWebSocket(mock.constructorFn);
-    return mock;
+    return { detachMessages };
   }
 
   /**
@@ -205,14 +207,10 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
   it('RTS4d - release removes channel once detached', async function () {
     setupAttachDetachMock();
 
-    const deprecationWarnings: string[] = [];
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      logHandler: (msg: string) => {
-        if (msg.includes('Deprecation warning')) deprecationWarnings.push(msg);
-      },
     });
     trackClient(client);
 
@@ -226,50 +224,44 @@ describe('uts/realtime/unit/channels/channels_collection', function () {
 
     client.channels.release('test-RTS4d-detached');
     expect('test-RTS4d-detached' in client.channels.all).to.be.false;
-    expect(deprecationWarnings).to.be.empty;
     client.close();
   });
 
   /**
-   * RTS4b - Releasing an attached channel detaches and removes it, and logs a
-   * deprecation warning
-   *
-   * Not in the UTS: ably-js retains the pre-6.3.0 behaviour per RTS4b until its
-   * next major version, in place of RTS4e (which the UTS covers).
+   * RTS4e - Release of an attached channel fails
    */
-  it('RTS4b - release detaches and removes attached channel, with deprecation warning', async function () {
-    setupAttachDetachMock();
+  // UTS: realtime/unit/RTS4e/release-attached-fails-0
+  it('RTS4e - release of attached channel fails', async function () {
+    const { detachMessages } = setupAttachDetachMock();
 
-    const deprecationWarnings: string[] = [];
     const client = new Ably.Realtime({
       key: 'appId.keyId:keySecret',
       autoConnect: false,
       useBinaryProtocol: false,
-      logHandler: (msg: string) => {
-        if (msg.includes('Deprecation warning')) deprecationWarnings.push(msg);
-      },
     });
     trackClient(client);
 
     client.connect();
     await new Promise<void>((resolve) => client.connection.once('connected', resolve));
 
-    const channel = client.channels.get('test-RTS4b-attached');
+    const channel = client.channels.get('test-RTS4e-attached');
     await channel.attach();
     expect(channel.state).to.equal('attached');
 
-    client.channels.release('test-RTS4b-attached');
+    let error: any;
+    try {
+      client.channels.release('test-RTS4e-attached');
+    } catch (err) {
+      error = err;
+    }
 
-    expect(deprecationWarnings).to.have.length(1);
-    expect(deprecationWarnings[0]).to.include('channels.release()');
-    expect(deprecationWarnings[0]).to.include('attached');
-
-    // release() detaches asynchronously then removes via .then() after detach resolves
-    await new Promise<void>((resolve) => channel.once('detached', resolve));
-    // The delete happens in .then() after the detach promise resolves — yield to let it execute
-    await flushAsync();
-
-    expect('test-RTS4b-attached' in client.channels.all).to.be.false;
+    expect(error).to.exist;
+    expect(error.code).to.equal(90011);
+    expect(error.statusCode).to.equal(400);
+    expect(channel.state).to.equal('attached');
+    expect('test-RTS4e-attached' in client.channels.all).to.be.true;
+    expect(client.channels.get('test-RTS4e-attached')).to.equal(channel);
+    expect(detachMessages).to.be.empty;
     client.close();
   });
 
