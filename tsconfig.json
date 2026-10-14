@@ -12,5 +12,5 @@
     "baseUrl": "./src"
   },
   "include": ["src/**/*", "test/**/*", "scripts/**/*", "ably.d.ts", "modular.d.ts"],
-  "exclude": ["src/platform/react-hooks", "test/package"]
+  "exclude": ["src/platform/react-hooks", "src/platform/temporal", "test/package", "test/temporal"]
 }

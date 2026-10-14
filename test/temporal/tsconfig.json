@@ -1,0 +1,29 @@
+{
+  // Type-checks the Temporal plugin tests together with the plugin source. `ably/temporal` and
+  // `ably/temporal/workflow` resolve to the plugin source, so no build is needed to type-check.
+  "extends": "../../src/platform/temporal/tsconfig.json",
+  "include": [
+    "./**/*.ts",
+    "../../src/platform/temporal/src/**/*.ts",
+    // Global declarations that the client library source relies on (see below).
+    "../../src/common/types/globals.d.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../..",
+    "module": "CommonJS",
+    "types": ["node", "mocha"],
+    // The tests reuse the test/uts helpers, which import the client library source. These options
+    // match the root tsconfig.json, which that source is written against.
+    "baseUrl": "../../src",
+    "lib": ["ES2020", "DOM", "DOM.Iterable", "webworker"],
+    "resolveJsonModule": true,
+    // Relative to baseUrl.
+    "paths": {
+      "ably": ["../ably.d.ts"],
+      "ably/liveobjects": ["../liveobjects.d.ts"],
+      "ably/temporal": ["platform/temporal/src/index.ts"],
+      "ably/temporal/workflow": ["platform/temporal/src/workflow.ts"]
+    }
+  }
+}

@@ -48,7 +48,18 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['build', 'test', 'tools', 'scripts', 'typedoc/generated', 'react', 'Gruntfile.js', 'grunt'],
+  ignorePatterns: [
+    'build',
+    'test',
+    'tools',
+    'scripts',
+    'typedoc/generated',
+    'react',
+    // Anchored, so that it does not also match src/platform/temporal
+    '/temporal',
+    'Gruntfile.js',
+    'grunt',
+  ],
   settings: {
     jsdoc: {
       tagNamePreference: {
