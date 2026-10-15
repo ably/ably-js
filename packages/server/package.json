@@ -1,7 +1,7 @@
 {
   "name": "@ably/pubsub-server",
   "description": "Ably Pub/Sub client for servers: backend services and other trusted runtimes",
-  "version": "2.28.0",
+  "version": "2.30.0",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
@@ -39,7 +39,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@ably/pubsub-core": "2.28.0"
+    "@ably/pubsub-core": "2.30.0"
   },
   "repository": {
     "type": "git",
