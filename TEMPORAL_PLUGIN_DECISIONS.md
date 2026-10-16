@@ -29,7 +29,7 @@ The plugin wraps everything on a REST channel and a few client-level methods.
   `channelSubscriptions.save`/`list`/`listChannels`/`remove`/`removeWhere`. `push.admin` is part of `Ably.Rest`
   without the Push plugin. It is wrapped rather than left to `request`, because `request` resolves with an Ably
   error response instead of throwing it, so a 5xx would never be retried and a 4xx would not fail the activity.
-  See decision 26 for how the calls that send a notification are retried.
+  See decision 26 for how the push admin calls are retried.
 
 These are not wrapped:
 
@@ -580,15 +580,47 @@ The plugin's IDs already fit the per-request semantics. Each call gets a fresh b
 the workflow's random seed, so it is unguessable outside the Temporal history. A base is never reused with a
 different set of operations.
 
-### 26. Push admin calls that send a notification run with a single attempt by default
+### 26. Push admin calls use the caller's retry policy, and the docs say what a retry of each one does
 
-Ably does not deduplicate push notifications, so a retried `push.admin.publish` sends the notification again.
-`createApnsBroadcast` would create another broadcast channel, and the `liveActivity` calls send a notification each.
-These five calls run with `maximumAttempts: 1`, overriding the retry policy in `activityOptions` or
-`localActivityOptions`, unless the caller sets `TemporalRestOptions.retryPushNotifications`. A separate option, rather
-than letting the caller's `retry` override the default, stops a policy set for every call from retrying
-notifications by accident. The other push admin calls are keyed upserts and deletes, and use the caller's retry
-policy. Whether `createApnsBroadcast` and the `liveActivity` calls are idempotent on the server has not been checked.
+Every push admin call runs with the retry policy in `activityOptions` or `localActivityOptions`, as every other call
+does. Ably does not deduplicate the calls that send a notification or create a broadcast channel, so a retry of one
+that reached Ably repeats it. Callers who would rather have the failure than a repeat make these calls from a
+separate `TemporalRest` with `maximumAttempts: 1`.
+
+At-least-once is the default for these reasons:
+
+- **Temporal's model:** activities are at-least-once, and Temporal users expect their retry policy to apply. A plugin
+  that overrides it for some calls is surprising.
+- **A single attempt is not at-most-once anyway.** Within one attempt, ably-js sends the same request to a fallback
+  host when the client has more than one host, as it does with the default endpoint. `shouldFallback` in
+  `src/platform/nodejs/lib/util/http.ts` falls back on a connection error (`ENETUNREACH`, `EHOSTUNREACH`,
+  `EHOSTDOWN`, `ENOTFOUND`, `ECONNRESET`, `ECONNREFUSED`), a timeout (`ETIMEDOUT`, `ESOCKETTIMEDOUT`) or an HTTP 500
+  to 504 response, and `tryAHost` in `src/common/types/http.ts` tries the hosts in turn within
+  `httpMaxRetryDuration`.
+- **For most notifications a duplicate is better than a missed send.** A duplicate can be mitigated, for example with
+  an ID in the payload's `data` that the app checks. A missed send can only be fixed by sending again.
+- **Consistency:** appends are not deduplicated either (decision 14), and use the retry policy.
+
+The risk is a `startToCloseTimeout` shorter than a request, with Temporal's unlimited default retries: every attempt
+reaches Ably and times out, and each sends the notification again. The default of 30 seconds is longer than a
+request can take with the default client options (`httpMaxRetryDuration` of 15 seconds, then a final
+`httpRequestTimeout` of 10 seconds), and the docs say to keep it that way.
+
+Each call was checked against the Ably server (`ably/realtime`,
+`go/realtime/roles/frontdoor/transports/rest/liveactivity.go`) and Apple's documentation:
+
+- **`publish`:** the server does not deduplicate it, so a retry sends the notification again.
+- **`createApnsBroadcast`:** a retry creates a second Apple broadcast channel and orphans the first. Apple allows
+  10,000 broadcast channels per app in each environment, and Ably has no call to list or delete one. A single
+  attempt does not avoid the orphan: if an attempt fails after Apple created the channel, its ID is lost either way.
+  Retrying at least returns a usable channel.
+- **`liveActivity.start`:** a retry sends another push-to-start notification to each device, so users see two Live
+  Activities.
+- **`liveActivity.update`:** a retry sends the broadcast again, and neither Ably nor Apple deduplicates it. With the
+  same payload and an `aps.timestamp` set in workflow code, the device shows the same state. A payload with an
+  `alert` alerts again, and every retry counts against Apple's budget for priority 10 updates.
+- **`liveActivity.end`:** idempotent. The server maps Apple's "channel not registered" response to 200, and retries a
+  failed delete of the broadcast channel. The server test `TestLiveActivity_EndDeleteAndRetrySemantics` covers both.
 
 ## Verification
 
@@ -647,7 +679,7 @@ came from a one-off scratch script rather than the committed suite, that is note
 | `npm run typecheck:temporal`                                                         | passes                                          |
 | Prettier on all changed files                                                        | clean                                           |
 | `test/temporal/unit`                                                                 | 124 passing                                     |
-| `test/temporal/workflow` (proxy and end-to-end, local Temporal dev server)           | 36 passing                                      |
+| `test/temporal/workflow` (proxy and end-to-end, local Temporal dev server)           | 35 passing                                      |
 | `test/temporal/integration` (Ably sandbox and local Temporal dev server)             | 26 passing                                      |
 | `test/rest/message.test.js` and `history.test.js` against the rebuilt `ably-node.js` | 21 passing, checking the webpack bump           |
 | attw on the packed package (run by the packaging agent)                              | all entry points green, including both new ones |
