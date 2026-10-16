@@ -43,7 +43,7 @@ export type AblyRestPluginOptions = (
 
 /**
  * A Temporal worker plugin that registers the Ably activities, which perform Ably REST operations on behalf of
- * workflows. Workflow code calls them through `TemporalRest` from `ably/temporal/workflow`.
+ * workflows. Workflow code calls them through `TemporalAblyRest` from `ably/temporal/workflow`.
  *
  * ```ts
  * const worker = await Worker.create({

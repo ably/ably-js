@@ -201,7 +201,7 @@ change the random values the workflow code sees.
 The proxy follows ably-js:
 
 - IDs are generated only if every item lacks an `id`.
-- Generation can be turned off with `TemporalRestOptions.idempotentPublishing: false`.
+- Generation can be turned off with `TemporalAblyRestOptions.idempotentPublishing: false`.
 
 IDs are assigned to:
 
@@ -287,7 +287,7 @@ integration test checks that assumption.
 ### 12. Pagination uses stateless page cursors taken from the `Link` header
 
 An activity returns a page as `{ items, links: { first?, current?, next? } }`. Each link is the query parameters
-from that page's `Link` header. In the workflow, `TemporalPaginatedResult.next()` calls the same activity again
+from that page's `Link` header. In the workflow, `TemporalAblyPaginatedResult.next()` calls the same activity again
 with `links.next` as its params.
 
 That matches what ably-js does: `PaginatedResult.next()` and `HttpPaginatedResponse.next()` are both a `GET` to the
@@ -340,11 +340,11 @@ recommends `scheduleToCloseTimeout: '90 seconds'` with the 30-second `startToClo
 every retry deduplicated. That leaves room for the last attempt, and the activity then fails with a timeout instead.
 A longer dedupe window for object publishes is part of decision 25.
 
-The activity proxy is created on each call, as the AI SDK plugin does. That lets `TemporalRest` be constructed at
+The activity proxy is created on each call, as the AI SDK plugin does. That lets `TemporalAblyRest` be constructed at
 workflow module scope, and lets each call carry a `summary` for the Temporal UI. `executeWithOptions` was not used
 because it is marked experimental.
 
-`TemporalRestOptions.localActivityOptions` opts in to local activities. They cut the latency of short publishes,
+`TemporalAblyRestOptions.localActivityOptions` opts in to local activities. They cut the latency of short publishes,
 such as status updates.
 
 ### 16. Each activity has a summary naming the operation
@@ -423,12 +423,12 @@ failing it. `getAblyErrorDetails(err)` extracts the Ably details from the cause 
   network failures as `TypeError`, so that would stop retries of transient errors.
 
 - **A missing `first`/`current` page link** uses 40400/404, like ably-js.
-- **Setting both `activityOptions` and `localActivityOptions`** throws a `TypeError` from the `TemporalRest`
+- **Setting both `activityOptions` and `localActivityOptions`** throws a `TypeError` from the `TemporalAblyRest`
   constructor. This is a code bug, like Temporal's own `proxyActivities` option validation, which also throws a
   `TypeError`.
   - Failing the workflow task means in-flight workflows resume after a fixed deploy, instead of failing
     permanently.
-  - It also works when `TemporalRest` is constructed at module scope.
+  - It also works when `TemporalAblyRest` is constructed at module scope.
 - **Invalid `AblyRestPlugin` options** throw a plain `Error` with a remediation in its message, when the worker is
   constructed. No registered Ably code describes invalid plugin options, and the error never crosses the activity
   boundary.
@@ -585,7 +585,7 @@ different set of operations.
 Every push admin call runs with the retry policy in `activityOptions` or `localActivityOptions`, as every other call
 does. Ably does not deduplicate the calls that send a notification or create a broadcast channel, so a retry of one
 that reached Ably repeats it. Callers who would rather have the failure than a repeat make these calls from a
-separate `TemporalRest` with `maximumAttempts: 1`.
+separate `TemporalAblyRest` with `maximumAttempts: 1`.
 
 At-least-once is the default for these reasons:
 
@@ -621,6 +621,16 @@ Each call was checked against the Ably server (`ably/realtime`,
   `alert` alerts again, and every retry counts against Apple's budget for priority 10 updates.
 - **`liveActivity.end`:** idempotent. The server maps Apple's "channel not registered" response to 200, and retries a
   failed delete of the broadcast channel. The server test `TestLiveActivity_EndDeleteAndRetrySemantics` covers both.
+
+### 27. The workflow client is `TemporalAblyRest`
+
+The workflow-side names start with `TemporalAbly`: `TemporalAblyRest`, its channel, presence, annotations, object and
+push classes, `TemporalAblyRestOptions`, `TemporalAblyPaginatedResult` and `TemporalAblyHttpPaginatedResponse`.
+
+- Temporal has its own HTTP API and clients, so a name like `TemporalRest` could be read as a REST client for
+  Temporal. The name says it is an Ably REST client that runs in a Temporal workflow, wherever it appears without its
+  import, such as in stack traces, logs and discussion.
+- It matches the worker side, `AblyRestPlugin`, and the code samples in AITDR-037.
 
 ## Verification
 

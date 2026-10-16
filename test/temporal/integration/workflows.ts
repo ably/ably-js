@@ -5,11 +5,11 @@
 
 import { ActivityFailure, ApplicationFailure } from '@temporalio/workflow';
 import type * as Ably from 'ably';
-import { getAblyErrorDetails, TemporalRest } from 'ably/temporal/workflow';
+import { getAblyErrorDetails, TemporalAblyRest } from 'ably/temporal/workflow';
 
 // Retries quickly and a bounded number of times, so that a transient sandbox error does not fail a test, and an
 // unexpected retry shows up in the history rather than as a test timeout.
-const ably = new TemporalRest({
+const ably = new TemporalAblyRest({
   activityOptions: { retry: { initialInterval: '200 milliseconds', backoffCoefficient: 1, maximumAttempts: 3 } },
 });
 
