@@ -18,28 +18,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 
 ---
 
-### channel_detach: RTL5k - ATTACHED while detached does not send DETACH
-
-**Spec (RTL5k)**: If the channel receives an ATTACHED message while in the DETACHED state, it should send a new DETACH message.
-
-**ably-js behavior**: ably-js re-enters 'attached' state instead of sending DETACH when ATTACHED is received while detached.
-
-**Test**: `RTL5k - ATTACHED while detached sends DETACH` — asserts `detachMessageCount == 2` and `channel.state == 'detached'` per spec.
-
----
-
-### channel_publish: RTL6i3 / RSL1e - null fields included in wire JSON
-
-**Spec (RTL6i3/RSL1e)**: Null values should be omitted from wire JSON.
-
-**ably-js behavior**: Includes `"data": null` instead of omitting the key. Similarly for `name`.
-
-**Tests**: `RTL6i3 - null name/data fields handled correctly` (realtime), `RSL1e - null name omitted from body`, `RSL1e - null data omitted from body` (REST).
-
-**Issue**: [#2199](https://github.com/ably/ably-js/issues/2199)
-
----
-
 ### connection_ping: RTN13d - ping does not defer in non-connected states
 
 **Spec (RTN13d)**: Ping should be deferred until the connection reaches a resolvable state.
@@ -97,18 +75,6 @@ These tests assert spec behavior but are skipped by default because they are kno
 **Tests**: `RSC15l4 - CloudFront Server header triggers fallback` (unit, `rest/unit/fallback.test.ts`; also skipped at integration tier in `rest/integration/proxy/rest_fallback.test.ts`).
 
 **Issue**: [#2197](https://github.com/ably/ably-js/issues/2197)
-
----
-
-### options_types: AO2 - authMethod default not stored
-
-**Spec (AO2)**: `authMethod` should default to `'GET'` and be stored in auth options.
-
-**ably-js behavior**: Default `authMethod` is not stored.
-
-**Test**: `AO2 - authMethod defaults to GET`.
-
-**Issue**: [#2205](https://github.com/ably/ably-js/issues/2205)
 
 ---
 
