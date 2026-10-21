@@ -37,7 +37,7 @@ These are not wrapped:
 - **`auth.*`:** token issuing belongs in the application's auth server, not in workflow code.
 - **`push.activate` and the other device methods of `push`:** a workflow is not a device.
 - **`object.generateObjectId`:** create operations do not need a pre-generated ID.
-- **Channel options in workflow code:** they are configured on the worker. See decision 13.
+- **Channel options, such as `cipher`:** encrypted channels are not supported. See decision 13.
 
 ## Packaging
 
@@ -301,19 +301,26 @@ The public types are interfaces with internal implementation classes, mirroring 
 `errorMessage` are typed `| null`, because ably-js returns `null` on success even though `ably.d.ts` says `number`
 and `string`.
 
-### 13. Channel options such as `cipher` are configured on the worker, and the activities release the channels they add
+### 13. Channel options are not supported, and the activities release the channels they add
 
-All workflows on a worker share one REST client, and so share its channel instances. If each call applied its own
-channel options to a shared instance, two concurrent activities on the same channel could race. One could then
-encrypt with the other's key. So channel options come from a `channelOptions(name)` function on the plugin, which
-the activities call when they add a channel to the client. Every operation on the channel then uses the same
-options, and cipher keys stay out of the workflow history. `channels.get()` in workflow code throws if it is passed
-options (decision 18), so a caller that bypasses the types cannot publish plain text by mistake.
+The plugin does not support channel options, so workflows cannot use encrypted channels.
+
+- **`cipher` is the only channel option with an effect on REST.** The REST channel reads its options only to
+  encode and decode message data.
+- **Forwarding options from workflow code is unsafe.** The cipher key would be recorded in the workflow history,
+  which stores activity inputs in plain text unless a payload codec is configured. All workflows on a worker also
+  share one REST client and its channel instances. `channels.get(name, options)` sets the options on the shared
+  instance, and decoding reads them after the HTTP request returns, so two concurrent activities on one channel
+  could encrypt or decrypt with each other's key.
+- **A worker-side `channelOptions(name)` function was considered and left out of v1**, to keep the API small. It
+  can be added later without a breaking change.
+
+`channels.get()` in workflow code throws if it is passed options (decision 18), so a caller that bypasses the types
+cannot publish plain text to a channel it meant to encrypt.
 
 The activities count the activities using each channel, and release a channel they added once the count reaches
 zero, so `client.channels.all` does not keep every channel the worker has used. A channel the application got from
-the client is never released, and keeps the options the application gave it. A REST channel holds only its options,
-so getting a released channel again is cheap.
+the client is never released. A REST channel holds only its options, so getting a released channel again is cheap.
 
 ### 14. A retried append is not deduplicated (open)
 
@@ -413,8 +420,8 @@ failing it. `getAblyErrorDetails(err)` extracts the Ably details from the cause 
   - an annotation or a single object operation that is not an object;
   - a `request` method or path that is not a string;
   - a `batchPresence` argument that is not an array of strings;
-  - channel options passed to `channels.get()`, which would otherwise be ignored silently, so a message meant to be
-    encrypted would be published in plain text.
+  - channel options passed to `channels.get()`, which are not supported (decision 13). Ignored silently, they would
+    let a message meant to be encrypted be published in plain text.
 
   Passed through unchecked, these make ably-js throw a plain `TypeError`. The activity would rethrow it unchanged,
   and Temporal would retry it forever. The independent review found this.
@@ -646,7 +653,7 @@ The worker plugin is `AblyHttpPlugin`, with options `AblyHttpPluginOptions`. The
 ### 28. `AblyHttpPlugin` takes an existing Ably REST client
 
 `AblyHttpPlugin` takes a required `client: Ably.Rest`, which the application constructs, together with the plugin
-options `temporalMetadata` and `channelOptions`. It does not take `ClientOptions`.
+option `temporalMetadata`. It does not take `ClientOptions`.
 
 - **One place to learn how to construct a client.** A developer configures the client from the Ably docs for
   `Ably.Rest`, as they would anywhere else, rather than from the plugin's docs. Raised in review: "if you want to
