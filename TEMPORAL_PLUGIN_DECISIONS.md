@@ -242,25 +242,40 @@ IDs are assigned to:
 Of the RFC's three retry strategies, this is "idempotency via Ably message IDs". It is the default because it
 needs no client-side handling at all. The other two strategies are:
 
-- "Tag with the activity ID and attempt number." This is also done, through metadata (see decision 11), so a
-  client can still detect duplicates.
+- "Tag with the activity ID and attempt number." This is not done. The metadata in decision 11 has neither,
+  because every attempt of a call sends the same content. A client that receives a duplicate outside the
+  idempotency window detects it by its `message.id`.
 - "Delete and republish." This is not done, because it makes messages briefly disappear for subscribers and needs
   extra requests.
 
 ### 11. Temporal metadata is added to `extras.headers`, using flat camelCase keys
 
 Every message published through `publish` or `batchPublish` gets these headers. Annotations and object
-operations get none. The workflow fields are omitted when the activity was not started by a workflow:
+operations get none. The workflow ID and run ID are omitted when the activity was not started by a workflow:
 
-- `temporalNamespace`
-- `temporalWorkflowId`
-- `temporalRunId`
-- `temporalWorkflowType`
-- `temporalActivityId`
-- `temporalAttempt`
+- `temporalNamespace`: workflow IDs are only unique within a namespace, and the Temporal UI link to the run,
+  `/namespaces/{namespace}/workflows/{workflowId}/{runId}/history`, needs it.
+- `temporalWorkflowId`: correlates a message with the workflow that sent it, in logs, support tickets and the
+  Temporal UI. It is usually the application's own business key, such as a conversation ID.
+- `temporalRunId`: tells apart the runs of one workflow ID. A reset, a continue-as-new, a workflow retry and a cron
+  run each start a new run, which can publish the same thing again. The Temporal UI link needs it.
 
 They are exported as `TemporalMetadataKeys`. The values come from `Context.current().info`, which carries the same
-information for local and regular activities.
+information for local and regular activities. None of them differs between attempts, so every attempt of a call
+sends the same content. Every field costs bytes on every message and is visible to every subscriber, so the other
+fields Temporal offers are left out:
+
+- **Workflow type:** the message `name` and the channel name already group messages, in terms the application
+  chose. A filter on it would tie subscriber code to a workflow function name on the worker.
+- **Activity ID:** nothing a subscriber can act on. By default it is the workflow's sequence number for the call,
+  and the derived message IDs already identify the call.
+- **Attempt:** misleading. Subscribers only receive attempt 1's message when Ably deduplicates a retry, but on a
+  mutable-messages namespace history would show the retry's attempt. It would also be the only field that makes a
+  retry's content differ.
+
+An application that wants one of them adds its own header in workflow code. AI Transport's Temporal demo writes its
+own `temporalAttempt` header from its own activity, for content that differs between attempts. A plugin call sends
+the same content on every attempt, so the plugin does not write a `temporalAttempt` with a different meaning.
 
 - **Why `extras.headers`:** Ably rejects unknown top-level `extras` fields, so `extras.headers` is the place for
   application metadata. It must be a flat map.
@@ -272,17 +287,19 @@ information for local and regular activities.
 - **Update, delete and append:** the metadata goes in `MessageOperation.metadata` instead, as string values. That
   way it does not overwrite the message's own `extras`.
 - **Opting out:** set `AblyHttpPluginOptions.temporalMetadata: false`.
-- **Size cost (open):** the headers add about 200 to 250 bytes to each message, and ably-js counts them towards
+- **Size cost (open):** the headers add about 115 bytes plus the lengths of the namespace and workflow ID to each
+  message, typically 150 to 200 bytes, and ably-js counts them towards
   `maxMessageSize` across all the messages of a publish. A publish close to the limit, or one with many small
-  messages (about 190 or more of 100 bytes each), can therefore fail with a non-retryable 40009 that plain ably-js
+  messages, can therefore fail with a non-retryable 40009 that plain ably-js
   would not have raised. The review reproduced this.
   - This is documented, along with the opt-out.
   - Dropping or trimming the metadata automatically near the limit was rejected. It would make the metadata
     unreliable for subscribers in exactly the cases that are hard to notice.
 
-Because the headers include the attempt number, the content of a retry differs from the original attempt even
-though the message ID is the same. Ably's deduplication is assumed to be keyed on the ID only. The sandbox
-integration test checks that assumption.
+Because no field differs between attempts, a retry sends the same content as the original attempt, so on a
+mutable-messages namespace a deduplicated retry leaves the stored copy as it was. Ably's deduplication is keyed on
+the ID only, so a retry would be deduplicated even if its content differed. The sandbox integration test checks that
+with a header of its own that differs between the attempts.
 
 ### 12. Pagination uses stateless page cursors taken from the `Link` header
 
@@ -672,13 +689,14 @@ The cost is one extra line in the worker setup, `new Ably.Rest(...)`, and an `ab
 
 ### Ably server behaviour observed on `nonprod:sandbox`
 
-These were observed by the sandbox suite (`test/temporal/integration/sandbox.test.ts`) on 2026-10-13. Where a finding
+These were observed by the sandbox suite (`test/temporal/integration/sandbox.test.ts`) on 2026-10-13, and the header
+and deduplication findings again on 2026-10-21 with the three metadata fields. Where a finding
 came from a one-off scratch script rather than the committed suite, that is noted.
 
-- **Numeric header values are accepted.** History returns `extras.headers` exactly as sent, with all six camelCase
-  keys and `temporalAttempt` as the number `1`. This confirms decision 11.
-- **Deduplication is keyed on the message ID and ignores differing `extras`.** The same ID was published twice,
-  with `temporalAttempt` 1 and then 2, so the headers differed.
+- **Headers are returned exactly as sent.** History returns `extras.headers` exactly as sent, with the three
+  camelCase keys. A numeric header value set by the test comes back as a number. This confirms decision 11.
+- **Deduplication is keyed on the message ID and ignores differing `extras`.** The same ID was published twice, as
+  attempts 1 and 2 of one activity, with a test header `testAttempt` of 1 and then 2, so the headers differed.
   - History holds exactly one message, carrying the attempt-1 headers.
   - The second publish succeeds and returns the original message's serial.
   - Control: two publishes without fixed IDs produce two messages.
@@ -713,7 +731,7 @@ came from a one-off scratch script rather than the committed suite, that is note
   "invalid object id timestamp is outside recency window". 90 seconds old was accepted. This came from a scratch
   script.
 - **Numeric operation metadata is rejected** with `40000`/`400` "Unable to parse request body". This came from a
-  scratch script, not the committed suite. It is why decision 11 converts the metadata to strings.
+  scratch script, not the committed suite. It is why decision 11 sends the operation metadata as strings.
 
 ### Checks run on the final state
 
@@ -724,7 +742,7 @@ came from a one-off scratch script rather than the committed suite, that is note
 | `npx tsc --noEmit -p tsconfig.json` (root)                                           | passes                                          |
 | `npm run typecheck:temporal`                                                         | passes                                          |
 | Prettier on all changed files                                                        | clean                                           |
-| `test/temporal/unit`                                                                 | 123 passing                                     |
+| `test/temporal/unit`                                                                 | 120 passing                                     |
 | `test/temporal/workflow` (proxy and end-to-end, local Temporal dev server)           | 35 passing                                      |
 | `test/temporal/integration` (Ably sandbox and local Temporal dev server)             | 26 passing                                      |
 | `test/rest/message.test.js` and `history.test.js` against the rebuilt `ably-node.js` | 21 passing, checking the webpack bump           |
