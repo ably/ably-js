@@ -147,11 +147,14 @@ Register the plugin on your worker:
 
 ```typescript
 import { Worker } from '@temporalio/worker';
+import * as Ably from 'ably';
 import { AblyRestPlugin } from 'ably/temporal';
+
+const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
 
 const worker = await Worker.create({
   // ...
-  plugins: [new AblyRestPlugin({ ably: { key: process.env.ABLY_API_KEY } })],
+  plugins: [new AblyRestPlugin({ client })],
 });
 ```
 

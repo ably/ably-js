@@ -429,9 +429,11 @@ failing it. `getAblyErrorDetails(err)` extracts the Ably details from the cause 
   - Failing the workflow task means in-flight workflows resume after a fixed deploy, instead of failing
     permanently.
   - It also works when `TemporalAblyRest` is constructed at module scope.
-- **Invalid `AblyRestPlugin` options** throw a plain `Error` with a remediation in its message, when the worker is
-  constructed. No registered Ably code describes invalid plugin options, and the error never crosses the activity
-  boundary.
+- **An `AblyRestPlugin` without a client** throws a `TypeError` with a remediation in its message, when the plugin is
+  constructed. This is a code bug in the worker, like the `TemporalAblyRest` option check above. The error never
+  crosses the activity boundary, and the public `ErrorInfo` constructor takes no remediation, so an Ably code would
+  add nothing. The check is structural (`client.channels.get` is a function), because the client may come from a
+  different copy of the Ably SDK than the plugin's.
 
 ## Data
 
@@ -473,22 +475,20 @@ ably-js only reads its `serial`. A message that has a serial is therefore sent t
 alone. This keeps message data of up to 64 KiB out of the workflow history for each call. A message without a
 serial is sent as it is, so that the activity fails with ably-js's own 40003 error.
 
-### 21. How the worker loads `ably`
+### 21. The worker entry point imports only types from `ably`
 
-The worker entry point does `import * as Ably from 'ably'` and uses `Ably.Rest ?? Ably.default.Rest`, which works
-in both formats:
+The worker entry point never loads `ably` at runtime. The application constructs the client (decision 28), so the
+plugin's source imports `ably` with `import type` only, as the workflow entry point does.
 
-- **Node CJS:** `require('ably')` has `Rest`.
-- **Node ESM:** the namespace of the webpack CJS bundle has both a named `Rest` and `default.Rest`. This was
-  checked on Node 20, 22 and 24.
-
-A named import would fail at link time if Node's detection of CJS named exports ever missed `Rest`. A default
-import would not match `ably.d.ts`.
+- The plugin does not depend on how Node loads the `ably` CJS bundle as ESM, where named exports such as `Rest` may
+  only be available on the default export.
+- The plugin uses whichever copy of `ably` the application's client comes from. It checks the client and its errors
+  structurally rather than with `instanceof`, so a second copy of the SDK in the worker still works.
 
 ### 22. The plugin does not close the Ably client
 
 `AblyRestPlugin` registers no `runContext`. `Ably.Rest` has no public `close()`, and idle keep-alive sockets do not
-keep the process alive. An injected client may also be shared with the application.
+keep the process alive. The client belongs to the application, which may also use it outside the plugin.
 
 ## Testing
 
@@ -632,6 +632,24 @@ push classes, `TemporalAblyRestOptions`, `TemporalAblyPaginatedResult` and `Temp
   import, such as in stack traces, logs and discussion.
 - It matches the worker side, `AblyRestPlugin`, and the code samples in AITDR-037.
 
+### 28. `AblyRestPlugin` takes an existing Ably REST client
+
+`AblyRestPlugin` takes a required `client: Ably.Rest`, which the application constructs, together with the plugin
+options `temporalMetadata` and `channelOptions`. It does not take `ClientOptions`.
+
+- **One place to learn how to construct a client.** A developer configures the client from the Ably docs for
+  `Ably.Rest`, as they would anywhere else, rather than from the plugin's docs. Raised in review: "if you want to
+  know how to initialize an ably client, you look at our docs".
+- **One way to provide the client.** A single required option needs no union type, and no check that exactly one of
+  two options is set.
+- **It matches other languages.** In Go, the plugin would take a concrete client type, and constructing the client
+  from options inside the plugin has no natural equivalent.
+- **LiveObjects** is set up the usual way, by constructing the client with `plugins: { LiveObjects }`. The plugin
+  needs no LiveObjects-specific option.
+- **The worker does not load `ably` itself** (decision 21).
+
+The cost is one extra line in the worker setup, `new Ably.Rest(...)`, and an `ably` import there.
+
 ## Verification
 
 ### Ably server behaviour observed on `nonprod:sandbox`
@@ -688,7 +706,7 @@ came from a one-off scratch script rather than the committed suite, that is note
 | `npx tsc --noEmit -p tsconfig.json` (root)                                           | passes                                          |
 | `npm run typecheck:temporal`                                                         | passes                                          |
 | Prettier on all changed files                                                        | clean                                           |
-| `test/temporal/unit`                                                                 | 124 passing                                     |
+| `test/temporal/unit`                                                                 | 123 passing                                     |
 | `test/temporal/workflow` (proxy and end-to-end, local Temporal dev server)           | 35 passing                                      |
 | `test/temporal/integration` (Ably sandbox and local Temporal dev server)             | 26 passing                                      |
 | `test/rest/message.test.js` and `history.test.js` against the rebuilt `ably-node.js` | 21 passing, checking the webpack bump           |

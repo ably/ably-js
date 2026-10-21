@@ -6,7 +6,7 @@ import { AblyRestPlugin } from '../../../src/platform/temporal/src/worker/plugin
 import { ActivityNames } from '../../../src/platform/temporal/src/common/activities';
 import { activityEnvironment, expectedHeaders, jsonBody, mockAbly, runActivity, toWire } from './worker-helpers';
 
-// The Rest class from the built `ably` package, which the plugin constructs a client from.
+// The Rest class from the built `ably` package, as an application would import it.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const BuiltRest = require('ably').Rest;
 
@@ -79,24 +79,18 @@ describe('temporal/worker/plugin', function () {
     expect(jsonBody(requests[0])[0].encoding).to.equal('utf-8/cipher+aes-256-cbc/base64');
   });
 
-  it('constructs a client from the ably option', function () {
-    const plugin = new AblyRestPlugin({ ably: { key: 'appId.keyId:keySecret' } });
+  it('accepts a client from the built ably package', function () {
+    const client = new BuiltRest({ key: 'appId.keyId:keySecret' });
 
-    expect(plugin.client).to.be.instanceOf(BuiltRest);
-    expect(plugin.client.auth.clientId).to.equal(undefined);
+    expect(new AblyRestPlugin({ client }).client).to.equal(client);
   });
 
-  it('rejects options with neither ably nor client', function () {
-    expect(() => new AblyRestPlugin({} as any)).to.throw(Error, /include neither `ably` nor `client`/);
-    expect(() => new (AblyRestPlugin as any)()).to.throw(Error, /include neither `ably` nor `client`/);
-  });
-
-  it('rejects options with both ably and client', function () {
-    const { client } = mockAbly((req) => req.respond_with(200, {}));
-    expect(() => new AblyRestPlugin({ client, ably: { key: 'appId.keyId:keySecret' } } as any)).to.throw(
-      Error,
-      /include both `ably` and `client`/,
-    );
+  it('rejects options without a client', function () {
+    const message = /do not include an Ably REST client in `client`/;
+    expect(() => new (AblyRestPlugin as any)()).to.throw(TypeError, message);
+    expect(() => new AblyRestPlugin({} as any)).to.throw(TypeError, message);
+    expect(() => new AblyRestPlugin({ ably: { key: 'appId.keyId:keySecret' } } as any)).to.throw(TypeError, message);
+    expect(() => new AblyRestPlugin({ client: { key: 'appId.keyId:keySecret' } } as any)).to.throw(TypeError, message);
   });
 
   it('exports the worker API from the entry point', function () {
