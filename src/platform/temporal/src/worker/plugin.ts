@@ -2,8 +2,8 @@ import type * as Ably from 'ably';
 import { SimplePlugin } from '@temporalio/plugin';
 import { createActivities } from './activities.js';
 
-/** Options for {@link AblyRestPlugin}. */
-export interface AblyRestPluginOptions {
+/** Options for {@link AblyHttpPlugin}. */
+export interface AblyHttpPluginOptions {
   /**
    * The Ably REST client that the plugin's activities use. Construct it as you would any `Ably.Rest` client. To use
    * `channel.object` from workflows, construct it with the `LiveObjects` plugin from `ably/liveobjects`.
@@ -34,20 +34,20 @@ export interface AblyRestPluginOptions {
 
 /**
  * A Temporal worker plugin that registers the Ably activities, which perform Ably REST operations on behalf of
- * workflows. Workflow code calls them through `TemporalAblyRest` from `ably/temporal/workflow`.
+ * workflows. Workflow code calls them through `TemporalAblyHttpClient` from `ably/temporal/workflow`.
  *
  * ```ts
  * const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
  *
  * const worker = await Worker.create({
  *   // ...
- *   plugins: [new AblyRestPlugin({ client })],
+ *   plugins: [new AblyHttpPlugin({ client })],
  * });
  * ```
  *
  * The activities are registered under the names in {@link ActivityNames}, which all start with `ably.`.
  */
-export class AblyRestPlugin extends SimplePlugin {
+export class AblyHttpPlugin extends SimplePlugin {
   /** The Ably REST client that the plugin's activities use. */
   readonly client: Ably.Rest;
 
@@ -55,10 +55,10 @@ export class AblyRestPlugin extends SimplePlugin {
    * @param options - The plugin options, including the Ably REST client that the activities use.
    * @throws `TypeError` if `options.client` is not an Ably REST client.
    */
-  constructor(options: AblyRestPluginOptions) {
+  constructor(options: AblyHttpPluginOptions) {
     const client = validateClient(options);
     super({
-      name: 'AblyRestPlugin',
+      name: 'AblyHttpPlugin',
       activities: createActivities(client, {
         temporalMetadata: options.temporalMetadata,
         channelOptions: options.channelOptions,
@@ -72,11 +72,11 @@ export class AblyRestPlugin extends SimplePlugin {
  * Returns `options.client`, after checking that it is an Ably REST client. The check is structural, because the
  * client may come from a different copy of the Ably SDK than the one this module would import.
  */
-function validateClient(options: AblyRestPluginOptions | undefined): Ably.Rest {
+function validateClient(options: AblyHttpPluginOptions | undefined): Ably.Rest {
   const client: unknown = options?.client;
   if (typeof client !== 'object' || client === null || typeof (client as Ably.Rest).channels?.get !== 'function') {
     throw new TypeError(
-      'AblyRestPlugin options do not include an Ably REST client in `client`. Construct an Ably.Rest client and pass it as `client`, for example `new AblyRestPlugin({ client: new Ably.Rest({ key: process.env.ABLY_API_KEY }) })`.',
+      'AblyHttpPlugin options do not include an Ably REST client in `client`. Construct an Ably.Rest client and pass it as `client`, for example `new AblyHttpPlugin({ client: new Ably.Rest({ key: process.env.ABLY_API_KEY }) })`.',
     );
   }
   return client as Ably.Rest;

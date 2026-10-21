@@ -1,5 +1,5 @@
 // Integration tests of the built plugin against an Ably sandbox app and a local Temporal server. The workflows in
-// ./workflows.ts import the built `ably/temporal/workflow`, and run on workers with the built `AblyRestPlugin`, each
+// ./workflows.ts import the built `ably/temporal/workflow`, and run on workers with the built `AblyHttpPlugin`, each
 // given a REST client from the built `ably` package. A separate client reads back what reached Ably.
 //
 // These tests check the assumptions the plugin makes about the Ably service:
@@ -28,7 +28,7 @@ import { MockActivityEnvironment, TestWorkflowEnvironment } from '@temporalio/te
 import { bundleWorkflowCode, DefaultLogger, Worker, type WorkflowBundleWithSourceMap } from '@temporalio/worker';
 import * as Ably from 'ably';
 import { LiveObjects, type RestObjectOperation, type RestObjectPublishResult } from 'ably/liveobjects';
-import { AblyRestPlugin, createActivities, type AblyActivities, type ActivityName } from 'ably/temporal';
+import { AblyHttpPlugin, createActivities, type AblyActivities, type ActivityName } from 'ably/temporal';
 import { expect } from 'chai';
 import {
   getSandboxApp,
@@ -125,7 +125,7 @@ describe('temporal sandbox integration', function () {
         taskQueue,
         workflowBundle,
         plugins: [
-          new AblyRestPlugin({
+          new AblyHttpPlugin({
             client: new Ably.Rest({ key: workerKey, endpoint: SANDBOX_ENDPOINT, plugins: { LiveObjects } }),
           }),
         ],
@@ -267,7 +267,7 @@ describe('temporal sandbox integration', function () {
     const root = path.resolve(__dirname, '..', '..', '..');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const built = require(path.join(root, 'temporal', 'cjs', 'index.js'));
-    expect(AblyRestPlugin).to.equal(built.AblyRestPlugin);
+    expect(AblyHttpPlugin).to.equal(built.AblyHttpPlugin);
     expect(createActivities).to.equal(built.createActivities);
     expect(workflowBundle.code).to.include('temporal/mjs/workflow.js');
     expect(workflowBundle.code).to.not.include('src/platform/temporal');

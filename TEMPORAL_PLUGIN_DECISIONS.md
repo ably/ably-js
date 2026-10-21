@@ -1,6 +1,6 @@
-# Temporal REST plugin: decision log
+# Temporal HTTP plugin: decision log
 
-This log records the key decisions made while implementing the Ably REST SDK plugin for Temporal described in
+This log records the key decisions made while implementing the Ably HTTP plugin for Temporal, the REST SDK plugin described in
 [AITRFC-029](https://ably.atlassian.net/wiki/spaces/AI/pages/5488541698/AITRFC-029+Ideas+for+supporting+developers+building+with+Ably+on+Temporal)
 ("Non-streamed content via Ably REST SDK plugin"). Each entry gives the decision, the reasoning, and the
 alternatives that were considered. Entries marked **(open)** are worth a second opinion before release.
@@ -10,10 +10,10 @@ alternatives that were considered. Entries marked **(open)** are worth a second 
 ### 1. Only the REST plugin idea from the RFC is implemented
 
 The RFC lists several ideas: the REST plugin, streaming via REST, streaming co-located with the LLM call, an Ably
-sink for workflow streams, ingress rules and integration rules. Only the REST plugin is implemented here. It is the
-first item in the RFC's recommended approach, and the only one that is a self-contained SDK change. The others
-need server work (streaming REST, ingress and integration rules) or a Realtime client (the sink and co-located
-streaming).
+sink for workflow streams, ingress rules and integration rules. Only the REST plugin is implemented here, as
+`AblyHttpPlugin`. It is the first item in the RFC's recommended approach, and the only one that is a self-contained
+SDK change. The others need server work (streaming REST, ingress and integration rules) or a Realtime client (the
+sink and co-located streaming).
 
 ### 2. Wrapped API surface
 
@@ -201,7 +201,7 @@ change the random values the workflow code sees.
 The proxy follows ably-js:
 
 - IDs are generated only if every item lacks an `id`.
-- Generation can be turned off with `TemporalAblyRestOptions.idempotentPublishing: false`.
+- Generation can be turned off with `TemporalAblyHttpClientOptions.idempotentPublishing: false`.
 
 IDs are assigned to:
 
@@ -271,7 +271,7 @@ information for local and regular activities.
   reports the error itself.
 - **Update, delete and append:** the metadata goes in `MessageOperation.metadata` instead, as string values. That
   way it does not overwrite the message's own `extras`.
-- **Opting out:** set `AblyRestPluginOptions.temporalMetadata: false`.
+- **Opting out:** set `AblyHttpPluginOptions.temporalMetadata: false`.
 - **Size cost (open):** the headers add about 200 to 250 bytes to each message, and ably-js counts them towards
   `maxMessageSize` across all the messages of a publish. A publish close to the limit, or one with many small
   messages (about 190 or more of 100 bytes each), can therefore fail with a non-retryable 40009 that plain ably-js
@@ -340,11 +340,11 @@ recommends `scheduleToCloseTimeout: '90 seconds'` with the 30-second `startToClo
 every retry deduplicated. That leaves room for the last attempt, and the activity then fails with a timeout instead.
 A longer dedupe window for object publishes is part of decision 25.
 
-The activity proxy is created on each call, as the AI SDK plugin does. That lets `TemporalAblyRest` be constructed at
+The activity proxy is created on each call, as the AI SDK plugin does. That lets `TemporalAblyHttpClient` be constructed at
 workflow module scope, and lets each call carry a `summary` for the Temporal UI. `executeWithOptions` was not used
 because it is marked experimental.
 
-`TemporalAblyRestOptions.localActivityOptions` opts in to local activities. They cut the latency of short publishes,
+`TemporalAblyHttpClientOptions.localActivityOptions` opts in to local activities. They cut the latency of short publishes,
 such as status updates.
 
 ### 16. Each activity has a summary naming the operation
@@ -423,14 +423,14 @@ failing it. `getAblyErrorDetails(err)` extracts the Ably details from the cause 
   network failures as `TypeError`, so that would stop retries of transient errors.
 
 - **A missing `first`/`current` page link** uses 40400/404, like ably-js.
-- **Setting both `activityOptions` and `localActivityOptions`** throws a `TypeError` from the `TemporalAblyRest`
+- **Setting both `activityOptions` and `localActivityOptions`** throws a `TypeError` from the `TemporalAblyHttpClient`
   constructor. This is a code bug, like Temporal's own `proxyActivities` option validation, which also throws a
   `TypeError`.
   - Failing the workflow task means in-flight workflows resume after a fixed deploy, instead of failing
     permanently.
-  - It also works when `TemporalAblyRest` is constructed at module scope.
-- **An `AblyRestPlugin` without a client** throws a `TypeError` with a remediation in its message, when the plugin is
-  constructed. This is a code bug in the worker, like the `TemporalAblyRest` option check above. The error never
+  - It also works when `TemporalAblyHttpClient` is constructed at module scope.
+- **An `AblyHttpPlugin` without a client** throws a `TypeError` with a remediation in its message, when the plugin is
+  constructed. This is a code bug in the worker, like the `TemporalAblyHttpClient` option check above. The error never
   crosses the activity boundary, and the public `ErrorInfo` constructor takes no remediation, so an Ably code would
   add nothing. The check is structural (`client.channels.get` is a function), because the client may come from a
   different copy of the Ably SDK than the plugin's.
@@ -487,7 +487,7 @@ plugin's source imports `ably` with `import type` only, as the workflow entry po
 
 ### 22. The plugin does not close the Ably client
 
-`AblyRestPlugin` registers no `runContext`. `Ably.Rest` has no public `close()`, and idle keep-alive sockets do not
+`AblyHttpPlugin` registers no `runContext`. `Ably.Rest` has no public `close()`, and idle keep-alive sockets do not
 keep the process alive. The client belongs to the application, which may also use it outside the plugin.
 
 ## Testing
@@ -585,7 +585,7 @@ different set of operations.
 Every push admin call runs with the retry policy in `activityOptions` or `localActivityOptions`, as every other call
 does. Ably does not deduplicate the calls that send a notification or create a broadcast channel, so a retry of one
 that reached Ably repeats it. Callers who would rather have the failure than a repeat make these calls from a
-separate `TemporalAblyRest` with `maximumAttempts: 1`.
+separate `TemporalAblyHttpClient` with `maximumAttempts: 1`.
 
 At-least-once is the default for these reasons:
 
@@ -622,19 +622,30 @@ Each call was checked against the Ably server (`ably/realtime`,
 - **`liveActivity.end`:** idempotent. The server maps Apple's "channel not registered" response to 200, and retries a
   failed delete of the broadcast channel. The server test `TestLiveActivity_EndDeleteAndRetrySemantics` covers both.
 
-### 27. The workflow client is `TemporalAblyRest`
+### 27. The plugin and workflow client are named after the HTTP client
 
-The workflow-side names start with `TemporalAbly`: `TemporalAblyRest`, its channel, presence, annotations, object and
-push classes, `TemporalAblyRestOptions`, `TemporalAblyPaginatedResult` and `TemporalAblyHttpPaginatedResponse`.
+The worker plugin is `AblyHttpPlugin`, with options `AblyHttpPluginOptions`. The workflow-side names start with
+`TemporalAbly`: `TemporalAblyHttpClient`, `TemporalAblyHttpClientOptions`, `TemporalAblyHttpChannels`,
+`TemporalAblyHttpChannel`, `TemporalAblyHttpPresence`, `TemporalAblyHttpAnnotations`, `TemporalAblyHttpObject`, the
+`TemporalAblyHttpPush*` classes, `TemporalAblyPaginatedResult` and `TemporalAblyHttpPaginatedResponse`.
 
-- Temporal has its own HTTP API and clients, so a name like `TemporalRest` could be read as a REST client for
-  Temporal. The name says it is an Ably REST client that runs in a Temporal workflow, wherever it appears without its
-  import, such as in stack traces, logs and discussion.
-- It matches the worker side, `AblyRestPlugin`, and the code samples in AITDR-037.
+- **They follow the v3 SDKs' naming.** The v3 SDKs name the REST client the HTTP client (PDR-091d): `PubSubHttpClient`
+  from `createHttpClient()` in `@ably/pubsub-server`, and `HTTPClient` from `NewHTTPClient()` in Go. A plugin named
+  after `Rest` would be named after a client that the next major version no longer has. The first prototype used
+  `AblyRestPlugin` and `TemporalAblyRest`, and the names were changed in review, before release.
+- **The names carry over to Go.** A Go plugin and workflow client can use the same names, with Go's initialism
+  casing.
+- **The `TemporalAbly` prefix.** Temporal has its own HTTP API and clients, so a name like `TemporalHttpClient` could
+  be read as an HTTP client for Temporal. The name says it is an Ably HTTP client that runs in a Temporal workflow,
+  wherever it appears without its import, such as in stack traces, logs and discussion.
+- **No aliases.** The plugin is unreleased, so there are no old names to keep. PDR-091d also rejected deprecated
+  aliases for the SDK's own renames.
+- In this v2 package the plugin still takes an Ably REST client (`Ably.Rest`, decision 28).
+- The names match the code samples in AITDR-037.
 
-### 28. `AblyRestPlugin` takes an existing Ably REST client
+### 28. `AblyHttpPlugin` takes an existing Ably REST client
 
-`AblyRestPlugin` takes a required `client: Ably.Rest`, which the application constructs, together with the plugin
+`AblyHttpPlugin` takes a required `client: Ably.Rest`, which the application constructs, together with the plugin
 options `temporalMetadata` and `channelOptions`. It does not take `ClientOptions`.
 
 - **One place to learn how to construct a client.** A developer configures the client from the Ably docs for
