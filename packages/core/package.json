@@ -1,0 +1,88 @@
+{
+  "name": "@ably/pubsub-core",
+  "description": "Ably-internal core of the Ably Pub/Sub JavaScript SDK: the Pub/Sub API types and the runtime classes shared with the SDKs layered on it. Install @ably/pubsub-device or @ably/pubsub-server instead",
+  "version": "2.30.0",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/ably/ably-js/issues",
+    "email": "support@ably.com"
+  },
+  "main": "./build/index.js",
+  "module": "./build/index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./build/index.js"
+      }
+    },
+    "./api": {
+      "types": "./api.d.ts"
+    },
+    "./types": {
+      "types": "./types.d.ts"
+    },
+    "./modular": {
+      "types": "./modular.d.ts"
+    },
+    "./push": {
+      "types": "./push.d.ts"
+    },
+    "./react-native-push": {
+      "types": "./react-native-push.d.ts"
+    },
+    "./liveobjects": {
+      "import": {
+        "types": "./liveobjects.d.mts"
+      },
+      "require": {
+        "types": "./liveobjects.d.ts"
+      }
+    },
+    "./liveobjects-types": {
+      "import": {
+        "types": "./liveobjects-types.d.mts"
+      },
+      "require": {
+        "types": "./liveobjects-types.d.ts"
+      }
+    }
+  },
+  "files": [
+    "build/**",
+    "index.d.ts",
+    "index.d.mts",
+    "api.d.ts",
+    "ably.d.ts",
+    "types.d.ts",
+    "http.d.ts",
+    "liveobjects.d.ts",
+    "liveobjects.d.mts",
+    "liveobjects-types.d.ts",
+    "liveobjects-types.d.mts",
+    "liveobjects-http.d.ts",
+    "liveobjects-http.d.mts",
+    "modular.d.ts",
+    "push.d.ts",
+    "react-native-push.d.ts",
+    "resources/**",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ably/ably-pubsub-js.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/ably/ably-pubsub-js/tree/main/packages/core#readme"
+}

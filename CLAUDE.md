@@ -4,18 +4,25 @@ Guidance for coding agents (and humans) working in this repository.
 
 ## Repository Overview
 
-ably-js is the Ably realtime and REST client library for JavaScript/TypeScript, targeting browsers, Node.js, and React Native. The public API surface is defined in [ably.d.ts](./ably.d.ts). Source lives in `src/` (`common/` for shared client logic, `platform/` for platform-specific code and React hooks).
+ably-js is a monorepo. The published packages live under `packages/`:
+
+- `packages/core` — published as `@ably/pubsub-core`: the Pub/Sub API declarations, plus the runtime classes shared with the SDKs layered on Pub/Sub (`ErrorInfo`, `PartialErrorInfo`, `EventEmitter`, in `packages/core/src/`). It carries no client implementation. The public API surface is defined in [ably.d.ts](./packages/core/ably.d.ts), which re-exports [types.d.ts](./packages/core/types.d.ts) (the surface every client shares) and [http.d.ts](./packages/core/http.d.ts) (the declarations only the HTTP client reaches, which `@ably/pubsub-device` omits).
+- `packages/core-impl` — the private, unpublished Pub/Sub implementation: the realtime and REST clients for browsers, Node.js and React Native. Its source lives in `packages/core-impl/src/` (`common/` for shared client logic, `platform/` for platform-specific code and React hooks, `plugins/` for push and LiveObjects), the per-side helpers in `packages/core-impl/side/`, and the test suite in `packages/core-impl/test/`.
+- `packages/device` and `packages/server` — published as `@ably/pubsub-device` and `@ably/pubsub-server`. Each bundles the implementation and depends on `@ably/pubsub-core`. See [Per-side packages](./CONTRIBUTING.md#per-side-packages).
+
+All four packages are npm workspaces, so `node_modules/@ably/pubsub-core` is a symlink to `packages/core`. The build tooling (Gruntfile, `grunt/`, `webpack.config.js`, `scripts/`) and every dev dependency live at the repo root and serve all packages, so run every command below from there.
 
 ## Commands
 
 ```bash
 npm run build          # Full build (webpack; slow). Platform-specific: build:node, build:browser, ...
 npm test               # Build + run the Mocha test suite
-npm run test:node -- test/realtime/auth.test.js   # Run one test file
+npm run test:node -- packages/core-impl/test/realtime/auth.test.js   # Run one test file
 npm run test:node -- --grep=test_name_here        # Run tests matching a pattern
 npm run lint           # ESLint (lint:fix to autofix)
 npm run format         # Prettier write (format:check to verify)
-npm run docs           # Generate TypeDoc from ably.d.ts
+npm run docs           # Generate TypeDoc from packages/core/ably.d.ts
+npm run check:packages # Typecheck the per-side wrapper packages against the core
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full test-suite, debugging, and release documentation.
@@ -24,7 +31,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full test-suite, debugging, and
 
 ### Error codes
 
-`ErrorInfo.code` is typed as `ErrorCode`, a union of every code registered in [ably-common](https://github.com/ably/ably-common/tree/main/errors/codes). It is generated into [errorcodes.ts](./src/common/lib/types/errorcodes.ts) from the pinned `ably-common` submodule and committed. CI regenerates it at that pin and fails on a diff, so never hand-edit it.
+`ErrorInfo.code` is typed as `ErrorCode`, a union of every code registered in [ably-common](https://github.com/ably/ably-common/tree/main/errors/codes). It is generated into [errorcodes.ts](./packages/core/src/errorcodes.ts) from the pinned `ably-common` submodule and committed. CI regenerates it at that pin and fails on a diff, so never hand-edit it.
 
 Pick the registered code whose `identifier` matches the failure, and pair it with the HTTP status that code's registry entry documents. `statusCode` is a plain `number`, so a wrong status still compiles — check it against the registry rather than copying a neighbouring call.
 
@@ -37,14 +44,14 @@ error TS2345: Argument of type '40199' is not assignable to parameter of type 'E
 That means the code is not registered. Do not cast around it. Instead:
 
 1. Add the code under `errors/codes/` in [ably-common](https://github.com/ably/ably-common) and get that merged.
-2. Bump the `test/common/ably-common` submodule pin here to a commit that contains it.
+2. Bump the `packages/core-impl/test/common/ably-common` submodule pin here to a commit that contains it.
 3. Run `npm run generate:errorcodes-ts` and commit the regenerated `errorcodes.ts`.
 
 Errors decoded from the server are exempt: the server chose the code and may use one this client version does not know about, so build those with `ErrorInfo.fromWireValues` instead of `ErrorInfo.fromValues`.
 
 ### Error messages and remediations
 
-Errors constructed by the SDK (`ErrorInfo` / `PartialErrorInfo`) carry a `message` and, in most cases, a `remediation` (see the `ErrorInfo.remediation` docstring in [ably.d.ts](./ably.d.ts)). The two fields have distinct jobs:
+Errors constructed by the SDK (`ErrorInfo` / `PartialErrorInfo`) carry a `message` and, in most cases, a `remediation` (see the `ErrorInfo.remediation` docstring in [types.d.ts](./packages/core/types.d.ts)). The two fields have distinct jobs:
 
 - `message` says **what went wrong**: the failure and the condition that triggered it, written declaratively.
 - `remediation` says **how to fix it**: the first thing the developer (or coding agent) reading the error should do, written imperatively. It must be actionable without further lookup.

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  root: 'src/platform/react-hooks/sample-app',
+  root: 'packages/core-impl/src/platform/react-hooks/sample-app',
   server: {
     port: 8080,
     strictPort: true,
@@ -15,11 +15,11 @@ export default defineConfig({
     environment: 'jsdom',
   },
   optimizeDeps: {
-    include: ['ably'],
+    include: ['@ably/pubsub-core'],
   },
   resolve: {
     alias: {
-      ably: path.resolve(__dirname, 'build', 'ably.js'),
+      '@ably/pubsub-core': path.resolve(__dirname, 'packages', 'core-impl', 'build', 'ably.js'),
     },
   },
 });

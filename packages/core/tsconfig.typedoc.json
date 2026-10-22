@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["ably.d.ts", "modular.d.ts", "liveobjects.d.ts"],
+  "exclude": ["liveobjects.d.mts", "liveobjects-types.d.mts", "liveobjects-http.d.mts"]
+}

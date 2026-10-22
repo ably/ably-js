@@ -5,18 +5,24 @@ var path = require('path');
 var webpackConfig = require('./webpack.config');
 var esbuild = require('esbuild');
 var process = require('process');
-var MochaServer = require('./test/web_server');
+var MochaServer = require('./packages/core-impl/test/web_server');
 var esbuildConfig = require('./grunt/esbuild/build');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-webpack');
 
+  // Grunt runs from the monorepo root, but most of what it builds is compiled from the private
+  // implementation, or is the core package's own runtime and declarations, so their paths are
+  // written relative to these rather than to the root.
+  var coreDir = 'packages/core';
+  var implDir = 'packages/core-impl';
+
   var dirs = {
-    common: 'src/common',
-    browser: 'src/platform/web',
-    fragments: 'src/platform/web/fragments',
-    static: 'build',
-    dest: 'build',
+    common: implDir + '/src/common',
+    browser: implDir + '/src/platform/web',
+    fragments: implDir + '/src/platform/web/fragments',
+    static: implDir + '/build',
+    dest: implDir + '/build',
   };
 
   async function execExternalPromises(cmd) {
@@ -46,8 +52,8 @@ module.exports = function (grunt) {
   var gruntConfig = {
     dirs: dirs,
     webpack: {
-      all: Object.values(webpackConfig),
-      browser: [webpackConfig.browser, webpackConfig.browserMin, webpackConfig.mochaJUnitReporterBrowser],
+      reactNative: [webpackConfig.reactNative],
+      support: [webpackConfig.nativeScript, webpackConfig.mochaJUnitReporterBrowser],
     },
   };
 
@@ -55,7 +61,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('checkGitSubmodules', 'Check, if git submodules are properly installed', function () {
     var done = this.async();
-    var pathToSubmodule = path.join(__dirname, 'test', 'common', 'ably-common');
+    var pathToSubmodule = path.join(__dirname, implDir, 'test', 'common', 'ably-common');
     fs.stat(pathToSubmodule, function (error, stats) {
       if (error) {
         grunt.log.writeln('%s : while checking submodule path!', error.message);
@@ -74,12 +80,12 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask('build', [
-    'webpack:all',
+    'webpack:support',
     'build:browser',
     'build:node',
     'build:push',
-    'build:react-native-push',
     'build:liveobjects',
+    'build:packages',
   ]);
 
   grunt.registerTask('all', ['build', 'requirejs']);
@@ -112,14 +118,43 @@ module.exports = function (grunt) {
       });
   });
 
+  grunt.registerTask('build:core:bundle', 'Bundle the core runtime (ErrorInfo, EventEmitter)', function () {
+    var done = this.async();
+
+    Promise.all(esbuildConfig.coreRuntimeConfigs.map((config) => esbuild.build(config)))
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
+  grunt.registerTask(
+    'build:core:types',
+    'Emit the declarations of the core runtime',
+    execExternal('tsc --project ' + coreDir + '/tsconfig.runtime.json'),
+  );
+
+  // The runtime is served as real ESM behind the `import` condition, so that condition needs
+  // ESM-flavoured types too, for the reason given on `build:packages:types` below. The copy has to
+  // name its relative imports with an extension, as ESM requires.
+  grunt.registerTask(
+    'build:core:types:esm',
+    'Generate the .d.mts counterpart of the core root declaration file',
+    function () {
+      const contents = fs.readFileSync(`${coreDir}/index.d.ts`, 'utf8');
+      fs.writeFileSync(`${coreDir}/index.d.mts`, contents.replace(/from '(\.\/[^']+)'/g, "from '$1.js'"));
+      grunt.log.ok('Generated index.d.mts from index.d.ts');
+    },
+  );
+
+  grunt.registerTask('build:core', ['build:core:bundle', 'build:core:types', 'build:core:types:esm']);
+
   grunt.registerTask('build:browser', function () {
     var done = this.async();
 
-    Promise.all([
-      esbuild.build(esbuildConfig.webConfig),
-      esbuild.build(esbuildConfig.minifiedWebConfig),
-      esbuild.build(esbuildConfig.modularConfig),
-    ])
+    Promise.all([esbuild.build(esbuildConfig.webConfig), esbuild.build(esbuildConfig.modularConfig)])
       .then(() => {
         console.log('esbuild succeeded');
         done(true);
@@ -132,24 +167,8 @@ module.exports = function (grunt) {
   grunt.registerTask('build:push', function () {
     var done = this.async();
 
-    Promise.all([
-      esbuild.build(esbuildConfig.pushPluginConfig),
-      esbuild.build(esbuildConfig.pushPluginCdnConfig),
-      esbuild.build(esbuildConfig.minifiedPushPluginCdnConfig),
-    ])
-      .then(() => {
-        done(true);
-      })
-      .catch((err) => {
-        done(err);
-      });
-  });
-
-  grunt.registerTask('build:react-native-push', function () {
-    var done = this.async();
-
     esbuild
-      .build(esbuildConfig.reactNativePushPluginConfig)
+      .build(esbuildConfig.pushPluginConfig)
       .then(() => {
         done(true);
       })
@@ -161,12 +180,8 @@ module.exports = function (grunt) {
   grunt.registerTask('build:liveobjects:bundle', function () {
     var done = this.async();
 
-    Promise.all([
-      esbuild.build(esbuildConfig.liveObjectsPluginConfig),
-      esbuild.build(esbuildConfig.liveObjectsPluginEsmConfig),
-      esbuild.build(esbuildConfig.liveObjectsPluginCdnConfig),
-      esbuild.build(esbuildConfig.minifiedLiveObjectsPluginCdnConfig),
-    ])
+    esbuild
+      .build(esbuildConfig.liveObjectsPluginConfig)
       .then(() => {
         done(true);
       })
@@ -177,16 +192,114 @@ module.exports = function (grunt) {
 
   grunt.registerTask(
     'build:liveobjects:types',
-    'Generate liveobjects.d.mts from liveobjects.d.ts by adding .js extensions to relative imports',
+    'Generate the liveobjects .d.mts files from their .d.ts counterparts by adding .js extensions to relative imports',
     function () {
-      const dtsContent = fs.readFileSync('liveobjects.d.ts', 'utf8');
-      const mtsContent = dtsContent.replace(/from '(\.\/[^']+)'/g, "from '$1.js'");
-      fs.writeFileSync('liveobjects.d.mts', mtsContent);
-      grunt.log.ok('Generated liveobjects.d.mts from liveobjects.d.ts');
+      // The liveobjects declarations are split across these files, each with a .d.mts counterpart.
+      // An import between two of them must name the counterpart (`.mjs` resolves to the .d.mts), or
+      // the ESM types would pull in the CJS-flavoured copy of the other file alongside the ESM one,
+      // and their two module augmentations of RealtimeChannel would conflict. The rest of the core's
+      // declarations have no .d.mts, so their imports name `.js`, which resolves to the .d.ts.
+      const names = ['liveobjects', 'liveobjects-types', 'liveobjects-http'];
+      for (const name of names) {
+        const dtsContent = fs.readFileSync(`${coreDir}/${name}.d.ts`, 'utf8');
+        const mtsContent = dtsContent.replace(
+          /from '\.\/([^']+)'/g,
+          (_, target) => `from './${target}${names.includes(target) ? '.mjs' : '.js'}'`,
+        );
+        fs.writeFileSync(`${coreDir}/${name}.d.mts`, mtsContent);
+        grunt.log.ok(`Generated ${name}.d.mts from ${name}.d.ts`);
+      }
     },
   );
 
   grunt.registerTask('build:liveobjects', ['build:liveobjects:bundle', 'build:liveobjects:types']);
+
+  grunt.registerTask('build:packages:bundle', 'Bundle the per-side Pub/Sub packages', function () {
+    var done = this.async();
+
+    Promise.all(esbuildConfig.pubsubPackageConfigs.map((config) => esbuild.build(config)))
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
+  // Each entry point serves real ESM behind its `import` condition, so that condition needs
+  // ESM-flavoured types too. Without a `.d.mts`, TypeScript reads the `.d.ts` as CommonJS types
+  // describing an ESM file, and `attw` rightly reports the entry point as masquerading as CJS.
+  //
+  // A straight copy is enough, unlike the core's equivalent step for liveobjects.d.mts, which has
+  // to rewrite relative imports: every declaration file in these packages imports the core by bare
+  // specifier only, and those resolve identically under both module systems. Every one of them also
+  // exports under a name rather than with `export =`, which has no ESM spelling and so could not be
+  // copied.
+  grunt.registerTask(
+    'build:packages:types',
+    'Generate the .d.mts counterpart of each wrapper package declaration file',
+    function () {
+      // The React hooks' declarations under dist/ are emitted by tsc in both flavours already.
+      const declarationFiles = grunt.file.expand([
+        'packages/device/**/index.d.ts',
+        'packages/server/**/index.d.ts',
+        '!packages/*/dist/**',
+        '!packages/*/node_modules/**',
+      ]);
+
+      let generated = 0;
+
+      for (const declarationFile of declarationFiles) {
+        const contents = fs.readFileSync(declarationFile, 'utf8');
+
+        // `export =` has no ESM spelling, so a declaration file using it could not be copied into
+        // one. Nothing here uses it — every subpath exports under a name — so fail loudly rather
+        // than silently emit a `.d.mts` that does not parse.
+        if (/^export = /m.test(contents)) {
+          grunt.fatal(
+            `${declarationFile} uses \`export =\`, which has no ESM spelling and so cannot be ` +
+              'copied into a .d.mts. Export under a name instead, as the other subpaths do.',
+          );
+        }
+
+        fs.writeFileSync(declarationFile.replace(/\.d\.ts$/, '.d.mts'), contents);
+        generated++;
+      }
+
+      grunt.log.ok(`Generated ${generated} .d.mts declaration files`);
+    },
+  );
+
+  grunt.registerTask('build:packages:cdn', 'Bundle the CDN builds of @ably/pubsub-device', function () {
+    var done = this.async();
+
+    Promise.all(esbuildConfig.cdnConfigs.map((config) => esbuild.build(config)))
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
+  // The React hooks are compiled with tsc rather than bundled, into one module per source file, so
+  // that `@ably/pubsub-device/react` and `@ably/pubsub-device/liveobjects/react` share the module
+  // that holds the React context, and with it the client an `AblyProvider` supplies.
+  grunt.registerTask(
+    'build:packages:react',
+    'Compile the React hooks of @ably/pubsub-device',
+    execExternal('npm run build:react'),
+  );
+
+  // The packages' bundles leave `@ably/pubsub-core` external, so they load its runtime from its build.
+  grunt.registerTask('build:packages', [
+    'build:core',
+    'build:packages:bundle',
+    'webpack:reactNative',
+    'build:packages:cdn',
+    'build:packages:react',
+    'build:packages:types',
+  ]);
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
@@ -197,7 +310,7 @@ module.exports = function (grunt) {
   ]);
 
   (function () {
-    const baseDir = path.join(__dirname, 'test', 'package', 'browser');
+    const baseDir = path.join(__dirname, implDir, 'test', 'package', 'browser');
     const buildDir = path.join(baseDir, 'build');
 
     grunt.registerTask(
@@ -214,16 +327,26 @@ module.exports = function (grunt) {
           // Create an app based on the template
           grunt.file.copy(path.join(baseDir, 'template'), buildDir);
 
-          // Use `npm pack` to generate a .tgz NPM package
+          // Use `npm pack` to generate a .tgz NPM package for the core and for each of the
+          // per-side wrapper packages. The wrappers are installed alongside the core, so the app
+          // resolves them the way a consumer would, with the core satisfying their exact peer
+          // dependency. Their versions move in lockstep with the core's.
+          const packDestination = `${implDir}/test/package/browser/build`;
           await execExternalPromises('npm run build');
-          await execExternalPromises('npm pack --pack-destination test/package/browser/build');
-          const version = grunt.file.readJSON('package.json').version;
-          const packFileName = `ably-${version}.tgz`;
+          await execExternalPromises(
+            `npm pack --pack-destination ${packDestination} ./packages/core ./packages/device ./packages/server`,
+          );
+          const version = grunt.file.readJSON('packages/core/package.json').version;
+          const packFileNames = [
+            `ably-pubsub-core-${version}.tgz`,
+            `ably-pubsub-device-${version}.tgz`,
+            `ably-pubsub-server-${version}.tgz`,
+          ];
 
-          // Configure app to consume the generated .tgz file
+          // Configure app to consume the generated .tgz files
           const pwd = process.cwd();
           process.chdir(buildDir);
-          await execExternalPromises(`npm install ${packFileName}`);
+          await execExternalPromises(`npm install ${packFileNames.join(' ')}`);
 
           // Install further dependencies required for testing the app
           await execExternalPromises('npm run test:install-deps');

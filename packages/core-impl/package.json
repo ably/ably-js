@@ -1,0 +1,54 @@
+{
+  "name": "@ably/pubsub-core-impl",
+  "description": "The Ably Pub/Sub implementation, bundled into @ably/pubsub-device and @ably/pubsub-server. Private: never published",
+  "version": "2.30.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "exports": {
+    "./platform": {
+      "types": "./side/types/platform.d.ts",
+      "react-native": "./src/platform/react-native/index.ts",
+      "node": "./src/platform/nodejs/index.ts",
+      "default": "./src/platform/web/index.ts"
+    },
+    "./modular": {
+      "types": "./side/types/modular.d.ts",
+      "default": "./src/platform/web/modular.ts"
+    },
+    "./push": {
+      "types": "./side/types/push.d.ts",
+      "default": "./src/plugins/push/index.ts"
+    },
+    "./react-native-push": {
+      "types": "./side/types/react-native-push.d.ts",
+      "default": "./src/plugins/react-native-push/index.ts"
+    },
+    "./liveobjects": {
+      "types": "./side/types/liveobjects.d.ts",
+      "default": "./src/plugins/liveobjects/index.ts"
+    }
+  },
+  "dependencies": {
+    "@ably/msgpack-js": "^0.4.0",
+    "@ably/pubsub-core": "2.30.0"
+  },
+  "typesVersions": {
+    "*": {
+      "platform": [
+        "side/types/platform.d.ts"
+      ],
+      "modular": [
+        "side/types/modular.d.ts"
+      ],
+      "push": [
+        "side/types/push.d.ts"
+      ],
+      "react-native-push": [
+        "side/types/react-native-push.d.ts"
+      ],
+      "liveobjects": [
+        "side/types/liveobjects.d.ts"
+      ]
+    }
+  }
+}

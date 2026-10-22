@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "importHelpers": false,
+    "rootDir": "./src",
+    "outDir": "./build"
+  },
+  "include": ["src/index.ts"],
+  "exclude": []
+}

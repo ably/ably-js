@@ -41,14 +41,23 @@ module.exports = {
       },
     },
     {
-      files: ['ably.d.ts', 'modular.d.ts'],
+      files: ['packages/core/types.d.ts', 'packages/core/http.d.ts', 'packages/core/modular.d.ts'],
       extends: ['plugin:jsdoc/recommended'],
       rules: {
         'jsdoc/check-tag-names': ['warn', { definedTags: ['experimental'] }],
       },
     },
   ],
-  ignorePatterns: ['build', 'test', 'tools', 'scripts', 'typedoc/generated', 'react', 'Gruntfile.js', 'grunt'],
+  ignorePatterns: [
+    'build',
+    'packages/*/dist',
+    'test',
+    'tools',
+    'scripts',
+    'typedoc/generated',
+    'Gruntfile.js',
+    'grunt',
+  ],
   settings: {
     jsdoc: {
       tagNamePreference: {

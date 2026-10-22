@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "lib": ["ES2017", "DOM", "DOM.Iterable", "webworker"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "baseUrl": "./src",
+    // The implementation imports the core's runtime (ErrorInfo, EventEmitter) by package name, so
+    // that the published bundles can leave it external and share one copy with the SDKs layered on
+    // Pub/Sub. Resolved onto the runtime's source here, so that type checking and the internal test
+    // bundles do not depend on the core having been built first.
+    "paths": {
+      "@ably/pubsub-core": ["../../core/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["src/platform/react-hooks", "test/package"]
+}

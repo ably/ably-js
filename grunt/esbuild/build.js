@@ -1,6 +1,15 @@
-const banner = require('../../src/fragments/license');
+const path = require('path');
+const banner = require('../../packages/core-impl/src/fragments/license');
 const umdWrapper = require('esbuild-plugin-umd-wrapper');
 const stripLogsPlugin = require('./strip-logs').default;
+
+// The private implementation's own bundles are built with `packages/core-impl` as esbuild's working
+// directory, so the entry points, outfiles and sourcemap paths below all stay written relative to
+// that package rather than to this monorepo root. They are what the test suite loads, and are
+// never published. The core's runtime and the published per-side packages are built from the root,
+// further down this file.
+const implDir = path.resolve(__dirname, '..', '..', 'packages', 'core-impl');
+const coreDir = path.resolve(__dirname, '..', '..', 'packages', 'core');
 
 // We need to create a new copy of the base config each time, because calling
 // esbuild.build() with the base config causes it to mutate the passed
@@ -8,6 +17,7 @@ const stripLogsPlugin = require('./strip-logs').default;
 // which we don’t want here.
 function createBaseConfig() {
   return {
+    absWorkingDir: implDir,
     bundle: true,
     sourcemap: true,
     format: 'umd',
@@ -21,13 +31,6 @@ const webConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/platform/web/index.ts'],
   outfile: 'build/ably.js',
-};
-
-const minifiedWebConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/platform/web/index.ts'],
-  outfile: 'build/ably.min.js',
-  minify: true,
 };
 
 const modularConfig = {
@@ -62,32 +65,6 @@ const pushPluginConfig = {
   external: ['ulid'],
 };
 
-const pushPluginCdnConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/plugins/push/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyPushPlugin', amdNamedModule: false })],
-  outfile: 'build/push.umd.js',
-};
-
-const minifiedPushPluginCdnConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/plugins/push/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyPushPlugin', amdNamedModule: false })],
-  outfile: 'build/push.umd.min.js',
-  minify: true,
-};
-
-// no CDN (.umd/.umd.min) variants: there is no script-tag consumption path in React Native.
-// 'react-native' stays external so the bundle carries no native module dependency; the UMD
-// wrapper requires externals at module load, which Metro resolves statically in an RN app.
-const reactNativePushPluginConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/plugins/react-native-push/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyReactNativePushPlugin', amdNamedModule: false })],
-  outfile: 'build/react-native-push.js',
-  external: ['ulid', 'react-native'],
-};
-
 const liveObjectsPluginConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/plugins/liveobjects/index.ts'],
@@ -96,41 +73,114 @@ const liveObjectsPluginConfig = {
   external: ['dequal'],
 };
 
-const liveObjectsPluginEsmConfig = {
-  ...createBaseConfig(),
-  format: 'esm',
-  plugins: [],
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
-  outfile: 'build/liveobjects.mjs',
-  external: ['dequal'],
-};
+// The core's own runtime: ErrorInfo, PartialErrorInfo and EventEmitter, shared with the SDKs layered on
+// Pub/Sub. It has no platform dependencies, so one CJS/ESM pair serves every runtime.
+const coreRuntimeConfigs = ['cjs', 'esm'].map((format) => ({
+  absWorkingDir: coreDir,
+  bundle: true,
+  sourcemap: true,
+  banner: { js: '/*' + banner + '*/' },
+  // Keeps `ErrorInfo.name` and the other class names intact in the build consumers load. esbuild
+  // renames a class that refers to itself, so `ErrorInfo.name` would otherwise read `_ErrorInfo`.
+  keepNames: true,
+  target: 'es2017',
+  format,
+  entryPoints: ['src/index.ts'],
+  outfile: `build/index.${format === 'esm' ? 'mjs' : 'js'}`,
+}));
 
-const liveObjectsPluginCdnConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/liveobjects.umd.js',
-};
+// The per-side Pub/Sub packages (PDR-091). Each bundles the private implementation in
+// packages/core-impl, leaving `@ably/pubsub-core` external so that there is one runtime copy of
+// `ErrorInfo` and `EventEmitter`, shared with the SDKs layered on Pub/Sub. Every other dependency the
+// implementation reaches through npm is left external too, as the platform bundles above leave it,
+// and listed in the package's own `dependencies`.
+//
+// Each entry is one of the package's bundles. `platform` picks which implementation the package's
+// sources reach through the `@ably/pubsub-core-impl/platform` specifier, by the export condition
+// esbuild resolves it with: `node` for Node.js, and `default` (the web implementation) for every
+// other runtime. `formats` names the module systems the entry is served in, and defaults to both.
+//
+// The Node.js implementation, and the CommonJS packages it bundles (such as @ably/msgpack-js), call
+// `require()`, which an ES module does not have. esbuild's own shim defers to a `require` in scope,
+// so the Node.js ESM bundles create one.
+const nodeEsmRequireShim =
+  "\nimport { createRequire as __ablyCreateRequire } from 'module';\nconst require = __ablyCreateRequire(import.meta.url);";
 
-const minifiedLiveObjectsPluginCdnConfig = {
-  ...createBaseConfig(),
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
-  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
-  outfile: 'build/liveobjects.umd.min.js',
-  minify: true,
-};
+function createPackageConfigs(packageName, entries) {
+  const packageDir = `packages/${packageName}`;
+
+  return entries.flatMap(
+    ({ name, source = name, platform = 'browser', formats = ['cjs', 'esm'], external = [], plugins = [] }) =>
+      formats.map((format) => ({
+        bundle: true,
+        sourcemap: true,
+        banner: { js: '/*' + banner + '*/' + (platform === 'node' && format === 'esm' ? nodeEsmRequireShim : '') },
+        target: 'es2017',
+        platform,
+        format,
+        // `react` and `react-dom` join the externals for the same reason `@ably/pubsub-core` does:
+        // anything that must be one shared instance in the app has to come from the app's own copy.
+        external: ['@ably/pubsub-core', 'react', 'react-dom', ...external],
+        plugins,
+        entryPoints: [`${packageDir}/src/${source}.ts`],
+        outfile: `${packageDir}/dist/${name}.${format === 'esm' ? 'mjs' : 'js'}`,
+      })),
+  );
+}
+
+// The npm dependencies of the Node.js implementation, left external for the reason given on
+// `nodeConfig` above.
+const nodeExternals = ['ws', 'got'];
+
+const pubsubPackageConfigs = [
+  ...createPackageConfigs('device', [
+    { name: 'index' },
+    { name: 'node', source: 'index', platform: 'node', external: nodeExternals },
+    // ESM only: the modular variant is published behind an `import` condition alone. Its logs are
+    // stripped, as the internal modular bundle's are, to keep it minimal.
+    { name: 'modular', formats: ['esm'], plugins: [stripLogsPlugin] },
+    { name: 'liveobjects', external: ['dequal'] },
+    { name: 'push', external: ['ulid'] },
+    { name: 'react-native-push', external: ['ulid', 'react-native'] },
+  ]),
+  ...createPackageConfigs('server', [
+    { name: 'index' },
+    { name: 'node', source: 'index', platform: 'node', external: nodeExternals },
+    { name: 'liveobjects', external: ['dequal'] },
+  ]),
+];
+
+// The CDN bundles of `@ably/pubsub-device`, for script-tag consumption. Unlike the npm bundles, these
+// inline everything, `@ably/pubsub-core` included, because a script tag has no module resolution
+// to share it through. Their file names are the ones the CDN has always served.
+function createCdnConfigs(entry, libraryName, outName, external = []) {
+  return [false, true].map((minify) => ({
+    bundle: true,
+    sourcemap: true,
+    format: 'umd',
+    banner: { js: '/*' + banner + '*/' },
+    plugins: [umdWrapper.default({ libraryName, amdNamedModule: false })],
+    target: 'es2017',
+    minify,
+    external,
+    entryPoints: [`packages/device/src/${entry}.ts`],
+    outfile: `packages/device/dist/cdn/${outName}${minify ? '.min' : ''}.js`,
+  }));
+}
+
+const cdnConfigs = [
+  ...createCdnConfigs('index', 'Ably', 'ably'),
+  ...createCdnConfigs('push', 'AblyPushPlugin', 'push.umd'),
+  ...createCdnConfigs('liveobjects', 'AblyLiveObjectsPlugin', 'liveobjects.umd'),
+];
 
 module.exports = {
+  coreRuntimeConfigs,
   webConfig,
-  minifiedWebConfig,
   modularConfig,
   nodeConfig,
   pushPluginConfig,
-  pushPluginCdnConfig,
-  minifiedPushPluginCdnConfig,
-  reactNativePushPluginConfig,
   liveObjectsPluginConfig,
-  liveObjectsPluginEsmConfig,
-  liveObjectsPluginCdnConfig,
-  minifiedLiveObjectsPluginCdnConfig,
+  pubsubPackageConfigs,
+  cdnConfigs,
 };

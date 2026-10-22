@@ -1,0 +1,147 @@
+{
+  "name": "@ably/pubsub-device",
+  "description": "Ably Pub/Sub client for devices: browsers, mobile apps, and other end-user runtimes",
+  "version": "2.30.0",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/node.js",
+  "module": "./dist/index.mjs",
+  "browser": "./dist/index.js",
+  "react-native": "./dist/react-native.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "react-native": {
+        "types": "./index.d.ts",
+        "default": "./dist/react-native.js"
+      },
+      "node": {
+        "require": {
+          "types": "./index.d.ts",
+          "default": "./dist/node.js"
+        },
+        "import": {
+          "types": "./index.d.mts",
+          "default": "./dist/node.mjs"
+        }
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./modular": {
+      "import": {
+        "types": "./modular/index.d.mts",
+        "default": "./dist/modular.mjs"
+      }
+    },
+    "./liveobjects": {
+      "require": {
+        "types": "./liveobjects/index.d.ts",
+        "default": "./dist/liveobjects.js"
+      },
+      "import": {
+        "types": "./liveobjects/index.d.mts",
+        "default": "./dist/liveobjects.mjs"
+      }
+    },
+    "./liveobjects/react": {
+      "require": {
+        "types": "./dist/react/cjs/liveobjects/index.d.ts",
+        "default": "./dist/react/cjs/liveobjects/index.js"
+      },
+      "import": {
+        "types": "./dist/react/mjs/liveobjects/index.d.ts",
+        "default": "./dist/react/mjs/liveobjects/index.js"
+      }
+    },
+    "./react": {
+      "require": {
+        "types": "./dist/react/cjs/index.d.ts",
+        "default": "./dist/react/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/react/mjs/index.d.ts",
+        "default": "./dist/react/mjs/index.js"
+      }
+    },
+    "./push": {
+      "require": {
+        "types": "./push/index.d.ts",
+        "default": "./dist/push.js"
+      },
+      "import": {
+        "types": "./push/index.d.mts",
+        "default": "./dist/push.mjs"
+      }
+    },
+    "./react-native-push": {
+      "require": {
+        "types": "./react-native-push/index.d.ts",
+        "default": "./dist/react-native-push.js"
+      },
+      "import": {
+        "types": "./react-native-push/index.d.mts",
+        "default": "./dist/react-native-push.mjs"
+      }
+    }
+  },
+  "files": [
+    "dist/**",
+    "index.d.ts",
+    "index.d.mts",
+    "liveobjects/**",
+    "modular/**",
+    "react/**",
+    "push/**",
+    "react-native-push/**",
+    "README.md"
+  ],
+  "dependencies": {
+    "@ably/pubsub-core": "2.30.0",
+    "dequal": "^2.0.3",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
+    "got": "^11.8.5",
+    "ulid": "^2.3.0",
+    "ws": "^8.17.1"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ably/ably-js.git",
+    "directory": "packages/device"
+  },
+  "bugs": {
+    "url": "https://github.com/ably/ably-js/issues",
+    "email": "support@ably.com"
+  },
+  "homepage": "https://github.com/ably/ably-js/tree/main/packages/device#readme",
+  "keywords": [
+    "ably",
+    "realtime",
+    "pubsub",
+    "websockets",
+    "device"
+  ],
+  "engines": {
+    "node": ">=16"
+  }
+}
