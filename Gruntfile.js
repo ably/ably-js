@@ -52,7 +52,7 @@ module.exports = function (grunt) {
   var gruntConfig = {
     dirs: dirs,
     webpack: {
-      reactNative: [webpackConfig.reactNative],
+      reactNative: [webpackConfig.reactNative, webpackConfig.reactNativeDebug],
       support: [webpackConfig.nativeScript, webpackConfig.mochaJUnitReporterBrowser],
     },
   };
@@ -230,11 +230,10 @@ module.exports = function (grunt) {
   // ESM-flavoured types too. Without a `.d.mts`, TypeScript reads the `.d.ts` as CommonJS types
   // describing an ESM file, and `attw` rightly reports the entry point as masquerading as CJS.
   //
-  // A straight copy is enough, unlike the core's equivalent step for liveobjects.d.mts, which has
-  // to rewrite relative imports: every declaration file in these packages imports the core by bare
-  // specifier only, and those resolve identically under both module systems. Every one of them also
-  // exports under a name rather than with `export =`, which has no ESM spelling and so could not be
-  // copied.
+  // Nearly a straight copy: the core is imported by bare specifier, which resolves identically
+  // under both module systems, so only the relative imports between these declaration files need
+  // rewriting. Every one of them also exports under a name rather than with `export =`, which has
+  // no ESM spelling and so could not be copied.
   grunt.registerTask(
     'build:packages:types',
     'Generate the .d.mts counterpart of each wrapper package declaration file',
@@ -262,7 +261,15 @@ module.exports = function (grunt) {
           );
         }
 
-        fs.writeFileSync(declarationFile.replace(/\.d\.ts$/, '.d.mts'), contents);
+        // A relative import of another of these declaration files names its `.d.mts` counterpart
+        // (`.mjs` resolves to it), so that the ESM types do not pull in the CJS-flavoured copy.
+        const esmContents = contents.replace(/from '(\.\.?\/[^']+)\.js'/g, (specifier, target) =>
+          declarationFiles.includes(path.join(path.dirname(declarationFile), `${target}.d.ts`))
+            ? `from '${target}.mjs'`
+            : specifier,
+        );
+
+        fs.writeFileSync(declarationFile.replace(/\.d\.ts$/, '.d.mts'), esmContents);
         generated++;
       }
 

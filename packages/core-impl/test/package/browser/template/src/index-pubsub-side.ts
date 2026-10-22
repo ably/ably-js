@@ -1,8 +1,8 @@
 // Checks that the per-side Pub/Sub packages resolve, type-check and bundle the way a real
 // consumer's toolchain sees them: installed from their own tarballs, with the core satisfying
-// their exact peer dependency. That is worth exercising separately from the core because each
-// package is a wrapper whose declarations re-export the core's by bare specifier, so its types
-// only resolve if the core resolves from inside it too.
+// their exact dependency. That is worth exercising separately from the core because each
+// package's declarations re-export the core's by bare specifier, so its types only resolve if the
+// core resolves from inside it too.
 //
 // This covers resolution, types and bundling only. The agent identifier each factory stamps —
 // what declaring a side means, per the note in packages/device/README.md — is asserted on the
@@ -10,6 +10,7 @@
 //
 // Nothing here connects to Ably, so this file needs no sandbox key.
 import * as PubSubDevice from '@ably/pubsub-device';
+import * as PubSubDeviceDebug from '@ably/pubsub-device/debug';
 import * as PubSubDeviceModular from '@ably/pubsub-device/modular';
 import { Push } from '@ably/pubsub-device/push';
 import { LiveObjects, LiveMap, LiveCounter } from '@ably/pubsub-device/liveobjects';
@@ -43,7 +44,20 @@ globalThis.testAblyPackage = async function () {
   void serverChannel;
   void serverHttp.request;
 
-  // The modular subpath re-exports the core's tree-shakable variant and adds its own side-stamping
+  // The debug subpath is the same client with full logging, and shares the root's types and its
+  // ErrorInfo.
+  const debugDevice: PubSubDevice.PubSubClient = PubSubDeviceDebug.createClient({
+    key: 'app.key:secret',
+    autoConnect: false,
+    clientId: 'someone',
+    logLevel: 4,
+  });
+  if (PubSubDeviceDebug.ErrorInfo !== PubSubDevice.ErrorInfo) {
+    throw new Error('the debug entry point does not share the root ErrorInfo');
+  }
+  debugDevice.close();
+
+  // The modular subpath re-exports the tree-shakable variant and adds its own side-stamping
   // factory. It is ESM-only, so this also checks the `import` condition resolves on its own.
   const modularDevice: PubSubDevice.PubSubClient = PubSubDeviceModular.createClient({
     key: 'app.key:secret',
