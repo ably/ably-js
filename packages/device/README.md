@@ -44,6 +44,7 @@ Everything a device needs is exported here, so you never need to add `@ably/pubs
 | `@ably/pubsub-device`                   | `createClient`, plus the core's public API and type surface     |
 | `@ably/pubsub-device/debug`             | The same, from a build that keeps every log, for development    |
 | `@ably/pubsub-device/modular`           | `createClient` for a tree-shakable client, and its plugins      |
+| `@ably/pubsub-device/msgpack`           | The MessagePack plugin, for the binary protocol on the web      |
 | `@ably/pubsub-device/react`             | The React hooks: `AblyProvider`, `useChannel`, `usePresence`, … |
 | `@ably/pubsub-device/liveobjects`       | The LiveObjects plugin                                          |
 | `@ably/pubsub-device/liveobjects/react` | The `useObject` React hook for LiveObjects                      |
@@ -70,6 +71,26 @@ const client = createClient({ key: 'your-ably-api-key', clientId: 'me', logLevel
 ```
 
 The debug build is larger, so use it in development builds only. The plugins and the React hooks work with a client from either entry point.
+
+## MessagePack
+
+On the web and React Native, the client from `@ably/pubsub-device` leaves MessagePack out, to keep it small, so it uses JSON whatever the `useBinaryProtocol` client option says. To use the binary MessagePack protocol there, pass the `MsgPack` plugin from `@ably/pubsub-device/msgpack`:
+
+```javascript
+import { createClient } from '@ably/pubsub-device';
+import { MsgPack } from '@ably/pubsub-device/msgpack';
+
+const client = createClient({
+  key: 'your-ably-api-key',
+  clientId: 'me',
+  useBinaryProtocol: true,
+  plugins: { MsgPack },
+});
+```
+
+With the plugin, `useBinaryProtocol` chooses the protocol, and defaults to `false`, so set `useBinaryProtocol: true` as well, or the client keeps using JSON. The plugin works with a client from `@ably/pubsub-device/debug` or `@ably/pubsub-device/modular` too.
+
+On Node.js, the client includes MessagePack and uses it by default, as `@ably/pubsub-server` does, so it needs no plugin. Passing the plugin there is harmless, so code shared between Node.js and the web can pass it on both.
 
 ## Static helpers
 

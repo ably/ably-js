@@ -106,7 +106,7 @@ const coreRuntimeConfigs = ['cjs', 'esm'].map((format) => ({
 const nodeEsmRequireShim =
   "\nimport { createRequire as __ablyCreateRequire } from 'module';\nconst require = __ablyCreateRequire(import.meta.url);";
 
-function createPackageConfigs(packageName, entries) {
+function createPackageConfigs(packageName, entries, { conditions = [] } = {}) {
   const packageDir = `packages/${packageName}`;
 
   return entries.flatMap(
@@ -118,6 +118,7 @@ function createPackageConfigs(packageName, entries) {
         target: 'es2017',
         platform,
         format,
+        conditions,
         // `react` and `react-dom` join the externals for the same reason `@ably/pubsub-core` does:
         // anything that must be one shared instance in the app has to come from the app's own copy.
         external: ['@ably/pubsub-core', 'react', 'react-dom', ...external],
@@ -132,23 +133,40 @@ function createPackageConfigs(packageName, entries) {
 // `nodeConfig` above.
 const nodeExternals = ['ws', 'got'];
 
+// The web and React Native bundles of `@ably/pubsub-device` leave MessagePack out: under this export
+// condition, `@ably/pubsub-core-impl/bundled-msgpack`, which their entry points import their codec
+// through, resolves to no codec, so a client uses JSON unless the app passes the `MsgPack` plugin
+// from `@ably/pubsub-device/msgpack`. A device defaults to JSON there anyway. The Node.js entry point
+// imports its codec directly, so the package's Node.js bundles keep MessagePack, the platform's
+// default protocol, whatever this condition says. esbuild still applies `default`,
+// `import`/`require` and `browser`/`node` alongside it.
+const msgpackPluginCondition = 'ably-msgpack-plugin';
+
 const pubsubPackageConfigs = [
-  ...createPackageConfigs('device', [
-    // The package root strips every log below error level, which is what ships to end users'
-    // devices: smaller, and without the detail of the client's internals. `@ably/pubsub-device/debug`
-    // serves the same entry point with full logging, for diagnosing an app during development.
-    // The React Native pair is built by webpack (webpack.config.js).
-    { name: 'index', plugins: [stripLogsPlugin] },
-    { name: 'node', source: 'index', platform: 'node', external: nodeExternals, plugins: [stripLogsPlugin] },
-    { name: 'debug', source: 'index' },
-    { name: 'debug-node', source: 'index', platform: 'node', external: nodeExternals },
-    // ESM only: the modular variant is published behind an `import` condition alone. Its logs are
-    // stripped, as the internal modular bundle's are, to keep it minimal.
-    { name: 'modular', formats: ['esm'], plugins: [stripLogsPlugin] },
-    { name: 'liveobjects', external: ['dequal'] },
-    { name: 'push', external: ['ulid'] },
-    { name: 'react-native-push', external: ['ulid', 'react-native'] },
-  ]),
+  ...createPackageConfigs(
+    'device',
+    [
+      // The package root strips every log below error level, which is what ships to end users'
+      // devices: smaller, and without the detail of the client's internals. `@ably/pubsub-device/debug`
+      // serves the same entry point with full logging, for diagnosing an app during development.
+      // The React Native pair is built by webpack (webpack.config.js).
+      { name: 'index', plugins: [stripLogsPlugin] },
+      { name: 'node', source: 'index', platform: 'node', external: nodeExternals, plugins: [stripLogsPlugin] },
+      { name: 'debug', source: 'index' },
+      { name: 'debug-node', source: 'index', platform: 'node', external: nodeExternals },
+      // ESM only: the modular variant is published behind an `import` condition alone. Its logs are
+      // stripped, as the internal modular bundle's are, to keep it minimal.
+      { name: 'modular', formats: ['esm'], plugins: [stripLogsPlugin] },
+      { name: 'liveobjects', external: ['dequal'] },
+      { name: 'push', external: ['ulid'] },
+      { name: 'react-native-push', external: ['ulid', 'react-native'] },
+      // The `MsgPack` plugin: the platform's codec, which `@ably/pubsub-core-impl/msgpack` picks by
+      // the `node` or `default` condition, whatever `msgpackPluginCondition` says.
+      { name: 'msgpack' },
+      { name: 'msgpack-node', source: 'msgpack', platform: 'node' },
+    ],
+    { conditions: [msgpackPluginCondition] },
+  ),
   ...createPackageConfigs('server', [
     { name: 'index' },
     { name: 'node', source: 'index', platform: 'node', external: nodeExternals },
@@ -159,6 +177,9 @@ const pubsubPackageConfigs = [
 // The CDN bundles of `@ably/pubsub-device`, for script-tag consumption. Unlike the npm bundles, these
 // inline everything, `@ably/pubsub-core` included, because a script tag has no module resolution
 // to share it through. Their file names are the ones the CDN has always served.
+//
+// They are built without `msgpackPluginCondition`, so they keep MessagePack: a script tag has no
+// subpath to load the `MsgPack` plugin from.
 function createCdnConfigs(entry, libraryName, outName, external = []) {
   return [false, true].map((minify) => ({
     bundle: true,
@@ -187,6 +208,7 @@ module.exports = {
   nodeConfig,
   pushPluginConfig,
   liveObjectsPluginConfig,
+  msgpackPluginCondition,
   pubsubPackageConfigs,
   cdnConfigs,
 };

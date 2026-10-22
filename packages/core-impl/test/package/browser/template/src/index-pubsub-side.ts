@@ -12,6 +12,7 @@
 import * as PubSubDevice from '@ably/pubsub-device';
 import * as PubSubDeviceDebug from '@ably/pubsub-device/debug';
 import * as PubSubDeviceModular from '@ably/pubsub-device/modular';
+import { MsgPack } from '@ably/pubsub-device/msgpack';
 import { Push } from '@ably/pubsub-device/push';
 import { LiveObjects, LiveMap, LiveCounter } from '@ably/pubsub-device/liveobjects';
 import * as PubSubServer from '@ably/pubsub-server';
@@ -81,7 +82,8 @@ globalThis.testAblyPackage = async function () {
     key: 'app.key:secret',
     autoConnect: false,
     clientId: 'someone',
-    plugins: { Push, LiveObjects },
+    useBinaryProtocol: true,
+    plugins: { Push, LiveObjects, MsgPack },
   });
   void withPlugins.channels.get('channel').push;
   withPlugins.close();

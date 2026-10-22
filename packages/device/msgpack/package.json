@@ -1,0 +1,6 @@
+{
+  "main": "../dist/msgpack-node.js",
+  "module": "../dist/msgpack.mjs",
+  "browser": "../dist/msgpack.js",
+  "types": "./index.d.ts"
+}

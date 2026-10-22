@@ -15,6 +15,16 @@
       "types": "./side/types/modular.d.ts",
       "default": "./src/platform/web/modular.ts"
     },
+    "./msgpack": {
+      "types": "./side/types/msgpack.d.ts",
+      "node": "./src/platform/nodejs/lib/util/msgpack.ts",
+      "default": "./src/platform/web/lib/util/msgpack.ts"
+    },
+    "./bundled-msgpack": {
+      "types": "./side/types/bundled-msgpack.d.ts",
+      "ably-msgpack-plugin": "./src/platform/no-msgpack.ts",
+      "default": "./src/platform/web/lib/util/msgpack.ts"
+    },
     "./push": {
       "types": "./side/types/push.d.ts",
       "default": "./src/plugins/push/index.ts"
@@ -39,6 +49,12 @@
       ],
       "modular": [
         "side/types/modular.d.ts"
+      ],
+      "msgpack": [
+        "side/types/msgpack.d.ts"
+      ],
+      "bundled-msgpack": [
+        "side/types/bundled-msgpack.d.ts"
       ],
       "push": [
         "side/types/push.d.ts"
