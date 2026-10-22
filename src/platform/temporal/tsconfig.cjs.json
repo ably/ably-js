@@ -1,0 +1,11 @@
+{
+  // Unlike the ES module build, the CommonJS build gets no package.json of its own. Its nearest
+  // package.json is then the root one, which has no `type`, so the files load as CommonJS, and whose
+  // `exports` lets the build's `require('ably')` resolve by package self-reference. That is what
+  // makes the build loadable in this repository, which has no node_modules/ably.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "../../../temporal/cjs"
+  }
+}

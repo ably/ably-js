@@ -139,6 +139,43 @@ For more information view the [TypeDoc references](https://sdk.ably.com/builds/a
 
 ---
 
+## Temporal
+
+The SDK includes a [Temporal](https://temporal.io/) plugin for calling the Ably REST API from workflow code, for example to publish status updates and final replies from an agent workflow. Each call runs as a Temporal activity on your worker, so workflow code stays deterministic and Temporal retries failed calls. Published messages get deterministic IDs, so Ably deduplicates a retried publish.
+
+Register the plugin on your worker:
+
+```typescript
+import { Worker } from '@temporalio/worker';
+import * as Ably from 'ably';
+import { AblyHttpPlugin } from 'ably/temporal';
+
+const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+
+const worker = await Worker.create({
+  // ...
+  plugins: [new AblyHttpPlugin({ client })],
+});
+```
+
+Then use `TemporalAblyHttpClient` in your workflow code:
+
+```typescript
+import { workflowInfo } from '@temporalio/workflow';
+import { TemporalAblyHttpClient } from 'ably/temporal/workflow';
+
+const ably = new TemporalAblyHttpClient();
+
+export async function agentWorkflow(): Promise<void> {
+  const channel = ably.channels.get(`chat:${workflowInfo().workflowId}`);
+  await channel.publish('agent.status', { status: 'thinking' });
+}
+```
+
+The plugin requires Node.js 20.3 or later and `@temporalio/*` 1.18.0 or later. See the [Temporal plugin documentation](./docs/temporal.md) for setup, the supported API, retries and error handling.
+
+---
+
 ## Contribute
 
 Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.

@@ -1,0 +1,100 @@
+import { expect } from 'chai';
+import type { WorkerOptions } from '@temporalio/worker';
+import { restoreAll } from '../../uts/helpers';
+import * as WorkerEntryPoint from '../../../src/platform/temporal/src/index';
+import { AblyHttpPlugin } from '../../../src/platform/temporal/src/worker/plugin';
+import { ActivityNames } from '../../../src/platform/temporal/src/common/activities';
+import { activityEnvironment, expectedHeaders, jsonBody, mockAbly, runActivity, toWire } from './worker-helpers';
+
+// The Rest class from the built `ably` package, as an application would import it.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const BuiltRest = require('ably').Rest;
+
+function configuredActivities(plugin: AblyHttpPlugin, activities: object = {}): Record<string, any> {
+  const options = plugin.configureWorker({ taskQueue: 'test', activities } as WorkerOptions);
+  return options.activities as Record<string, any>;
+}
+
+describe('temporal/worker/plugin', function () {
+  afterEach(function () {
+    restoreAll();
+  });
+
+  it('is named AblyHttpPlugin', function () {
+    const { client } = mockAbly((req) => req.respond_with(200, {}));
+    expect(new AblyHttpPlugin({ client }).name).to.equal('AblyHttpPlugin');
+  });
+
+  it('registers every Ably activity alongside the application activities', function () {
+    const { client } = mockAbly((req) => req.respond_with(200, {}));
+    const myActivity = async () => 'mine';
+
+    const activities = configuredActivities(new AblyHttpPlugin({ client }), { myActivity });
+
+    expect(Object.keys(activities).sort()).to.deep.equal([...Object.values(ActivityNames), 'myActivity'].sort());
+    expect(activities.myActivity).to.equal(myActivity);
+    for (const name of Object.values(ActivityNames)) {
+      expect(name.startsWith('ably.'), name).to.equal(true);
+      expect(activities[name], name).to.be.a('function');
+    }
+  });
+
+  it('uses the client it is given', async function () {
+    const { client, requests } = mockAbly((req) => req.respond_with(201, { serials: ['s0'] }));
+    const plugin = new AblyHttpPlugin({ client });
+
+    await runActivity(
+      activityEnvironment(),
+      configuredActivities(plugin)[ActivityNames.publish],
+      toWire({ channel: 'chat', messages: [{ name: 'e' }] }),
+    );
+
+    expect(plugin.client).to.equal(client);
+    expect(jsonBody(requests[0])[0].extras.headers).to.deep.equal(expectedHeaders);
+  });
+
+  it('passes temporalMetadata to the activities', async function () {
+    const { client, requests } = mockAbly((req) => req.respond_with(201, { serials: ['s0'] }));
+    const plugin = new AblyHttpPlugin({ client, temporalMetadata: false });
+
+    await runActivity(
+      activityEnvironment(),
+      configuredActivities(plugin)[ActivityNames.publish],
+      toWire({ channel: 'chat', messages: [{ name: 'e' }] }),
+    );
+
+    expect(jsonBody(requests[0])[0]).to.not.have.property('extras');
+  });
+
+  it('accepts a client from the built ably package', function () {
+    const client = new BuiltRest({ key: 'appId.keyId:keySecret' });
+
+    expect(new AblyHttpPlugin({ client }).client).to.equal(client);
+  });
+
+  it('rejects options without a client', function () {
+    const message = /do not include an Ably REST client in `client`/;
+    expect(() => new (AblyHttpPlugin as any)()).to.throw(TypeError, message);
+    expect(() => new AblyHttpPlugin({} as any)).to.throw(TypeError, message);
+    expect(() => new AblyHttpPlugin({ ably: { key: 'appId.keyId:keySecret' } } as any)).to.throw(TypeError, message);
+    expect(() => new AblyHttpPlugin({ client: { key: 'appId.keyId:keySecret' } } as any)).to.throw(TypeError, message);
+  });
+
+  it('exports the worker API from the entry point', function () {
+    expect(Object.keys(WorkerEntryPoint).sort()).to.deep.equal(
+      [
+        'ABLY_ERROR_TYPE',
+        'AblyHttpPlugin',
+        'ActivityNames',
+        'TemporalMetadataKeys',
+        'createActivities',
+        'getAblyErrorDetails',
+      ].sort(),
+    );
+    expect(WorkerEntryPoint.TemporalMetadataKeys).to.deep.equal({
+      namespace: 'temporalNamespace',
+      workflowId: 'temporalWorkflowId',
+      runId: 'temporalRunId',
+    });
+  });
+});

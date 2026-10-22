@@ -7,6 +7,8 @@ npm-debug.log
 liveobjects.d.mts
 build/
 react/
+# Anchored, so that it does not also match src/platform/temporal/
+/temporal/
 typedoc/generated/
 junit/
 private-api-usage/

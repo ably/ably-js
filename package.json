@@ -48,6 +48,14 @@
       "require": "./react/cjs/liveobjects/index.js",
       "import": "./react/mjs/liveobjects/index.js"
     },
+    "./temporal": {
+      "require": "./temporal/cjs/index.js",
+      "import": "./temporal/mjs/index.js"
+    },
+    "./temporal/workflow": {
+      "require": "./temporal/cjs/workflow.js",
+      "import": "./temporal/mjs/workflow.js"
+    },
     "./promises": {
       "types": "./promises.d.ts",
       "default": "./promises.js"
@@ -73,7 +81,8 @@
     "react-native-push.js",
     "resources/**",
     "src/**",
-    "react/**"
+    "react/**",
+    "temporal/**"
   ],
   "dependencies": {
     "@ably/msgpack-js": "^0.4.0",
@@ -84,10 +93,26 @@
     "ws": "^8.17.1"
   },
   "peerDependencies": {
+    "@temporalio/activity": "1.x",
+    "@temporalio/common": "1.x",
+    "@temporalio/plugin": "1.x",
+    "@temporalio/workflow": "1.x",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },
   "peerDependenciesMeta": {
+    "@temporalio/activity": {
+      "optional": true
+    },
+    "@temporalio/common": {
+      "optional": true
+    },
+    "@temporalio/plugin": {
+      "optional": true
+    },
+    "@temporalio/workflow": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },
@@ -101,6 +126,13 @@
     "@babel/generator": "^7.23.6",
     "@babel/parser": "^7.23.6",
     "@babel/traverse": "^7.23.7",
+    "@temporalio/activity": "^1.24.0",
+    "@temporalio/client": "^1.24.0",
+    "@temporalio/common": "^1.24.0",
+    "@temporalio/plugin": "^1.24.0",
+    "@temporalio/testing": "^1.24.0",
+    "@temporalio/worker": "^1.24.0",
+    "@temporalio/workflow": "^1.24.0",
     "@testing-library/react": "^13.3.0",
     "@types/cli-table": "^0.3.4",
     "@types/jmespath": "^0.15.2",
@@ -186,13 +218,21 @@
     "test:uts": "npm run build:node && mocha --no-config --require tsx/cjs 'test/uts/**/*.test.ts'",
     "test:uts:unit": "npm run build:node && mocha --no-config --exit --require tsx/cjs --ignore 'test/uts/**/proxy/**' --ignore 'test/uts/**/integration/**' 'test/uts/**/*.test.ts'",
     "test:uts:integration": "npm run build:node && mocha --no-config --exit --require tsx/cjs 'test/uts/**/integration/**/*.test.ts'",
+    "test:temporal": "npm run build:node && npm run build:liveobjects && npm run build:temporal && mocha --no-config --exit --require tsx/cjs --timeout 180000 'test/temporal/**/*.test.ts'",
+    "test:temporal:unit": "npm run build:node && mocha --no-config --exit --require tsx/cjs 'test/temporal/unit/**/*.test.ts'",
+    "test:temporal:workflow": "npm run build:node && npm run build:temporal && mocha --no-config --exit --require tsx/cjs --timeout 180000 'test/temporal/workflow/**/*.test.ts'",
+    "test:temporal:integration": "npm run build:node && npm run build:liveobjects && npm run build:temporal && mocha --no-config --exit --require tsx/cjs --timeout 180000 'test/temporal/integration/**/*.test.ts'",
+    "typecheck:temporal": "tsc --noEmit -p test/temporal/tsconfig.json",
     "concat": "grunt concat",
-    "build": "grunt build:all && npm run build:react",
+    "build": "grunt build:all && npm run build:react && npm run build:temporal",
     "build:node": "grunt build:node",
     "build:browser": "grunt build:browser",
     "build:react": "npm run build:react:mjs && npm run build:react:cjs && cp src/platform/react-hooks/res/package.react.json react/package.json",
     "build:react:mjs": "tsc --project src/platform/react-hooks/tsconfig.mjs.json && cp src/platform/react-hooks/res/package.mjs.json react/mjs/package.json",
     "build:react:cjs": "tsc --project src/platform/react-hooks/tsconfig.cjs.json && cp src/platform/react-hooks/res/package.cjs.json react/cjs/package.json",
+    "build:temporal": "rm -rf temporal && npm run build:temporal:cjs && npm run build:temporal:mjs && cp src/platform/temporal/res/index.d.ts src/platform/temporal/res/workflow.d.ts temporal/",
+    "build:temporal:cjs": "tsc --project src/platform/temporal/tsconfig.cjs.json",
+    "build:temporal:mjs": "tsc --project src/platform/temporal/tsconfig.mjs.json && cp src/platform/temporal/res/package.mjs.json temporal/mjs/package.json",
     "build:push": "grunt build:push",
     "build:react-native-push": "grunt build:react-native-push",
     "build:liveobjects": "grunt build:liveobjects",
