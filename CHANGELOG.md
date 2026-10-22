@@ -2,6 +2,22 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.30.0](https://github.com/ably/ably-pubsub-js/tree/2.30.0) (2026-10-22)
+
+[Full Changelog](https://github.com/ably/ably-pubsub-js/compare/2.29.0...2.30.0)
+
+### What's Changed
+
+- Add the `MESSAGE_SUBSCRIBE` channel mode, which replaces `SUBSCRIBE`. `SUBSCRIBE` is still accepted in `ChannelOptions.modes` as a synonym, but `RealtimeChannel.modes` now reports the granted mode as `message_subscribe` rather than `subscribe` [#2317](https://github.com/ably/ably-pubsub-js/pull/2317)
+- Deprecate calling `channels.release()` on a channel that is not `initialized`, `detached` or `failed`. The channel is still detached and released, but a deprecation warning is now logged. Call `detach()` and wait for it to complete before releasing the channel [#2322](https://github.com/ably/ably-pubsub-js/pull/2322)
+- Throw a descriptive error when `useAbly`, `useChannel` or `usePresence` is called outside an `<AblyProvider>`, rather than an opaque `TypeError` [#2316](https://github.com/ably/ably-pubsub-js/pull/2316)
+- Fix a `detached` channel re-entering `attached` on an unsolicited `ATTACHED` message. It now sends a `DETACH` and stays `detached` [#2315](https://github.com/ably/ably-pubsub-js/pull/2315)
+- Fix REST token renewal retrying with the expired `Authorization` header, and without limit. The retry now carries the renewed token and runs once [#2303](https://github.com/ably/ably-pubsub-js/pull/2303)
+- Omit `null` message fields from the wire payload rather than sending them as `null`, and no longer encrypt a message with no `data` [#2301](https://github.com/ably/ably-pubsub-js/pull/2301)
+- Fix `ClientOptions.clientId` rejecting `undefined` at runtime and `null` in the types [#2312](https://github.com/ably/ably-pubsub-js/pull/2312)
+- Store the default `authMethod` of `GET` in `auth.authOptions` when it is omitted [#2313](https://github.com/ably/ably-pubsub-js/pull/2313)
+- Include the `clientId` in the error reported when presence auto re-enter fails [#2314](https://github.com/ably/ably-pubsub-js/pull/2314)
+
 ## [2.29.0](https://github.com/ably/ably-pubsub-js/tree/2.29.0) (2026-09-23)
 
 [Full Changelog](https://github.com/ably/ably-pubsub-js/compare/2.28.0...2.29.0)
