@@ -120,6 +120,8 @@ Push receive and the React hooks are device-side concerns and are not re-exporte
 
 The stateless HTTP client is a server-side concern, and `@ably/pubsub-device` does not offer one: there is no HTTP factory on the device package, and neither its root, `modular` nor `liveobjects` subpath exports the HTTP client's types, `BaseHttp`, or the HTTP client's LiveObjects API. The realtime client covers what a device needs from Ably's REST API, including history, `request()`, `stats()` and `time()`. The modular `Http` plugin, which gives a `BaseRealtime` those features, remains.
 
+The client from `@ably/pubsub-device` logs errors only: every log below error level is stripped from it, so raising `logLevel` there shows nothing more. To see the full logs while developing an app, import `createClient` from `@ably/pubsub-device/debug`, which is the same client from a build that keeps every log. `@ably/pubsub-server` keeps every log.
+
 If you source the SDK from the CDN rather than npm, the file names are unchanged, but the bundle is now `@ably/pubsub-device`: the global `Ably` object exposes `createClient` rather than the client classes, and the clients it creates declare the device side.
 
 <h2 id="use-the-factories">Create your clients through the factories</h2>

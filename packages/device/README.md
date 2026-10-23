@@ -42,6 +42,7 @@ Everything a device needs is exported here, so you never need to add `@ably/pubs
 | Import from                             | What you get                                                    |
 | --------------------------------------- | --------------------------------------------------------------- |
 | `@ably/pubsub-device`                   | `createClient`, plus the core's public API and type surface     |
+| `@ably/pubsub-device/debug`             | The same, from a build that keeps every log, for development    |
 | `@ably/pubsub-device/modular`           | `createClient` for a tree-shakable client, and its plugins      |
 | `@ably/pubsub-device/react`             | The React hooks: `AblyProvider`, `useChannel`, `usePresence`, … |
 | `@ably/pubsub-device/liveobjects`       | The LiveObjects plugin                                          |
@@ -55,6 +56,22 @@ import { AblyProvider, useChannel } from '@ably/pubsub-device/react';
 import { LiveObjects } from '@ably/pubsub-device/liveobjects';
 import { Push } from '@ably/pubsub-device/push';
 ```
+
+## Logging
+
+The client from `@ably/pubsub-device` logs errors only. Every log below error level is stripped from it, to keep it small and keep the detail of the client's internals out of what ships to your users, so a `logLevel` above error has nothing more to show.
+
+To see the full logs while developing, import `createClient` from `@ably/pubsub-device/debug` instead. It is the same client, and exports everything the root does, from a build that keeps every log. Choose how much it logs with the `logLevel` client option:
+
+```javascript
+import { createClient } from '@ably/pubsub-device/debug';
+
+const client = createClient({ key: 'your-ably-api-key', clientId: 'me', logLevel: 4 });
+```
+
+The debug build is larger, so use it in development builds only. The plugins and the React hooks work with a client from either entry point.
+
+## Static helpers
 
 The root entry point also exports the `Message`, `PresenceMessage`, `Annotation` and `Crypto` classes, whose static methods need no client: for example, `Message.fromEncoded()` decodes a message received from a source other than a channel, such as a webhook or a queue, and `Crypto.generateRandomKey()` generates a key for an encrypted channel.
 

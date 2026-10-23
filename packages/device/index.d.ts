@@ -36,6 +36,10 @@ export type PubSubClient = PubSubRealtimeClient;
  * Use `createHttpClient` or `createRealtimeClient` from `@ably/pubsub-server` for a
  * backend service instead, so that its traffic is exempt from all three.
  *
+ * This build of the client logs errors only: every log below error level is stripped from it, so
+ * a `logLevel` above error has nothing more to show. For full logging while developing, import
+ * `createClient` from `@ably/pubsub-device/debug` instead.
+ *
  * @param options - A client options object, an Ably API key, or an Ably token.
  */
 export declare function createClient(options: ClientOptions | string): PubSubClient;

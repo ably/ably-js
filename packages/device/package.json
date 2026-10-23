@@ -36,6 +36,30 @@
         "default": "./dist/index.mjs"
       }
     },
+    "./debug": {
+      "react-native": {
+        "types": "./debug/index.d.ts",
+        "default": "./dist/debug-react-native.js"
+      },
+      "node": {
+        "require": {
+          "types": "./debug/index.d.ts",
+          "default": "./dist/debug-node.js"
+        },
+        "import": {
+          "types": "./debug/index.d.mts",
+          "default": "./dist/debug-node.mjs"
+        }
+      },
+      "require": {
+        "types": "./debug/index.d.ts",
+        "default": "./dist/debug.js"
+      },
+      "import": {
+        "types": "./debug/index.d.mts",
+        "default": "./dist/debug.mjs"
+      }
+    },
     "./modular": {
       "import": {
         "types": "./modular/index.d.mts",
@@ -97,6 +121,7 @@
     "dist/**",
     "index.d.ts",
     "index.d.mts",
+    "debug/**",
     "liveobjects/**",
     "modular/**",
     "react/**",
