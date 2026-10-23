@@ -5,6 +5,7 @@ const banner = require('./packages/core-impl/src/fragments/license');
 // This is needed for baseUrl to resolve correctly from tsconfig
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const { createStripLogs } = require('./grunt/webpack/strip-logs');
+const { msgpackPluginCondition } = require('./grunt/esbuild/build');
 
 // Everything webpack builds here is compiled from the private implementation in packages/core-impl
 // rather than from this monorepo root. That is also why the tsconfig has to be named explicitly:
@@ -87,6 +88,9 @@ const nativeScriptConfig = {
 //
 // Like the package's other platform bundles, it is built twice: with every log below error level
 // stripped for the package root, and with full logging for `@ably/pubsub-device/debug`.
+//
+// It leaves MessagePack to the `MsgPack` plugin, as the package's other bundles do, by resolving
+// with the same export condition (see `msgpackPluginCondition` in grunt/esbuild/build.js).
 function createReactNativeConfig({ debug }) {
   const stripLogs = debug ? null : createStripLogs();
 
@@ -116,7 +120,7 @@ function createReactNativeConfig({ debug }) {
     resolve: {
       extensions: ['.js', '.ts'],
       plugins: [tsconfigPathsPlugin()],
-      conditionNames: ['react-native', 'require', 'default'],
+      conditionNames: [msgpackPluginCondition, 'react-native', 'require', 'default'],
       fallback: {
         crypto: false,
       },

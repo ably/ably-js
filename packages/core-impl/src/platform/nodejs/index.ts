@@ -19,6 +19,8 @@ import Transports from './lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import PlatformDefaults from './lib/util/defaults';
+// Every Node.js build bundles MessagePack, the platform's default protocol, including those of
+// `@ably/pubsub-device`, whose web and React Native builds leave it to a plugin.
 import msgpack = require('@ably/msgpack-js');
 
 const Crypto = createCryptoClass(BufferUtils);

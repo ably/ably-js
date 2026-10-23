@@ -20,7 +20,10 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
-import msgpack from './lib/util/msgpack';
+// The platform's MessagePack codec, or `null` in the web and React Native bundles of
+// `@ably/pubsub-device`, which are built with the `ably-msgpack-plugin` export condition and leave
+// MessagePack to a plugin.
+import msgpack from '@ably/pubsub-core-impl/bundled-msgpack';
 import { defaultBundledRequestImplementations } from './lib/http/request';
 
 const Crypto = createCryptoClass(Config, BufferUtils);

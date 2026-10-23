@@ -66,6 +66,26 @@
         "default": "./dist/modular.mjs"
       }
     },
+    "./msgpack": {
+      "node": {
+        "require": {
+          "types": "./msgpack/index.d.ts",
+          "default": "./dist/msgpack-node.js"
+        },
+        "import": {
+          "types": "./msgpack/index.d.mts",
+          "default": "./dist/msgpack-node.mjs"
+        }
+      },
+      "require": {
+        "types": "./msgpack/index.d.ts",
+        "default": "./dist/msgpack.js"
+      },
+      "import": {
+        "types": "./msgpack/index.d.mts",
+        "default": "./dist/msgpack.mjs"
+      }
+    },
     "./liveobjects": {
       "require": {
         "types": "./liveobjects/index.d.ts",
@@ -124,6 +144,7 @@
     "debug/**",
     "liveobjects/**",
     "modular/**",
+    "msgpack/**",
     "react/**",
     "push/**",
     "react-native-push/**",

@@ -122,6 +122,8 @@ The stateless HTTP client is a server-side concern, and `@ably/pubsub-device` do
 
 The client from `@ably/pubsub-device` logs errors only: every log below error level is stripped from it, so raising `logLevel` there shows nothing more. To see the full logs while developing an app, import `createClient` from `@ably/pubsub-device/debug`, which is the same client from a build that keeps every log. `@ably/pubsub-server` keeps every log.
 
+On the web and React Native, the client from `@ably/pubsub-device` also leaves MessagePack out, so it uses JSON whatever `useBinaryProtocol` says. JSON was already the default there, so this only changes a client that set `useBinaryProtocol: true`. To keep using MessagePack, import `MsgPack` from `@ably/pubsub-device/msgpack` and pass it in `ClientOptions.plugins: { MsgPack }`. On Node.js, `@ably/pubsub-device` still includes MessagePack and uses it by default, as do `@ably/pubsub-server` and the CDN bundle.
+
 If you source the SDK from the CDN rather than npm, the file names are unchanged, but the bundle is now `@ably/pubsub-device`: the global `Ably` object exposes `createClient` rather than the client classes, and the clients it creates declare the device side.
 
 <h2 id="use-the-factories">Create your clients through the factories</h2>

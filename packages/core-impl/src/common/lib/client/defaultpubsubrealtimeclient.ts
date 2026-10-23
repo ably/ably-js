@@ -28,16 +28,14 @@ import { MessageEncoding } from '../types/basemessage';
 export class DefaultPubSubRealtimeClient extends BaseRealtime {
   // The public typings declare that this requires an argument to be passed, but since we want to emit a good error message in the case where a non-TypeScript user does not pass an argument, tell the compiler that this is possible so that it forces us to handle it.
   constructor(options?: ClientOptions | string) {
-    const MsgPack = DefaultPubSubRealtimeClient._MsgPack;
-    if (!MsgPack) {
-      throw new Error('Expected DefaultPubSubRealtimeClient._MsgPack to have been set');
-    }
-
     super(
       Defaults.objectifyOptions(options, true, 'Realtime', Logger.defaultLogger, {
         ...allCommonModularPlugins,
         Crypto: DefaultPubSubRealtimeClient.Crypto ?? undefined,
-        MsgPack,
+        // Unset in the web and React Native bundles of `@ably/pubsub-device`, which leave MessagePack
+        // to the `MsgPack` plugin: a caller passing it in `plugins` overrides this, as with any other
+        // plugin.
+        MsgPack: DefaultPubSubRealtimeClient._MsgPack ?? undefined,
         RealtimePresence: {
           RealtimePresence,
           PresenceMessage,
@@ -75,6 +73,8 @@ export class DefaultPubSubRealtimeClient extends BaseRealtime {
   static PresenceMessage = DefaultPresenceMessage;
   static Annotation = DefaultAnnotation;
 
+  // Set by the platform entry point, except in the web and React Native bundles of
+  // `@ably/pubsub-device`, whose clients use JSON unless given the `MsgPack` plugin.
   static _MsgPack: MsgPack | null = null;
 
   // Used by tests

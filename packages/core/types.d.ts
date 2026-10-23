@@ -429,6 +429,8 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   /**
    * When `true`, the more efficient MsgPack binary encoding is used. When `false`, JSON text encoding is used. The default is `true` for Node.js, and `false` for all other platforms.
    *
+   * On the web and React Native, a client from `@ably/pubsub-device` uses JSON whatever this option says, unless it is given the {@link CorePlugins.MsgPack | `MsgPack`} plugin from `@ably/pubsub-device/msgpack`.
+   *
    * @defaultValue `true` for Node.js, `false` for all other platforms
    */
   useBinaryProtocol?: boolean;
@@ -559,6 +561,11 @@ export interface CorePlugins {
    * A plugin which allows the client to be the target of push notifications.
    */
   Push?: unknown;
+
+  /**
+   * A plugin which allows the client to use the MessagePack binary protocol. On the web and React Native, a client from `@ably/pubsub-device` has no MessagePack support of its own, and uses JSON unless it is given this plugin, which it exports from `@ably/pubsub-device/msgpack`. On Node.js, a client from `@ably/pubsub-device` includes MessagePack, as does every client from `@ably/pubsub-server`, so it needs no plugin.
+   */
+  MsgPack?: unknown;
 
   /**
    * A plugin which allows the client to use LiveObjects functionality at `RealtimeChannel.object`.

@@ -515,6 +515,7 @@ export function arrEquals(a: any[], b: any[]) {
 
 export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
   // Push and LiveObjects are not exported by the modular variant; each has its own entry point.
+  // MsgPack is, but `@ably/pubsub-device/msgpack` serves the root client and the modular one alike.
   //
   // The subpaths below are named on `@ably/pubsub-device`, because web push and the modular variant
   // both only apply to code running on an end user's device. LiveObjects runs on either side, so
@@ -523,6 +524,10 @@ export function createMissingPluginError(pluginName: keyof ModularPlugins): Erro
   switch (pluginName) {
     case 'Push':
       remediation = 'Import { Push } from "@ably/pubsub-device/push" and pass it in ClientOptions.plugins: { Push }.';
+      break;
+    case 'MsgPack':
+      remediation =
+        'Import { MsgPack } from "@ably/pubsub-device/msgpack" and pass it in ClientOptions.plugins: { MsgPack }.';
       break;
     case 'LiveObjects':
       remediation =
