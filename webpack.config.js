@@ -35,7 +35,7 @@ const baseConfig = {
       { test: /\.ts$/, loader: 'ts-loader' },
     ],
   },
-  target: ['web', 'es2017'],
+  target: ['web', 'es2020'],
   externals: {
     request: false,
     ws: false,

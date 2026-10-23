@@ -2,7 +2,7 @@
   "include": ["./src/**/*.ts", "./ably.d.ts"],
   "exclude": ["./src/**/*.test.tsx", "./src/fakes/**/*.ts"],
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2020",
     "rootDir": "./src",
     "sourceMap": true,
     "strict": false,
