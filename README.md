@@ -37,7 +37,7 @@ The following platforms are supported:
 
 | Platform    | Support                                                                                         |
 | ----------- | ----------------------------------------------------------------------------------------------- |
-| JavaScript  | ES2017                                                                                          |
+| JavaScript  | ES2020                                                                                          |
 | Node.js     | See `engines` in [package.json](https://github.com/ably/ably-pubsub-js/blob/main/package.json). |
 | React       | >=16.8.x                                                                                        |
 | TypeScript  | Type definitions are included in the package.                                                   |

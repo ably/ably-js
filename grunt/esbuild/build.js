@@ -23,7 +23,7 @@ function createBaseConfig() {
     format: 'umd',
     banner: { js: '/*' + banner + '*/' },
     plugins: [umdWrapper.default({ libraryName: 'Ably', amdNamedModule: false })],
-    target: 'es2017',
+    target: 'es2020',
   };
 }
 
@@ -83,7 +83,7 @@ const coreRuntimeConfigs = ['cjs', 'esm'].map((format) => ({
   // Keeps `ErrorInfo.name` and the other class names intact in the build consumers load. esbuild
   // renames a class that refers to itself, so `ErrorInfo.name` would otherwise read `_ErrorInfo`.
   keepNames: true,
-  target: 'es2017',
+  target: 'es2020',
   format,
   entryPoints: ['src/index.ts'],
   outfile: `build/index.${format === 'esm' ? 'mjs' : 'js'}`,
@@ -115,7 +115,7 @@ function createPackageConfigs(packageName, entries, { conditions = [] } = {}) {
         bundle: true,
         sourcemap: true,
         banner: { js: '/*' + banner + '*/' + (platform === 'node' && format === 'esm' ? nodeEsmRequireShim : '') },
-        target: 'es2017',
+        target: 'es2020',
         platform,
         format,
         conditions,
@@ -187,7 +187,7 @@ function createCdnConfigs(entry, libraryName, outName, external = []) {
     format: 'umd',
     banner: { js: '/*' + banner + '*/' },
     plugins: [umdWrapper.default({ libraryName, amdNamedModule: false })],
-    target: 'es2017',
+    target: 'es2020',
     minify,
     external,
     entryPoints: [`packages/device/src/${entry}.ts`],

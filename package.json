@@ -121,7 +121,7 @@
     "format:check": "prettier --check .",
     "sourcemap": "source-map-explorer packages/device/dist/cdn/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
-    "speccoveragereport": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/specCoverageReport.ts && esr scripts/specCoverageReport.ts",
+    "speccoveragereport": "tsc --noEmit --esModuleInterop --target ES2020 --moduleResolution node scripts/specCoverageReport.ts && esr scripts/specCoverageReport.ts",
     "process-private-api-data": "tsc --noEmit --esModuleInterop --strictNullChecks scripts/processPrivateApiData/run.ts && esr scripts/processPrivateApiData/run.ts",
     "docs": "typedoc",
     "generate:errorcodes-ts": "node packages/core-impl/test/common/ably-common/errors/scripts/generate-errorcodes-ts.js --format=type --out packages/core/src/errorcodes.ts"
